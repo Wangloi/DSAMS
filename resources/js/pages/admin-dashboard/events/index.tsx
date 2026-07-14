@@ -888,176 +888,178 @@ export default function AdminEventsIndex() {
                                                 ))}
                                             </SelectContent>
                                         </Select>
-                                <Select value={yearLevelFilter || 'all'} onValueChange={(value) => setYearLevelFilter(value === 'all' ? '' : value)}>
-                                    <SelectTrigger className="h-9 w-36 rounded-xl border-slate-200 bg-slate-50 text-xs font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-white">
-                                        <SelectValue placeholder="All Year Levels" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Year Levels</SelectItem>
-                                        {allYearLevels.map((year) => (
-                                            <SelectItem key={year} value={year}>{year}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
+                                        <Select value={yearLevelFilter || 'all'} onValueChange={(value) => setYearLevelFilter(value === 'all' ? '' : value)}>
+                                            <SelectTrigger className="h-9 w-36 rounded-xl border-slate-200 bg-slate-50 text-xs font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                                                <SelectValue placeholder="All Year Levels" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Year Levels</SelectItem>
+                                                {allYearLevels.map((year) => (
+                                                    <SelectItem key={year} value={year}>{year}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
 
-                        <div className="overflow-x-auto">
-                            <table className="w-full border-collapse text-left text-sm">
-                                <thead>
-                                    <tr className="border-b border-slate-100 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-800/40">
-                                        <th className="w-12 px-6 py-3.5 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">#</th>
-                                        <th className="px-6 py-3.5 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Event Info</th>
-                                        <th className="px-6 py-3.5 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Schedule</th>
-                                        <th className="px-6 py-3.5 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Location</th>
-                                        <th className="px-6 py-3.5 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Status</th>
-                                        <th className="px-6 py-3.5 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Attendance</th>
-                                        <th className="px-6 py-3.5 text-right text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50 dark:divide-slate-800/70">
-                                    {displayedEvents.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={7} className="px-6 py-16 text-center">
-                                                <div className="flex flex-col items-center gap-3">
-                                                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-800">
-                                                        <Calendar className="h-6 w-6" />
-                                                    </div>
-                                                    <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">No events found</p>
-                                                    <p className="text-xs text-slate-400 dark:text-slate-500">Try adjusting your search or filters</p>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        displayedEvents.map((event: Event, idx: number) => (
-                                            <tr key={event.id} className="group transition-colors duration-150 hover:bg-blue-50/40 dark:hover:bg-blue-950/10">
-                                                <td className="px-6 py-4 text-xs font-bold tabular-nums text-slate-400 dark:text-slate-600">
-                                                    {(pageIndex - 1) * pageSize + idx + 1}
-                                                </td>
-                                                <td className="px-6 py-4">{renderEventInfo(event)}</td>
-                                                <td className="px-6 py-4">{renderDateTime(event.event_date, event.event_time)}</td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400">
-                                                        <MapPin className="h-3.5 w-3.5 shrink-0 text-blue-500" />
-                                                        <span className="max-w-[120px] truncate">{event.location}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4">{renderStatusBadge(event.status)}</td>
-                                                <td className="px-6 py-4">{renderAttendanceProgress(event)}</td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <div className="flex items-center justify-end gap-1">
-                                                        <Button
-                                                            type="button" variant="ghost" size="icon"
-                                                            className="h-8 w-8 rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/30 dark:hover:text-blue-400 transition-colors"
-                                                            onClick={() => { setAttendeesEvent(event); setAttendeesOpen(true); }}
-                                                            title="View Attendees"
-                                                        >
-                                                            <Users className="h-4 w-4" />
-                                                        </Button>
-                                                        <Button
-                                                            type="button" variant="ghost" size="icon"
-                                                            className="h-8 w-8 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
-                                                            onClick={() => { setViewEvent(event); setViewOpen(true); }}
-                                                            aria-label="View"
-                                                        >
-                                                            <Eye className="h-4 w-4" />
-                                                        </Button>
-                                                        <Button
-                                                            type="button" variant="ghost" size="icon"
-                                                            className="h-8 w-8 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
-                                                            onClick={() => {
-                                                                setModalMode('edit');
-                                                                setModalData(event);
-                                                                setIsEventModalOpen(true);
-                                                            }}
-                                                            aria-label="Edit"
-                                                        >
-                                                            <Edit className="h-4 w-4" />
-                                                        </Button>
-                                                        {event.archived_at ? (
-                                                            <Button
-                                                                type="button" variant="ghost" size="icon"
-                                                                className="h-8 w-8 rounded-lg text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950/30 transition-colors"
-                                                                onClick={() => handleUnarchive(event)}
-                                                                title="Restore Event"
-                                                            >
-                                                                <ArchiveRestore className="h-4 w-4" />
-                                                            </Button>
-                                                        ) : (
-                                                            <Button
-                                                                type="button" variant="ghost" size="icon"
-                                                                className="h-8 w-8 rounded-lg text-slate-400 hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-950/30 transition-colors"
-                                                                onClick={() => handleArchive(event)}
-                                                                title="Archive Event"
-                                                            >
-                                                                <Archive className="h-4 w-4" />
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                </td>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full border-collapse text-left text-sm">
+                                        <thead>
+                                            <tr className="border-b border-slate-100 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-800/40">
+                                                <th className="w-12 px-6 py-3.5 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">#</th>
+                                                <th className="px-6 py-3.5 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Event Info</th>
+                                                <th className="px-6 py-3.5 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Schedule</th>
+                                                <th className="px-6 py-3.5 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Location</th>
+                                                <th className="px-6 py-3.5 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Status</th>
+                                                <th className="px-6 py-3.5 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Attendance</th>
+                                                <th className="px-6 py-3.5 text-right text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Actions</th>
                                             </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* Pagination */}
-                        <div className="flex flex-col gap-3 border-t border-slate-100 px-6 py-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
-                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                                Showing{' '}
-                                <span className="font-black text-slate-700 dark:text-slate-300">
-                                    {pagination.total === 0 ? 0 : (pageIndex - 1) * pageSize + 1}
-                                </span>{' '}
-                                to{' '}
-                                <span className="font-black text-slate-700 dark:text-slate-300">
-                                    {Math.min(pageIndex * pageSize, pagination.total)}
-                                </span>{' '}
-                                of{' '}
-                                <span className="font-black text-slate-700 dark:text-slate-300">{pagination.total}</span>{' '}entries
-                            </p>
-                            <div className="flex items-center gap-1">
-                                <button
-                                    type="button"
-                                    className="inline-flex h-8 items-center gap-1 rounded-lg px-3 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800"
-                                    onClick={handlePrev}
-                                    disabled={pageIndex <= 1}
-                                >
-                                    <ChevronLeft className="h-3.5 w-3.5" /> Prev
-                                </button>
-                                {Array.from({ length: Math.min(pagination.last_page, 5) }, (_, i) => {
-                                    const num = i + 1;
-                                    return (
-                                        <button
-                                            key={num}
-                                            type="button"
-                                            onClick={() => handlePageSelect(num)}
-                                            className={cn(
-                                                "h-8 w-8 rounded-lg text-xs font-bold transition-all duration-200",
-                                                pageIndex === num
-                                                    ? "bg-blue-600 text-white shadow-sm shadow-blue-500/30"
-                                                    : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-50 dark:divide-slate-800/70">
+                                            {displayedEvents.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={7} className="px-6 py-16 text-center">
+                                                        <div className="flex flex-col items-center gap-3">
+                                                            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-800">
+                                                                <Calendar className="h-6 w-6" />
+                                                            </div>
+                                                            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">No events found</p>
+                                                            <p className="text-xs text-slate-400 dark:text-slate-500">Try adjusting your search or filters</p>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                displayedEvents.map((event: Event, idx: number) => (
+                                                    <tr key={event.id} className="group transition-colors duration-150 hover:bg-blue-50/40 dark:hover:bg-blue-950/10">
+                                                        <td className="px-6 py-4 text-xs font-bold tabular-nums text-slate-400 dark:text-slate-600">
+                                                            {(pageIndex - 1) * pageSize + idx + 1}
+                                                        </td>
+                                                        <td className="px-6 py-4">{renderEventInfo(event)}</td>
+                                                        <td className="px-6 py-4">{renderDateTime(event.event_date, event.event_time)}</td>
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400">
+                                                                <MapPin className="h-3.5 w-3.5 shrink-0 text-blue-500" />
+                                                                <span className="max-w-[120px] truncate">{event.location}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4">{renderStatusBadge(event.status)}</td>
+                                                        <td className="px-6 py-4">{renderAttendanceProgress(event)}</td>
+                                                        <td className="px-6 py-4 text-right">
+                                                            <div className="flex items-center justify-end gap-1">
+                                                                <Button
+                                                                    type="button" variant="ghost" size="icon"
+                                                                    className="h-8 w-8 rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/30 dark:hover:text-blue-400 transition-colors"
+                                                                    onClick={() => { setAttendeesEvent(event); setAttendeesOpen(true); }}
+                                                                    title="View Attendees"
+                                                                >
+                                                                    <Users className="h-4 w-4" />
+                                                                </Button>
+                                                                <Button
+                                                                    type="button" variant="ghost" size="icon"
+                                                                    className="h-8 w-8 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
+                                                                    onClick={() => { setViewEvent(event); setViewOpen(true); }}
+                                                                    aria-label="View"
+                                                                >
+                                                                    <Eye className="h-4 w-4" />
+                                                                </Button>
+                                                                <Button
+                                                                    type="button" variant="ghost" size="icon"
+                                                                    className="h-8 w-8 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
+                                                                    onClick={() => {
+                                                                        setModalMode('edit');
+                                                                        setModalData(event);
+                                                                        setIsEventModalOpen(true);
+                                                                    }}
+                                                                    aria-label="Edit"
+                                                                >
+                                                                    <Edit className="h-4 w-4" />
+                                                                </Button>
+                                                                {event.archived_at ? (
+                                                                    <Button
+                                                                        type="button" variant="ghost" size="icon"
+                                                                        className="h-8 w-8 rounded-lg text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950/30 transition-colors"
+                                                                        onClick={() => handleUnarchive(event)}
+                                                                        title="Restore Event"
+                                                                    >
+                                                                        <ArchiveRestore className="h-4 w-4" />
+                                                                    </Button>
+                                                                ) : (
+                                                                    <Button
+                                                                        type="button" variant="ghost" size="icon"
+                                                                        className="h-8 w-8 rounded-lg text-slate-400 hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-950/30 transition-colors"
+                                                                        onClick={() => handleArchive(event)}
+                                                                        title="Archive Event"
+                                                                    >
+                                                                        <Archive className="h-4 w-4" />
+                                                                    </Button>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))
                                             )}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Pagination */}
+                                <div className="flex flex-col gap-3 border-t border-slate-100 px-6 py-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+                                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                        Showing{' '}
+                                        <span className="font-black text-slate-700 dark:text-slate-300">
+                                            {pagination.total === 0 ? 0 : (pageIndex - 1) * pageSize + 1}
+                                        </span>{' '}
+                                        to{' '}
+                                        <span className="font-black text-slate-700 dark:text-slate-300">
+                                            {Math.min(pageIndex * pageSize, pagination.total)}
+                                        </span>{' '}
+                                        of{' '}
+                                        <span className="font-black text-slate-700 dark:text-slate-300">{pagination.total}</span>{' '}entries
+                                    </p>
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            type="button"
+                                            className="inline-flex h-8 items-center gap-1 rounded-lg px-3 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800"
+                                            onClick={handlePrev}
+                                            disabled={pageIndex <= 1}
                                         >
-                                            {num}
+                                            <ChevronLeft className="h-3.5 w-3.5" /> Prev
                                         </button>
-                                    );
-                                })}
-                                <button
-                                    type="button"
-                                    className="inline-flex h-8 items-center gap-1 rounded-lg px-3 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800"
-                                    onClick={handleNext}
-                                    disabled={pageIndex >= pagination.last_page}
-                                >
-                                    Next <ChevronRight className="h-3.5 w-3.5" />
-                                </button>
+                                        {Array.from({ length: Math.min(pagination.last_page, 5) }, (_, i) => {
+                                            const num = i + 1;
+                                            return (
+                                                <button
+                                                    key={num}
+                                                    type="button"
+                                                    onClick={() => handlePageSelect(num)}
+                                                    className={cn(
+                                                        "h-8 w-8 rounded-lg text-xs font-bold transition-all duration-200",
+                                                        pageIndex === num
+                                                            ? "bg-blue-600 text-white shadow-sm shadow-blue-500/30"
+                                                            : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                                                    )}
+                                                >
+                                                    {num}
+                                                </button>
+                                            );
+                                        })}
+                                        <button
+                                            type="button"
+                                            className="inline-flex h-8 items-center gap-1 rounded-lg px-3 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800"
+                                            onClick={handleNext}
+                                            disabled={pageIndex >= pagination.last_page}
+                                        >
+                                            Next <ChevronRight className="h-3.5 w-3.5" />
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                )}
+                        )}
+
+                    </div> {/* ── End Main View Container ── */}
                 </div>
             </div>
-        </div>
+
 
             <EventViewModal
                 open={viewOpen}
