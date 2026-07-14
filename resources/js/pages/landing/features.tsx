@@ -1,0 +1,20 @@
+import { Head, usePage } from '@inertiajs/react';
+import LandingFeaturesCarousel from '@/components/landing/landing-features-carousel';
+import LandingFooter from '@/components/landing/landing-footer';
+import LandingNavbar from '@/components/landing/landing-navbar';
+import type { SharedData } from '@/types';
+
+export default function LandingFeatures() {
+    const { auth } = usePage<SharedData>().props;
+
+    return (
+        <>
+            <Head title="Features" />
+            <div className="min-h-screen bg-white text-slate-900">
+                <LandingNavbar isAuthed={!!auth?.user} />
+                <LandingFeaturesCarousel />
+                <LandingFooter />
+            </div>
+        </>
+    );
+}

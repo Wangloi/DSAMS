@@ -1,0 +1,1459 @@
+import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { Archive, BookOpen, Edit, Eye, Pencil, Plus, Search, Trash2, Users } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import Swal from 'sweetalert2';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import {
+    adminDashboard,
+    adminManageUsers,
+    adminProgramsArchive,
+    adminProgramsStore,
+    adminProgramsUnarchive,
+} from '@/routes';
+import type { BreadcrumbItem } from '@/types';
+import AdminLayout from '../admin-layout';
+import AddEditUserDialog from './AddEditUserDialog';
+import type { PageProps } from './types';
+import { useManageUsers } from './useManageUsers';
+import ViewStudentDialog from './ViewStudentDialog';
+
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Admin Dashboard',
+        href: adminDashboard(),
+    },
+    {
+        title: 'Manage Users & Programs',
+        href: adminManageUsers(),
+    },
+];
+
+type ProgramRow = {
+    id: string;
+    name: string;
+    code: string;
+    department: string;
+    description: string;
+    duration: string;
+    status: 'active' | 'inactive';
+    studentCount: number;
+    createdAt: string;
+    updatedAt: string;
+};
+
+export default function AdminManageUsersPage() {
+    const { props } = usePage<PageProps>();
+    const students = props.students ?? [];
+    const programs = ((props as any).programs || []) as ProgramRow[];
+    const errors = props.errors ?? {};
+    const flash = props.flash;
+
+    // ── Tab state (persisted in URL) ──────────────────────────────────────────
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialTab = urlParams.get('tab') === 'programs' ? 'programs' : 'users';
+    const [activeTab, setActiveTab] = useState<'users' | 'programs'>(initialTab);
+
+    const switchTab = (tab: 'users' | 'programs') => {
+        setActiveTab(tab);
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', tab);
+        window.history.replaceState({}, '', url.toString());
+    };
+
+    const getInitials = (name: string) =>
+        name
+            .split(' ')
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((p) => p[0]?.toUpperCase())
+            .join('');
+
+    const roleCounts = students.reduce(
+        (acc, u) => {
+            const roleRaw = (u.role ?? 'Student').toLowerCase();
+            if (roleRaw.includes('admin')) acc.admin += 1;
+            else if (roleRaw.includes('program')) acc.programHead += 1;
+            else acc.student += 1;
+            return acc;
+        },
+        { student: 0, programHead: 0, admin: 0 },
+    );
+
+    const totalUsers = students.length;
+
+    const {
+        open,
+        setOpen,
+        editingUser,
+        form,
+        setForm,
+        hasAnyError,
+        closeModal,
+        openCreateModal,
+        openEditModal,
+        submit,
+        approveStudent,
+        rejectStudent,
+        setPendingStudent,
+    } = useManageUsers(errors);
+
+    const [activeById, setActiveById] = useState<Record<number, boolean>>({});
+
+    // ── Users tab state ────────────────────────────────────────────────────────
+    const isProgramHeadRow = (u: (typeof students)[number]) =>
+        String((u as any)?.userType ?? '').toLowerCase() === 'program_head';
+    const isAdminRow = (u: (typeof students)[number]) =>
+        String((u as any)?.userType ?? '').toLowerCase() === 'admin';
+
+    const [roleFilter, setRoleFilter] = useState<'all' | 'students' | 'program' | 'admin'>('all');
+    const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [pageIndex, setPageIndex] = useState(1);
+    const [viewOpen, setViewOpen] = useState(false);
+    const [viewStudent, setViewStudent] = useState<(typeof students)[number] | null>(null);
+
+    // ── Programs tab state ─────────────────────────────────────────────────────
+    const [progStatusFilter, setProgStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+    const [progDeptFilter, setProgDeptFilter] = useState<'all' | string>('all');
+    const [progSearch, setProgSearch] = useState('');
+    const [progPageIndex, setProgPageIndex] = useState(1);
+    const [progPageSize, setProgPageSize] = useState(10);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+    const { data: progData, setData: setProgData, post: progPost, processing: progProcessing, errors: progErrors, reset: progReset } = useForm({
+        name: '',
+        code: '',
+        department: '',
+        description: '',
+        duration: '',
+        is_active: true,
+    });
+
+    function handleProgSubmit(e: React.FormEvent) {
+        e.preventDefault();
+        progPost(adminProgramsStore(), {
+            onSuccess: () => {
+                setIsCreateModalOpen(false);
+                progReset();
+            },
+        });
+    }
+
+    const progFilteredRows = useMemo(() => {
+        const q = progSearch.toLowerCase().trim();
+        return programs.filter((r) => {
+            const matchSearch = !q || [r.name, r.code, r.department, r.description].filter(Boolean).join(' ').toLowerCase().includes(q);
+            const matchStatus = progStatusFilter === 'all' || r.status === progStatusFilter;
+            const matchDept = progDeptFilter === 'all' || r.department === progDeptFilter;
+            return matchSearch && matchStatus && matchDept;
+        });
+    }, [programs, progSearch, progStatusFilter, progDeptFilter]);
+
+    const progTotalPages = Math.max(1, Math.ceil(progFilteredRows.length / progPageSize));
+
+    const progPagedRows = useMemo(() => {
+        const clamped = Math.min(Math.max(progPageIndex, 1), progTotalPages);
+        return progFilteredRows.slice((clamped - 1) * progPageSize, clamped * progPageSize);
+    }, [progFilteredRows, progPageIndex, progTotalPages, progPageSize]);
+
+    const progStats = useMemo(() => ({
+        total: programs.length,
+        active: programs.filter((r) => r.status === 'active').length,
+        inactive: programs.filter((r) => r.status === 'inactive').length,
+        departments: [...new Set(programs.map((r) => r.department))].length,
+    }), [programs]);
+
+    const progDepartments = useMemo(() => [...new Set(programs.map((r) => r.department))].sort(), [programs]);
+
+    useEffect(() => {
+        setActiveById((prev) => {
+            const next = { ...prev };
+            for (const u of students) {
+                if (next[u.id] === undefined) next[u.id] = u.is_active ?? true;
+            }
+            return next;
+        });
+    }, [students]);
+
+    useEffect(() => {
+        if (searchQuery.trim().toLowerCase() === 'admin@example.com') {
+            setSearchQuery('');
+        }
+    }, [searchQuery]);
+
+    useEffect(() => {
+        const message = (flash?.success ?? '').trim();
+        if (!message) return;
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: message,
+            timer: 2000,
+            showConfirmButton: false,
+        });
+    }, [flash?.success]);
+
+    useEffect(() => {
+        const message = (flash?.error ?? '').trim();
+        if (!message) return;
+
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: message,
+        });
+    }, [flash?.error]);
+
+    const isActive = useMemo(() => {
+        return (userId: number) => activeById[userId] !== false;
+    }, [activeById]);
+
+    const filteredStudents = useMemo(() => {
+        const q = searchQuery.trim().toLowerCase();
+
+        const matchesRole = (u: (typeof students)[number]) => {
+            if (roleFilter === 'all') return true;
+            const roleRaw = String(u.role ?? 'Student').toLowerCase();
+            if (roleFilter === 'students')
+                return (
+                    !roleRaw.includes('admin') && !roleRaw.includes('program')
+                );
+            if (roleFilter === 'program') return roleRaw.includes('program');
+            if (roleFilter === 'admin') return roleRaw.includes('admin');
+            return true;
+        };
+
+        const matchesStatus = (u: (typeof students)[number]) => {
+            if (statusFilter === 'all') return true;
+            if (isProgramHeadRow(u)) return statusFilter === 'active';
+            const active = isActive(u.id);
+            return statusFilter === 'active' ? active : !active;
+        };
+
+        const matchesSearch = (u: (typeof students)[number]) => {
+            if (!q) return true;
+            const haystack = [
+                u.student_id,
+                u.name,
+                u.email,
+                u.course,
+                u.year_level,
+                u.role ?? '',
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+            return haystack.includes(q);
+        };
+
+        return [...students].filter(
+            (u) => matchesRole(u) && matchesStatus(u) && matchesSearch(u),
+        );
+    }, [students, roleFilter, statusFilter, searchQuery]);
+
+    const pageSize = 10;
+    const totalPages = Math.max(
+        1,
+        Math.ceil(filteredStudents.length / pageSize),
+    );
+
+    useEffect(() => {
+        setPageIndex((p) => Math.min(Math.max(p, 1), totalPages));
+    }, [totalPages]);
+
+    const pagedStudents = useMemo(() => {
+        const clamped = Math.min(Math.max(pageIndex, 1), totalPages);
+        const start = (clamped - 1) * pageSize;
+        return filteredStudents.slice(start, start + pageSize);
+    }, [filteredStudents, pageIndex, totalPages]);
+
+    return (
+        <AdminLayout breadcrumbs={breadcrumbs}>
+            <Head title="Manage Users & Programs" />
+            <div className="min-h-[calc(100vh-4rem)] bg-slate-100 dark:bg-slate-900">
+                <div className="flex w-full flex-col gap-6 px-6 py-6">
+                    {/* ── Page header with tab switcher ──────────────────────── */}
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+                        <div className="flex items-center gap-4">
+                            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-600/10 text-blue-600 dark:bg-blue-600/20 dark:text-blue-400">
+                                {activeTab === 'users' ? <Users className="h-6 w-6" /> : <BookOpen className="h-6 w-6" />}
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                                    {activeTab === 'users' ? 'Manage Users' : 'Academic Programs'}
+                                </h1>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">
+                                    {activeTab === 'users' ? 'Manage user accounts, roles, and permissions' : 'Manage curriculums, departments, and course offerings'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Tab buttons */}
+                        <div className="flex items-center gap-2">
+                            <div className="flex items-center rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                                <button
+                                    type="button"
+                                    onClick={() => switchTab('users')}
+                                    className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+                                        activeTab === 'users'
+                                            ? 'bg-blue-600 text-white shadow-sm'
+                                            : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'
+                                    }`}
+                                >
+                                    <Users className="h-4 w-4" />
+                                    Users
+                                    <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                                        activeTab === 'users' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
+                                    }`}>
+                                        {totalUsers}
+                                    </span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => switchTab('programs')}
+                                    className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+                                        activeTab === 'programs'
+                                            ? 'bg-blue-600 text-white shadow-sm'
+                                            : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'
+                                    }`}
+                                >
+                                    <BookOpen className="h-4 w-4" />
+                                    Programs
+                                    <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                                        activeTab === 'programs' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
+                                    }`}>
+                                        {progStats.total}
+                                    </span>
+                                </button>
+                            </div>
+
+                            {/* Context action button */}
+                            {activeTab === 'users' ? (
+                                <AddEditUserDialog
+                                    open={open}
+                                    onOpenChange={setOpen}
+                                    editingUser={editingUser}
+                                    hasAnyError={hasAnyError}
+                                    errors={errors}
+                                    form={form}
+                                    setForm={setForm}
+                                    onOpenCreate={openCreateModal}
+                                    onClose={closeModal}
+                                    onSubmit={submit}
+                                />
+                            ) : (
+                                <Button
+                                    onClick={() => setIsCreateModalOpen(true)}
+                                    className="h-11 shrink-0 gap-2 rounded-xl bg-blue-600 px-5 font-bold text-white shadow-md shadow-blue-500/20 transition-all duration-200 hover:bg-blue-700"
+                                >
+                                    <Plus className="h-5 w-5" />
+                                    Add Program
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* ── USERS TAB ──────────────────────────────────────────────────────────── */}
+                    {activeTab === 'users' && (
+                    <>
+                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                        {/* Students Card */}
+                        <Card className="overflow-hidden border border-emerald-100 bg-emerald-50/50 shadow-sm dark:border-emerald-500/20 dark:bg-emerald-500/10 group">
+                            <CardContent className="p-5">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 opacity-70">
+                                            Students
+                                        </div>
+                                        <div className="mt-2 flex items-baseline gap-2">
+                                            <div className="text-3xl font-black text-slate-900 dark:text-white">
+                                                {roleCounts.student}
+                                            </div>
+                                            <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                Total Active
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 shadow-inner group-hover:scale-110 transition-transform duration-300">
+                                        <Users className="h-6 w-6" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Program Heads Card */}
+                        <Card className="overflow-hidden border border-amber-100 bg-amber-50/50 shadow-sm dark:border-amber-500/20 dark:bg-amber-500/10 group">
+                            <CardContent className="p-5">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <div className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 opacity-70">
+                                            Program Heads
+                                        </div>
+                                        <div className="mt-2 flex items-baseline gap-2">
+                                            <div className="text-3xl font-black text-slate-900 dark:text-white">
+                                                {roleCounts.programHead}
+                                            </div>
+                                            <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                                Assigned
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 shadow-inner group-hover:scale-110 transition-transform duration-300">
+                                        <Users className="h-6 w-6" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Administrators Card */}
+                        <Card className="overflow-hidden border border-blue-100 bg-blue-50/50 shadow-sm dark:border-blue-500/20 dark:bg-blue-500/10 group">
+                            <CardContent className="p-5">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <div className="text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 opacity-70">
+                                            Administrators
+                                        </div>
+                                        <div className="mt-2 flex items-baseline gap-2">
+                                            <div className="text-3xl font-black text-slate-900 dark:text-white">
+                                                {roleCounts.admin}
+                                            </div>
+                                            <div className="text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                                                System Admins
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 shadow-inner group-hover:scale-110 transition-transform duration-300">
+                                        <Users className="h-6 w-6" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    <Card className="border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#0B192C]/50">
+                        <CardHeader>
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <CardTitle className="text-lg font-semibold text-slate-800 dark:text-white">
+                                        User List
+                                    </CardTitle>
+                                    <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                                        Total: {totalUsers} users
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:items-center">
+                                    <div className="relative">
+                                        <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                        <input
+                                            type="text"
+                                            name="fake_username"
+                                            autoComplete="username"
+                                            tabIndex={-1}
+                                            className="hidden"
+                                        />
+                                        <input
+                                            type="password"
+                                            name="fake_password"
+                                            autoComplete="current-password"
+                                            tabIndex={-1}
+                                            className="hidden"
+                                        />
+                                        <Input
+                                            placeholder="Search user..."
+                                            className="h-9 border border-slate-200 bg-white pl-9 dark:border-slate-600 dark:bg-slate-800"
+                                            name="manage_users_search"
+                                            type="search"
+                                            autoComplete="new-password"
+                                            autoCorrect="off"
+                                            spellCheck={false}
+                                            value={searchQuery}
+                                            onChange={(e) =>
+                                                setSearchQuery(e.target.value)
+                                            }
+                                        />
+                                    </div>
+
+                                    <Select
+                                        value={roleFilter}
+                                        onValueChange={(v) =>
+                                            setRoleFilter(v as any)
+                                        }
+                                    >
+                                        <SelectTrigger className="h-9 border border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-800">
+                                            <SelectValue placeholder="All Users" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">
+                                                All Users
+                                            </SelectItem>
+                                            <SelectItem value="students">
+                                                Students
+                                            </SelectItem>
+                                            <SelectItem value="program">
+                                                Program Heads
+                                            </SelectItem>
+                                            <SelectItem value="admin">
+                                                Administrators
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+
+                                    <Select
+                                        value={statusFilter}
+                                        onValueChange={(v) =>
+                                            setStatusFilter(v as any)
+                                        }
+                                    >
+                                        <SelectTrigger className="h-9 border border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-800">
+                                            <SelectValue placeholder="Status: Active" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">
+                                                Status: All
+                                            </SelectItem>
+                                            <SelectItem value="active">
+                                                Status: Active
+                                            </SelectItem>
+                                            <SelectItem value="inactive">
+                                                Status: Inactive
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#0B192C]/50">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-sm border-collapse">
+                                        <thead className="bg-slate-50 text-slate-500 dark:bg-slate-800/50 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800">
+                                            <tr>
+                                                <th className="w-12 px-6 py-4 text-[10px] font-bold uppercase tracking-wider">
+                                                    #
+                                                </th>
+                                                <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider">
+                                                    User ID
+                                                </th>
+                                                <th className="min-w-[260px] px-6 py-4 text-[10px] font-bold uppercase tracking-wider">
+                                                    Full Name
+                                                </th>
+                                                <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider">
+                                                    Role
+                                                </th>
+                                                <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider">
+                                                    Department / Program
+                                                </th>
+                                                <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider">
+                                                    Account Status
+                                                </th>
+                                                <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider">
+                                                    Verification Status
+                                                </th>
+                                                <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider">
+                                                    Action
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                            {pagedStudents.length === 0 ? (
+                                                <tr>
+                                                    <td
+                                                        colSpan={8}
+                                                        className="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400"
+                                                    >
+                                                        No users found.
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                pagedStudents.map((u, idx) => (
+                                                    <tr
+                                                        key={u.id}
+                                                        className="transition-colors duration-200 hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
+                                                    >
+                                                        <td className="px-6 py-4 text-slate-500 dark:text-slate-400">
+                                                            {(Math.min(
+                                                                Math.max(
+                                                                    pageIndex,
+                                                                    1,
+                                                                ),
+                                                                totalPages,
+                                                            ) -
+                                                                1) *
+                                                                pageSize +
+                                                                idx +
+                                                                1}
+                                                        </td>
+                                                        <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">
+                                                            {u.student_id}
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <Avatar className="size-10 ring-2 ring-white dark:ring-slate-800">
+                                                                    <AvatarFallback className="bg-slate-100 text-xs font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                                                                        {getInitials(
+                                                                            u.name,
+                                                                        )}
+                                                                    </AvatarFallback>
+                                                                </Avatar>
+                                                                <div>
+                                                                    <div className="font-bold text-slate-900 dark:text-white">
+                                                                        {u.name}
+                                                                    </div>
+                                                                    <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                                                        {
+                                                                            u.email
+                                                                        }
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-tight ${
+                                                                u.role?.toLowerCase().includes('admin') 
+                                                                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' 
+                                                                    : u.role?.toLowerCase().includes('program')
+                                                                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                                                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                                            }`}>
+                                                                {u.role ?? 'Student'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-slate-600 dark:text-slate-400 font-medium">
+                                                            {(() => {
+                                                                const course =
+                                                                    String(
+                                                                        u.course ??
+                                                                            '',
+                                                                    ).trim();
+                                                                return (
+                                                                    course ||
+                                                                    '—'
+                                                                );
+                                                            })()}
+                                                        </td>
+
+                                                        <td className="px-4 py-3">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const id =
+                                                                        Number(
+                                                                            (
+                                                                                u as any
+                                                                            )
+                                                                                ?.id,
+                                                                        );
+                                                                    if (
+                                                                        isProgramHeadRow(
+                                                                            u,
+                                                                        )
+                                                                    ) {
+                                                                        Swal.fire(
+                                                                            {
+                                                                                icon: 'info',
+                                                                                title: 'Not available',
+                                                                                text: 'Status toggle is not yet supported for Program Head accounts.',
+                                                                            },
+                                                                        );
+                                                                        return;
+                                                                    }
+                                                                    if (
+                                                                        isAdminRow(
+                                                                            u,
+                                                                        )
+                                                                    ) {
+                                                                        Swal.fire(
+                                                                            {
+                                                                                icon: 'info',
+                                                                                title: 'Not available',
+                                                                                text: 'Status toggle is not yet supported for Administrator accounts.',
+                                                                            },
+                                                                        );
+                                                                        return;
+                                                                    }
+                                                                    if (
+                                                                        !id ||
+                                                                        Number.isNaN(
+                                                                            id,
+                                                                        )
+                                                                    ) {
+                                                                        Swal.fire(
+                                                                            {
+                                                                                icon: 'error',
+                                                                                title: 'Update failed',
+                                                                                text: 'Missing user id. Please refresh the page and try again.',
+                                                                            },
+                                                                        );
+                                                                        return;
+                                                                    }
+
+                                                                    const nextActive =
+                                                                        !isActive(
+                                                                            u.id,
+                                                                        );
+                                                                    setActiveById(
+                                                                        (
+                                                                            p,
+                                                                        ) => ({
+                                                                            ...p,
+                                                                            [u.id]: nextActive,
+                                                                        }),
+                                                                    );
+
+                                                                    router.post(
+                                                                        `/admin/manage-users/${id}/status`,
+                                                                        {
+                                                                            is_active:
+                                                                                nextActive,
+                                                                        },
+                                                                        {
+                                                                            preserveScroll: true,
+                                                                            onError:
+                                                                                () => {
+                                                                                    setActiveById(
+                                                                                        (
+                                                                                            p,
+                                                                                        ) => ({
+                                                                                            ...p,
+                                                                                            [u.id]: !nextActive,
+                                                                                        }),
+                                                                                    );
+                                                                                    Swal.fire(
+                                                                                        {
+                                                                                            icon: 'error',
+                                                                                            title: 'Update failed',
+                                                                                            text: 'Unable to update student status. Please try again.',
+                                                                                        },
+                                                                                    );
+                                                                                },
+                                                                        },
+                                                                    );
+                                                                }}
+                                                                aria-pressed={isActive(
+                                                                    u.id,
+                                                                )}
+                                                                className={
+                                                                    'relative inline-flex h-6 w-11 items-center rounded-full border transition-colors focus-visible:ring-2 focus-visible:ring-[#1e40af] focus-visible:ring-offset-2 focus-visible:outline-none ' +
+                                                                    (isActive(
+                                                                        u.id,
+                                                                    )
+                                                                        ? 'border-emerald-600 bg-emerald-600'
+                                                                        : 'border-slate-300 bg-slate-200')
+                                                                }
+                                                            >
+                                                                <span
+                                                                    className={
+                                                                        'inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ' +
+                                                                        (isActive(
+                                                                            u.id,
+                                                                        )
+                                                                            ? 'translate-x-5'
+                                                                            : 'translate-x-0.5')
+                                                                    }
+                                                                />
+                                                            </button>
+                                                        </td>
+
+                                                        <td className="space-x-2 px-4 py-3">
+                                                            {!isProgramHeadRow(
+                                                                u,
+                                                            ) &&
+                                                                !isAdminRow(
+                                                                    u,
+                                                                ) && (
+                                                                    <>
+                                                                        <Select
+                                                                            value={
+                                                                                u.status ??
+                                                                                'pending'
+                                                                            }
+                                                                            onValueChange={(
+                                                                                value,
+                                                                            ) => {
+                                                                                const id =
+                                                                                    Number(
+                                                                                        (
+                                                                                            u as any
+                                                                                        )
+                                                                                            ?.id,
+                                                                                    );
+                                                                                if (
+                                                                                    !id ||
+                                                                                    Number.isNaN(
+                                                                                        id,
+                                                                                    )
+                                                                                )
+                                                                                    return;
+
+                                                                                // Map status to the appropriate action
+                                                                                if (
+                                                                                    value ===
+                                                                                    'approved'
+                                                                                ) {
+                                                                                    approveStudent(
+                                                                                        id,
+                                                                                    );
+                                                                                } else if (
+                                                                                    value ===
+                                                                                    'rejected'
+                                                                                ) {
+                                                                                    rejectStudent(
+                                                                                        id,
+                                                                                    );
+                                                                                } else if (
+                                                                                    value ===
+                                                                                    'pending'
+                                                                                ) {
+                                                                                    setPendingStudent(
+                                                                                        id,
+                                                                                    );
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            <SelectTrigger className="border-slate-300 dark:border-slate-600">
+                                                                                <SelectValue placeholder="Status" />
+                                                                            </SelectTrigger>
+                                                                            <SelectContent>
+                                                                                <SelectItem value="pending">
+                                                                                    Pending
+                                                                                </SelectItem>
+                                                                                <SelectItem value="approved">
+                                                                                    Approved
+                                                                                </SelectItem>
+                                                                                <SelectItem value="rejected">
+                                                                                    Rejected
+                                                                                </SelectItem>
+                                                                            </SelectContent>
+                                                                        </Select>
+                                                                    </>
+                                                                )}
+                                                        </td>
+
+                                                        <td className="px-4 py-3">
+                                                            <div className="flex items-center gap-3">
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 border-slate-300 bg-white transition-colors hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700"
+                                                                    onClick={() => {
+                                                                        if (
+                                                                            isProgramHeadRow(
+                                                                                u,
+                                                                            ) ||
+                                                                            isAdminRow(
+                                                                                u,
+                                                                            )
+                                                                        ) {
+                                                                            return;
+                                                                        }
+                                                                        setViewStudent(
+                                                                            u,
+                                                                        );
+                                                                        setViewOpen(
+                                                                            true,
+                                                                        );
+                                                                    }}
+                                                                    aria-label="View"
+                                                                >
+                                                                    <Eye className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                                                                </Button>
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 border-slate-300 bg-white transition-colors hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700"
+                                                                    onClick={() => {
+                                                                        if (
+                                                                            isProgramHeadRow(
+                                                                                u,
+                                                                            ) ||
+                                                                            isAdminRow(
+                                                                                u,
+                                                                            )
+                                                                        ) {
+                                                                            return;
+                                                                        }
+                                                                        openEditModal(
+                                                                            u,
+                                                                        );
+                                                                    }}
+                                                                    aria-label="Edit"
+                                                                >
+                                                                    <Pencil className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                                                                </Button>
+                                                                {!isProgramHeadRow(
+                                                                    u,
+                                                                ) &&
+                                                                    !isAdminRow(
+                                                                        u,
+                                                                    ) && (
+                                                                        <button
+                                                                            type="button"
+                                                                            className="text-amber-600 transition-colors hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+                                                                            aria-label="Archive user"
+                                                                            onClick={() => {
+                                                                                if (
+                                                                                    isProgramHeadRow(
+                                                                                        u,
+                                                                                    )
+                                                                                ) {
+                                                                                    Swal.fire(
+                                                                                        {
+                                                                                            icon: 'info',
+                                                                                            title: 'Not available',
+                                                                                            text: 'Archiving is not yet supported for Program Head accounts.',
+                                                                                        },
+                                                                                    );
+                                                                                } else if (
+                                                                                    isAdminRow(
+                                                                                        u,
+                                                                                    )
+                                                                                ) {
+                                                                                    Swal.fire(
+                                                                                        {
+                                                                                            icon: 'info',
+                                                                                            title: 'Not available',
+                                                                                            text: 'Archiving is not yet supported for Administrator accounts.',
+                                                                                        },
+                                                                                    );
+                                                                                } else {
+                                                                                    Swal.fire(
+                                                                                        {
+                                                                                            title: 'Archive account?',
+                                                                                            text: `This will move ${u.name} to the archive. You can restore the account later from the Archive page.`,
+                                                                                            icon: 'question',
+                                                                                            showCancelButton: true,
+                                                                                            confirmButtonColor:
+                                                                                                '#f59e0b',
+                                                                                            cancelButtonColor:
+                                                                                                '#d33',
+                                                                                            confirmButtonText:
+                                                                                                'Archive',
+                                                                                            cancelButtonText:
+                                                                                                'Cancel',
+                                                                                        },
+                                                                                    ).then(
+                                                                                        (
+                                                                                            result,
+                                                                                        ) => {
+                                                                                            if (
+                                                                                                result.isConfirmed
+                                                                                            ) {
+                                                                                                const id =
+                                                                                                    Number(
+                                                                                                        (
+                                                                                                            u as any
+                                                                                                        )
+                                                                                                            ?.id,
+                                                                                                    );
+                                                                                                if (
+                                                                                                    !id ||
+                                                                                                    Number.isNaN(
+                                                                                                        id,
+                                                                                                    )
+                                                                                                ) {
+                                                                                                    Swal.fire(
+                                                                                                        {
+                                                                                                            icon: 'error',
+                                                                                                            title: 'Archive failed',
+                                                                                                            text: 'Missing user id. Please refresh the page and try again.',
+                                                                                                        },
+                                                                                                    );
+                                                                                                    return;
+                                                                                                }
+
+                                                                                                router.post(
+                                                                                                    `/admin/manage-users/${id}/archive`,
+                                                                                                    {},
+                                                                                                    {
+                                                                                                        preserveScroll: true,
+                                                                                                        onSuccess:
+                                                                                                            () => {
+                                                                                                                router.reload(
+                                                                                                                    {
+                                                                                                                        only: [
+                                                                                                                            'students',
+                                                                                                                        ],
+                                                                                                                    },
+                                                                                                                );
+                                                                                                            },
+                                                                                                        onError:
+                                                                                                            () => {
+                                                                                                                Swal.fire(
+                                                                                                                    {
+                                                                                                                        icon: 'error',
+                                                                                                                        title: 'Archive failed',
+                                                                                                                        text: 'Unable to archive the account. Please try again.',
+                                                                                                                    },
+                                                                                                                );
+                                                                                                            },
+                                                                                                    },
+                                                                                                );
+                                                                                            }
+                                                                                        },
+                                                                                    );
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            <Archive className="h-4 w-4" />
+                                                                        </button>
+                                                                    )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div className="mt-4 flex flex-col gap-2 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    Showing{' '}
+                                    {filteredStudents.length === 0
+                                        ? 0
+                                        : (Math.min(
+                                              Math.max(pageIndex, 1),
+                                              totalPages,
+                                          ) -
+                                              1) *
+                                              pageSize +
+                                          1}{' '}
+                                    to{' '}
+                                    {Math.min(
+                                        Math.min(
+                                            Math.max(pageIndex, 1),
+                                            totalPages,
+                                        ) * pageSize,
+                                        filteredStudents.length,
+                                    )}{' '}
+                                    of {filteredStudents.length} entries
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        type="button"
+                                        className="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+                                        onClick={() =>
+                                            setPageIndex((p) =>
+                                                Math.max(1, p - 1),
+                                            )
+                                        }
+                                        disabled={pageIndex <= 1}
+                                    >
+                                        Prev
+                                    </button>
+                                    {Array.from({ length: totalPages })
+                                        .slice(0, 3)
+                                        .map((_, idx) => {
+                                            const num = idx + 1;
+                                            return (
+                                                <button
+                                                    key={num}
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setPageIndex(num)
+                                                    }
+                                                    className={
+                                                        'rounded-md px-2 py-1 ' +
+                                                        (pageIndex === num
+                                                            ? 'bg-[#23509A] text-white'
+                                                            : 'text-slate-600 hover:bg-slate-100')
+                                                    }
+                                                >
+                                                    {num}
+                                                </button>
+                                            );
+                                        })}
+                                    <button
+                                        type="button"
+                                        className="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+                                        onClick={() =>
+                                            setPageIndex((p) =>
+                                                Math.min(totalPages, p + 1),
+                                            )
+                                        }
+                                        disabled={pageIndex >= totalPages}
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    </>
+                    )} {/* end activeTab === 'users' */}
+
+                    {/* ── PROGRAMS TAB ─────────────────────────────────────── */}
+                    {activeTab === 'programs' && (
+                    <>
+                        {/* Stats cards */}
+                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+                            <Card className="overflow-hidden border border-blue-100 bg-blue-50/50 shadow-sm dark:border-blue-500/20 dark:bg-blue-500/10 group">
+                                <CardContent className="p-5">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <div className="text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 opacity-70">Total Programs</div>
+                                            <div className="mt-2 text-3xl font-black text-slate-900 dark:text-white">{progStats.total}</div>
+                                        </div>
+                                        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 shadow-inner group-hover:scale-110 transition-transform duration-300">
+                                            <BookOpen className="h-6 w-6" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="overflow-hidden border border-emerald-100 bg-emerald-50/50 shadow-sm dark:border-emerald-500/20 dark:bg-emerald-500/10 group">
+                                <CardContent className="p-5">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 opacity-70">Active</div>
+                                            <div className="mt-2 text-3xl font-black text-slate-900 dark:text-white">{progStats.active}</div>
+                                        </div>
+                                        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 shadow-inner group-hover:scale-110 transition-transform duration-300">
+                                            <Users className="h-6 w-6" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="overflow-hidden border border-amber-100 bg-amber-50/50 shadow-sm dark:border-amber-500/20 dark:bg-amber-500/10 group">
+                                <CardContent className="p-5">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <div className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 opacity-70">Inactive</div>
+                                            <div className="mt-2 text-3xl font-black text-slate-900 dark:text-white">{progStats.inactive}</div>
+                                        </div>
+                                        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 shadow-inner group-hover:scale-110 transition-transform duration-300">
+                                            <BookOpen className="h-6 w-6" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="overflow-hidden border border-purple-100 bg-purple-50/50 shadow-sm dark:border-purple-500/20 dark:bg-purple-500/10 group">
+                                <CardContent className="p-5">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <div className="text-[10px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400 opacity-70">Departments</div>
+                                            <div className="mt-2 text-3xl font-black text-slate-900 dark:text-white">{progStats.departments}</div>
+                                        </div>
+                                        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400 shadow-inner group-hover:scale-110 transition-transform duration-300">
+                                            <Users className="h-6 w-6" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {/* Programs table card */}
+                        <Card className="border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-[#0B192C]/50">
+                            <CardHeader className="pb-3">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <CardTitle className="text-sm text-slate-800 dark:text-white">All Programs</CardTitle>
+                                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center">
+                                        <Select value={progStatusFilter} onValueChange={(v) => setProgStatusFilter(v as any)}>
+                                            <SelectTrigger className="h-9 bg-white dark:bg-slate-700">
+                                                <SelectValue placeholder="All Status" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Status</SelectItem>
+                                                <SelectItem value="active">Active</SelectItem>
+                                                <SelectItem value="inactive">Inactive</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <Select value={progDeptFilter} onValueChange={(v) => setProgDeptFilter(v as any)}>
+                                            <SelectTrigger className="h-9 bg-white dark:bg-slate-700">
+                                                <SelectValue placeholder="All Departments" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Departments</SelectItem>
+                                                {progDepartments.map((dept) => (
+                                                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <div className="relative col-span-2">
+                                            <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                            <Input
+                                                placeholder="Search programs..."
+                                                className="h-9 bg-white pl-9 dark:bg-slate-700 dark:text-slate-300"
+                                                value={progSearch}
+                                                onChange={(e) => setProgSearch(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="pt-0">
+                                {progPagedRows.length === 0 ? (
+                                    <div className="py-12 text-center text-slate-500 dark:text-slate-400">No programs found.</div>
+                                ) : (
+                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                        {progPagedRows.map((r) => (
+                                            <Card key={r.id} className="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white/80 shadow-sm backdrop-blur transition-all duration-200 hover:shadow-md dark:border-slate-700 dark:bg-[#0B192C]/50">
+                                                {/* Card header gradient */}
+                                                <div className="relative rounded-t-2xl bg-gradient-to-r from-[#0b2d66] via-[#103875] to-[#1e40af] px-5 pt-5 pb-4">
+                                                    <div className="min-w-0 pr-24">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-1">
+                                                                <div className="font-mono text-[11px] text-white/90">{r.code}</div>
+                                                            </div>
+                                                            <Badge className={r.status === 'active' ? 'bg-emerald-600 hover:bg-emerald-600' : 'bg-amber-500 hover:bg-amber-500'}>
+                                                                {r.status}
+                                                            </Badge>
+                                                        </div>
+                                                        <h3 className="mt-3 truncate text-base font-semibold tracking-tight text-white">{r.name}</h3>
+                                                        {r.description ? (
+                                                            <p className="mt-1 line-clamp-2 text-sm text-white/80">{r.description}</p>
+                                                        ) : (
+                                                            <p className="mt-1 line-clamp-2 text-sm text-white/70">No description available</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-4 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent dark:via-slate-700" />
+
+                                                {/* Card body */}
+                                                <div className="px-5 pt-4 pb-14">
+                                                    <div className="grid grid-cols-3 gap-3">
+                                                        <div>
+                                                            <div className="text-[11px] font-medium tracking-wide text-slate-500 uppercase dark:text-slate-400">Department</div>
+                                                            <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{r.department}</div>
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-[11px] font-medium tracking-wide text-slate-500 uppercase dark:text-slate-400">Duration</div>
+                                                            <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{r.duration}</div>
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-[11px] font-medium tracking-wide text-slate-500 uppercase dark:text-slate-400">Students</div>
+                                                            <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{r.studentCount}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="pointer-events-none mt-4 h-1 w-0 bg-gradient-to-r from-[#0b2d66] via-[#23509A] to-[#1e40af] transition-all duration-200 group-hover:w-full" />
+
+                                                    {/* Actions */}
+                                                    <div className="absolute right-4 bottom-4 flex items-center gap-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => router.visit(`/admin/programs/${r.id}`)}
+                                                            className="inline-flex items-center justify-center rounded-lg border border-blue-200/60 p-2 text-blue-700 hover:bg-blue-50 hover:text-blue-800 dark:border-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/40"
+                                                            aria-label="View"
+                                                        >
+                                                            <Eye className="h-4 w-4" />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => router.visit(`/admin/programs/${r.id}/edit`)}
+                                                            className="inline-flex items-center justify-center rounded-lg border border-emerald-200/60 p-2 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 dark:border-emerald-900/40 dark:text-emerald-300 dark:hover:bg-emerald-900/40"
+                                                            aria-label="Edit"
+                                                        >
+                                                            <Edit className="h-4 w-4" />
+                                                        </button>
+                                                        {r.status === 'active' ? (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => router.post(adminProgramsArchive(r.id))}
+                                                                className="inline-flex items-center justify-center rounded-lg border border-amber-200/60 p-2 text-amber-700 hover:bg-amber-50 hover:text-amber-800 dark:border-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/40"
+                                                                aria-label="Archive"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </button>
+                                                        ) : (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => router.post(adminProgramsUnarchive(r.id))}
+                                                                className="inline-flex items-center justify-center rounded-lg border border-blue-200/60 p-2 text-blue-700 hover:bg-blue-50 hover:text-blue-800 dark:border-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/40"
+                                                                aria-label="Unarchive"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Pagination */}
+                                <div className="mt-3 flex flex-col gap-2 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between dark:text-slate-400">
+                                    <div>
+                                        Showing {progFilteredRows.length === 0 ? 0 : (Math.min(Math.max(progPageIndex, 1), progTotalPages) - 1) * progPageSize + 1} to{' '}
+                                        {Math.min(Math.min(Math.max(progPageIndex, 1), progTotalPages) * progPageSize, progFilteredRows.length)} of {progFilteredRows.length} entries
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
+                                            Show
+                                            <select
+                                                value={progPageSize}
+                                                onChange={(e) => setProgPageSize(Number(e.target.value) || 5)}
+                                                className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                                            >
+                                                <option value={5}>5</option>
+                                                <option value={10}>10</option>
+                                                <option value={15}>15</option>
+                                                <option value={20}>20</option>
+                                            </select>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                type="button"
+                                                className="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-700"
+                                                onClick={() => setProgPageIndex((p) => Math.max(1, p - 1))}
+                                                disabled={progPageIndex <= 1}
+                                            >Prev</button>
+                                            {Array.from({ length: progTotalPages }).slice(0, 5).map((_, idx) => {
+                                                const num = idx + 1;
+                                                return (
+                                                    <button
+                                                        key={num}
+                                                        type="button"
+                                                        onClick={() => setProgPageIndex(num)}
+                                                        className={'rounded-md px-2 py-1 ' + (progPageIndex === num ? 'bg-[#23509A] text-white' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700')}
+                                                    >{num}</button>
+                                                );
+                                            })}
+                                            <button
+                                                type="button"
+                                                className="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-700"
+                                                onClick={() => setProgPageIndex((p) => Math.min(progTotalPages, p + 1))}
+                                                disabled={progPageIndex >= progTotalPages}
+                                            >Next</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </>
+                    )} {/* end activeTab === 'programs' */}
+
+                </div>
+            </div>
+
+            {/* View Student Dialog (Users tab) */}
+            <ViewStudentDialog
+                open={viewOpen}
+                onOpenChange={setViewOpen}
+                student={viewStudent as any}
+            />
+
+            {/* Create Program Modal (Programs tab) */}
+            <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+                <DialogContent className="bg-white sm:max-w-[600px] dark:bg-slate-800">
+                    <DialogHeader>
+                        <DialogTitle className="text-slate-900 dark:text-white">Create New Program</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleProgSubmit} className="space-y-6">
+                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                            <div className="space-y-2">
+                                <Label htmlFor="prog-name" className="text-sm font-medium text-slate-700 dark:text-slate-300">Program Name *</Label>
+                                <Input
+                                    id="prog-name"
+                                    type="text"
+                                    value={progData.name}
+                                    onChange={(e) => setProgData('name', e.target.value)}
+                                    className="bg-white dark:bg-slate-700 dark:text-slate-300"
+                                    placeholder="e.g., Bachelor of Science in Computer Science"
+                                    required
+                                />
+                                {progErrors.name && <p className="text-sm text-red-600 dark:text-red-400">{progErrors.name}</p>}
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="prog-code" className="text-sm font-medium text-slate-700 dark:text-slate-300">Program Code *</Label>
+                                <Input
+                                    id="prog-code"
+                                    type="text"
+                                    value={progData.code}
+                                    onChange={(e) => setProgData('code', e.target.value)}
+                                    className="bg-white font-mono dark:bg-slate-700 dark:text-slate-300"
+                                    placeholder="e.g., BSCS"
+                                    required
+                                />
+                                {progErrors.code && <p className="text-sm text-red-600 dark:text-red-400">{progErrors.code}</p>}
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="prog-dept" className="text-sm font-medium text-slate-700 dark:text-slate-300">Department</Label>
+                                <Input
+                                    id="prog-dept"
+                                    type="text"
+                                    value={progData.department}
+                                    onChange={(e) => setProgData('department', e.target.value)}
+                                    className="bg-white dark:bg-slate-700 dark:text-slate-300"
+                                    placeholder="e.g., College of Engineering"
+                                />
+                                {progErrors.department && <p className="text-sm text-red-600 dark:text-red-400">{progErrors.department}</p>}
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="prog-duration" className="text-sm font-medium text-slate-700 dark:text-slate-300">Duration</Label>
+                                <Input
+                                    id="prog-duration"
+                                    type="text"
+                                    value={progData.duration}
+                                    onChange={(e) => setProgData('duration', e.target.value)}
+                                    className="bg-white dark:bg-slate-700 dark:text-slate-300"
+                                    placeholder="e.g., 4 years"
+                                />
+                                {progErrors.duration && <p className="text-sm text-red-600 dark:text-red-400">{progErrors.duration}</p>}
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="prog-desc" className="text-sm font-medium text-slate-700 dark:text-slate-300">Description</Label>
+                            <Textarea
+                                id="prog-desc"
+                                value={progData.description}
+                                onChange={(e) => setProgData('description', e.target.value)}
+                                className="min-h-[100px] bg-white dark:bg-slate-700 dark:text-slate-300"
+                                placeholder="Enter a detailed description of the program..."
+                                rows={4}
+                            />
+                            {progErrors.description && <p className="text-sm text-red-600 dark:text-red-400">{progErrors.description}</p>}
+                        </div>
+                        <div className="flex items-center space-x-3">
+                            <Checkbox
+                                id="prog-active"
+                                checked={progData.is_active}
+                                onCheckedChange={(checked: boolean) => setProgData('is_active', checked)}
+                            />
+                            <Label htmlFor="prog-active" className="text-sm font-medium text-slate-700 dark:text-slate-300">Active Program</Label>
+                        </div>
+                        <div className="flex items-center justify-end gap-4 border-t border-slate-200 pt-6 dark:border-slate-700">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => { setIsCreateModalOpen(false); progReset(); }}
+                                className="border-slate-300 text-slate-700 dark:border-slate-600 dark:text-slate-300"
+                            >Cancel</Button>
+                            <Button
+                                type="submit"
+                                disabled={progProcessing}
+                                className="bg-blue-600 text-white hover:bg-blue-700"
+                            >
+                                {progProcessing ? 'Creating...' : 'Create Program'}
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
+        </AdminLayout>
+    );
+}

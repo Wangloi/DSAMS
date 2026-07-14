@@ -1,0 +1,347 @@
+import { Archive, Eye, FileText, Pencil, Search, X } from 'lucide-react';
+import { useState, type Dispatch, type SetStateAction } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import type { SlipRow } from './types';
+
+type Props = {
+    pagedSlips: SlipRow[];
+    filteredCount: number;
+    pageIndex: number;
+    setPageIndex: Dispatch<SetStateAction<number>>;
+    pageSize: number;
+    setPageSize: Dispatch<SetStateAction<number>>;
+    printSlip: (s: SlipRow) => void;
+    searchQuery?: string;
+    setSearchQuery?: Dispatch<SetStateAction<string>>;
+    onEdit?: (slip: SlipRow) => void;
+    onArchive?: (slip: SlipRow) => void;
+    activeTab?: 'all' | 'pending' | 'approved' | 'rejected';
+    setActiveTab?: Dispatch<
+        SetStateAction<'all' | 'pending' | 'approved' | 'rejected'>
+    >;
+};
+
+function statusBadge(status: string) {
+    const normalized = (status || 'PENDING').toUpperCase();
+    const cls = [
+        'inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider border-0',
+        normalized === 'APPROVED'
+            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+            : normalized === 'REJECTED'
+              ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
+              : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    ].join(' ');
+    return <span className={cls}>{normalized}</span>;
+}
+
+export default function AdmissionSlipTableCard({
+    pagedSlips,
+    filteredCount,
+    pageIndex,
+    setPageIndex,
+    pageSize,
+    setPageSize,
+    printSlip,
+    searchQuery,
+    setSearchQuery,
+    onEdit,
+    onArchive,
+    activeTab,
+    setActiveTab,
+}: Props) {
+    const [viewOpen, setViewOpen] = useState(false);
+    const [viewingSlip, setViewingSlip] = useState<SlipRow | null>(null);
+
+    const totalPages = Math.max(1, Math.ceil(filteredCount / pageSize));
+
+    return (
+        <Card className="w-full overflow-hidden border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-[#0B192C]/50">
+            {/* VIEW DIALOG */}
+            <Dialog
+                open={viewOpen}
+                onOpenChange={(open) => {
+                    setViewOpen(open);
+                    if (!open) setViewingSlip(null);
+                }}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Admission Slip</DialogTitle>
+                        <DialogDescription>
+                            Review details before printing
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {viewingSlip ? (
+                        <div className="space-y-3">
+                            <div>Name: {viewingSlip.studentName}</div>
+                            <div>Program: {viewingSlip.programYear}</div>
+                            <div>Date: {viewingSlip.dateIssued}</div>
+                            <div>Valid Until: {viewingSlip.validUntil}</div>
+                        </div>
+                    ) : (
+                        <div>No slip selected</div>
+                    )}
+
+                    <DialogFooter>
+                        <Button onClick={() => setViewOpen(false)}>
+                            Close
+                        </Button>
+
+                        <Button
+                            disabled={!viewingSlip}
+                            onClick={() => {
+                                if (viewingSlip) printSlip(viewingSlip);
+                            }}
+                        >
+                            <Eye className="mr-1 h-4 w-4" />
+                            Print
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* HEADER */}
+            <CardHeader className="border-b border-slate-100 pb-6 dark:border-slate-800">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <CardTitle className="text-lg font-bold text-slate-900 dark:text-white">
+                            Admission Slip List
+                        </CardTitle>
+                        <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                            Total: {filteredCount} slips found
+                        </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 sm:items-center">
+                        <Select
+                            value={activeTab ?? 'all'}
+                            onValueChange={(v) => {
+                                if (setActiveTab)
+                                    setActiveTab(
+                                        v as
+                                            | 'all'
+                                            | 'pending'
+                                            | 'approved'
+                                            | 'rejected',
+                                    );
+                                setPageIndex(1);
+                            }}
+                        >
+                            <SelectTrigger className="h-9 w-full border-slate-200 bg-slate-50 text-xs font-bold sm:w-32 dark:border-slate-700 dark:bg-slate-800">
+                                <SelectValue placeholder="All Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Status</SelectItem>
+                                <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="approved">
+                                    Approved
+                                </SelectItem>
+                                <SelectItem value="rejected">
+                                    Rejected
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <div className="relative w-full sm:w-64">
+                            <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <Input
+                                placeholder="Search admission slips..."
+                                className="h-9 border-slate-200 bg-slate-50 pl-9 text-xs font-medium dark:border-slate-700 dark:bg-slate-800"
+                                value={searchQuery ?? ''}
+                                onChange={(e) => {
+                                    if (!setSearchQuery) return;
+                                    setSearchQuery(e.target.value);
+                                    setPageIndex(1);
+                                }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </CardHeader>
+
+            {/* Active Filter Indicator */}
+            {((activeTab && activeTab !== 'all') || (searchQuery && searchQuery.trim())) && (
+                <div className="flex items-center gap-2 px-6 py-2.5 bg-blue-50/80 dark:bg-blue-950/30 border-b border-blue-100 dark:border-blue-900/40">
+                    <span className="text-xs font-medium text-blue-700 dark:text-blue-400">Filtered by:</span>
+                    {activeTab && activeTab !== 'all' && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 dark:bg-blue-900/50 px-2.5 py-0.5 text-[11px] font-bold text-blue-800 dark:text-blue-300 capitalize">
+                            {activeTab}
+                        </span>
+                    )}
+                    {searchQuery && searchQuery.trim() && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 dark:bg-blue-900/50 px-2.5 py-0.5 text-[11px] font-bold text-blue-800 dark:text-blue-300">
+                            "{searchQuery.trim()}"
+                        </span>
+                    )}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (setActiveTab) setActiveTab('all');
+                            if (setSearchQuery) setSearchQuery('');
+                            setPageIndex(1);
+                        }}
+                        className="ml-auto inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 underline underline-offset-2 transition-colors"
+                    >
+                        <X className="h-3 w-3" />
+                        Clear all
+                    </button>
+                </div>
+            )}
+
+            {/* TABLE */}
+            <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-left text-sm">
+                        <thead className="bg-slate-50 text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
+                            <tr>
+                                <th className="w-12 px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
+                                    #
+                                </th>
+                                <th className="px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
+                                    Student
+                                </th>
+                                <th className="px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
+                                    Date Issued
+                                </th>
+                                <th className="px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
+                                    Valid Until
+                                </th>
+                                <th className="px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
+                                    Status
+                                </th>
+                                <th className="px-6 py-4 text-right text-[10px] font-bold tracking-wider uppercase">
+                                    Action
+                                </th>
+                            </tr>
+                        </thead>
+
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                            {pagedSlips.length === 0 ? (
+                                <tr>
+                                    <td
+                                        colSpan={6}
+                                        className="px-6 py-10 text-center"
+                                    >
+                                        <div className="flex flex-col items-center gap-2">
+                                            <div className="grid h-10 w-10 place-items-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400">
+                                                <FileText className="h-5 w-5" />
+                                            </div>
+                                            <div className="text-sm font-medium text-slate-900 dark:text-white">No admission slips found</div>
+                                            <div className="text-[11px] text-slate-500 dark:text-slate-400">Try adjusting your filters or search query above</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : (
+                                pagedSlips.map((slip, idx) => (
+                                    <tr
+                                        key={slip.id}
+                                        className="transition-colors duration-200 hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
+                                    >
+                                        <td className="px-6 py-4 font-medium text-slate-500 dark:text-slate-400">
+                                            {(pageIndex - 1) * pageSize +
+                                                idx +
+                                                1}
+                                        </td>
+
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-[11px] font-black text-slate-600 uppercase ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700">
+                                                    {slip.studentName
+                                                        .split(' ')
+                                                        .map((n) => n[0])
+                                                        .join('')
+                                                        .toUpperCase()
+                                                        .slice(0, 2)}
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-slate-900 dark:text-white">
+                                                        {slip.studentName}
+                                                    </div>
+                                                    <div className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                                                        {slip.programYear}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        <td className="px-6 py-4 font-medium text-slate-600 dark:text-slate-400">
+                                            {slip.dateIssued}
+                                        </td>
+                                        <td className="px-6 py-4 font-medium text-slate-600 dark:text-slate-400">
+                                            {slip.validUntil}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {statusBadge(slip.status)}
+                                        </td>
+
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-1">
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 w-8 p-0 text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                                                    onClick={() => {
+                                                        setViewingSlip(slip);
+                                                        setViewOpen(true);
+                                                    }}
+                                                    title="View slip"
+                                                >                                                    <Eye className="h-4 w-4" />
+                                                </Button>
+                                                {onEdit && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                                                        onClick={() =>
+                                                            onEdit(slip)
+                                                        }
+                                                        title="Edit slip"
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                                {onArchive && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-8 w-8 p-0 text-amber-600 hover:bg-amber-50 hover:text-amber-700 dark:text-amber-400 dark:hover:bg-amber-900/20"
+                                                        onClick={() =>
+                                                            onArchive(slip)
+                                                        }
+                                                        title="Archive slip"
+                                                    >
+                                                        <Archive className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}

@@ -1,0 +1,72 @@
+<?php
+
+namespace App\Http\Controllers\Settings;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Settings\ProfileDeleteRequest;
+use App\Http\Requests\Settings\ProfileUpdateRequest;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use App\Support\ActiveAuth;
+use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class ProfileController extends Controller
+{
+    /**
+     * Show the user's profile settings page.
+     */
+    public function edit(Request $request): Response
+    {
+        ActiveAuth::setDefaultGuard($request);
+        $user = $request->user();
+
+        return Inertia::render('settings/profile', [
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
+            'status' => $request->session()->get('status'),
+        ]);
+    }
+
+    /**
+     * Update the user's profile settings.
+     */
+    public function update(ProfileUpdateRequest $request): RedirectResponse
+    {
+        ActiveAuth::setDefaultGuard($request);
+        $request->user()->fill($request->validated());
+
+        if ($request->user()->isDirty('email')) {
+            $request->user()->email_verified_at = null;
+        }
+
+        $request->user()->save();
+
+        return to_route('profile.edit');
+    }
+
+    /**
+     * Delete the user's account.
+     */
+    public function destroy(ProfileDeleteRequest $request): RedirectResponse
+    {
+        $guard = ActiveAuth::setDefaultGuard($request) ?? 'web';
+        $user = $request->user();
+
+        Auth::guard($guard)->logout();
+        $user->delete();
+
+        $request->session()->forget('active_guard');
+
+        $anotherLoggedIn = collect(ActiveAuth::GUARDS)
+            ->contains(fn (string $g) => $g !== $guard && Auth::guard($g)->check());
+
+        if (! $anotherLoggedIn) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
+
+        return redirect('/');
+    }
+}

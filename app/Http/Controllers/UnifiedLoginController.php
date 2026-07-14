@@ -1,0 +1,57 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
+
+class UnifiedLoginController extends Controller
+{
+    public function login(Request $request)
+    {
+        $credentials = $request->validate([
+            'identifier' => ['required', 'string'],
+            'password' => ['required', 'string'],
+        ]);
+
+        $identifier = $request->input('identifier');
+        $password = $request->input('password');
+        $remember = $request->boolean('remember');
+
+        // List of guards to try
+        $guards = ['student', 'admin', 'program_head'];
+        $dashboardRoutes = [
+            'student' => route('student.dashboard'),
+            'admin' => route('admin.dashboard'),
+            'program_head' => route('program-head.dashboard'),
+        ];
+
+        // Try student guard first with student_id, then with email
+        if (Auth::guard('student')->attempt(['student_id' => $identifier, 'password' => $password], $remember)) {
+            $request->session()->regenerate();
+            return redirect()->intended($dashboardRoutes['student']);
+        }
+        if (Auth::guard('student')->attempt(['email' => $identifier, 'password' => $password], $remember)) {
+            $request->session()->regenerate();
+            return redirect()->intended($dashboardRoutes['student']);
+        }
+
+        // Try admin guard with email
+        if (Auth::guard('admin')->attempt(['email' => $identifier, 'password' => $password], $remember)) {
+            $request->session()->regenerate();
+            return redirect()->intended($dashboardRoutes['admin']);
+        }
+
+        // Try program_head guard with email (or username if they use username, but assuming email based on original code)
+        if (Auth::guard('program_head')->attempt(['email' => $identifier, 'password' => $password], $remember)) {
+            $request->session()->regenerate();
+            return redirect()->intended($dashboardRoutes['program_head']);
+        }
+
+        // If none of the guards worked, throw validation exception
+        throw ValidationException::withMessages([
+            'identifier' => trans('auth.failed'),
+        ]);
+    }
+}

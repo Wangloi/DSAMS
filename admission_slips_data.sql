@@ -1,0 +1,12 @@
+-- Admission slips data insert statements
+INSERT INTO `admission_slips` (`id`, `student_id`, `student_name`, `program_year_level`, `date_issued`, `case_text`, `reason_text`, `valid_until`, `status`, `is_archived`, `created_at`, `updated_at`) VALUES
+	(1, 2, 'LEDDA ACIERTO', 'Hospitality Management Program - 3rd Year', '2025-10-15', 'Medical Emergency', 'Student experienced sudden illness during class', '2025-10-22', 'APPROVED', 0, '2025-10-15 09:30:00', '2025-10-15 10:15:00'),
+	(2, 3, 'AGCOPRA ABINES', 'Hospitality Management Program - 3rd Year', '2025-10-14', 'Family Emergency', 'Death in the family requires student to attend funeral', '2025-10-21', 'APPROVED', 0, '2025-10-14 14:20:00', '2025-10-14 15:45:00'),
+	(3, 4, 'ABAO ZARATE', 'Hospitality Management Program - 2nd Year', '2025-10-16', 'Dental Appointment', 'Student has scheduled dental surgery', '2025-10-17', 'PENDING', 0, '2025-10-16 08:00:00', '2025-10-16 08:00:00'),
+	(4, 8, 'ROA CLARENCE MANUEL', 'Hospitality Management Program - 2nd Year', '2025-10-13', 'Personal Business', 'Student needs to process important documents', '2025-10-15', 'APPROVED', 0, '2025-10-13 11:30:00', '2025-10-13 13:20:00'),
+	(5, 9, 'LLIDO AUSTIN BOB', 'Business Administration Program - 3rd Year', '2025-10-12', 'Academic Competition', 'Student representing school in regional competition', '2025-10-14', 'APPROVED', 0, '2025-10-12 07:45:00', '2025-10-12 09:30:00'),
+	(6, 10, 'MIGUELA FERNANDO', 'Hospitality Management Program - 4th Year', '2025-10-11', 'Medical Check-up', 'Annual medical examination required', '2025-10-12', 'COMPLETED', 1, '2025-10-11 10:00:00', '2025-10-12 16:30:00'),
+	(7, 11, 'DOCUMENTO MILCA', 'Business Administration Program - 1st Year', '2025-10-15', 'Counseling Session', 'Student requested guidance counseling', '2025-10-15', 'PENDING', 0, '2025-10-15 13:15:00', '2025-10-15 13:15:00'),
+	(8, 12, 'SALVACION ENJEL', 'Business Administration Program - 4th Year', '2025-10-10', 'Visiting Relatives', 'Family visiting from abroad', '2025-10-12', 'APPROVED', 0, '2025-10-10 09:00:00', '2025-10-10 10:30:00'),
+	(9, 13, 'GENSON ANALIZA GRACE', 'Hospitality Management Program - 3rd Year', '2025-10-14', 'Legal Matter', 'Student needs to attend court hearing', '2025-10-16', 'APPROVED', 0, '2025-10-14 08:30:00', '2025-10-14 11:45:00'),
+	(10, 14, 'VEGA LOUIZ ARTH', 'Business Administration Program - 3rd Year', '2025-10-15', 'Workshop/Seminar', 'Professional development workshop attendance', '2025-10-16', 'PENDING', 0, '2025-10-15 10:45:00', '2025-10-15 10:45:00');
