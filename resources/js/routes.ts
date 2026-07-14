@@ -10,6 +10,12 @@ export const studentAttendanceScannerPortal = (eventId: number | string) =>
     `/student/attendance/scanner-portal/${eventId}`;
 export const studentAttendanceScan = (eventId: number | string) =>
     `/student/attendance/${eventId}/scan`;
+export const studentAttendanceDynamicQrScan = (eventId: number | string) =>
+    `/student/attendance/${eventId}/dynamic-qr-scan`;
+export const adminAttendanceDynamicQr = (eventId: number | string) =>
+    `/admin/attendance/${eventId}/dynamic-qr`;
+export const adminAttendanceDynamicQrToken = (eventId: number | string) =>
+    `/admin/attendance/${eventId}/dynamic-qr/token`;
 export const studentEvaluationShow = (evaluationId: number | string) =>
     `/student/evaluation/${evaluationId}`;
 export const studentEvaluationSubmit = (evaluationId: number | string) =>

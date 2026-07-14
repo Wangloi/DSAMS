@@ -131,13 +131,14 @@ class StudentDashboardController extends Controller
             ->get()
             ->map(function ($event) {
                 return [
-                    'id' => $event->id,
-                    'title' => $event->event_name,
-                    'date' => $event->event_date->format('M d, Y'),
-                    'time' => $event->event_time,
-                    'location' => $event->location,
-                    'description' => $event->description,
-                    'status' => $event->status,
+                    'id'                   => $event->id,
+                    'title'                => $event->event_name,
+                    'date'                 => $event->event_date->format('M d, Y'),
+                    'time'                 => $event->event_time,
+                    'location'             => $event->location,
+                    'description'          => $event->description,
+                    'status'               => $event->status,
+                    'scanner_portal_active' => (bool) ($event->scanner_portal_active ?? false),
                 ];
             });
     }

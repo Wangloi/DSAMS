@@ -29,6 +29,7 @@ use App\Http\Controllers\StudentEventsController;
 use App\Http\Controllers\ProgramHeadLoginController;
 use App\Http\Controllers\UnifiedLoginController;
 use App\Http\Controllers\ProgramHeadEventsController;
+use App\Http\Controllers\DynamicAttendanceQrController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
@@ -104,6 +105,39 @@ Route::get('/student/attendance/scanner-portal/{event}', [StudentAttendanceContr
 Route::post('/student/attendance/{event}/scan', [StudentAttendanceController::class, 'scanAttendance'])
     ->middleware(['auth:student', 'approved'])
     ->name('student.attendance.scan');
+
+// Dynamic QR self check-in (student scans the admin's rotating QR)
+Route::get('/student/attendance/{event}/dynamic-qr-scan', function (\App\Models\Event $event) {
+    $student = auth()->guard('student')->user();
+    if (! $student) { abort(403); }
+    return \Inertia\Inertia::render('student/attendance/dynamic-qr-scan', [
+        'event' => [
+            'id'                  => $event->id,
+            'name'                => $event->event_name,
+            'date'                => optional($event->event_date)->format('Y-m-d'),
+            'location'            => $event->location,
+            'geofenceEnabled'     => (bool) ($event->geofence_enabled ?? false),
+            'geofenceLatitude'    => $event->geofence_latitude,
+            'geofenceLongitude'   => $event->geofence_longitude,
+            'geofenceRadiusM'     => (int) ($event->geofence_radius_m ?? 50),
+            'scannerPortalActive' => (bool) $event->scanner_portal_active,
+        ],
+    ]);
+})->middleware(['auth:student', 'approved'])->name('student.attendance.dynamic-qr-scan');
+
+Route::post('/student/attendance/{event}/dynamic-qr-scan', [StudentAttendanceController::class, 'dynamicQrScan'])
+    ->middleware(['auth:student', 'approved'])
+    ->name('student.attendance.dynamic-qr-scan.submit');
+
+// Admin: display rotating QR code for projector / monitor
+Route::get('/admin/attendance/{event}/dynamic-qr', [DynamicAttendanceQrController::class, 'show'])
+    ->middleware(['web', 'auth:admin'])
+    ->name('admin.attendance.dynamic-qr');
+
+// Admin API: generate a fresh short-lived token (polled every 30 s by the QR display page)
+Route::get('/admin/attendance/{event}/dynamic-qr/token', [DynamicAttendanceQrController::class, 'token'])
+    ->middleware(['web', 'auth:admin'])
+    ->name('admin.attendance.dynamic-qr.token');
 
 Route::get('/student/evaluation/{evaluation}', [StudentEvaluationController::class, 'show'])
     ->middleware(['auth:student', 'approved'])

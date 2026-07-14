@@ -20,6 +20,8 @@ class Attendance extends Model
         'check_in_longitude',
         'check_in_accuracy_m',
         'check_in_distance_m',
+        'check_in_token_id',
+        'check_in_user_agent',
         'check_out_latitude',
         'check_out_longitude',
         'check_out_accuracy_m',

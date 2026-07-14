@@ -7,12 +7,13 @@ import {
     Printer,
     QrCode,
     Search,
+    Tv2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { adminQrScanner } from '@/routes';
+import { adminAttendanceDynamicQr, adminQrScanner } from '@/routes';
 
 type AttendanceRow = {
     id: string;
@@ -380,6 +381,21 @@ export default function AttendanceTable({
                                                         title="Open Scanner Portal"
                                                     >
                                                         <QrCode className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                                {!hideScanner && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-violet-50 hover:text-violet-600 dark:text-slate-400 dark:hover:bg-violet-950/30 dark:hover:text-violet-300"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            router.visit(adminAttendanceDynamicQr(row.id));
+                                                        }}
+                                                        title="Show Dynamic QR (student self-check-in)"
+                                                    >
+                                                        <Tv2 className="h-4 w-4" />
                                                     </Button>
                                                 )}
                                                 <Button

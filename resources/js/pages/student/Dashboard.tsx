@@ -25,6 +25,7 @@ import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
 import {
     studentAdmissionSlipStore,
+    studentAttendanceDynamicQrScan,
     studentCertificates,
     studentEvaluationShow,
     studentIncidentsStore,
@@ -47,6 +48,7 @@ import {
     GraduationCap,
     Info,
     QrCode,
+    ScanLine,
     TrendingUp,
     UserRoundCog,
 } from 'lucide-react';
@@ -85,6 +87,7 @@ type EventRecord = {
     location: string;
     description: string;
     status: string;
+    scanner_portal_active?: boolean;
 };
 
 type Props = {
@@ -140,6 +143,8 @@ export default function StudentDashboard({
         dashboardNotifications.length > 0
             ? dashboardNotifications
             : recentNotifications;
+
+    const activeEvents = events.filter((e) => e.scanner_portal_active);
 
     const [academicYear, setAcademicYear] = useState('2024 - 2025');
     const [reportIncidentOpen, setReportIncidentOpen] = useState(false);
@@ -993,7 +998,53 @@ export default function StudentDashboard({
                         </div>
 
                         {/* MODERN QUICK ACTIONS GRID */}
-                        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+                        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
+                            {/* ACTION: SCAN ATTENDANCE */}
+                            <div className="lg:col-span-1">
+                                <Card
+                                    onClick={() => {
+                                        if (activeEvents.length > 0) {
+                                            router.visit(studentAttendanceDynamicQrScan(activeEvents[0].id));
+                                        } else {
+                                            // Handle no active events or show a message (optional)
+                                            alert("No active attendance sessions at the moment.");
+                                        }
+                                    }}
+                                    className="group relative cursor-pointer overflow-hidden rounded-2xl border-none bg-white shadow-lg backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-violet-500/10 active:scale-[0.98] dark:bg-slate-900/40"
+                                >
+                                    <div className="absolute top-0 right-0 -mt-16 -mr-16 h-32 w-32 rounded-full bg-violet-500/5 blur-3xl transition-colors group-hover:bg-violet-500/10" />
+                                    <CardContent className="p-6">
+                                        <div className="flex flex-col items-center gap-6 text-center sm:flex-row sm:text-left lg:flex-col lg:text-center">
+                                            <div className="relative">
+                                                <div className="absolute -inset-3 rounded-full bg-violet-500/20 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100" />
+                                                <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600 shadow-inner transition-all duration-700 group-hover:scale-110 group-hover:-rotate-3 dark:bg-violet-500/10 dark:text-violet-400">
+                                                    <ScanLine className="h-7 w-7" />
+                                                </div>
+                                            </div>
+                                            <div className="flex-1 space-y-4 w-full">
+                                                <div className="space-y-1">
+                                                    <h3 className="text-lg font-black tracking-tight tracking-wider text-slate-900 uppercase dark:text-white">
+                                                        Scan QR
+                                                    </h3>
+                                                    <p className="text-xs leading-relaxed font-medium text-slate-500 dark:text-slate-400">
+                                                        Check-in to an active
+                                                        event session by scanning
+                                                        the dynamic QR code.
+                                                    </p>
+                                                </div>
+                                                <Button 
+                                                    className="w-full group h-9 rounded-lg border border-violet-600 bg-violet-600 px-5 text-[10px] font-black tracking-[0.2em] text-white uppercase transition-all duration-300 hover:border-violet-300 hover:bg-violet-600 hover:shadow-[0_0_12px_rgba(139,92,246,0.8)] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    disabled={activeEvents.length === 0}
+                                                >
+                                                    {activeEvents.length > 0 ? 'Scan Now' : 'No Active Session'}
+                                                    {activeEvents.length > 0 && <ChevronRight className="ml-1.5 h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
                             {/* ACTION: REPORT INCIDENT */}
                             <div className="lg:col-span-1">
                                 <Card

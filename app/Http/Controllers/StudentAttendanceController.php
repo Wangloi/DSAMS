@@ -605,4 +605,194 @@ class StudentAttendanceController extends Controller
             ],
         ]);
     }
+
+    // ─── Dynamic QR self check-in ─────────────────────────────────────────────
+
+    /**
+     * Student submits a scanned dynamic-QR token to record their own attendance.
+     * The token is single-use and expires after 30 seconds.
+     */
+    public function dynamicQrScan(Request $request, Event $event): JsonResponse
+    {
+        $student = auth()->guard('student')->user();
+
+        if (! $student) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        if ($student->status !== 'approved') {
+            return response()->json(['message' => 'Your account is pending approval.'], 403);
+        }
+
+        // ── Scanner portal must be active ──────────────────────────────────────
+        if (Schema::hasColumn('events', 'scanner_portal_active') && ! (bool) $event->scanner_portal_active) {
+            return response()->json(['message' => 'The attendance session is not active yet.'], 403);
+        }
+
+        if ((string) $event->status === 'completed') {
+            return response()->json(['message' => 'This event is already completed.'], 403);
+        }
+
+        // ── Validate + consume the one-time token ──────────────────────────────
+        $validated = $request->validate([
+            'token'      => 'required|string',
+            'latitude'   => 'nullable|numeric',
+            'longitude'  => 'nullable|numeric',
+            'accuracy_m' => 'nullable|numeric',
+        ]);
+
+        $rawToken = trim((string) $validated['token']);
+        $tokenData = DynamicAttendanceQrController::consumeToken($rawToken);
+
+        if ($tokenData === null) {
+            if (Schema::hasTable('activity_logs')) {
+                ActivityLog::logForUser($student, 'Attendance', 'Denied', 'Dynamic QR token invalid or expired for event #' . $event->id, $request);
+            }
+            return response()->json(['message' => 'QR code has expired or is invalid. Please scan a fresh code.'], 422);
+        }
+
+        // Verify token is bound to this specific event
+        if ((int) ($tokenData['event_id'] ?? 0) !== (int) $event->id) {
+            if (Schema::hasTable('activity_logs')) {
+                ActivityLog::logForUser($student, 'Attendance', 'Denied', 'Dynamic QR token event mismatch for event #' . $event->id, $request);
+            }
+            return response()->json(['message' => 'This QR code is for a different event.'], 422);
+        }
+
+        // ── GPS / Geofence check ───────────────────────────────────────────────
+        $lat      = $validated['latitude']  ?? null;
+        $lng      = $validated['longitude'] ?? null;
+        $accuracyM = $validated['accuracy_m'] ?? null;
+
+        if ((bool) ($event->geofence_enabled ?? false)) {
+            if ($lat === null || $lng === null || $accuracyM === null) {
+                if (Schema::hasTable('activity_logs')) {
+                    ActivityLog::logForUser($student, 'Attendance', 'Denied', 'Location missing for geofenced event #' . $event->id, $request);
+                }
+                return response()->json(['message' => 'Location is required to record attendance for this event.'], 422);
+            }
+
+            $accuracyM = (float) $accuracyM;
+            if ($accuracyM > 50) {
+                return response()->json(['message' => 'Location accuracy is too low. Please move to an open area and try again.'], 422);
+            }
+
+            $eventLat = $event->geofence_latitude;
+            $eventLng = $event->geofence_longitude;
+            $radius   = (int) ($event->geofence_radius_m ?? 50);
+
+            if ($eventLat === null || $eventLng === null) {
+                return response()->json(['message' => 'Event geofence is not configured. Please contact DSA.'], 422);
+            }
+
+            $distance = $this->haversineDistanceMeters((float) $lat, (float) $lng, (float) $eventLat, (float) $eventLng);
+            if ($distance > $radius) {
+                if (Schema::hasTable('activity_logs')) {
+                    ActivityLog::logForUser($student, 'Attendance', 'Denied', "Geofence violation: {$distance}m from event #{$event->id} (radius: {$radius}m)", $request);
+                }
+                return response()->json([
+                    'message'  => 'You are not within the event area. Please move closer to the venue.',
+                    'distance' => (int) round($distance),
+                    'radius'   => $radius,
+                ], 403);
+            }
+        }
+
+        // ── Duplicate check ────────────────────────────────────────────────────
+        $existing = Attendance::query()
+            ->where('event_id', $event->id)
+            ->where('student_id', $student->id)
+            ->first();
+
+        if ($existing) {
+            return response()->json(['message' => 'You have already checked in for this event.'], 409);
+        }
+
+        // ── Pending evaluation gate ────────────────────────────────────────────
+        $studentProgram = $student->course ?? $student->program;
+        if ($studentProgram) {
+            $pendingEvaluations = Evaluation::query()
+                ->join('events', 'evaluations.event_id', '=', 'events.id')
+                ->join('attendances', 'events.id', '=', 'attendances.event_id')
+                ->where('attendances.student_id', $student->id)
+                ->where('attendances.status', 'present')
+                ->where('evaluations.is_active', true)
+                ->where('evaluations.is_archived', false)
+                ->where('events.event_date', '<', $event->event_date)
+                ->whereRaw('LOWER(TRIM(events.organizer)) LIKE ?', ['%' . strtolower($studentProgram) . '%'])
+                ->whereNotExists(function ($query) use ($student) {
+                    $query->select(\DB::raw(1))
+                        ->from('evaluation_responses')
+                        ->whereColumn('evaluation_responses.evaluation_id', 'evaluations.id')
+                        ->where('evaluation_responses.student_id', $student->id);
+                })
+                ->exists();
+
+            if ($pendingEvaluations) {
+                return response()->json([
+                    'message'              => 'You must complete evaluations for previous events before attending this one.',
+                    'requires_evaluation'  => true,
+                ], 422);
+            }
+        }
+
+        // ── Record time and determine status ───────────────────────────────────
+        $now    = Carbon::now();
+        $status = 'present';
+
+        if (! empty($event->registration_end_time)) {
+            $cutoff  = Carbon::parse($event->event_date->format('Y-m-d') . ' ' . $event->registration_end_time);
+            $blockAt = $cutoff->copy()->addMinutes(30);
+
+            if ($now->greaterThanOrEqualTo($blockAt)) {
+                return response()->json(['message' => 'Scanning is closed 30 minutes after the registration end time.'], 403);
+            }
+
+            if ($now->greaterThan($cutoff)) {
+                $status = 'late';
+            }
+        }
+
+        // ── Compute distance for audit ─────────────────────────────────────────
+        $eventLat        = $event->geofence_latitude;
+        $eventLng        = $event->geofence_longitude;
+        $distanceRounded = null;
+        if ((bool) ($event->geofence_enabled ?? false) && $lat !== null && $lng !== null && $eventLat !== null && $eventLng !== null) {
+            $distanceRounded = (int) round($this->haversineDistanceMeters((float) $lat, (float) $lng, (float) $eventLat, (float) $eventLng));
+        }
+
+        // ── Create attendance record ───────────────────────────────────────────
+        $attendance = Attendance::create([
+            'event_id'           => $event->id,
+            'student_id'         => $student->id,
+            'scanned_at'         => $now,
+            'status'             => $status,
+            'checked_in_at'      => $now,
+            'check_in_latitude'  => $lat,
+            'check_in_longitude' => $lng,
+            'check_in_accuracy_m'  => $accuracyM !== null ? (int) round((float) $accuracyM) : null,
+            'check_in_distance_m'  => $distanceRounded,
+            'check_in_token_id'    => $rawToken,
+            'check_in_user_agent'  => $request->userAgent(),
+        ]);
+
+        $event->updateAttendanceCounts();
+        app(StudentNotificationDispatcher::class)->attendanceRecorded($event, $attendance);
+
+        if (Schema::hasTable('activity_logs')) {
+            ActivityLog::logForUser($student, 'Attendance', 'Checked In', "Dynamic QR check-in for event #{$event->id} (status: {$status})", $request);
+        }
+
+        return response()->json([
+            'attendance_id' => $attendance->id,
+            'status'        => $status,
+            'checked_in_at' => $now->toDateTimeString(),
+            'student' => [
+                'id'         => $student->id,
+                'student_id' => $student->student_id,
+                'name'       => $student->name,
+                'program'    => (string) ($student->course ?? $student->program ?? ''),
+            ],
+        ]);
+    }
 }
