@@ -56,18 +56,8 @@ class StudentAttendanceController extends Controller
         return $earthRadius * $c;
     }
 
-    public function scannerPortal(Request $request, Event $event)
+    private function validateScannerAccess(Student $student, Event $event): void
     {
-        $student = auth()->guard('student')->user();
-
-        if (! $student) {
-            abort(403);
-        }
-
-        if ($student->status !== 'approved') {
-            abort(403, 'Your account is pending approval. Please wait for admin verification.');
-        }
-
         $courses = is_array($event->courses) ? $event->courses : [];
         $yearLevels = is_array($event->year_levels) ? $event->year_levels : [];
 
@@ -92,6 +82,252 @@ class StudentAttendanceController extends Controller
         if (! $isManuallyAllowed && (! $courseMatch || ! $yearLevelMatch)) {
             abort(403);
         }
+    }
+
+    private function validateGeofence(Request $request, Event $event, Student $scanner, array $validated): ?JsonResponse
+    {
+        $lat = $validated['latitude'] ?? null;
+        $lng = $validated['longitude'] ?? null;
+        $accuracyM = $validated['accuracy_m'] ?? null;
+
+        if (! (bool) ($event->geofence_enabled ?? false)) {
+            return null;
+        }
+
+        if ($lat === null || $lng === null || $accuracyM === null) {
+            if (Schema::hasTable('activity_logs')) {
+                ActivityLog::logForUser($scanner, 'Attendance', 'Denied', 'Location missing for geofenced event #' . $event->id, $request);
+            }
+            return response()->json(['message' => 'Location is required to record attendance for this event.'], 422);
+        }
+
+        $accuracyM = (float) $accuracyM;
+        if ($accuracyM > 50) {
+            if (Schema::hasTable('activity_logs')) {
+                ActivityLog::logForUser($scanner, 'Attendance', 'Denied', 'Location accuracy too low (' . $accuracyM . 'm) for event #' . $event->id, $request);
+            }
+            return response()->json(['message' => 'Location accuracy is too low. Please move to an open area and try again.'], 422);
+        }
+
+        $eventLat = $event->geofence_latitude;
+        $eventLng = $event->geofence_longitude;
+        $radius = (int) ($event->geofence_radius_m ?? 50);
+        if ($eventLat === null || $eventLng === null) {
+            if (Schema::hasTable('activity_logs')) {
+                ActivityLog::logForUser($scanner, 'Attendance', 'Denied', 'Geofence not configured for event #' . $event->id, $request);
+            }
+            return response()->json(['message' => 'Event geofence is not configured. Please contact DSA.'], 422);
+        }
+
+        $distance = $this->haversineDistanceMeters((float) $lat, (float) $lng, (float) $eventLat, (float) $eventLng);
+        if ($distance > $radius) {
+            if (Schema::hasTable('activity_logs')) {
+                ActivityLog::logForUser($scanner, 'Attendance', 'Denied', "Geofence violation: {$distance}m from event #{$event->id} (radius: {$radius}m)", $request);
+            }
+            return response()->json(['message' => 'You are not within the event area. Please go near the event location to attend.'], 403);
+        }
+
+        return null;
+    }
+
+    private function extractStudentIdFromQr(string $qrValue): string
+    {
+        $studentKey = null;
+        $studentIdValue = null;
+
+        $decoded = json_decode($qrValue, true);
+        if (is_array($decoded)) {
+            if (! empty($decoded['student_id'])) {
+                $studentKey = 'student_id';
+                $studentIdValue = trim((string) $decoded['student_id']);
+            } elseif (! empty($decoded['id'])) {
+                $studentKey = 'id';
+                $studentIdValue = trim((string) $decoded['id']);
+            }
+        }
+
+        if (! $studentKey) {
+            $urlParts = parse_url($qrValue);
+            if (is_array($urlParts) && isset($urlParts['scheme']) && isset($urlParts['host'])) {
+                $qs = [];
+                parse_str((string) ($urlParts['query'] ?? ''), $qs);
+
+                if (! empty($qs['student_id'])) {
+                    $studentIdValue = trim((string) $qs['student_id']);
+                } elseif (! empty($qs['id'])) {
+                    $studentIdValue = trim((string) $qs['id']);
+                } else {
+                    $path = trim((string) ($urlParts['path'] ?? ''), '/');
+                    if ($path !== '') {
+                        $segments = array_values(array_filter(explode('/', $path), fn ($s) => $s !== ''));
+                        $last = trim((string) ($segments[count($segments) - 1] ?? ''));
+                        if ($last !== '') {
+                            $studentIdValue = $last;
+                        }
+                    }
+                }
+            }
+        }
+
+        if ($studentIdValue === null) {
+            $studentIdValue = $qrValue;
+        }
+
+        return trim((string) $studentIdValue);
+    }
+
+    private function checkPendingEvaluations(Student $student, Event $event, Student $scanner, Request $request): ?JsonResponse
+    {
+        $studentProgram = $student->course ?? $student->program;
+
+        if (! $studentProgram) {
+            return null;
+        }
+
+        $pendingEvaluations = Evaluation::query()
+            ->join('events', 'evaluations.event_id', '=', 'events.id')
+            ->join('attendances', 'events.id', '=', 'attendances.event_id')
+            ->where('attendances.student_id', $student->id)
+            ->where('attendances.status', 'present')
+            ->where('evaluations.is_active', true)
+            ->where('evaluations.is_archived', false)
+            ->where('events.event_date', '<', $event->event_date)
+            ->whereRaw('LOWER(TRIM(events.organizer)) LIKE ?', ['%'.strtolower($studentProgram).'%'])
+            ->whereNotExists(function ($query) use ($student) {
+                $query->select(\DB::raw(1))
+                    ->from('evaluation_responses')
+                    ->whereColumn('evaluation_responses.evaluation_id', 'evaluations.id')
+                    ->where('evaluation_responses.student_id', $student->id);
+            })
+            ->exists();
+
+        if ($pendingEvaluations) {
+            if (Schema::hasTable('activity_logs')) {
+                ActivityLog::logForUser($scanner, 'Attendance', 'Denied', 'Pending evaluations for student in event #' . $event->id, $request);
+            }
+            app(StudentNotificationDispatcher::class)->attendanceIssue(
+                $event,
+                $student,
+                'Your attendance for '.(string) $event->event_name.' requires verification because previous evaluations are pending.',
+                'pending_evaluation',
+            );
+
+            return response()->json([
+                'message' => 'You must complete evaluations for previous events before attending this event.',
+                'requires_evaluation' => true,
+            ], 422);
+        }
+
+        return null;
+    }
+
+    private function handleEvaluationNotification(Student $student, Event $event): void
+    {
+        if (Schema::hasTable('evaluations') && Schema::hasTable('notifications')) {
+            /** @var Evaluation|null $evaluation */
+            $evaluation = Evaluation::query()
+                ->where('event_id', $event->id)
+                ->where('is_active', true)
+                ->where('is_archived', false)
+                ->orderByDesc('id')
+                ->first();
+
+            if ($evaluation && Schema::hasTable('evaluation_responses')) {
+                $alreadySubmitted = EvaluationResponse::query()
+                    ->where('evaluation_id', $evaluation->id)
+                    ->where('student_id', $student->id)
+                    ->exists();
+
+                if (! $alreadySubmitted) {
+                    $alreadyNotified = $student
+                        ->notifications()
+                        ->where('data->type', 'evaluation_available')
+                        ->where('data->evaluation_id', $evaluation->id)
+                        ->exists();
+
+                    if (! $alreadyNotified) {
+                        $student->notify(new EvaluationAvailable($evaluation));
+                    }
+                }
+            }
+        }
+    }
+
+    private function getScannerInitialLogRows(Event $event): \Illuminate\Support\Collection
+    {
+        return Attendance::query()
+            ->with('student')
+            ->where('event_id', $event->id)
+            ->orderByDesc('scanned_at')
+            ->limit(100)
+            ->get()
+            ->map(function (Attendance $attendance) {
+                $student = $attendance->student;
+
+                return [
+                    'id' => (string) ($student?->student_id ?? $attendance->student_id),
+                    'name' => (string) ($student?->name ?? ''),
+                    'program' => (string) (($student?->course ?? $student?->program ?? '') ?: '—'),
+                    'time' => optional($attendance->scanned_at)->format('h:i A') ?: '—',
+                    'status' => 'valid',
+                ];
+            })
+            ->values();
+    }
+
+    private function getStudentsByProgram(): \Illuminate\Support\Collection
+    {
+        return Student::query()
+            ->selectRaw("COALESCE(NULLIF(TRIM(course), ''), NULLIF(TRIM(program), ''), '—') as program")
+            ->selectRaw('COUNT(*) as total')
+            ->groupByRaw("COALESCE(NULLIF(TRIM(course), ''), NULLIF(TRIM(program), ''), '—')")
+            ->pluck('total', 'program');
+    }
+
+    private function getSecurityAlerts(Request $request): array
+    {
+        if (! Schema::hasTable('activity_logs')) {
+            return [];
+        }
+
+        return ActivityLog::query()
+            ->where('module', 'Security Monitor')
+            ->where('action', 'ALERT')
+            ->where('ip_address', $request->ip())
+            ->where('created_at', '>=', now()->subMinutes(30))
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get(['id', 'module', 'action', 'details', 'created_at', 'old_value', 'new_value'])
+            ->map(function ($log) {
+                $old = $log->old_value ? json_decode($log->old_value, true) : null;
+                return [
+                    'id' => $log->id,
+                    'module' => $log->module,
+                    'action' => $log->action,
+                    'details' => $log->details,
+                    'timestamp' => $log->created_at?->toDateTimeString(),
+                    'recent_count' => $old['recent_count'] ?? null,
+                    'window_minutes' => $old['window_minutes'] ?? null,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    public function scannerPortal(Request $request, Event $event): \Inertia\Response|\Illuminate\Http\RedirectResponse
+    {
+        /** @var Student|null $student */
+        $student = auth()->guard('student')->user();
+
+        if (! $student) {
+            abort(403);
+        }
+
+        if ($student->status !== 'approved') {
+            abort(403, 'Your account is pending approval. Please wait for admin verification.');
+        }
+
+        $this->validateScannerAccess($student, $event);
 
         if ((string) $event->status === 'completed') {
             if (Schema::hasColumn('events', 'scanner_portal_active') && (bool) $event->scanner_portal_active) {
@@ -118,82 +354,9 @@ class StudentAttendanceController extends Controller
             }
         }
 
-        $initialLogRows = Attendance::query()
-            ->with('student')
-            ->where('event_id', $event->id)
-            ->orderByDesc('scanned_at')
-            ->limit(100)
-            ->get()
-            ->map(function (Attendance $attendance) {
-                $student = $attendance->student;
-
-                return [
-                    'id' => (string) ($student?->student_id ?? $attendance->student_id),
-                    'name' => (string) ($student?->name ?? ''),
-                    'program' => (string) (($student?->course ?? $student?->program ?? '') ?: '—'),
-                    'time' => optional($attendance->scanned_at)->format('h:i A') ?: '—',
-                    'status' => 'valid',
-                ];
-            })
-            ->values();
-
-        $studentsByProgram = Student::query()
-            ->selectRaw("COALESCE(NULLIF(TRIM(course), ''), NULLIF(TRIM(program), ''), '—') as program")
-            ->selectRaw('COUNT(*) as total')
-            ->groupByRaw("COALESCE(NULLIF(TRIM(course), ''), NULLIF(TRIM(program), ''), '—')")
-            ->pluck('total', 'program');
-
-        $alerts = [];
-        if (Schema::hasTable('activity_logs')) {
-            $alerts = ActivityLog::query()
-                ->where('module', 'Security Monitor')
-                ->where('action', 'ALERT')
-                ->where('ip_address', $request->ip())
-                ->where('created_at', '>=', now()->subMinutes(30))
-                ->orderByDesc('created_at')
-                ->limit(5)
-                ->get(['id', 'module', 'action', 'details', 'created_at', 'old_value', 'new_value'])
-                ->map(function ($log) {
-                    $old = $log->old_value ? json_decode($log->old_value, true) : null;
-                    return [
-                        'id' => $log->id,
-                        'module' => $log->module,
-                        'action' => $log->action,
-                        'details' => $log->details,
-                        'timestamp' => $log->created_at?->toDateTimeString(),
-                        'recent_count' => $old['recent_count'] ?? null,
-                        'window_minutes' => $old['window_minutes'] ?? null,
-                    ];
-                })
-                ->values()
-                ->all();
-        }
-
-        $alerts = [];
-        if (Schema::hasTable('activity_logs')) {
-            $alerts = ActivityLog::query()
-                ->where('module', 'Security Monitor')
-                ->where('action', 'ALERT')
-                ->where('ip_address', $request->ip())
-                ->where('created_at', '>=', now()->subMinutes(30))
-                ->orderByDesc('created_at')
-                ->limit(5)
-                ->get(['id', 'module', 'action', 'details', 'created_at', 'old_value', 'new_value'])
-                ->map(function ($log) {
-                    $old = $log->old_value ? json_decode($log->old_value, true) : null;
-                    return [
-                        'id' => $log->id,
-                        'module' => $log->module,
-                        'action' => $log->action,
-                        'details' => $log->details,
-                        'timestamp' => $log->created_at?->toDateTimeString(),
-                        'recent_count' => $old['recent_count'] ?? null,
-                        'window_minutes' => $old['window_minutes'] ?? null,
-                    ];
-                })
-                ->values()
-                ->all();
-        }
+        $initialLogRows = $this->getScannerInitialLogRows($event);
+        $studentsByProgram = $this->getStudentsByProgram();
+        $alerts = $this->getSecurityAlerts($request);
 
         return Inertia::render('student/attendance/scanner-portal', [
             'event' => [
@@ -222,6 +385,7 @@ class StudentAttendanceController extends Controller
             'now' => Carbon::now()->toDateTimeString(),
         ]);
 
+        /** @var Student|null $scanner */
         $scanner = auth()->guard('student')->user();
 
 
@@ -239,30 +403,7 @@ class StudentAttendanceController extends Controller
             abort(403, 'Your account is pending approval. You cannot scan attendance.');
         }
 
-        $courses = is_array($event->courses) ? $event->courses : [];
-        $yearLevels = is_array($event->year_levels) ? $event->year_levels : [];
-
-        $scannerCourse = $scanner->course ?? $scanner->program;
-        $scannerYearLevel = $scanner->year_level;
-
-        $courseMatch = empty($courses) || in_array($scannerCourse, $courses, true);
-        $yearLevelMatch = empty($yearLevels) || in_array($scannerYearLevel, $yearLevels, true);
-
-        $allowed = $event->scanner_student_ids;
-        if (! is_array($allowed)) {
-            $allowed = [];
-        }
-        $legacyAllowed = (string) ($event->scanner_student_id ?? '');
-        if ($legacyAllowed !== '' && ! in_array($legacyAllowed, $allowed, true)) {
-            $allowed[] = $legacyAllowed;
-        }
-
-        $scannerStudentId = (string) ($scanner->student_id ?? '');
-        $isManuallyAllowed = $scannerStudentId !== '' && in_array($scannerStudentId, $allowed, true);
-
-        if (! $isManuallyAllowed && (! $courseMatch || ! $yearLevelMatch)) {
-            abort(403);
-        }
+        $this->validateScannerAccess($scanner, $event);
 
         if ((string) $event->status === 'completed') {
             if (Schema::hasColumn('events', 'scanner_portal_active') && (bool) $event->scanner_portal_active) {
@@ -298,95 +439,21 @@ class StudentAttendanceController extends Controller
             'accuracy_m' => 'nullable|numeric',
         ]);
 
+        $geofenceResponse = $this->validateGeofence($request, $event, $scanner, $validated);
+        if ($geofenceResponse) {
+            return $geofenceResponse;
+        }
+
         $lat = $validated['latitude'] ?? null;
         $lng = $validated['longitude'] ?? null;
         $accuracyM = $validated['accuracy_m'] ?? null;
-
-        if ((bool) ($event->geofence_enabled ?? false)) {
-            if ($lat === null || $lng === null || $accuracyM === null) {
-                if (Schema::hasTable('activity_logs')) {
-                    ActivityLog::logForUser($scanner, 'Attendance', 'Denied', 'Location missing for geofenced event #' . $event->id, $request);
-                }
-                return response()->json(['message' => 'Location is required to record attendance for this event.'], 422);
-            }
-
-            $accuracyM = (float) $accuracyM;
-            if ($accuracyM > 50) {
-                if (Schema::hasTable('activity_logs')) {
-                    ActivityLog::logForUser($scanner, 'Attendance', 'Denied', 'Location accuracy too low (' . $accuracyM . 'm) for event #' . $event->id, $request);
-                }
-                return response()->json(['message' => 'Location accuracy is too low. Please move to an open area and try again.'], 422);
-            }
-
-            $eventLat = $event->geofence_latitude;
-            $eventLng = $event->geofence_longitude;
-            $radius = (int) ($event->geofence_radius_m ?? 50);
-            if ($eventLat === null || $eventLng === null) {
-                if (Schema::hasTable('activity_logs')) {
-                    ActivityLog::logForUser($scanner, 'Attendance', 'Denied', 'Geofence not configured for event #' . $event->id, $request);
-                }
-                return response()->json(['message' => 'Event geofence is not configured. Please contact DSA.'], 422);
-            }
-
-            $distance = $this->haversineDistanceMeters((float) $lat, (float) $lng, (float) $eventLat, (float) $eventLng);
-            if ($distance > $radius) {
-                if (Schema::hasTable('activity_logs')) {
-                    ActivityLog::logForUser($scanner, 'Attendance', 'Denied', "Geofence violation: {$distance}m from event #{$event->id} (radius: {$radius}m)", $request);
-                }
-                return response()->json(['message' => 'You are not within the event area. Please go near the event location to attend.'], 403);
-            }
-        }
 
         $rawValue = trim((string) $validated['value']);
         if ($rawValue === '') {
             return response()->json(['message' => 'Invalid QR value.'], 422);
         }
 
-        $qrValue = $rawValue;
-        $studentKey = null;
-        $studentIdValue = null;
-
-        $decoded = json_decode($qrValue, true);
-        if (is_array($decoded)) {
-            if (! empty($decoded['student_id'])) {
-                $studentKey = 'student_id';
-                $studentIdValue = trim((string) $decoded['student_id']);
-            } elseif (! empty($decoded['id'])) {
-                $studentKey = 'id';
-                $studentIdValue = trim((string) $decoded['id']);
-            }
-        }
-
-        if (! $studentKey) {
-            $urlParts = parse_url($qrValue);
-            if (is_array($urlParts) && isset($urlParts['scheme']) && isset($urlParts['host'])) {
-                $qs = [];
-                parse_str((string) ($urlParts['query'] ?? ''), $qs);
-
-                if (! empty($qs['student_id'])) {
-                    $studentKey = 'student_id';
-                    $studentIdValue = trim((string) $qs['student_id']);
-                } elseif (! empty($qs['id'])) {
-                    $studentKey = 'id';
-                    $studentIdValue = trim((string) $qs['id']);
-                } else {
-                    $path = trim((string) ($urlParts['path'] ?? ''), '/');
-                    if ($path !== '') {
-                        $segments = array_values(array_filter(explode('/', $path), fn ($s) => $s !== ''));
-                        $last = trim((string) ($segments[count($segments) - 1] ?? ''));
-                        if ($last !== '') {
-                            $studentIdValue = $last;
-                        }
-                    }
-                }
-            }
-        }
-
-        if ($studentIdValue === null) {
-            $studentIdValue = $qrValue;
-        }
-
-        $studentIdValue = trim((string) $studentIdValue);
+        $studentIdValue = $this->extractStudentIdFromQr($rawValue);
 
         $student = null;
         if ($studentIdValue !== '') {
@@ -426,43 +493,9 @@ class StudentAttendanceController extends Controller
         }
 
 
-        // Check evaluation requirement before allowing attendance
-        $studentProgram = $student->course ?? $student->program;
-
-        if ($studentProgram) {
-            $pendingEvaluations = Evaluation::query()
-                ->join('events', 'evaluations.event_id', '=', 'events.id')
-                ->join('attendances', 'events.id', '=', 'attendances.event_id')
-                ->where('attendances.student_id', $student->id)
-                ->where('attendances.status', 'present')
-                ->where('evaluations.is_active', true)
-                ->where('evaluations.is_archived', false)
-                ->where('events.event_date', '<', $event->event_date)
-                ->whereRaw('LOWER(TRIM(events.organizer)) LIKE ?', ['%'.strtolower($studentProgram).'%'])
-                ->whereNotExists(function ($query) use ($student) {
-                    $query->select(\DB::raw(1))
-                        ->from('evaluation_responses')
-                        ->whereColumn('evaluation_responses.evaluation_id', 'evaluations.id')
-                        ->where('evaluation_responses.student_id', $student->id);
-                })
-                ->exists();
-
-            if ($pendingEvaluations) {
-                if (Schema::hasTable('activity_logs')) {
-                    ActivityLog::logForUser($scanner, 'Attendance', 'Denied', 'Pending evaluations for student in event #' . $event->id, $request);
-                }
-                app(StudentNotificationDispatcher::class)->attendanceIssue(
-                    $event,
-                    $student,
-                    'Your attendance for '.(string) $event->event_name.' requires verification because previous evaluations are pending.',
-                    'pending_evaluation',
-                );
-
-                return response()->json([
-                    'message' => 'You must complete evaluations for previous events before attending this event.',
-                    'requires_evaluation' => true,
-                ], 422);
-            }
+        $pendingEvalResponse = $this->checkPendingEvaluations($student, $event, $scanner, $request);
+        if ($pendingEvalResponse) {
+            return $pendingEvalResponse;
         }
 
         $now = Carbon::now();
@@ -556,34 +589,7 @@ class StudentAttendanceController extends Controller
             ]);
         }
 
-        if (Schema::hasTable('evaluations') && Schema::hasTable('notifications')) {
-            /** @var \App\Models\Evaluation|null $evaluation */
-            $evaluation = Evaluation::query()
-                ->where('event_id', $event->id)
-                ->where('is_active', true)
-                ->where('is_archived', false)
-                ->orderByDesc('id')
-                ->first();
-
-            if ($evaluation && Schema::hasTable('evaluation_responses')) {
-                $alreadySubmitted = EvaluationResponse::query()
-                    ->where('evaluation_id', $evaluation->id)
-                    ->where('student_id', $student->id)
-                    ->exists();
-
-                if (! $alreadySubmitted) {
-                    $alreadyNotified = $student
-                        ->notifications()
-                        ->where('data->type', 'evaluation_available')
-                        ->where('data->evaluation_id', $evaluation->id)
-                        ->exists();
-
-                    if (! $alreadyNotified) {
-                        $student->notify(new EvaluationAvailable($evaluation));
-                    }
-                }
-            }
-        }
+        $this->handleEvaluationNotification($student, $event);
 
         $event->updateAttendanceCounts();
         app(StudentNotificationDispatcher::class)->attendanceRecorded($event, $attendance);
