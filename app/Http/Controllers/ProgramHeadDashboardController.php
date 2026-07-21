@@ -192,6 +192,40 @@ class ProgramHeadDashboardController extends Controller
         return redirect()->back()->with('success', 'Account status updated successfully.');
     }
 
+    public function bulkSetYearLevel(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+            'year_level' => ['required', 'string', 'in:1st Year,2nd Year,3rd Year,4th Year,Irregular'],
+        ]);
+
+        $programHead = auth()->guard('program_head')->user() ?: auth()->user();
+        $program = is_object($programHead) ? (string) ($programHead->program ?? '') : '';
+
+        if ($program === '') {
+            return redirect()->back()->with('error', 'No program assigned to you.');
+        }
+
+        Student::where('course', $program)
+            ->whereIn('id', $validated['ids'])
+            ->update(['year_level' => $validated['year_level']]);
+
+        if (Schema::hasTable('activity_logs')) {
+            ActivityLog::logForUser(
+                $programHead,
+                'Student Management',
+                'Bulk Updated Year Level',
+                "Bulk set year level to '{$validated['year_level']}' for " . count($validated['ids']) . ' students',
+                $request,
+                ['year_level' => null, 'ids' => $validated['ids']],
+                ['year_level' => $validated['year_level'], 'ids' => $validated['ids']]
+            );
+        }
+
+        return redirect()->back()->with('success', 'Year level updated successfully.');
+    }
+
 
     private function getEvents(): array
     {

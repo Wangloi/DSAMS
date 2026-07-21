@@ -1,5 +1,5 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { Archive, BookOpen, Edit, Eye, Pencil, Plus, Search, Trash2, Users, CheckCircle, XCircle, UserCheck, UserX, ChevronDown } from 'lucide-react';
+import { Archive, BookOpen, Edit, Eye, Pencil, Plus, Search, Trash2, Users, CheckCircle, XCircle, UserCheck, UserX, ChevronDown, GraduationCap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import Swal from 'sweetalert2';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -20,6 +20,9 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
+    DropdownMenuSub,
+    DropdownMenuSubTrigger,
+    DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -166,11 +169,11 @@ export default function AdminManageUsersPage() {
     const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
 
     const handleSelectAll = (checked: boolean) => {
+        const pageIds = pagedStudents.map((u) => Number((u as any).id)).filter((id) => !Number.isNaN(id));
         if (checked) {
-            const ids = pagedStudents.map((u) => Number((u as any).id)).filter((id) => !Number.isNaN(id));
-            setSelectedUserIds(ids);
+            setSelectedUserIds((prev) => Array.from(new Set([...prev, ...pageIds])));
         } else {
-            setSelectedUserIds([]);
+            setSelectedUserIds((prev) => prev.filter(id => !pageIds.includes(id)));
         }
     };
 
@@ -180,6 +183,15 @@ export default function AdminManageUsersPage() {
         } else {
             setSelectedUserIds((prev) => prev.filter((i) => i !== id));
         }
+    };
+
+    const handleSelectByYear = (level: string) => {
+        const ids = students
+            .filter((s: any) => s.yearLevel === level || s.year_level === level)
+            .map((s: any) => Number(s.id))
+            .filter((id) => !Number.isNaN(id));
+        
+        setSelectedUserIds((prev) => Array.from(new Set([...prev, ...ids])));
     };
 
     // ── Programs tab state ─────────────────────────────────────────────────────
@@ -298,7 +310,7 @@ export default function AdminManageUsersPage() {
         );
     }, [students, roleFilter, statusFilter, searchQuery]);
 
-    const pageSize = 10;
+    const [pageSize, setPageSize] = useState(10);
     const totalPages = Math.max(
         1,
         Math.ceil(filteredStudents.length / pageSize),
@@ -686,14 +698,36 @@ export default function AdminManageUsersPage() {
                             <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#0B192C]/50">
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left text-sm border-collapse">
-                                        <thead className="bg-slate-50 text-slate-500 dark:bg-slate-800/50 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800">
+                                        <thead className="border-b border-slate-100 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
                                             <tr>
-                                                <th className="w-12 px-4 py-4">
-                                                    <Checkbox
-                                                        checked={pagedStudents.length > 0 && selectedUserIds.length === pagedStudents.length}
-                                                        onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
-                                                        aria-label="Select all"
-                                                    />
+                                                <th className="w-20 px-6 py-4">
+                                                    <div className="flex items-center gap-1">
+                                                        <Checkbox
+                                                            checked={pagedStudents.length > 0 && pagedStudents.every(u => selectedUserIds.includes(Number((u as any).id)))}
+                                                            onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                                                            aria-label="Select all"
+                                                        />
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <button className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 focus:outline-none">
+                                                                    <ChevronDown className="h-3 w-3" />
+                                                                </button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="start">
+                                                                <DropdownMenuLabel className="text-xs text-slate-500 uppercase">Select By Year</DropdownMenuLabel>
+                                                                <DropdownMenuSeparator />
+                                                                {['1st Year', '2nd Year', '3rd Year', '4th Year', 'Irregular'].map(level => (
+                                                                    <DropdownMenuItem key={level} onClick={() => handleSelectByYear(level)} className="cursor-pointer">
+                                                                        {level}
+                                                                    </DropdownMenuItem>
+                                                                ))}
+                                                                <DropdownMenuSeparator />
+                                                                <DropdownMenuItem onClick={() => setSelectedUserIds([])} className="cursor-pointer text-red-600 focus:text-red-700">
+                                                                    Clear Selection
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </div>
                                                 </th>
                                                 <th className="w-12 px-2 py-4 text-[10px] font-bold uppercase tracking-wider">
                                                     #
@@ -1183,27 +1217,45 @@ export default function AdminManageUsersPage() {
                                 </div>
                             </div>
 
-                            <div className="mt-4 flex flex-col gap-2 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between">
-                                <div>
-                                    Showing{' '}
-                                    {filteredStudents.length === 0
-                                        ? 0
-                                        : (Math.min(
-                                              Math.max(pageIndex, 1),
-                                              totalPages,
-                                          ) -
-                                              1) *
-                                              pageSize +
-                                          1}{' '}
-                                    to{' '}
-                                    {Math.min(
-                                        Math.min(
-                                            Math.max(pageIndex, 1),
-                                            totalPages,
-                                        ) * pageSize,
-                                        filteredStudents.length,
-                                    )}{' '}
-                                    of {filteredStudents.length} entries
+                            <div className="mt-4 flex flex-col gap-2 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between dark:text-slate-400">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-1.5">
+                                        <span>Rows per page:</span>
+                                        <select
+                                            value={pageSize}
+                                            onChange={(e) => {
+                                                setPageSize(Number(e.target.value));
+                                                setPageIndex(1);
+                                            }}
+                                            className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                                        >
+                                            {[10, 25, 50, 100, 255].map((size) => (
+                                                <option key={size} value={size}>{size}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <span className="text-slate-400 dark:text-slate-600">|</span>
+                                    <span>
+                                        Showing{' '}
+                                        {filteredStudents.length === 0
+                                            ? 0
+                                            : (Math.min(
+                                                  Math.max(pageIndex, 1),
+                                                  totalPages,
+                                              ) -
+                                                  1) *
+                                                  pageSize +
+                                              1}{' '}
+                                        to{' '}
+                                        {Math.min(
+                                            Math.min(
+                                                Math.max(pageIndex, 1),
+                                                totalPages,
+                                            ) * pageSize,
+                                            filteredStudents.length,
+                                        )}{' '}
+                                        of {filteredStudents.length} entries
+                                    </span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                     <button
@@ -1218,28 +1270,32 @@ export default function AdminManageUsersPage() {
                                     >
                                         Prev
                                     </button>
-                                    {Array.from({ length: totalPages })
-                                        .slice(0, 3)
-                                        .map((_, idx) => {
-                                            const num = idx + 1;
-                                            return (
-                                                <button
-                                                    key={num}
-                                                    type="button"
-                                                    onClick={() =>
-                                                        setPageIndex(num)
-                                                    }
-                                                    className={
-                                                        'rounded-md px-2 py-1 ' +
-                                                        (pageIndex === num
-                                                            ? 'bg-[#23509A] text-white'
-                                                            : 'text-slate-600 hover:bg-slate-100')
-                                                    }
-                                                >
-                                                    {num}
-                                                </button>
-                                            );
-                                        })}
+                                    {(() => {
+                                        let startPage = Math.max(1, pageIndex - 1);
+                                        let endPage = Math.min(totalPages, startPage + 2);
+                                        if (endPage - startPage < 2) {
+                                            startPage = Math.max(1, endPage - 2);
+                                        }
+                                        const pages = [];
+                                        for (let i = startPage; i <= endPage; i++) {
+                                            pages.push(i);
+                                        }
+                                        return pages.map((num) => (
+                                            <button
+                                                key={num}
+                                                type="button"
+                                                onClick={() => setPageIndex(num)}
+                                                className={
+                                                    'rounded-md px-2 py-1 ' +
+                                                    (pageIndex === num
+                                                        ? 'bg-[#23509A] text-white dark:bg-blue-600'
+                                                        : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800')
+                                                }
+                                            >
+                                                {num}
+                                            </button>
+                                        ));
+                                    })()}
                                     <button
                                         type="button"
                                         className="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100 disabled:opacity-50"

@@ -12,6 +12,9 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
+    DropdownMenuSub,
+    DropdownMenuSubTrigger,
+    DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
 import Swal from 'sweetalert2';
 import ProgramHeadLayout from './components/ProgramHeadLayout';
@@ -62,11 +65,11 @@ export default function StudentsList({ user, program, students }: Props) {
     const paginatedStudents = filteredStudents.slice(startIndex, startIndex + itemsPerPage);
 
     const handleSelectAll = (checked: boolean) => {
+        const pageIds = paginatedStudents.map((u) => Number(u.id)).filter((id) => !Number.isNaN(id));
         if (checked) {
-            const ids = paginatedStudents.map((u) => Number(u.id)).filter((id) => !Number.isNaN(id));
-            setSelectedUserIds(ids);
+            setSelectedUserIds((prev) => Array.from(new Set([...prev, ...pageIds])));
         } else {
-            setSelectedUserIds([]);
+            setSelectedUserIds((prev) => prev.filter(id => !pageIds.includes(id)));
         }
     };
 
@@ -77,6 +80,16 @@ export default function StudentsList({ user, program, students }: Props) {
             setSelectedUserIds((prev) => prev.filter((i) => i !== id));
         }
     };
+
+    const handleSelectByYear = (level: string) => {
+        const ids = students
+            .filter((s) => s.year_level === level)
+            .map((s) => Number(s.id))
+            .filter((id) => !Number.isNaN(id));
+        
+        setSelectedUserIds((prev) => Array.from(new Set([...prev, ...ids])));
+    };
+
 
     // Extract unique year levels for the filter dropdown
     const yearLevels = useMemo(() => {
@@ -297,12 +310,34 @@ export default function StudentsList({ user, program, students }: Props) {
                                     <table className="min-w-full border-collapse">
                                         <thead className="border-b border-slate-100 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
                                             <tr>
-                                                <th className="w-12 px-6 py-4">
-                                                    <Checkbox
-                                                        checked={paginatedStudents.length > 0 && selectedUserIds.length === paginatedStudents.length}
-                                                        onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
-                                                        aria-label="Select all"
-                                                    />
+                                                <th className="w-20 px-6 py-4">
+                                                    <div className="flex items-center gap-1">
+                                                        <Checkbox
+                                                            checked={paginatedStudents.length > 0 && paginatedStudents.every(u => selectedUserIds.includes(Number(u.id)))}
+                                                            onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                                                            aria-label="Select all"
+                                                        />
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <button className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 focus:outline-none">
+                                                                    <ChevronDown className="h-3 w-3" />
+                                                                </button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="start">
+                                                                <DropdownMenuLabel className="text-xs text-slate-500 uppercase">Select By Year</DropdownMenuLabel>
+                                                                <DropdownMenuSeparator />
+                                                                {['1st Year', '2nd Year', '3rd Year', '4th Year', 'Irregular'].map(level => (
+                                                                    <DropdownMenuItem key={level} onClick={() => handleSelectByYear(level)} className="cursor-pointer">
+                                                                        {level}
+                                                                    </DropdownMenuItem>
+                                                                ))}
+                                                                <DropdownMenuSeparator />
+                                                                <DropdownMenuItem onClick={() => setSelectedUserIds([])} className="cursor-pointer text-red-600 focus:text-red-700">
+                                                                    Clear Selection
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </div>
                                                 </th>
                                                 <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider">Student ID</th>
                                                 <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider">Name</th>

@@ -706,6 +706,46 @@ class AdminManageUsersController extends Controller
         )->setStatusCode(303);
     }
 
+    public function bulkSetYearLevel(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+            'year_level' => ['required', 'string', 'in:1st Year,2nd Year,3rd Year,4th Year,Irregular'],
+        ]);
+
+        $ids = $validated['ids'];
+
+        // Student synthetic IDs are the actual students.id
+        $studentIds = collect($ids)
+            ->filter(fn ($id) => $id < 1000000000)
+            ->values();
+
+        if ($studentIds->isNotEmpty()) {
+            Student::query()
+                ->whereIn('id', $studentIds->all())
+                ->update(['year_level' => $validated['year_level']]);
+        }
+
+        if (Schema::hasTable('activity_logs')) {
+            $admin = auth()->guard('admin')->user();
+            ActivityLog::logForUser(
+                $admin,
+                'User Management',
+                'Bulk Updated Year Level',
+                "Bulk set year level to '{$validated['year_level']}' for " . count($studentIds) . ' students',
+                $request,
+                ['year_level' => null, 'ids' => $studentIds->all()],
+                ['year_level' => $validated['year_level'], 'ids' => $studentIds->all()]
+            );
+        }
+
+        return redirect()->route('admin.manage-users')->with(
+            'success',
+            'Year level updated successfully.'
+        )->setStatusCode(303);
+    }
+
 
     public function updateProgramHead(Request $request, ProgramHead $programHead): RedirectResponse
     {

@@ -216,6 +216,7 @@ Route::post('/program-head/students/bulk/verification/approve', [ProgramHeadDash
 Route::post('/program-head/students/bulk/verification/reject', [ProgramHeadDashboardController::class, 'bulkRejectVerification'])->middleware(['auth:program_head', 'verified'])->name('program-head.students.bulk-verification-reject');
 Route::post('/program-head/students/bulk/status/activate', [ProgramHeadDashboardController::class, 'bulkActivate'])->middleware(['auth:program_head', 'verified'])->name('program-head.students.bulk-status-activate');
 Route::post('/program-head/students/bulk/status/deactivate', [ProgramHeadDashboardController::class, 'bulkDeactivate'])->middleware(['auth:program_head', 'verified'])->name('program-head.students.bulk-status-deactivate');
+Route::post('/program-head/students/bulk/year-level', [ProgramHeadDashboardController::class, 'bulkSetYearLevel'])->middleware(['auth:program_head', 'verified'])->name('program-head.students.bulk-year-level');
 
 Route::get('/program-head/attendance', [App\Http\Controllers\ProgramHeadAttendanceController::class, 'index'])->middleware(['auth:program_head', 'verified'])->name('program-head.attendance');
 Route::get('/program-head/attendance/{event}/logs', [App\Http\Controllers\ProgramHeadAttendanceController::class, 'logs'])->middleware(['auth:program_head', 'verified'])->name('program-head.attendance.logs');
@@ -267,6 +268,7 @@ Route::post('/admin/manage-users/bulk/verification/approve', [AdminManageUsersCo
 Route::post('/admin/manage-users/bulk/verification/reject', [AdminManageUsersController::class, 'bulkRejectVerification'])->middleware('auth:admin')->name('admin.manage-users.bulk-verification-reject');
 Route::post('/admin/manage-users/bulk/status/activate', [AdminManageUsersController::class, 'bulkActivate'])->middleware('auth:admin')->name('admin.manage-users.bulk-status-activate');
 Route::post('/admin/manage-users/bulk/status/deactivate', [AdminManageUsersController::class, 'bulkDeactivate'])->middleware('auth:admin')->name('admin.manage-users.bulk-status-deactivate');
+Route::post('/admin/manage-users/bulk/year-level', [AdminManageUsersController::class, 'bulkSetYearLevel'])->middleware('auth:admin')->name('admin.manage-users.bulk-year-level');
 Route::match(['put', 'post'], '/admin/manage-users/{student}/unarchive', [AdminManageUsersController::class, 'unarchive'])->middleware('auth:admin')->name('admin.manage-users.unarchive');
 Route::delete('/admin/manage-users/{student}', [AdminManageUsersController::class, 'destroy'])->middleware('auth:admin')->name('admin.manage-users.destroy');
 
