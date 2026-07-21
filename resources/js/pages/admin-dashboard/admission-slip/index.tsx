@@ -34,9 +34,6 @@ export default function AdminAdmissionSlipPage() {
     const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
     const [pageIndex, setPageIndex] = useState(1);
     const [pageSize, setPageSize] = useState(5);
-    const [isRefreshing, setIsRefreshing] = useState(false);
-    const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-    const [isAutoRefreshEnabled, setIsAutoRefreshEnabled] = useState(true);
 
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -48,26 +45,6 @@ export default function AdminAdmissionSlipPage() {
             window.history.replaceState({}, '', url.pathname);
         }
     }, []);
-
-    useEffect(() => {
-        if (!isAutoRefreshEnabled) return;
-        
-        const id = window.setInterval(() => {
-            router.reload({
-                only: ['slips', 'unreadNotifications'],
-                preserveUrl: true,
-                onStart: () => setIsRefreshing(true),
-                onFinish: () => {
-                    setIsRefreshing(false);
-                    setLastUpdated(new Date());
-                },
-            });
-        }, 5000);
-
-        return () => {
-            window.clearInterval(id);
-        };
-    }, [isAutoRefreshEnabled]);
 
     const slips = useMemo<SlipRow[]>(() => {
         const raw = (props as PageProps).slips ?? [];
@@ -184,10 +161,6 @@ export default function AdminAdmissionSlipPage() {
                 <div className="flex w-full flex-col gap-6 px-6 py-6">
                     <AdmissionSlipHeader 
                         onCreateNew={openCreate} 
-                        isRefreshing={isRefreshing} 
-                        lastUpdated={lastUpdated}
-                        isAutoRefreshEnabled={isAutoRefreshEnabled}
-                        onToggleAutoRefresh={() => setIsAutoRefreshEnabled(!isAutoRefreshEnabled)}
                     />
 
                     <div className="space-y-4">

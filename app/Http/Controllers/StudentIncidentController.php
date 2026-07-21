@@ -18,59 +18,73 @@ class StudentIncidentController extends Controller
 {
     public function store(Request $request): RedirectResponse
     {
-        $user = auth()->user();
+        try {
+            $user = auth()->user();
+            Log::info('[StudentIncidentController] store called', ['user_id' => $user->id ?? null]);
 
-        $validated = $request->validate([
-            'incident_type' => ['required', 'string', 'max:255'],
-            'incident_date' => ['required', 'date'],
-            'incident_time' => ['required', 'date_format:H:i'],
-            'location' => ['required', 'string', 'max:255'],
-            'reported_by' => ['nullable', 'string', 'max:255'],
-            'description' => ['required', 'string'],
-            'immediate_action' => ['nullable', 'string'],
-            'received_by' => ['nullable', 'string', 'max:255'],
-            'classification' => ['sometimes', 'in:Major,Minor'],
-            'evidences' => ['nullable', 'array', 'max:5'],
-            'evidences.*' => ['file', 'max:5120', 'mimes:jpg,jpeg,png,pdf'],
-        ]);
+            $validated = $request->validate([
+                'violation_id' => ['nullable', 'exists:violations,id'],
+                'incident_type' => ['required', 'string', 'max:255'],
+                'incident_date' => ['required', 'date'],
+                'incident_time' => ['required', 'date_format:H:i'],
+                'location' => ['required', 'string', 'max:255'],
+                'reported_by' => ['required', 'string', 'max:255'],
+                'students_involved' => ['required', 'array', 'min:1'],
+                'students_involved.*' => ['required', 'array:id,name'],
+                'students_involved.*.id' => ['required', 'string'],
+                'students_involved.*.name' => ['required', 'string'],
+                'description' => ['required', 'string'],
+                'immediate_action' => ['nullable', 'string'],
+                'received_by' => ['nullable', 'string', 'max:255'],
+                'classification' => ['sometimes', 'in:Warning,Suspension,Exclusion,Expulsion'],
+                'evidences' => ['nullable', 'array', 'max:5'],
+                'evidences.*' => ['file', 'max:5120', 'mimes:jpg,jpeg,png,pdf'],
+            ]);
+            Log::info('[StudentIncidentController] validation passed', $validated);
 
-        $studentIdentifier = null;
-        if (is_object($user) && isset($user->student_id)) {
-            $studentIdentifier = $user->student_id;
-        } elseif (is_object($user) && isset($user->id)) {
-            $studentIdentifier = (string) $user->id;
-        }
-
-        $evidencePaths = [];
-        $files = $request->file('evidences', []);
-        if (is_array($files)) {
-            foreach ($files as $file) {
-                if (!$file) continue;
-                $evidencePaths[] = $file->store('incident-evidences', 'public');
+            $studentIdentifier = null;
+            if (is_object($user) && isset($user->student_id)) {
+                $studentIdentifier = $user->student_id;
+            } elseif (is_object($user) && isset($user->id)) {
+                $studentIdentifier = (string) $user->id;
             }
+
+            $evidencePaths = [];
+            $files = $request->file('evidences', []);
+            if (is_array($files)) {
+                foreach ($files as $file) {
+                    if (!$file) continue;
+                    $evidencePaths[] = $file->store('incident-evidences', 'public');
+                }
+            }
+
+            // Students are already an array of objects, let's just use them as is for storage
+            $incident = Incident::create([
+                'violation_id' => $validated['violation_id'] ?? null,
+                'incident_type' => $validated['incident_type'],
+                'incident_date' => $validated['incident_date'],
+                'incident_time' => $validated['incident_time'],
+                'location' => $validated['location'],
+                'reported_by' => $validated['reported_by'],
+                'students_involved' => $validated['students_involved'],
+                'description' => $validated['description'],
+                'immediate_action' => $validated['immediate_action'] ?? null,
+                'evidence_paths' => $evidencePaths,
+                'classification' => $validated['classification'] ?? 'Warning',
+                'status' => 'Pending',
+                'is_archived' => false,
+            ]);
+
+            // ── Send Notifications ──────────────────────────────────────────────
+            if (Schema::hasTable('notifications')) {
+                $this->sendIncidentNotifications($incident, $user);
+            }
+
+            return redirect()->back()->with('success', 'Incident report submitted.');
+        } catch (\Exception $e) {
+            Log::error('[StudentIncidentController] store failed', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return redirect()->back()->with('error', 'Failed to submit incident report');
         }
-
-        $incident = Incident::create([
-            'incident_type' => $validated['incident_type'],
-            'incident_date' => $validated['incident_date'],
-            'incident_time' => $validated['incident_time'],
-            'location' => $validated['location'],
-            'reported_by' => $validated['reported_by'] ?? null,
-            'students_involved' => $studentIdentifier ? [$studentIdentifier] : [],
-            'description' => $validated['description'],
-            'immediate_action' => $validated['immediate_action'] ?? null,
-            'evidence_paths' => $evidencePaths,
-            'classification' => $validated['classification'] ?? 'Minor',
-            'status' => 'Pending',
-            'is_archived' => false,
-        ]);
-
-        // ── Send Notifications ──────────────────────────────────────────────
-        if (Schema::hasTable('notifications')) {
-            $this->sendIncidentNotifications($incident, $user);
-        }
-
-        return redirect()->back()->with('success', 'Incident report submitted.');
     }
 
     /**
@@ -86,11 +100,14 @@ class StudentIncidentController extends Controller
         $studentsInvolved = $incident->students_involved ?? [];
         $reporterName = is_object($reporter) ? ($reporter->name ?? 'A student') : 'A student';
 
+        // Extract student IDs from the array of objects
+        $studentIds = collect($studentsInvolved)->pluck('id')->filter()->toArray();
+
         // Resolve involved student records by student_id
         $involvedStudents = collect();
-        if (count($studentsInvolved) > 0 && Schema::hasTable('students')) {
+        if (count($studentIds) > 0 && Schema::hasTable('students')) {
             $involvedStudents = Student::query()
-                ->whereIn('student_id', $studentsInvolved)
+                ->whereIn('student_id', $studentIds)
                 ->get();
         }
 

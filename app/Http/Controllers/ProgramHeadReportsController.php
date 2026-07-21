@@ -120,7 +120,7 @@ class ProgramHeadReportsController extends Controller
     private function resolveRange(Request $request): array
     {
         $range = (string) $request->query('range', 'weekly');
-        if (!in_array($range, ['weekly', 'monthly', 'yearly', 'semester'], true)) {
+        if (!in_array($range, ['weekly', 'monthly', 'yearly', 'semester', 'custom'], true)) {
             $range = 'weekly';
         }
 
@@ -140,6 +140,19 @@ class ProgramHeadReportsController extends Controller
             $start = Carbon::now()->startOfYear();
             $end = Carbon::now()->endOfYear();
             $periodLabel = 'Yearly Report - ' . Carbon::now()->format('Y');
+        } elseif ($range === 'custom') {
+            $customStart = $request->query('customStartDate');
+            $customEnd = $request->query('customEndDate');
+            if ($customStart && $customEnd) {
+                $start = Carbon::parse($customStart)->startOfDay();
+                $end = Carbon::parse($customEnd)->endOfDay();
+                $periodLabel = 'Custom Report - ' . $start->format('M d, Y') . ' to ' . $end->format('M d, Y');
+            } else {
+                $start = Carbon::now()->startOfWeek();
+                $end = Carbon::now()->endOfWeek();
+                $periodLabel = 'Weekly Report - ' . Carbon::now()->format('F Y');
+                $range = 'weekly';
+            }
         } else {
             $year = (int) Carbon::now()->format('Y');
             $month = (int) Carbon::now()->format('n');

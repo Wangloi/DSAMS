@@ -32,6 +32,22 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->registerEventListeners();
+        $this->configureRateLimiting();
+    }
+
+    protected function configureRateLimiting(): void
+    {
+        \Illuminate\Support\Facades\RateLimiter::for('api', function (\Illuminate\Http\Request $request) {
+            return \Illuminate\Cache\RateLimiting\Limit::perMinute(60)->by(
+                $request->user()?->id ?: $request->ip()
+            );
+        });
+
+        \Illuminate\Support\Facades\RateLimiter::for('web', function (\Illuminate\Http\Request $request) {
+            return \Illuminate\Cache\RateLimiting\Limit::perMinute(120)->by(
+                $request->user()?->id ?: $request->ip()
+            );
+        });
     }
 
     protected function configureDefaults(): void
@@ -42,14 +58,11 @@ class AppServiceProvider extends ServiceProvider
             app()->isProduction(),
         );
 
-        Password::defaults(fn (): ?Password => app()->isProduction()
-            ? Password::min(12)
-                ->mixedCase()
-                ->letters()
-                ->numbers()
-                ->symbols()
-                ->uncompromised()
-            : null
+        Password::defaults(fn (): ?Password => Password::min(8)
+            ->mixedCase()
+            ->letters()
+            ->numbers()
+            ->symbols()
         );
     }
 

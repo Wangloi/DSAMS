@@ -3,7 +3,10 @@ import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
+    SelectLabel,
+    SelectSeparator,
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
@@ -45,10 +48,7 @@ const placeOptions = [
     'CR Room 302',
 ];
 
-// Helper function to map violation section to classification
-const getClassificationFromSection = (section: Violation['section']): 'Minor' | 'Major' => {
-    return section === 'Warning' ? 'Minor' : 'Major';
-};
+
 
 export default function IncidentReportDialogDetails({ form, onChange, isViewMode, violations }: Props) {
     const hasCustomPlace = Boolean(form.location) && !placeOptions.includes(form.location);
@@ -60,7 +60,7 @@ export default function IncidentReportDialogDetails({ form, onChange, isViewMode
             onChange({
                 violationId: selectedViolation.id,
                 incidentType: selectedViolation.name,
-                classification: getClassificationFromSection(selectedViolation.section),
+                classification: selectedViolation.section,
             });
         }
     };
@@ -81,11 +81,21 @@ export default function IncidentReportDialogDetails({ form, onChange, isViewMode
                         <SelectValue placeholder="Select violation" />
                     </SelectTrigger>
                     <SelectContent>
-                        {violations.map((violation) => (
-                            <SelectItem key={violation.id} value={String(violation.id)}>
-                                {violation.name}
-                            </SelectItem>
-                        ))}
+                        {['Warning', 'Suspension', 'Exclusion', 'Expulsion'].map((section, idx, arr) => {
+                            const sectionViolations = violations.filter((v) => v.section === section);
+                            if (sectionViolations.length === 0) return null;
+                            return (
+                                <SelectGroup key={section}>
+                                    <SelectLabel className="text-xs font-bold text-slate-500 uppercase tracking-wider">{section} Infractions</SelectLabel>
+                                    {sectionViolations.map((violation) => (
+                                        <SelectItem key={violation.id} value={String(violation.id)} className="pl-4">
+                                            {violation.name}
+                                        </SelectItem>
+                                    ))}
+                                    {idx < arr.length - 1 && <SelectSeparator />}
+                                </SelectGroup>
+                            );
+                        })}
                     </SelectContent>
                 </Select>
             </div>
@@ -97,15 +107,17 @@ export default function IncidentReportDialogDetails({ form, onChange, isViewMode
                 <Select
                     value={form.classification}
                     onValueChange={(v) => onChange({ classification: v as IncidentReportPayload['classification'] })}
-                    disabled={isViewMode}
+                    disabled={true}
                     required
                 >
                     <SelectTrigger className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600">
                         <SelectValue placeholder="Select classification" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="Minor">Minor</SelectItem>
-                        <SelectItem value="Major">Major</SelectItem>
+                        <SelectItem value="Warning">Warning</SelectItem>
+                        <SelectItem value="Suspension">Suspension</SelectItem>
+                        <SelectItem value="Exclusion">Exclusion</SelectItem>
+                        <SelectItem value="Expulsion">Expulsion</SelectItem>
                     </SelectContent>
                 </Select>
             </div>

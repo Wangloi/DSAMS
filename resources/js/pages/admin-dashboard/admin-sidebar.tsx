@@ -82,6 +82,7 @@ const adminNavItems: NavItem[] = [
         href: adminEvaluation(),
         icon: UserRoundCog,
     },
+    // Items under "Analytics & Logs"
     {
         title: 'Analytics',
         href: adminAnalytics(),
@@ -217,8 +218,8 @@ export function AdminSidebar() {
         'relative h-10 rounded-lg px-2.5 text-sm font-medium transition-all duration-200 data-[active=true]:bg-blue-600 data-[active=true]:text-white data-[active=true]:shadow-md data-[active=true]:before:absolute data-[active=true]:before:left-0 data-[active=true]:before:top-1.5 data-[active=true]:before:h-7 data-[active=true]:before:w-1 data-[active=true]:before:rounded-r-full data-[active=true]:before:bg-white dark:data-[active=true]:bg-blue-600/20 dark:data-[active=true]:text-blue-400 dark:data-[active=true]:before:bg-blue-400 dark:hover:bg-slate-800 dark:hover:text-white';
 
     const topNavItems = adminNavItems.slice(0, 2);
-    const middleNavItems = adminNavItems.slice(2, 8);
-    const bottomNavItems = adminNavItems.slice(8);
+    const middleNavItems = adminNavItems.slice(2, 7);
+    const bottomNavItems = adminNavItems.slice(7);
 
     return (
         <Sidebar
@@ -227,7 +228,7 @@ export function AdminSidebar() {
             className={`
                 [&_[data-sidebar=sidebar]]:mt-16
                 [&_[data-sidebar=sidebar]]:h-[calc(100svh-4rem)]
-                [&_[data-sidebar=sidebar]]:overflow-hidden
+                [&_[data-sidebar=sidebar]]:overflow-y-auto
                 [&_[data-sidebar=sidebar]]:border-r
                 [&_[data-sidebar=sidebar]]:border-slate-200
                 [&_[data-sidebar=sidebar]]:bg-white

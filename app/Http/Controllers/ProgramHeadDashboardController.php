@@ -67,11 +67,19 @@ class ProgramHeadDashboardController extends Controller
                 });
             }
 
+            $columns = ['id', 'student_id', 'name', 'course', 'year_level', 'status'];
+            if (Schema::hasColumn('students', 'is_active')) {
+                $columns[] = 'is_active';
+            }
+            if (Schema::hasColumn('students', 'verification_status')) {
+                $columns[] = 'verification_status';
+            }
+
             $students = $studentsQuery
                 ->orderBy('year_level')
                 ->orderBy('last_name')
                 ->orderBy('first_name')
-                ->get(['id', 'student_id', 'name', 'course', 'year_level', 'status'])
+                ->get($columns)
                 ->map(function ($student) {
                     return [
                         'id' => (string) $student->id,
@@ -79,7 +87,8 @@ class ProgramHeadDashboardController extends Controller
                         'name' => (string) ($student->name ?? ''),
                         'course' => (string) ($student->course ?? ''),
                         'year_level' => (string) ($student->year_level ?? ''),
-                        'status' => (string) ($student->status ?? 'Active'),
+                        'is_active' => (bool) ($student->is_active ?? true),
+                        'status' => (string) ($student->verification_status ?? $student->status ?? 'pending'),
                     ];
                 })
                 ->all();
@@ -94,6 +103,95 @@ class ProgramHeadDashboardController extends Controller
             'recentNotifications' => $recentNotifications,
         ]);
     }
+
+    public function bulkApproveVerification(Request $request)
+    {
+        return $this->bulkSetVerification($request, 'approved');
+    }
+
+    public function bulkRejectVerification(Request $request)
+    {
+        return $this->bulkSetVerification($request, 'rejected');
+    }
+
+    private function bulkSetVerification(Request $request, string $status)
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $programHead = auth()->guard('program_head')->user() ?: auth()->user();
+        $program = is_object($programHead) ? (string) ($programHead->program ?? '') : '';
+
+        if ($program === '') {
+            return redirect()->back()->with('error', 'No program assigned to you.');
+        }
+
+        if (Schema::hasColumn('students', 'verification_status')) {
+            Student::where('course', $program)
+                ->whereIn('id', $validated['ids'])
+                ->update(['verification_status' => $status]);
+        }
+
+        if (Schema::hasTable('activity_logs')) {
+            ActivityLog::logForUser(
+                $programHead,
+                'Student Management',
+                $status === 'approved' ? 'Bulk Approved' : 'Bulk Rejected',
+                "Bulk set verification to '{$status}' for " . count($validated['ids']) . ' students',
+                $request,
+                ['status' => null, 'ids' => $validated['ids']],
+                ['status' => $status, 'ids' => $validated['ids']]
+            );
+        }
+
+        return redirect()->back()->with('success', 'Verification updated successfully.');
+    }
+
+    public function bulkActivate(Request $request)
+    {
+        return $this->bulkSetStatus($request, true);
+    }
+
+    public function bulkDeactivate(Request $request)
+    {
+        return $this->bulkSetStatus($request, false);
+    }
+
+    private function bulkSetStatus(Request $request, bool $isActive)
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $programHead = auth()->guard('program_head')->user() ?: auth()->user();
+        $program = is_object($programHead) ? (string) ($programHead->program ?? '') : '';
+
+        if ($program === '') {
+            return redirect()->back()->with('error', 'No program assigned to you.');
+        }
+
+        Student::where('course', $program)
+            ->whereIn('id', $validated['ids'])
+            ->update(['is_active' => $isActive]);
+
+        if (Schema::hasTable('activity_logs')) {
+            ActivityLog::logForUser(
+                $programHead,
+                'Student Management',
+                $isActive ? 'Bulk Activated' : 'Bulk Deactivated',
+                "Bulk set status to '" . ($isActive ? 'Active' : 'Inactive') . "' for " . count($validated['ids']) . ' students',
+                $request,
+                ['status' => null, 'ids' => $validated['ids']],
+                ['status' => $isActive, 'ids' => $validated['ids']]
+            );
+        }
+
+        return redirect()->back()->with('success', 'Account status updated successfully.');
+    }
+
 
     private function getEvents(): array
     {

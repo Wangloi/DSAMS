@@ -192,6 +192,8 @@ export const adminEvaluationUnpublish = (id: number | string) =>
     `/admin/evaluation/${id}/unpublish`;
 export const adminEvaluationApproveProgram = (id: number | string) =>
     `/admin/evaluation/${id}/approve-program`;
+export const adminEvaluationMetrics = (id: number | string) =>
+    `/admin/evaluation/${id}/metrics`;
 export const adminArchive = () => '/admin/archive';
 export const adminActivityLog = () => '/admin/activity-log';
 export const adminQrScanner = (eventId?: number | string) =>

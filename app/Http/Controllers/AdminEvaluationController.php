@@ -61,6 +61,134 @@ class AdminEvaluationController extends Controller
         ]);
     }
 
+    public function metrics(Evaluation $evaluation): Response
+    {
+        $evaluation->load('eventRecord');
+        $event = $evaluation->eventRecord;
+
+        $responses = EvaluationResponse::query()
+            ->where('evaluation_id', $evaluation->id)
+            ->with(['student:id,name,student_id'])
+            ->orderByDesc('submitted_at')
+            ->orderByDesc('id')
+            ->get();
+
+        $ratingQuestionIds = [];
+        $commentQuestionIds = [];
+        $qs = is_array($evaluation->form_data) ? ($evaluation->form_data['questions'] ?? []) : [];
+        if (is_array($qs)) {
+            foreach ($qs as $q) {
+                if (!is_array($q)) continue;
+                $qid = $q['id'] ?? null;
+                $type = $q['type'] ?? null;
+                if (!$qid || !$type) continue;
+                if ($type === 'rating') $ratingQuestionIds[] = (string)$qid;
+                if ($type === 'short_text' || $type === 'long_text') $commentQuestionIds[] = (string)$qid;
+            }
+        }
+        $ratingQuestionIds = array_values(array_unique($ratingQuestionIds));
+        $commentQuestionIds = array_values(array_unique($commentQuestionIds));
+
+        $ratingCounts = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
+        $responseRatings = [];
+        $latestComments = [];
+
+        foreach ($responses as $response) {
+            $answers = is_array($response->answers) ? $response->answers : [];
+            $ratings = [];
+            foreach ($ratingQuestionIds as $qid) {
+                $v = $answers[$qid] ?? null;
+                if ($v === null || $v === '') continue;
+                $n = (int)$v;
+                if ($n >= 1 && $n <= 5) {
+                    $ratings[] = $n;
+                    $ratingCounts[$n] += 1;
+                }
+            }
+
+            $responseRating = null;
+            if (count($ratings) > 0) {
+                $responseRating = array_sum($ratings) / count($ratings);
+                $responseRatings[] = $responseRating;
+            }
+
+            foreach ($commentQuestionIds as $qid) {
+                $v = $answers[$qid] ?? null;
+                if (!is_string($v) || trim($v) === '') continue;
+
+                $sentiment = 'neutral';
+                if ($responseRating !== null) {
+                    if ($responseRating >= 4) $sentiment = 'positive';
+                    elseif ($responseRating <= 2) $sentiment = 'negative';
+                }
+
+                $latestComments[] = [
+                    'student' => $response->student ? (string)($response->student->name ?? $response->student->student_id ?? 'Student') : 'Student',
+                    'rating' => $responseRating !== null ? round($responseRating, 2) : null,
+                    'sentiment' => $sentiment,
+                    'comment' => $v,
+                    'submitted_at' => optional($response->submitted_at)->toISOString(),
+                ];
+            }
+        }
+
+        $totalResponses = $responses->count();
+        $uniqueSubmitters = $responses->pluck('student_id')->unique()->count();
+        $eligibleAttendanceCount = $event ? EvaluationEligibilityService::eligibleAttendeeCount($event) : 0;
+        $responseRate = null;
+        if ($eligibleAttendanceCount > 0) {
+            $responseRate = round(($uniqueSubmitters / $eligibleAttendanceCount) * 100, 2);
+        }
+
+        $avgRating = null;
+        if (count($responseRatings) > 0) {
+            $avgRating = round(array_sum($responseRatings) / count($responseRatings), 2);
+        }
+
+        $sentimentCounts = ['positive' => 0, 'neutral' => 0, 'negative' => 0];
+        foreach ($latestComments as $c) $sentimentCounts[$c['sentiment']] += 1;
+
+        $latestComments = array_slice($latestComments, 0, 10);
+
+        $programStats = $event ? EvaluationEligibilityService::programCompletionStats($event, $evaluation) : [];
+        $primaryEvaluation = $evaluation;
+
+        $eventOption = $event ? [
+            'id' => $event->id,
+            'name' => $event->event_name,
+            'date' => optional($event->event_date)->format('Y-m-d'),
+            'time' => $event->event_time,
+        ] : null;
+
+        return Inertia::render('admin-dashboard/evaluation/metrics', [
+            'event' => $eventOption,
+            'programStats' => $programStats,
+            'completionThreshold' => ProgramEvaluationApproval::COMPLETION_THRESHOLD,
+            'primaryEvaluation' => $this->formatEvaluation($primaryEvaluation),
+            'evaluationStats' => [
+                'totalResponses' => $totalResponses,
+                'uniqueSubmitters' => $uniqueSubmitters,
+                'attendanceCount' => $eligibleAttendanceCount,
+                'responseRate' => $responseRate,
+                'averageRating' => $avgRating,
+                'ratingSummary' => [
+                    ['label' => '1★', 'value' => $ratingCounts[1]],
+                    ['label' => '2★', 'value' => $ratingCounts[2]],
+                    ['label' => '3★', 'value' => $ratingCounts[3]],
+                    ['label' => '4★', 'value' => $ratingCounts[4]],
+                    ['label' => '5★', 'value' => $ratingCounts[5]],
+                ],
+                'sentiments' => $sentimentCounts,
+                'latestComments' => $latestComments,
+            ],
+            'breadcrumbs' => [
+                ['name' => 'Admin Dashboard', 'href' => route('admin.dashboard')],
+                ['name' => 'Evaluations', 'href' => route('admin.evaluation')],
+                ['name' => 'Metrics', 'href' => route('admin.evaluation.metrics', $evaluation)],
+            ],
+        ]);
+    }
+
     public function index(): Response
     {
         $selectedEventId = request()->query('event_id');

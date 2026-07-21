@@ -29,8 +29,10 @@ export default function IncidentFilters({
                     className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 sm:w-52"
                 >
                     <option value="all">All</option>
-                    <option value="major">Major</option>
-                    <option value="minor">Minor</option>
+                    <option value="warning">Warning</option>
+                    <option value="suspension">Suspension</option>
+                    <option value="exclusion">Exclusion</option>
+                    <option value="expulsion">Expulsion</option>
                 </select>
             </div>
 

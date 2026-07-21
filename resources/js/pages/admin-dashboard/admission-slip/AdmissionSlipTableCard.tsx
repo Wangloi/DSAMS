@@ -72,7 +72,7 @@ export default function AdmissionSlipTableCard({
     const totalPages = Math.max(1, Math.ceil(filteredCount / pageSize));
 
     return (
-        <Card className="w-full overflow-hidden border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-[#0B192C]/50">
+        <Card className="border-0 bg-white shadow-lg dark:bg-[#0B192C]/50">
             {/* VIEW DIALOG */}
             <Dialog
                 open={viewOpen}
@@ -119,10 +119,10 @@ export default function AdmissionSlipTableCard({
             </Dialog>
 
             {/* HEADER */}
-            <CardHeader className="border-b border-slate-100 pb-6 dark:border-slate-800">
+            <CardHeader className="pb-3">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <CardTitle className="text-lg font-bold text-slate-900 dark:text-white">
+                        <CardTitle className="text-lg font-semibold text-slate-800 dark:text-white">
                             Admission Slip List
                         </CardTitle>
                         <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -144,7 +144,7 @@ export default function AdmissionSlipTableCard({
                                 setPageIndex(1);
                             }}
                         >
-                            <SelectTrigger className="h-9 w-full border-slate-200 bg-slate-50 text-xs font-bold sm:w-32 dark:border-slate-700 dark:bg-slate-800">
+                            <SelectTrigger className="h-9 w-full border-slate-200 bg-white text-xs font-bold sm:w-32 dark:border-slate-700 dark:bg-slate-800">
                                 <SelectValue placeholder="All Status" />
                             </SelectTrigger>
                             <SelectContent>
@@ -163,7 +163,7 @@ export default function AdmissionSlipTableCard({
                             <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                             <Input
                                 placeholder="Search admission slips..."
-                                className="h-9 border-slate-200 bg-slate-50 pl-9 text-xs font-medium dark:border-slate-700 dark:bg-slate-800"
+                                className="h-9 border-slate-200 bg-white pl-9 text-xs font-medium dark:border-slate-700 dark:bg-slate-800"
                                 value={searchQuery ?? ''}
                                 onChange={(e) => {
                                     if (!setSearchQuery) return;
@@ -207,23 +207,23 @@ export default function AdmissionSlipTableCard({
 
             {/* TABLE */}
             <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                    <table className="w-full border-collapse text-left text-sm">
-                        <thead className="bg-slate-50 text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
+                <div className="overflow-x-auto rounded-xl border border-slate-100 shadow-sm dark:border-slate-800">
+                    <table className="min-w-full border-collapse text-left text-sm">
+                        <thead className="border-b border-slate-100 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
                             <tr>
-                                <th className="w-12 px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
+                                <th className="w-12 px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
                                     #
                                 </th>
-                                <th className="px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
+                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
                                     Student
                                 </th>
-                                <th className="px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
+                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
                                     Date Issued
                                 </th>
-                                <th className="px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
+                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
                                     Valid Until
                                 </th>
-                                <th className="px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
+                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
                                     Status
                                 </th>
                                 <th className="px-6 py-4 text-right text-[10px] font-bold tracking-wider uppercase">
@@ -232,7 +232,7 @@ export default function AdmissionSlipTableCard({
                             </tr>
                         </thead>
 
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                        <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-transparent">
                             {pagedSlips.length === 0 ? (
                                 <tr>
                                     <td
@@ -249,10 +249,18 @@ export default function AdmissionSlipTableCard({
                                     </td>
                                 </tr>
                             ) : (
-                                pagedSlips.map((slip, idx) => (
+                                pagedSlips.map((slip, idx) => {
+                                    const initials = slip.studentName
+                                        .split(' ')
+                                        .map((n) => n[0])
+                                        .join('')
+                                        .toUpperCase()
+                                        .slice(0, 2);
+
+                                    return (
                                     <tr
                                         key={slip.id}
-                                        className="transition-colors duration-200 hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
+                                        className="transition-colors duration-200 hover:bg-slate-50/70 dark:hover:bg-slate-800/40"
                                     >
                                         <td className="px-6 py-4 font-medium text-slate-500 dark:text-slate-400">
                                             {(pageIndex - 1) * pageSize +
@@ -262,13 +270,8 @@ export default function AdmissionSlipTableCard({
 
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-[11px] font-black text-slate-600 uppercase ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700">
-                                                    {slip.studentName
-                                                        .split(' ')
-                                                        .map((n) => n[0])
-                                                        .join('')
-                                                        .toUpperCase()
-                                                        .slice(0, 2)}
+                                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 text-xs font-bold text-[#1e40af] shadow-sm dark:from-blue-500/20 dark:to-indigo-500/20 dark:text-blue-300">
+                                                    {initials}
                                                 </div>
                                                 <div>
                                                     <div className="font-bold text-slate-900 dark:text-white">
@@ -291,26 +294,27 @@ export default function AdmissionSlipTableCard({
                                             {statusBadge(slip.status)}
                                         </td>
 
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-1">
+                                        <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
+                                            <div className="ml-auto flex w-fit items-center justify-end gap-1 rounded-lg border border-slate-100/50 bg-slate-50/50 p-1 shadow-sm dark:border-slate-800 dark:bg-slate-800/40">
                                                 <Button
                                                     type="button"
                                                     variant="ghost"
-                                                    size="sm"
-                                                    className="h-8 w-8 p-0 text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                                                    size="icon"
+                                                    className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-blue-50 hover:text-blue-600 dark:text-slate-400 dark:hover:bg-blue-950/30 dark:hover:text-blue-300"
                                                     onClick={() => {
                                                         setViewingSlip(slip);
                                                         setViewOpen(true);
                                                     }}
                                                     title="View slip"
-                                                >                                                    <Eye className="h-4 w-4" />
+                                                >
+                                                    <Eye className="h-4 w-4" />
                                                 </Button>
                                                 {onEdit && (
                                                     <Button
                                                         type="button"
                                                         variant="ghost"
-                                                        size="sm"
-                                                        className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/20"
+                                                        size="icon"
+                                                        className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-violet-50 hover:text-violet-600 dark:text-slate-400 dark:hover:bg-violet-950/30 dark:hover:text-violet-300"
                                                         onClick={() =>
                                                             onEdit(slip)
                                                         }
@@ -323,8 +327,8 @@ export default function AdmissionSlipTableCard({
                                                     <Button
                                                         type="button"
                                                         variant="ghost"
-                                                        size="sm"
-                                                        className="h-8 w-8 p-0 text-amber-600 hover:bg-amber-50 hover:text-amber-700 dark:text-amber-400 dark:hover:bg-amber-900/20"
+                                                        size="icon"
+                                                        className="h-8 w-8 rounded-md text-rose-500 transition-all duration-200 hover:bg-rose-50 hover:text-rose-600 dark:text-rose-400 dark:hover:bg-rose-950/30 dark:hover:text-rose-300"
                                                         onClick={() =>
                                                             onArchive(slip)
                                                         }
@@ -336,8 +340,8 @@ export default function AdmissionSlipTableCard({
                                             </div>
                                         </td>
                                     </tr>
-                                ))
-                            )}
+                                );
+                            }))}
                         </tbody>
                     </table>
                 </div>

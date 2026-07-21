@@ -18,6 +18,7 @@ class StudentLoginController extends Controller
 
         if (Auth::guard('student')->attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
+            $request->session()->flash('status', 'Login successful! Welcome back!');
 
             return redirect()->intended(route('student.dashboard'));
         }

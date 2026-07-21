@@ -150,6 +150,36 @@ Route::post('/student/evaluation/{evaluation}', [StudentEvaluationController::cl
 Route::get('/student/events/{event}/logs', [StudentEventsController::class, 'logs'])->middleware(['auth:student', 'verified'])->name('student.events.logs');
 Route::get('/student/notifications', [App\Http\Controllers\NotificationController::class, 'studentIndex'])->middleware(['auth:student', 'verified'])->name('student.notifications');
 
+Route::get('/student/incidents', function () {
+    return redirect()->route('student.dashboard');
+})->middleware(['auth:student', 'approved']);
+
+Route::get('/student/students/search', function (Request $request) {
+    $query = $request->query('q', '');
+    $query = trim($query);
+
+    if ($query === '') {
+        return response()->json(['students' => []]);
+    }
+
+    $students = Student::query()
+        ->where(function ($q) use ($query) {
+            $q->where('student_id', 'LIKE', "%{$query}%")
+              ->orWhere('name', 'LIKE', "%{$query}%");
+        })
+        ->select('student_id', 'name')
+        ->limit(50)
+        ->get()
+        ->map(function ($student) {
+            return [
+                'id' => $student->student_id, // Use student_id as the id
+                'name' => $student->name,
+            ];
+        });
+
+    return response()->json(['students' => $students]);
+})->middleware(['auth:student', 'approved'])->name('student.students.search');
+
 Route::post('/student/incidents', [StudentIncidentController::class, 'store'])->middleware(['auth:student', 'approved'])->name('student.incidents.store');
 
 Route::get('/student/admission-slip', function () {
@@ -181,6 +211,11 @@ Route::post('/student-register/restart', [StudentRegistrationController::class, 
 
 Route::get('/program-head-dashboard', [ProgramHeadDashboardController::class, 'index'])->middleware(['auth:program_head', 'verified'])->name('program-head.dashboard');
 Route::get('/program-head/students', [ProgramHeadDashboardController::class, 'students'])->middleware(['auth:program_head', 'verified'])->name('program-head.students');
+
+Route::post('/program-head/students/bulk/verification/approve', [ProgramHeadDashboardController::class, 'bulkApproveVerification'])->middleware(['auth:program_head', 'verified'])->name('program-head.students.bulk-verification-approve');
+Route::post('/program-head/students/bulk/verification/reject', [ProgramHeadDashboardController::class, 'bulkRejectVerification'])->middleware(['auth:program_head', 'verified'])->name('program-head.students.bulk-verification-reject');
+Route::post('/program-head/students/bulk/status/activate', [ProgramHeadDashboardController::class, 'bulkActivate'])->middleware(['auth:program_head', 'verified'])->name('program-head.students.bulk-status-activate');
+Route::post('/program-head/students/bulk/status/deactivate', [ProgramHeadDashboardController::class, 'bulkDeactivate'])->middleware(['auth:program_head', 'verified'])->name('program-head.students.bulk-status-deactivate');
 
 Route::get('/program-head/attendance', [App\Http\Controllers\ProgramHeadAttendanceController::class, 'index'])->middleware(['auth:program_head', 'verified'])->name('program-head.attendance');
 Route::get('/program-head/attendance/{event}/logs', [App\Http\Controllers\ProgramHeadAttendanceController::class, 'logs'])->middleware(['auth:program_head', 'verified'])->name('program-head.attendance.logs');
@@ -230,6 +265,8 @@ Route::match(['put', 'post'], '/admin/manage-users/program-heads/{programHead}/v
 
 Route::post('/admin/manage-users/bulk/verification/approve', [AdminManageUsersController::class, 'bulkApproveVerification'])->middleware('auth:admin')->name('admin.manage-users.bulk-verification-approve');
 Route::post('/admin/manage-users/bulk/verification/reject', [AdminManageUsersController::class, 'bulkRejectVerification'])->middleware('auth:admin')->name('admin.manage-users.bulk-verification-reject');
+Route::post('/admin/manage-users/bulk/status/activate', [AdminManageUsersController::class, 'bulkActivate'])->middleware('auth:admin')->name('admin.manage-users.bulk-status-activate');
+Route::post('/admin/manage-users/bulk/status/deactivate', [AdminManageUsersController::class, 'bulkDeactivate'])->middleware('auth:admin')->name('admin.manage-users.bulk-status-deactivate');
 Route::match(['put', 'post'], '/admin/manage-users/{student}/unarchive', [AdminManageUsersController::class, 'unarchive'])->middleware('auth:admin')->name('admin.manage-users.unarchive');
 Route::delete('/admin/manage-users/{student}', [AdminManageUsersController::class, 'destroy'])->middleware('auth:admin')->name('admin.manage-users.destroy');
 
@@ -335,11 +372,16 @@ Route::get('/admin/students/search', function (Request $request) {
 })->middleware('auth:admin')->name('admin.students.search');
 
 Route::get('/admin/incidents-violations', [AdminIncidentsViolationsController::class, 'index'])->middleware('auth:admin')->name('admin.incidents-violations');
+Route::get('/admin/incidents-violations/{incident}', [AdminIncidentsViolationsController::class, 'show'])->middleware('auth:admin')->name('admin.incidents-violations.show');
 Route::post('/admin/incidents-violations', [AdminIncidentsViolationsController::class, 'store'])->middleware('auth:admin')->name('admin.incidents-violations.store');
 Route::match(['put', 'post'], '/admin/incidents-violations/{incident}', [AdminIncidentsViolationsController::class, 'update'])->middleware('auth:admin')->name('admin.incidents-violations.update');
 Route::delete('/admin/incidents-violations/{incident}', [AdminIncidentsViolationsController::class, 'destroy'])->middleware('auth:admin')->name('admin.incidents-violations.destroy');
 Route::match(['put', 'post'], '/admin/incidents-violations/{incident}/archive', [AdminIncidentsViolationsController::class, 'archive'])->middleware('auth:admin')->name('admin.incidents-violations.archive');
 Route::put('/admin/incidents-violations/{incident}/unarchive', [AdminIncidentsViolationsController::class, 'unarchive'])->middleware('auth:admin')->name('admin.incidents-violations.unarchive');
+
+// Disciplinary action routes (from case detail page)
+Route::post('/admin/incidents-violations/{incident}/disciplinary-action', [AdminIncidentsViolationsController::class, 'storeDisciplinaryAction'])->middleware('auth:admin')->name('admin.incidents-violations.disciplinary-action.store');
+Route::post('/admin/disciplinary-action/{action}/review', [AdminIncidentsViolationsController::class, 'reviewDisciplinaryAction'])->middleware('auth:admin')->name('admin.disciplinary-action.review');
 
 // Put specific routes with parameters first
 Route::post('/admin/attendance/{event}/activate-scanner-portal', [AdminAttendanceController::class, 'activateScannerPortal'])
@@ -433,6 +475,7 @@ Route::put('/admin/evaluation/{evaluation}/unarchive', [AdminEvaluationControlle
 Route::post('/admin/evaluation/{evaluation}/publish', [AdminEvaluationController::class, 'publish'])->middleware('auth:admin')->name('admin.evaluation.publish');
 Route::post('/admin/evaluation/{evaluation}/unpublish', [AdminEvaluationController::class, 'unpublish'])->middleware('auth:admin')->name('admin.evaluation.unpublish');
 Route::post('/admin/evaluation/{evaluation}/approve-program', [AdminEvaluationController::class, 'approveNextActivity'])->middleware('auth:admin')->name('admin.evaluation.approve-program');
+Route::get('/admin/evaluation/{evaluation}/metrics', [AdminEvaluationController::class, 'metrics'])->middleware('auth:admin')->name('admin.evaluation.metrics');
 
 Route::get('/admin/archive', [AdminArchiveController::class, 'index'])->middleware('auth:admin')->name('admin.archive');
 

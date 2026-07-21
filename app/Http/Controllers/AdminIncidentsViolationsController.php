@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
+use App\Models\DisciplinaryAction;
 use App\Models\Incident;
 use App\Services\StudentNotificationDispatcher;
 use Illuminate\Http\RedirectResponse;
@@ -118,7 +119,7 @@ class AdminIncidentsViolationsController extends Controller
             'description' => ['required', 'string'],
             'immediate_action' => ['nullable', 'string'],
             'received_by' => ['nullable', 'string', 'max:255'],
-            'classification' => ['required', 'in:Major,Minor'],
+            'classification' => ['required', 'in:Warning,Suspension,Exclusion,Expulsion'],
             'status' => ['sometimes', 'in:Ongoing,Pending,Resolved,Escalated'],
         ]);
 
@@ -132,7 +133,7 @@ class AdminIncidentsViolationsController extends Controller
             'students_involved' => $validated['students_involved'] ?? [],
             'description' => $validated['description'],
             'immediate_action' => $validated['immediate_action'] ?? null,
-            'classification' => $validated['classification'] ?? 'Minor',
+            'classification' => $validated['classification'] ?? 'Warning',
             'status' => $validated['status'] ?? 'Pending',
             'received_by' => $validated['received_by'] ?? null,
         ]);
@@ -163,7 +164,7 @@ class AdminIncidentsViolationsController extends Controller
             'description' => ['required', 'string'],
             'immediate_action' => ['nullable', 'string'],
             'received_by' => ['nullable', 'string', 'max:255'],
-            'classification' => ['required', 'in:Major,Minor'],
+            'classification' => ['required', 'in:Warning,Suspension,Exclusion,Expulsion'],
             'status' => ['sometimes', 'in:Ongoing,Pending,Resolved,Escalated'],
         ]);
 
@@ -229,7 +230,7 @@ class AdminIncidentsViolationsController extends Controller
                     'incident_time' => '20:24:00',
                     'students_involved' => ['Dionne S. De Grano', '2024-0001'],
                     'incident_type' => 'Minor Offense',
-                    'classification' => 'Minor',
+                    'classification' => 'Warning',
                     'status' => 'Resolved',
                     'location' => 'Main Campus',
                     'reported_by' => 'Dean Marcus Aurelius',
@@ -243,7 +244,7 @@ class AdminIncidentsViolationsController extends Controller
                     'incident_time' => '10:15:00',
                     'students_involved' => ['Vinn S. Dela Torre', '2024-0002'],
                     'incident_type' => 'Smoking inside campus',
-                    'classification' => 'Major',
+                    'classification' => 'Suspension',
                     'status' => 'Pending',
                     'location' => 'Main Lobby',
                     'reported_by' => 'Guard Santos',
@@ -257,7 +258,7 @@ class AdminIncidentsViolationsController extends Controller
                     'incident_time' => '09:00:00',
                     'students_involved' => ['Melannie C. Delatado', '2024-0003'],
                     'incident_type' => 'Dress Code Violation',
-                    'classification' => 'Minor',
+                    'classification' => 'Warning',
                     'status' => 'Ongoing',
                     'location' => 'University Gate',
                     'reported_by' => 'Guard Valenzuela',
@@ -299,7 +300,7 @@ class AdminIncidentsViolationsController extends Controller
                     'incident_time' => '13:00:00',
                     'students_involved' => ['Julian Valerius', '20-4492-BSCS'],
                     'incident_type' => 'Unauthorized System Access & Data Breach',
-                    'classification' => 'Major',
+                    'classification' => 'Suspension',
                     'status' => 'Ongoing',
                     'location' => 'Computer Lab 3',
                     'reported_by' => 'Lab Instructor',
@@ -387,7 +388,9 @@ class AdminIncidentsViolationsController extends Controller
             'classification' => $incident->classification,
             'dateTime' => $dateTime,
             'status' => $incident->status,
+            'violation_id' => $incident->violation_id,
             'raw' => [
+                'violationId' => $incident->violation_id,
                 'incidentType' => $incident->incident_type,
                 'date' => $date ? $date->format('Y-m-d') : null,
                 'time' => $time ? $time->format('H:i') : null,
@@ -409,6 +412,7 @@ class AdminIncidentsViolationsController extends Controller
         if ($student) {
             $studentDetails = [
                 'id' => $student->student_id,
+                'db_id' => $student->id,
                 'name' => $student->name,
                 'course' => $student->course ?? 'BSCS',
                 'yearLevel' => $student->year_level ?? '4th Year',
@@ -416,9 +420,141 @@ class AdminIncidentsViolationsController extends Controller
             ];
         }
 
+        // Load disciplinary actions for this incident
+        $disciplinaryActions = [];
+        if ($incident->exists) {
+            $disciplinaryActions = $incident->disciplinaryActions()
+                ->with(['student', 'reviewer'])
+                ->get()
+                ->map(function (DisciplinaryAction $action) {
+                    return [
+                        'id' => $action->id,
+                        'student_id' => $action->student_id,
+                        'student_name' => $action->student?->name ?? '—',
+                        'recommended_action' => $action->recommended_action,
+                        'recommendation_reason' => $action->recommendation_reason,
+                        'final_action' => $action->final_action,
+                        'final_action_reason' => $action->final_action_reason,
+                        'remarks' => $action->remarks,
+                        'reviewed_by' => $action->reviewer?->name ?? null,
+                        'reviewed_at' => $action->reviewed_at?->toISOString(),
+                        'status' => $action->status,
+                        'decision_history' => $action->decision_history ?? [],
+                        'created_at' => $action->created_at?->toISOString(),
+                    ];
+                })
+                ->toArray();
+        }
+
+        // Load all violations for the category dropdown
+        $violations = \App\Models\Violation::all()->map(function ($v) {
+            return [
+                'id' => $v->id,
+                'code' => $v->code,
+                'name' => $v->name,
+                'description' => $v->description,
+                'section' => $v->section,
+            ];
+        })->toArray();
+
+        // Compute student warning/suspension counts for "next sanction" logic
+        $studentDisciplinaryHistory = [];
+        $studentDisciplinaryStats = null;
+        
+        // First, add the current incident itself to the history even if no formal disciplinary action exists
+        $actionType = $incident->classification;
+        if ($actionType === 'Minor') $actionType = 'Warning';
+        if (in_array($actionType, ['Major'])) $actionType = 'Suspension';
+        $currentIncidentAsHistory = [
+            'id' => 0,
+            'incident_id' => $incident->id,
+            'action_type' => $actionType,
+            'date' => $incident->incident_date ? \Illuminate\Support\Carbon::parse($incident->incident_date)->format('M Y') : '—',
+            'description' => $incident->incident_type,
+            'case_ref' => $incident->incident_date ? (\Illuminate\Support\Carbon::parse($incident->incident_date)->format('Y') . '-' . str_pad((string)$incident->id, 4, '0', STR_PAD_LEFT)) : null,
+            'is_current' => true,
+        ];
+
+        if ($student) {
+            $warningCount = $student->disciplinaryActions()
+                ->whereIn('status', ['Approved', 'Modified', 'Overridden'])
+                ->where(function ($q) {
+                    $q->where('final_action', 'Warning')
+                      ->orWhere(function ($q2) {
+                          $q2->whereNull('final_action')->where('recommended_action', 'Warning');
+                      });
+                })
+                ->count();
+
+            $suspensionCount = $student->disciplinaryActions()
+                ->whereIn('status', ['Approved', 'Modified', 'Overridden'])
+                ->where(function ($q) {
+                    $q->where('final_action', 'Suspension')
+                      ->orWhere(function ($q2) {
+                          $q2->whereNull('final_action')->where('recommended_action', 'Suspension');
+                      });
+                })
+                ->count();
+
+            $totalActions = $student->disciplinaryActions()->count() + 1; // +1 for current incident
+
+            $studentDisciplinaryStats = [
+                'warning_count' => $warningCount + (in_array($actionType, ['Warning']) ? 1 : 0),
+                'suspension_count' => $suspensionCount + (in_array($actionType, ['Suspension']) ? 1 : 0),
+                'total_actions' => $totalActions,
+                'next_sanction' => $this->computeNextSanction($warningCount + (in_array($actionType, ['Warning']) ? 1 : 0), $suspensionCount + (in_array($actionType, ['Suspension']) ? 1 : 0)),
+            ];
+            
+            // Get full disciplinary history for the student (excluding current incident if needed?)
+            $studentDisciplinaryHistory = $student->disciplinaryActions()
+                ->whereIn('status', ['Approved', 'Modified', 'Overridden'])
+                ->where('incident_id', '!=', $incident->id) // exclude current incident to avoid duplication
+                ->with(['incident'])
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($action) use ($incident) {
+                    return [
+                        'id' => $action->id,
+                        'incident_id' => $action->incident_id,
+                        'action_type' => $action->final_action ?? $action->recommended_action,
+                        'date' => $action->created_at?->format('M Y'),
+                        'description' => $action->incident?->incident_type ?? 'Disciplinary action recorded',
+                        'case_ref' => $action->incident?->exists ? ($action->incident->created_at?->format('Y') . '-' . str_pad((string)$action->incident->id, 4, '0', STR_PAD_LEFT)) : null,
+                        'is_current' => $action->incident_id === $incident->id,
+                    ];
+                })
+                ->toArray();
+        } else {
+            // For seed data when there's no student in DB, create some mock history
+            $studentDisciplinaryHistory = [
+                [
+                    'id' => 1,
+                    'incident_id' => $incident->id - 1,
+                    'action_type' => 'Warning',
+                    'date' => 'Jan 2026',
+                    'description' => 'Dress Code Violation',
+                    'case_ref' => '2026-000' . ($incident->id - 1),
+                    'is_current' => false,
+                ]
+            ];
+            $studentDisciplinaryStats = [
+                'warning_count' => 1,
+                'suspension_count' => 0,
+                'total_actions' => 1,
+                'next_sanction' => 'Warning',
+            ];
+        }
+
+        // Prepend current incident to history
+        array_unshift($studentDisciplinaryHistory, $currentIncidentAsHistory);
+
         return Inertia::render('admin-dashboard/incidents-violations/show', [
             'incident' => $formatted,
             'studentDetails' => $studentDetails,
+            'disciplinaryActions' => $disciplinaryActions,
+            'violations' => $violations,
+            'studentDisciplinaryStats' => $studentDisciplinaryStats,
+            'studentDisciplinaryHistory' => $studentDisciplinaryHistory,
         ]);
     }
 
@@ -454,5 +590,96 @@ class AdminIncidentsViolationsController extends Controller
         }
 
         return redirect()->back()->with('success', 'Incident report unarchived successfully.');
+    }
+
+    /**
+     * Store a new disciplinary action for an incident from the show page.
+     */
+    public function storeDisciplinaryAction(Request $request, Incident $incident): RedirectResponse
+    {
+        $validated = $request->validate([
+            'student_id' => ['required', 'exists:students,id'],
+            'recommended_action' => ['required', 'in:Warning,Suspension,Exclusion,Expulsion'],
+            'recommendation_reason' => ['nullable', 'string'],
+            'remarks' => ['nullable', 'string'],
+        ]);
+
+        DisciplinaryAction::create([
+            'incident_id' => $incident->id,
+            'student_id' => $validated['student_id'],
+            'recommended_action' => $validated['recommended_action'],
+            'recommendation_reason' => $validated['recommendation_reason'] ?? null,
+            'remarks' => $validated['remarks'] ?? null,
+            'status' => 'Pending',
+            'decision_history' => [
+                ['action' => 'Created', 'timestamp' => now()->toISOString(), 'reason' => $validated['recommendation_reason'] ?? 'Manual creation from case detail']
+            ],
+        ]);
+
+        if (Schema::hasTable('activity_logs')) {
+            $admin = auth()->guard('admin')->user();
+            ActivityLog::logForUser($admin, 'Incidents', 'Disciplinary Action', 'Created disciplinary action for incident #'.(string) $incident->id);
+        }
+
+        return redirect()->back()->with('success', 'Disciplinary action created successfully.');
+    }
+
+    /**
+     * Review (approve/modify/override) a disciplinary action.
+     */
+    public function reviewDisciplinaryAction(Request $request, DisciplinaryAction $action): RedirectResponse
+    {
+        $validated = $request->validate([
+            'status' => ['required', 'in:Approved,Modified,Overridden'],
+            'final_action' => ['nullable', 'in:Warning,Suspension,Exclusion,Expulsion'],
+            'final_action_reason' => ['nullable', 'string'],
+            'remarks' => ['nullable', 'string'],
+        ]);
+
+        $admin = auth()->guard('admin')->user();
+
+        $history = $action->decision_history ?? [];
+        $history[] = [
+            'action' => $validated['status'],
+            'timestamp' => now()->toISOString(),
+            'reviewed_by' => $admin->name ?? $admin->id,
+            'remarks' => $validated['remarks'] ?? null,
+        ];
+
+        $action->update([
+            'status' => $validated['status'],
+            'final_action' => $validated['final_action'] ?? $action->recommended_action,
+            'final_action_reason' => $validated['final_action_reason'],
+            'remarks' => $validated['remarks'],
+            'reviewed_by' => $admin->id,
+            'reviewed_at' => now(),
+            'decision_history' => $history,
+        ]);
+
+        if (Schema::hasTable('activity_logs')) {
+            ActivityLog::logForUser($admin, 'Incidents', 'Reviewed', 'Reviewed disciplinary action #'.(string) $action->id);
+        }
+
+        return redirect()->back()->with('success', 'Disciplinary action reviewed successfully.');
+    }
+
+    /**
+     * Compute the next sanction based on a student's warning/suspension history.
+     */
+    protected function computeNextSanction(int $warningCount, int $suspensionCount): string
+    {
+        if ($suspensionCount >= 2) {
+            return 'Exclusion or Expulsion';
+        }
+        if ($warningCount >= 3) {
+            return 'Suspension';
+        }
+        if ($warningCount >= 2) {
+            return '3rd warning → Suspension';
+        }
+        if ($warningCount >= 1) {
+            return '2nd warning recorded';
+        }
+        return '1st warning';
     }
 }

@@ -17,6 +17,7 @@ class ProgramHeadLoginController extends Controller
 
         if (Auth::guard('program_head')->attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
+            $request->session()->flash('status', 'Login successful! Welcome back, Program Head!');
 
             return redirect()->intended(route('program-head.dashboard'));
         }

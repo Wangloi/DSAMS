@@ -1,4 +1,4 @@
-import { Head, usePage } from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 import {
     BarChart3,
     CalendarDays,
@@ -114,8 +114,7 @@ export default function ProgramHeadReportsPage() {
     const handleRangeChange = (value: ReportRange) => {
         setRange(value);
         const url = reportsHome() + `?range=${encodeURIComponent(value)}`;
-        window.history.replaceState(null, '', url);
-        window.location.href = url;
+        router.get(url, {}, { preserveState: true, replace: true, preserveScroll: true });
     };
 
     return (

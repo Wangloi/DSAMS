@@ -124,8 +124,10 @@ export default function AdminDashboard({ user, recentActivities, recentEvents }:
     ];
 
     const seedViolationBreakdown = [
-        { name: 'Minor', value: 65, color: '#22c55e' },
-        { name: 'Major', value: 35, color: '#ef4444' },
+        { name: 'Warning', value: 45, color: '#f59e0b' },
+        { name: 'Suspension', value: 25, color: '#f97316' },
+        { name: 'Exclusion', value: 15, color: '#ef4444' },
+        { name: 'Expulsion', value: 5, color: '#7f1d1d' },
     ];
 
     const seedEvaluationRatings = [

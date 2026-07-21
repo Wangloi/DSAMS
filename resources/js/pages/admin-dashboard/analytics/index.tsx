@@ -10,7 +10,7 @@ import {
     BarChart3,
     Search
 } from 'lucide-react';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import {
     Area,
     AreaChart,
@@ -48,10 +48,10 @@ type Props = {
     attendanceDaily?: { name: string; value: number }[];
     attendanceMonthly?: { name: string; value: number }[];
     attendanceWeekly?: { name: string; value: number }[];
-    violationDaily?: { name: string; minor: number; major: number }[];
-    violationMonthly?: { name: string; minor: number; major: number }[];
-    violationWeekly?: { name: string; minor: number; major: number }[];
-    violationStats?: { minor: number; major: number };
+    violationDaily?: { name: string; warning: number; suspension: number; exclusion: number; expulsion: number }[];
+    violationMonthly?: { name: string; warning: number; suspension: number; exclusion: number; expulsion: number }[];
+    violationWeekly?: { name: string; warning: number; suspension: number; exclusion: number; expulsion: number }[];
+    violationStats?: { warning: number; suspension: number; exclusion: number; expulsion: number };
     evaluationCounts?: { name: string; value: number }[];
     evaluationSummary?: {
         average: number | null;
@@ -81,18 +81,13 @@ export default function AdminAnalyticsPage(props: Props) {
         violationDaily: props.violationDaily || [],
         violationMonthly: props.violationMonthly || [],
         violationWeekly: props.violationWeekly || [],
-        violationStats: props.violationStats || { minor: 0, major: 0 },
+        violationStats: props.violationStats || { warning: 0, suspension: 0, exclusion: 0, expulsion: 0 },
         evaluationCounts: props.evaluationCounts || [],
         evaluationSummary: props.evaluationSummary || { average: 0, respondents: 0, sentiment: [] },
         inventory: props.inventory || { total: 0, breakdown: [] },
     });
 
-    // Track when filters change
-    useEffect(() => {
-        setHasUnsavedChanges(true);
-    }, [reportRange, customStartDate, customEndDate]);
-
-    const refreshData = async () => {
+    const refreshData = useCallback(async () => {
         setIsRefreshing(true);
         setHasUnsavedChanges(false);
 
@@ -115,7 +110,7 @@ export default function AdminAnalyticsPage(props: Props) {
                     violationDaily: data.violationDaily || [],
                     violationMonthly: data.violationMonthly || [],
                     violationWeekly: data.violationWeekly || [],
-                    violationStats: data.violationStats || { minor: 0, major: 0 },
+                    violationStats: data.violationStats || { warning: 0, suspension: 0, exclusion: 0, expulsion: 0 },
                     evaluationCounts: data.evaluationCounts || [],
                     evaluationSummary: data.evaluationSummary || { average: 0, respondents: 0, sentiment: [] },
                     inventory: data.inventory || { total: 0, breakdown: [] },
@@ -127,7 +122,17 @@ export default function AdminAnalyticsPage(props: Props) {
             setIsRefreshing(false);
             setLastUpdated(new Date());
         }
-    };
+    }, [reportRange, customStartDate, customEndDate]);
+
+    // Auto-refresh data whenever the range changes
+    useEffect(() => {
+        // For custom range, only refresh when both dates are filled in
+        if (reportRange === 'custom' && (!customStartDate || !customEndDate)) {
+            setHasUnsavedChanges(true);
+            return;
+        }
+        refreshData();
+    }, [reportRange, customStartDate, customEndDate]);
 
     const attendanceData = useMemo(() => {
         let data = [];
@@ -329,13 +334,17 @@ export default function AdminAnalyticsPage(props: Props) {
                                             <Tooltip
                                                 contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '11px', fontWeight: 'bold' }}
                                             />
-                                            <Bar dataKey="minor" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
-                                            <Bar dataKey="major" stackId="a" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+                                            <Bar dataKey="warning" stackId="a" fill="#f59e0b" radius={[0, 0, 0, 0]} />
+                                            <Bar dataKey="suspension" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} />
+                                            <Bar dataKey="exclusion" stackId="a" fill="#8b5cf6" radius={[0, 0, 0, 0]} />
+                                            <Bar dataKey="expulsion" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
                                         </BarChart>
                                     </ResponsiveContainer>
-                                    <div className="pointer-events-none absolute bottom-0 left-0 flex items-center gap-4 text-[10px] font-bold uppercase tracking-tight">
-                                        <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-500" />Minor</div>
-                                        <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-rose-500" />Major</div>
+                                    <div className="pointer-events-none absolute bottom-0 left-0 flex flex-wrap items-center gap-4 text-[10px] font-bold uppercase tracking-tight">
+                                        <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-amber-500" />Warning</div>
+                                        <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-blue-500" />Suspension</div>
+                                        <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-violet-500" />Exclusion</div>
+                                        <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-rose-500" />Expulsion</div>
                                     </div>
                                 </div>
                             </CardContent>

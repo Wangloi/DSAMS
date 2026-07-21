@@ -18,6 +18,8 @@
         "laravel/tinker": "^2.10.1",
         "laravel/wayfinder": "^0.1.9",
         "phpoffice/phpspreadsheet": "^5.7",
+        "pusher/pusher-php-server": "*",
+        "react/promise-timer": "*",
         "smalot/pdfparser": "^2.12",
         "tightenco/ziggy": "^2.6"
     },

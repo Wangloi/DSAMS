@@ -1,19 +1,18 @@
-import { Head, router, usePage } from '@inertiajs/react';
-import { Archive, CheckCircle2, Download, Eye, LayoutGrid, PlusCircle, QrCode, Send, Star, ThumbsDown, ThumbsUp, TrendingUp, UserRoundCog, Pencil, XCircle, Sparkles, RefreshCw, Pause, Play } from 'lucide-react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Archive, CheckCircle2, Download, Eye, LayoutGrid, PlusCircle, QrCode, Send, Star, ThumbsDown, ThumbsUp, UserRoundCog, Pencil, XCircle, Sparkles } from 'lucide-react';
 import QRCode from 'qrcode';
 import { useEffect, useMemo, useState } from 'react';
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import Swal from 'sweetalert2';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
     adminDashboard,
     adminEvaluation,
     adminEvaluationApproveProgram,
     adminEvaluationDestroy,
+    adminEvaluationMetrics,
     adminEvaluationPublish,
     adminEvaluationShow,
     adminEvaluationStore,
@@ -28,7 +27,6 @@ import EvaluationFormDialog from './EvaluationFormDialog';
 import EvaluationPreviewDialog from './EvaluationPreviewDialog';
 import KpiCards from './components/KpiCards';
 import EvaluationTable from './components/EvaluationTable';
-import EvaluationCharts from './components/EvaluationCharts';
 import EvaluationDialogs from './components/EvaluationDialogs';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -54,41 +52,6 @@ type PageProps = {
     errors?: Record<string, string>;
 };
 
-const rows: CommentRow[] = [
-    {
-        id: '1',
-        name: 'Josephine Reyes',
-        rating: 5,
-        comment: "Great seminar! Learned a lot. Thank you, Dr. Reyes!",
-        date: 'Feb 14, 2026 8:24 PM',
-        status: 'approved',
-    },
-    {
-        id: '2',
-        name: 'Carlo Mendoza',
-        rating: 4,
-        comment: 'Informative session and well organized.',
-        date: 'Feb 10, 2026 12:07 AM',
-        status: 'approved',
-    },
-    {
-        id: '3',
-        name: 'Ana Santos',
-        rating: 3,
-        comment: 'It was okay, but the speaker could have been more engaging.',
-        date: 'Feb 8, 2026 3:15 PM',
-        status: 'pending',
-    },
-    {
-        id: '4',
-        name: 'Betty Cruz',
-        rating: 2,
-        comment: 'The event lacked interactive Q&A sessions.',
-        date: 'Feb 5, 2026 11:30 AM',
-        status: 'rejected',
-    },
-];
-
 export default function AdminEvaluationPage() {
     const { props } = (usePage() as { props: PageProps });
     const evaluations = props.evaluations ?? [];
@@ -98,62 +61,14 @@ export default function AdminEvaluationPage() {
     const programStats = props.programStats ?? [];
     const completionThreshold = props.completionThreshold ?? 85;
 
-    const [commentsTab, setCommentsTab] = useState<'all' | 'positive' | 'neutral' | 'negative'>('positive');
-    const [eventFilter, setEventFilter] = useState<string>(selectedEventId ? String(selectedEventId) : '');
     const [evaluationDialogOpen, setEvaluationDialogOpen] = useState(false);
     const [editingEvaluation, setEditingEvaluation] = useState<EvaluationForm | null>(null);
     const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
     const [previewEvaluation, setPreviewEvaluation] = useState<EvaluationForm | null>(null);
     const [autoUploadOpen, setAutoUploadOpen] = useState(false);
     const [initialFormState, setInitialFormState] = useState<any>(null);
-    const [isRefreshing, setIsRefreshing] = useState(false);
-    const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-    const [isAutoRefreshEnabled, setIsAutoRefreshEnabled] = useState(true);
 
-    useEffect(() => {
-        setEventFilter(selectedEventId ? String(selectedEventId) : '');
-    }, [selectedEventId]);
 
-    useEffect(() => {
-        if (!eventFilter || eventFilter === 'all') return;
-        if (String(selectedEventId) === eventFilter) return;
-
-        router.get(adminEvaluation(), { event_id: eventFilter }, { preserveState: true, preserveScroll: true });
-    }, [eventFilter]);
-
-    useEffect(() => {
-        if (!isAutoRefreshEnabled) return;
-        
-        const pollMs = 8000;
-
-        const interval = window.setInterval(() => {
-            if (document.visibilityState !== 'visible') return;
-            if (evaluationDialogOpen || previewDialogOpen) return;
-
-            router.reload({
-                only: ['evaluations', 'evaluationStats', 'selectedEventId', 'events', 'programStats'],
-                onStart: () => setIsRefreshing(true),
-                onFinish: () => {
-                    setIsRefreshing(false);
-                    setLastUpdated(new Date());
-                },
-            });
-        }, pollMs);
-
-        return () => {
-            window.clearInterval(interval);
-        };
-    }, [evaluationDialogOpen, previewDialogOpen, isAutoRefreshEnabled]);
-
-    const ratingSummary = useMemo(() => evaluationStats?.ratingSummary ?? [], [evaluationStats]);
-
-    const evaluationForms = useMemo(() => {
-        return evaluations.map((evaluation) => ({
-            id: evaluation.id.toString(),
-            name: evaluation.name,
-            event: evaluation.event,
-        }));
-    }, [evaluations]);
 
     const kpis = useMemo(() => {
         const totalResponses = evaluationStats?.totalResponses ?? 0;
@@ -181,22 +96,6 @@ export default function AdminEvaluationPage() {
             { title: 'Positive Feedback', value: positiveFeedback, change: '', accent: 'bg-emerald-600', icon: ThumbsUp },
             { title: 'Negative Feedback', value: negativeFeedback, change: '', accent: 'bg-rose-500', icon: ThumbsDown },
         ];
-    }, [evaluationStats]);
-
-    const comments = useMemo(() => {
-        const raw = evaluationStats?.latestComments ?? [];
-        return raw.map((c, idx) => ({
-            id: c.submitted_at ? `${c.submitted_at}_${idx}` : String(idx),
-            name: c.student,
-            rating: c.rating ?? 0,
-            sentiment: c.sentiment,
-            comment: c.comment,
-            date: c.submitted_at ? new Date(c.submitted_at).toLocaleString() : '',
-        }));
-    }, [evaluationStats]);
-
-    const sentimentCounts = useMemo(() => {
-        return evaluationStats?.sentiments ?? { positive: 0, neutral: 0, negative: 0 };
     }, [evaluationStats]);
 
     const handleArchiveEvaluation = (evaluation: EvaluationForm) => {
@@ -262,7 +161,10 @@ export default function AdminEvaluationPage() {
                 router.post(
                     adminEvaluationApproveProgram(evaluation.id),
                     { program },
-                    { preserveScroll: true },
+                    { preserveScroll: true, onSuccess: () => {
+                        // After approval, refresh metrics if the dialog is open
+                        router.reload({ only: ['programStats'] });
+                    } },
                 );
             }
         });
@@ -310,6 +212,8 @@ export default function AdminEvaluationPage() {
         }
     };
 
+
+
     return (
         <AdminLayout breadcrumbs={breadcrumbs}>
             <Head title="Evaluation" />
@@ -331,7 +235,7 @@ export default function AdminEvaluationPage() {
                         <>
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 dark:border-slate-800 pb-6">
                                 <div className="flex items-center gap-4">
-                                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-600/10 text-blue-600 dark:bg-blue-600/20 dark:text-blue-400">
+                                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-600/10 text-black dark:bg-blue-600/20 dark:text-white">
                                         <UserRoundCog className="h-6 w-6" />
                                     </div>
                                     <div>
@@ -344,27 +248,6 @@ export default function AdminEvaluationPage() {
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-3">
-                                    <div className="hidden sm:flex sm:items-center sm:gap-3 mr-2 text-right">
-                                        <div>
-                                            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-end gap-1">
-                                                {isRefreshing && <RefreshCw className="h-3 w-3 animate-spin text-blue-500" />}
-                                                {isAutoRefreshEnabled ? 'Auto-updating' : 'Update paused'}
-                                            </div>
-                                            <div className="text-xs font-bold text-slate-600 dark:text-slate-400">
-                                                {lastUpdated.toLocaleTimeString()}
-                                            </div>
-                                        </div>
-                                        <Button
-                                            variant="outline"
-                                            size="icon"
-                                            className="h-10 w-10 shrink-0 rounded-xl border-slate-200 dark:border-slate-800 text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-300"
-                                            onClick={() => setIsAutoRefreshEnabled(!isAutoRefreshEnabled)}
-                                            title={isAutoRefreshEnabled ? "Pause auto-refresh" : "Resume auto-refresh"}
-                                        >
-                                            {isAutoRefreshEnabled ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
-                                        </Button>
-                                    </div>
-
                                     <Button
                                         onClick={handleCreateEvaluation}
                                         className="h-10 shrink-0 gap-2 rounded-xl bg-blue-600 px-4 font-bold text-white shadow-md shadow-blue-500/20 transition-all duration-200 hover:bg-blue-700"
@@ -377,32 +260,16 @@ export default function AdminEvaluationPage() {
 
                             <KpiCards kpis={kpis} />
 
-                            <div className="flex flex-col gap-4">
-                                <EvaluationTable 
-                                    evaluations={evaluations}
-                                    evaluationForms={evaluationForms}
-                                    events={events}
-                                    eventFilter={eventFilter}
-                                    setEventFilter={setEventFilter}
-                                    handlePublish={handlePublish}
-                                    handleUnpublish={handleUnpublish}
-                                    handleDownloadQR={handleDownloadQR}
-                                    handlePreviewEvaluation={handlePreviewEvaluation}
-                                    handleEditEvaluation={handleEditEvaluation}
-                                    handleArchiveEvaluation={handleArchiveEvaluation}
-                                />
-                                <EvaluationCharts 
-                                    commentsTab={commentsTab}
-                                    setCommentsTab={setCommentsTab}
-                                    sentimentCounts={sentimentCounts}
-                                    evaluationStats={evaluationStats}
-                                    ratingSummary={ratingSummary}
-                                    programStats={programStats}
-                                    completionThreshold={completionThreshold}
-                                    primaryEvaluation={primaryEvaluation}
-                                    handleApproveProgram={handleApproveProgram}
-                                />
-                            </div>
+                            <EvaluationTable 
+                                evaluations={evaluations}
+                                events={events}
+                                handlePublish={handlePublish}
+                                handleUnpublish={handleUnpublish}
+                                handleDownloadQR={handleDownloadQR}
+                                handlePreviewEvaluation={handlePreviewEvaluation}
+                                handleEditEvaluation={handleEditEvaluation}
+                                handleArchiveEvaluation={handleArchiveEvaluation}
+                            />
                         </>
                     )}
                 </div>

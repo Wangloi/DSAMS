@@ -48,6 +48,7 @@ export default function AdminIncidentsViolationsPage() {
             Swal.fire({ icon: 'success', title: 'Success', text: props.flash.success, timer: 2500, showConfirmButton: false });
         }
     }, [props.flash]);
+
     const seedData: IncidentRow[] = [
         {
             id: 1,
@@ -55,7 +56,7 @@ export default function AdminIncidentsViolationsPage() {
             student: 'Dionne S. De Grano',
             studentId: '2024-0001',
             type: 'Minor Offense',
-            classification: 'Minor',
+            classification: 'Warning',
             dateTime: 'March 14, 2026 8:24 PM',
             status: 'Resolved',
             violation_id: null,
@@ -67,7 +68,7 @@ export default function AdminIncidentsViolationsPage() {
             student: 'Vinn S. Dela Torre',
             studentId: '2024-0002',
             type: 'Smoking inside campus',
-            classification: 'Major',
+            classification: 'Suspension',
             dateTime: 'March 15, 2026 10:15 AM',
             status: 'Pending',
             violation_id: null,
@@ -79,7 +80,7 @@ export default function AdminIncidentsViolationsPage() {
             student: 'Melannie C. Delatado',
             studentId: '2024-0003',
             type: 'Dress Code Violation',
-            classification: 'Minor',
+            classification: 'Warning',
             dateTime: 'March 16, 2026 9:00 AM',
             status: 'Ongoing',
             violation_id: null,
@@ -91,7 +92,7 @@ export default function AdminIncidentsViolationsPage() {
             student: 'Micaela D. Diamat',
             studentId: '2024-0005',
             type: 'Incomplete Uniform',
-            classification: 'Minor',
+            classification: 'Warning',
             dateTime: 'March 17, 2026 2:30 PM',
             status: 'Resolved',
             violation_id: null,
@@ -103,7 +104,7 @@ export default function AdminIncidentsViolationsPage() {
             student: 'Yohann Jeym F. Dimacuha',
             studentId: '2024-0012',
             type: 'Drunkenness',
-            classification: 'Major',
+            classification: 'Suspension',
             dateTime: 'March 18, 2026 11:45 PM',
             status: 'Escalated',
             violation_id: null,
@@ -115,7 +116,7 @@ export default function AdminIncidentsViolationsPage() {
             student: 'Axl Jhan L. Dimayuga',
             studentId: '2024-0015',
             type: 'Loitering',
-            classification: 'Minor',
+            classification: 'Warning',
             dateTime: 'March 19, 2026 3:30 PM',
             status: 'Ongoing',
             violation_id: null,
@@ -127,7 +128,7 @@ export default function AdminIncidentsViolationsPage() {
             student: 'Mark Anthony S. Rivera',
             studentId: '2024-0020',
             type: 'Vandalism',
-            classification: 'Major',
+            classification: 'Suspension',
             dateTime: 'March 20, 2026 11:00 AM',
             status: 'Pending',
             violation_id: null,
@@ -139,7 +140,7 @@ export default function AdminIncidentsViolationsPage() {
             student: 'Janine P. Custodio',
             studentId: '2024-0025',
             type: 'Cheating during Exam',
-            classification: 'Major',
+            classification: 'Exclusion',
             dateTime: 'March 21, 2026 9:45 AM',
             status: 'Ongoing',
             violation_id: null,
@@ -151,7 +152,7 @@ export default function AdminIncidentsViolationsPage() {
             student: 'Renz M. Pantoja',
             studentId: '2024-0030',
             type: 'Bullying',
-            classification: 'Major',
+            classification: 'Exclusion',
             dateTime: 'March 22, 2026 12:15 PM',
             status: 'Escalated',
             violation_id: null,
@@ -186,7 +187,7 @@ export default function AdminIncidentsViolationsPage() {
 
         const matchesType = (row: IncidentRow) => {
             if (typeFilter === 'all') return true;
-            return typeFilter === 'major' ? row.classification === 'Major' : row.classification === 'Minor';
+            return row.classification.toLowerCase() === typeFilter;
         };
 
         const matchesStatus = (row: IncidentRow) => {
@@ -400,6 +401,9 @@ export default function AdminIncidentsViolationsPage() {
                             name: student.name,
                         })),
                         description: payload.description,
+                        immediate_action: payload.immediateAction,
+                        received_by: payload.receivedBy,
+                        reported_by: payload.reportedBy,
                     };
 
                     const incidentId = editingIncident?.id;

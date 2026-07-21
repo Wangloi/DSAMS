@@ -26,26 +26,35 @@ class UnifiedLoginController extends Controller
             'admin' => route('admin.dashboard'),
             'program_head' => route('program-head.dashboard'),
         ];
+        $successMessages = [
+            'student' => 'Login successful! Welcome back!',
+            'admin' => 'Login successful! Welcome back, Admin!',
+            'program_head' => 'Login successful! Welcome back, Program Head!',
+        ];
 
         // Try student guard first with student_id, then with email
         if (Auth::guard('student')->attempt(['student_id' => $identifier, 'password' => $password], $remember)) {
             $request->session()->regenerate();
+            $request->session()->flash('status', $successMessages['student']);
             return redirect()->intended($dashboardRoutes['student']);
         }
         if (Auth::guard('student')->attempt(['email' => $identifier, 'password' => $password], $remember)) {
             $request->session()->regenerate();
+            $request->session()->flash('status', $successMessages['student']);
             return redirect()->intended($dashboardRoutes['student']);
         }
 
         // Try admin guard with email
         if (Auth::guard('admin')->attempt(['email' => $identifier, 'password' => $password], $remember)) {
             $request->session()->regenerate();
+            $request->session()->flash('status', $successMessages['admin']);
             return redirect()->intended($dashboardRoutes['admin']);
         }
 
         // Try program_head guard with email (or username if they use username, but assuming email based on original code)
         if (Auth::guard('program_head')->attempt(['email' => $identifier, 'password' => $password], $remember)) {
             $request->session()->regenerate();
+            $request->session()->flash('status', $successMessages['program_head']);
             return redirect()->intended($dashboardRoutes['program_head']);
         }
 

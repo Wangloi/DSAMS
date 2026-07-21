@@ -399,11 +399,11 @@ export default function AdminArchivePage() {
                         </Card>
                     </div>
 
-                    <Card className="w-full bg-white dark:bg-[#0B192C]/50 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                        <CardHeader className="pb-6 border-b border-slate-100 dark:border-slate-800">
+                    <Card className="w-full border-0 bg-white shadow-lg dark:bg-[#0B192C]/50">
+                        <CardHeader className="pb-3">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
-                                    <CardTitle className="text-lg font-bold text-slate-900 dark:text-white">Archived Items</CardTitle>
+                                    <CardTitle className="text-lg font-semibold text-slate-800 dark:text-white">Archived Items</CardTitle>
                                     <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Manage system storage and restore history</p>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2">
@@ -411,7 +411,7 @@ export default function AdminArchivePage() {
                                         value={typeFilter}
                                         onValueChange={(v: any) => setTypeFilter(v)}
                                     >
-                                        <SelectTrigger className="h-9 w-full sm:w-32 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-bold">
+                                        <SelectTrigger className="h-9 w-full sm:w-32 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-bold">
                                             <SelectValue placeholder="All Types" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -424,7 +424,7 @@ export default function AdminArchivePage() {
                                         value={dateFilter}
                                         onValueChange={(v: any) => setDateFilter(v)}
                                     >
-                                        <SelectTrigger className="h-9 w-full sm:w-32 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-bold">
+                                        <SelectTrigger className="h-9 w-full sm:w-32 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-bold">
                                             <SelectValue placeholder="Any Date" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -440,7 +440,7 @@ export default function AdminArchivePage() {
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                             placeholder="Search archive..."
-                                            className="h-9 pl-9 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-medium"
+                                            className="h-9 pl-9 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-medium"
                                         />
                                     </div>
                                 </div>
@@ -448,17 +448,17 @@ export default function AdminArchivePage() {
                         </CardHeader>
 
                         <CardContent className="p-0">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left text-sm border-collapse">
-                                    <thead className="bg-slate-50 text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
+                            <div className="overflow-x-auto rounded-xl border border-slate-100 shadow-sm dark:border-slate-800">
+                                <table className="min-w-full border-collapse">
+                                    <thead className="border-b border-slate-100 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
                                         <tr>
-                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider">Item Details</th>
-                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider">Storage Data</th>
-                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider">Archived On</th>
+                                            <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider">Item Details</th>
+                                            <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider">Storage Data</th>
+                                            <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider">Archived On</th>
                                             <th className="px-6 py-4 text-right text-[10px] font-bold uppercase tracking-wider">Action</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                    <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-transparent">
                                         {paginatedRows.length === 0 ? (
                                             <tr>
                                                 <td
@@ -469,49 +469,57 @@ export default function AdminArchivePage() {
                                                 </td>
                                             </tr>
                                         ) : (
-                                            paginatedRows.map((row) => (
-                                                <tr
-                                                    key={row.id}
-                                                    className="transition-colors duration-200 hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
-                                                >
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="grid h-10 w-10 place-items-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 ring-1 ring-slate-200 dark:ring-slate-700">
-                                                                <FileText className="h-5 w-5" />
+                                            paginatedRows.map((row) => {
+                                                const initials = (row.type || 'ARCH')
+                                                    .split(' ')
+                                                    .map(n => n[0])
+                                                    .join('')
+                                                    .slice(0, 2)
+                                                    .toUpperCase();
+
+                                                return (
+                                                    <tr
+                                                        key={row.id}
+                                                        className="transition-colors duration-200 hover:bg-slate-50/70 dark:hover:bg-slate-800/40"
+                                                    >
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 text-xs font-bold text-[#1e40af] shadow-sm dark:from-blue-500/20 dark:to-indigo-500/20 dark:text-blue-300">
+                                                                    <FileText className="h-5 w-5" />
+                                                                </div>
+                                                                <div>
+                                                                    <div className="font-bold text-slate-900 dark:text-white">{row.description}</div>
+                                                                    <div className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-tight mt-0.5">{row.type}</div>
+                                                                </div>
                                                             </div>
-                                                            <div>
-                                                                <div className="font-bold text-slate-900 dark:text-white">{row.description}</div>
-                                                                <div className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-tight mt-0.5">{row.type}</div>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex flex-col">
+                                                                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">System Table</span>
+                                                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{row.table}</span>
                                                             </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex flex-col">
-                                                            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">System Table</span>
-                                                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{row.table}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex flex-col">
-                                                            <span className="text-sm font-bold text-slate-900 dark:text-white">{row.dateArchived}</span>
-                                                            <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">ID: {row.id}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-right">
-                                                        <div className="flex items-center justify-end gap-1">
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="h-8 gap-2 text-xs font-bold text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
-                                                                onClick={() => handleUnarchive(row)}
-                                                            >
-                                                                <RotateCcw className="h-3.5 w-3.5" />
-                                                                Restore
-                                                            </Button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex flex-col">
+                                                                <span className="text-sm font-bold text-slate-900 dark:text-white">{row.dateArchived}</span>
+                                                                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">ID: {row.id}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
+                                                            <div className="ml-auto flex w-fit items-center justify-end gap-1 rounded-lg border border-slate-100/50 bg-slate-50/50 p-1 shadow-sm dark:border-slate-800 dark:bg-slate-800/40">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-emerald-50 hover:text-emerald-600 dark:text-slate-400 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-300"
+                                                                    onClick={() => handleUnarchive(row)}
+                                                                >
+                                                                    <RotateCcw className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
                                         )}
                                     </tbody>
                                 </table>

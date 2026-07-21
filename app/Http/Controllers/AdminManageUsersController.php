@@ -645,6 +645,67 @@ class AdminManageUsersController extends Controller
         )->setStatusCode(303);
     }
 
+    public function bulkActivate(Request $request): RedirectResponse
+    {
+        return $this->bulkSetStatus($request, true);
+    }
+
+    public function bulkDeactivate(Request $request): RedirectResponse
+    {
+        return $this->bulkSetStatus($request, false);
+    }
+
+    private function bulkSetStatus(Request $request, bool $isActive): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $ids = $validated['ids'];
+
+        // Program head synthetic IDs are 1,000,000,000 + program_heads.id
+        $programHeadIds = collect($ids)
+            ->filter(fn ($id) => $id >= 1000000000 && $id < 2000000000)
+            ->map(fn ($id) => (int) $id - 1000000000)
+            ->values();
+
+        // Student synthetic IDs are the actual students.id
+        $studentIds = collect($ids)
+            ->filter(fn ($id) => $id < 1000000000)
+            ->values();
+
+        if ($studentIds->isNotEmpty()) {
+            Student::query()
+                ->whereIn('id', $studentIds->all())
+                ->update(['is_active' => $isActive]);
+        }
+
+        if ($programHeadIds->isNotEmpty()) {
+            ProgramHead::query()
+                ->whereIn('id', $programHeadIds->all())
+                ->update(['is_active' => $isActive]);
+        }
+
+        if (Schema::hasTable('activity_logs')) {
+            $admin = auth()->guard('admin')->user();
+            ActivityLog::logForUser(
+                $admin,
+                'User Management',
+                $isActive ? 'Bulk Activated' : 'Bulk Deactivated',
+                "Bulk set status to '" . ($isActive ? 'Active' : 'Inactive') . "' for " . count($ids) . ' records',
+                $request,
+                ['status' => null, 'ids' => $ids],
+                ['status' => $isActive, 'ids' => $ids]
+            );
+        }
+
+        return redirect()->route('admin.manage-users')->with(
+            'success',
+            'Account status updated successfully.'
+        )->setStatusCode(303);
+    }
+
 
     public function updateProgramHead(Request $request, ProgramHead $programHead): RedirectResponse
     {

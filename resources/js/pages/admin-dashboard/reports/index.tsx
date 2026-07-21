@@ -1,10 +1,9 @@
-import { Head } from '@inertiajs/react';
-import { BarChart3, CalendarDays, ClipboardList, Printer, Search, ShieldAlert, ChevronDown, Star } from 'lucide-react';
+import { Head, router } from '@inertiajs/react';
+import { CalendarDays, ClipboardList, Printer, Search, ShieldAlert, Star } from 'lucide-react';
 import { type ComponentType, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
 import { adminDashboard, adminReports } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
 import AdminLayout from '../admin-layout';
@@ -35,25 +34,23 @@ type ReportCardItem = {
     recordsLabel: string;
 };
 
-export default function AdminReportsPage() {
-    const [range, setRange] = useState<ReportRange>((arguments[0] as Props).range ?? 'weekly');
+export default function AdminReportsPage(props: Props) {
     const [query, setQuery] = useState('');
     const [customStartDate, setCustomStartDate] = useState('');
     const [customEndDate, setCustomEndDate] = useState('');
 
-    const seedPeriodLabel = useMemo(() => {
-        if (range === 'weekly') return 'Weekly Report - April 2024';
-        if (range === 'monthly') return 'Monthly Report - April 2024';
-        if (range === 'yearly') return 'Yearly Report - 2024';
-        if (range === 'custom' && customStartDate && customEndDate) {
-            return `Custom Report - ${customStartDate} to ${customEndDate}`;
+    // Read directly from Inertia props — updates automatically on every router.get response
+    const range = props.range ?? 'weekly';
+    const periodLabel = props.periodLabel ?? '';
+    const recordsLabelByKey = props.recordsLabel ?? {};
+
+    const handleRangeChange = (value: ReportRange) => {
+        let url = adminReports() + `?range=${encodeURIComponent(value)}`;
+        if (value === 'custom' && customStartDate && customEndDate) {
+            url += `&customStartDate=${encodeURIComponent(customStartDate)}&customEndDate=${encodeURIComponent(customEndDate)}`;
         }
-        return 'By Semester - 2nd Sem AY 2023-2024';
-    }, [range, customStartDate, customEndDate]);
-
-    const periodLabel = (arguments[0] as Props).periodLabel ?? seedPeriodLabel;
-
-    const recordsLabelByKey = (arguments[0] as Props).recordsLabel ?? {};
+        router.get(url, {}, { preserveState: true, replace: true, preserveScroll: true });
+    };
 
     const reports = useMemo<ReportCardItem[]>(
         () => [
@@ -63,7 +60,7 @@ export default function AdminReportsPage() {
                 description: 'Overview of student attendance summary\nand detailed records.',
                 icon: CalendarDays,
                 periodLabel,
-                recordsLabel: recordsLabelByKey.attendance ?? '312 Records',
+                recordsLabel: recordsLabelByKey.attendance ?? '0 Records',
             },
             {
                 key: 'case_record',
@@ -71,7 +68,7 @@ export default function AdminReportsPage() {
                 description: 'Summary and detailed records of student case reports.',
                 icon: ShieldAlert,
                 periodLabel,
-                recordsLabel: recordsLabelByKey.case_record ?? '75 Records',
+                recordsLabel: recordsLabelByKey.case_record ?? '0 Records',
             },
             {
                 key: 'evaluation',
@@ -79,7 +76,7 @@ export default function AdminReportsPage() {
                 description: 'Summary of student evaluations including ratings\nand feedback.',
                 icon: Star,
                 periodLabel,
-                recordsLabel: recordsLabelByKey.evaluation ?? '450 Records',
+                recordsLabel: recordsLabelByKey.evaluation ?? '0 Records',
             },
         ],
         [periodLabel, recordsLabelByKey.attendance, recordsLabelByKey.case_record, recordsLabelByKey.evaluation],
@@ -107,28 +104,6 @@ export default function AdminReportsPage() {
         return baseUrl;
     };
 
-    const tabButton = (value: ReportRange, label: string) => (
-        <button
-            type="button"
-            onClick={() => {
-                setRange(value as ReportRange);
-                let url = adminReports() + `?range=${encodeURIComponent(value)}`;
-                if (value === 'custom' && customStartDate && customEndDate) {
-                    url += `&customStartDate=${encodeURIComponent(customStartDate)}&customEndDate=${encodeURIComponent(customEndDate)}`;
-                }
-                window.history.replaceState(null, '', url);
-            }}
-            className={
-                'h-9 shrink-0 whitespace-nowrap px-4 text-sm font-semibold transition-colors ' +
-                (range === value
-                    ? 'bg-[#23509A] text-white shadow-sm'
-                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700')
-            }
-        >
-            {label}
-        </button>
-    );
-
     return (
         <AdminLayout breadcrumbs={breadcrumbs}>
             <Head title="Reports" />
@@ -153,18 +128,11 @@ export default function AdminReportsPage() {
 
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
                         <div className="flex flex-wrap gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
-                            {['weekly', 'monthly', 'yearly', 'semester', 'custom'].map((v) => (
+                            {(['weekly', 'monthly', 'yearly', 'semester', 'custom'] as ReportRange[]).map((v) => (
                                 <button
                                     key={v}
                                     type="button"
-                                    onClick={() => {
-                                        setRange(v as ReportRange);
-                                        let url = adminReports() + `?range=${encodeURIComponent(v)}`;
-                                        if (v === 'custom' && customStartDate && customEndDate) {
-                                            url += `&customStartDate=${encodeURIComponent(customStartDate)}&customEndDate=${encodeURIComponent(customEndDate)}`;
-                                        }
-                                        window.history.replaceState(null, '', url);
-                                    }}
+                                    onClick={() => handleRangeChange(v)}
                                     className={
                                         'h-9 px-5 text-[11px] font-bold uppercase tracking-wider transition-all rounded-xl ' +
                                         (range === v 
@@ -221,7 +189,7 @@ export default function AdminReportsPage() {
                                         onClick={() => {
                                             if (customStartDate && customEndDate) {
                                                 const url = adminReports() + `?range=custom&customStartDate=${encodeURIComponent(customStartDate)}&customEndDate=${encodeURIComponent(customEndDate)}`;
-                                                window.history.replaceState(null, '', url);
+                                                router.get(url, {}, { preserveState: true, replace: true, preserveScroll: true });
                                             }
                                         }}
                                     >

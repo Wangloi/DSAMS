@@ -52,6 +52,8 @@ class StudentDashboardController extends Controller
             'notifications_raw_first_type' => is_array($notifications) && count($notifications) > 0 ? ($notifications[0]['type'] ?? null) : null,
         ]);
 
+        $violations = \App\Models\Violation::all();
+        
         return Inertia::render('student/Dashboard', [
             'user' => $user,
             'stats' => $stats,
@@ -60,6 +62,7 @@ class StudentDashboardController extends Controller
             'recentNotifications' => $notifications,
             'events' => $events,
             'incidents' => $incidents,
+            'violations' => $violations,
         ]);
     }
 

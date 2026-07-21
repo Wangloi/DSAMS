@@ -1,5 +1,5 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { Archive, BookOpen, Edit, Eye, Pencil, Plus, Search, Trash2, Users } from 'lucide-react';
+import { Archive, BookOpen, Edit, Eye, Pencil, Plus, Search, Trash2, Users, CheckCircle, XCircle, UserCheck, UserX, ChevronDown } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import Swal from 'sweetalert2';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -13,6 +13,14 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -67,6 +75,30 @@ export default function AdminManageUsersPage() {
     const programs = ((props as any).programs || []) as ProgramRow[];
     const errors = props.errors ?? {};
     const flash = props.flash;
+
+    useEffect(() => {
+        const message = (flash?.success ?? '').trim();
+        if (!message) return;
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: message,
+            timer: 2000,
+            showConfirmButton: false,
+        });
+    }, [flash?.success]);
+
+    useEffect(() => {
+        const message = (flash?.error ?? '').trim();
+        if (!message) return;
+
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: message,
+        });
+    }, [flash?.error]);
 
     // ── Tab state (persisted in URL) ──────────────────────────────────────────
     const urlParams = new URLSearchParams(window.location.search);
@@ -131,6 +163,24 @@ export default function AdminManageUsersPage() {
     const [pageIndex, setPageIndex] = useState(1);
     const [viewOpen, setViewOpen] = useState(false);
     const [viewStudent, setViewStudent] = useState<(typeof students)[number] | null>(null);
+    const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
+
+    const handleSelectAll = (checked: boolean) => {
+        if (checked) {
+            const ids = pagedStudents.map((u) => Number((u as any).id)).filter((id) => !Number.isNaN(id));
+            setSelectedUserIds(ids);
+        } else {
+            setSelectedUserIds([]);
+        }
+    };
+
+    const handleSelectRow = (id: number, checked: boolean) => {
+        if (checked) {
+            setSelectedUserIds((prev) => [...prev, id]);
+        } else {
+            setSelectedUserIds((prev) => prev.filter((i) => i !== id));
+        }
+    };
 
     // ── Programs tab state ─────────────────────────────────────────────────────
     const [progStatusFilter, setProgStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -201,30 +251,6 @@ export default function AdminManageUsersPage() {
         }
     }, [searchQuery]);
 
-    useEffect(() => {
-        const message = (flash?.success ?? '').trim();
-        if (!message) return;
-
-        Swal.fire({
-            icon: 'success',
-            title: 'Success',
-            text: message,
-            timer: 2000,
-            showConfirmButton: false,
-        });
-    }, [flash?.success]);
-
-    useEffect(() => {
-        const message = (flash?.error ?? '').trim();
-        if (!message) return;
-
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: message,
-        });
-    }, [flash?.error]);
-
     const isActive = useMemo(() => {
         return (userId: number) => activeById[userId] !== false;
     }, [activeById]);
@@ -281,6 +307,10 @@ export default function AdminManageUsersPage() {
     useEffect(() => {
         setPageIndex((p) => Math.min(Math.max(p, 1), totalPages));
     }, [totalPages]);
+
+    useEffect(() => {
+        setSelectedUserIds([]);
+    }, [pageIndex, roleFilter, statusFilter, searchQuery]);
 
     const pagedStudents = useMemo(() => {
         const clamped = Math.min(Math.max(pageIndex, 1), totalPages);
@@ -543,13 +573,129 @@ export default function AdminManageUsersPage() {
                                 </div>
                             </div>
                         </CardHeader>
-                        <CardContent>
+                        {selectedUserIds.length > 0 && (
+                            <div className="flex items-center justify-between border-y border-emerald-200 bg-emerald-50/50 px-6 py-3 dark:border-emerald-800/30 dark:bg-emerald-900/10 transition-all">
+                                <div className="text-sm font-semibold text-emerald-800 dark:text-emerald-400">
+                                    {selectedUserIds.length} user(s) selected
+                                </div>
+                                <div>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="outline" size="sm" className="ml-auto bg-white dark:bg-slate-800">
+                                                Bulk Actions <ChevronDown className="ml-2 h-4 w-4 text-slate-500" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-48">
+                                            <DropdownMenuLabel className="text-xs uppercase text-slate-500">Verification</DropdownMenuLabel>
+                                            <DropdownMenuItem 
+                                                className="cursor-pointer font-medium text-emerald-600 focus:text-emerald-700 focus:bg-emerald-50 dark:focus:bg-emerald-950"
+                                                onClick={() => {
+                                                    Swal.fire({
+                                                        title: 'Approve Selected?',
+                                                        text: 'This will approve the verification status of the selected users.',
+                                                        icon: 'question',
+                                                        showCancelButton: true,
+                                                        confirmButtonColor: '#059669',
+                                                        confirmButtonText: 'Yes, approve them',
+                                                    }).then((res) => {
+                                                        if (res.isConfirmed) {
+                                                            router.post('/admin/manage-users/bulk/verification/approve', { ids: selectedUserIds }, {
+                                                                preserveScroll: true,
+                                                                onSuccess: () => setSelectedUserIds([])
+                                                            });
+                                                        }
+                                                    });
+                                                }}
+                                            >
+                                                <CheckCircle className="mr-2 h-4 w-4" /> Approve
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem 
+                                                className="cursor-pointer font-medium text-red-600 focus:text-red-700 focus:bg-red-50 dark:focus:bg-red-950"
+                                                onClick={() => {
+                                                    Swal.fire({
+                                                        title: 'Reject Selected?',
+                                                        text: 'This will reject the verification status of the selected users.',
+                                                        icon: 'warning',
+                                                        showCancelButton: true,
+                                                        confirmButtonColor: '#dc2626',
+                                                        confirmButtonText: 'Yes, reject them',
+                                                    }).then((res) => {
+                                                        if (res.isConfirmed) {
+                                                            router.post('/admin/manage-users/bulk/verification/reject', { ids: selectedUserIds }, {
+                                                                preserveScroll: true,
+                                                                onSuccess: () => setSelectedUserIds([])
+                                                            });
+                                                        }
+                                                    });
+                                                }}
+                                            >
+                                                <XCircle className="mr-2 h-4 w-4" /> Reject
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuLabel className="text-xs uppercase text-slate-500">Account Status</DropdownMenuLabel>
+                                            <DropdownMenuItem 
+                                                className="cursor-pointer font-medium text-blue-600 focus:text-blue-700 focus:bg-blue-50 dark:focus:bg-blue-950"
+                                                onClick={() => {
+                                                    Swal.fire({
+                                                        title: 'Activate Selected?',
+                                                        text: 'This will set the account status of the selected users to Active.',
+                                                        icon: 'question',
+                                                        showCancelButton: true,
+                                                        confirmButtonColor: '#2563eb',
+                                                        confirmButtonText: 'Yes, activate them',
+                                                    }).then((res) => {
+                                                        if (res.isConfirmed) {
+                                                            router.post('/admin/manage-users/bulk/status/activate', { ids: selectedUserIds }, {
+                                                                preserveScroll: true,
+                                                                onSuccess: () => setSelectedUserIds([])
+                                                            });
+                                                        }
+                                                    });
+                                                }}
+                                            >
+                                                <UserCheck className="mr-2 h-4 w-4" /> Activate
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem 
+                                                className="cursor-pointer font-medium text-slate-700 focus:text-slate-900 focus:bg-slate-100 dark:text-slate-300 dark:focus:bg-slate-800"
+                                                onClick={() => {
+                                                    Swal.fire({
+                                                        title: 'Deactivate Selected?',
+                                                        text: 'This will set the account status of the selected users to Inactive.',
+                                                        icon: 'warning',
+                                                        showCancelButton: true,
+                                                        confirmButtonColor: '#475569',
+                                                        confirmButtonText: 'Yes, deactivate them',
+                                                    }).then((res) => {
+                                                        if (res.isConfirmed) {
+                                                            router.post('/admin/manage-users/bulk/status/deactivate', { ids: selectedUserIds }, {
+                                                                preserveScroll: true,
+                                                                onSuccess: () => setSelectedUserIds([])
+                                                            });
+                                                        }
+                                                    });
+                                                }}
+                                            >
+                                                <UserX className="mr-2 h-4 w-4" /> Deactivate
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                            </div>
+                        )}
+                        <CardContent className={selectedUserIds.length > 0 ? "pt-4" : ""}>
                             <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#0B192C]/50">
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left text-sm border-collapse">
                                         <thead className="bg-slate-50 text-slate-500 dark:bg-slate-800/50 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800">
                                             <tr>
-                                                <th className="w-12 px-6 py-4 text-[10px] font-bold uppercase tracking-wider">
+                                                <th className="w-12 px-4 py-4">
+                                                    <Checkbox
+                                                        checked={pagedStudents.length > 0 && selectedUserIds.length === pagedStudents.length}
+                                                        onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                                                        aria-label="Select all"
+                                                    />
+                                                </th>
+                                                <th className="w-12 px-2 py-4 text-[10px] font-bold uppercase tracking-wider">
                                                     #
                                                 </th>
                                                 <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider">
@@ -591,7 +737,14 @@ export default function AdminManageUsersPage() {
                                                         key={u.id}
                                                         className="transition-colors duration-200 hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
                                                     >
-                                                        <td className="px-6 py-4 text-slate-500 dark:text-slate-400">
+                                                        <td className="px-4 py-4">
+                                                            <Checkbox
+                                                                checked={selectedUserIds.includes(Number((u as any).id))}
+                                                                onCheckedChange={(checked) => handleSelectRow(Number((u as any).id), checked as boolean)}
+                                                                aria-label={`Select ${u.name}`}
+                                                            />
+                                                        </td>
+                                                        <td className="px-2 py-4 text-slate-500 dark:text-slate-400">
                                                             {(Math.min(
                                                                 Math.max(
                                                                     pageIndex,

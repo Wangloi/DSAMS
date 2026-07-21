@@ -17,6 +17,7 @@ class AdminLoginController extends Controller
 
         if (Auth::guard('admin')->attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
+            $request->session()->flash('status', 'Login successful! Welcome back, Admin!');
 
             return redirect()->intended(route('admin.dashboard'));
         }

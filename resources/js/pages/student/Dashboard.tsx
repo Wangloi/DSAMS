@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import Swal from 'sweetalert2';
 
 import {
     Select,
@@ -20,6 +21,9 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
+    SelectGroup,
+    SelectLabel,
+    SelectSeparator,
 } from '@/components/ui/select';
 import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
@@ -51,8 +55,9 @@ import {
     ScanLine,
     TrendingUp,
     UserRoundCog,
+    X,
 } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 
 import { StudentDashboardFooter } from './components/StudentDashboardFooter';
 import { StudentHeader } from './components/StudentHeader';
@@ -99,6 +104,11 @@ type Props = {
     };
     evaluations?: EvaluationRow[];
     events?: EventRecord[];
+    violations?: Array<{
+        id: number;
+        name: string;
+        section: string;
+    }>;
 };
 
 export default function StudentDashboard({
@@ -106,6 +116,7 @@ export default function StudentDashboard({
     stats: serverStats,
     evaluations: serverEvaluations,
     events = [],
+    violations = [],
 }: Props) {
     const page = usePage();
     const getInitials = useInitials();
@@ -172,14 +183,175 @@ export default function StudentDashboard({
         {},
     );
     const [reportForm, setReportForm] = useState({
+        violation_id: null as number | null,
         incident_type: '',
         incident_date: '',
         incident_time: '',
         location: '',
-        classification: 'Minor' as 'Minor' | 'Major',
+        reported_by: '',
+        students_involved: [] as Array<{ id: string; name: string }>,
+        classification: 'Warning' as 'Warning' | 'Suspension' | 'Exclusion' | 'Expulsion',
         description: '',
         evidences: [] as File[],
     });
+
+    const [studentDraft, setStudentDraft] = useState('');
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
+    const [students, setStudents] = useState<Array<{ id: string; name: string }>>([]);
+    const [loadingStudents, setLoadingStudents] = useState(false);
+    const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
+    const searchAbortControllerRef = useRef<AbortController | null>(null);
+    const [reportStep, setReportStep] = useState(1);
+
+    const searchStudentsFromDB = async (query: string): Promise<Array<{ id: string; name: string }>> => {
+        if (!query.trim()) return [];
+        
+        if (searchAbortControllerRef.current) {
+            searchAbortControllerRef.current.abort();
+        }
+        
+        const abortController = new AbortController();
+        searchAbortControllerRef.current = abortController;
+        
+        setLoadingStudents(true);
+        try {
+            const response = await fetch(`/student/students/search?q=${encodeURIComponent(query.trim())}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                signal: abortController.signal,
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                return data.students || [];
+            }
+        } catch (error) {
+            if (error instanceof Error && error.name !== 'AbortError') {
+                console.error('Error searching students:', error);
+            }
+        } finally {
+            setLoadingStudents(false);
+            if (searchAbortControllerRef.current === abortController) {
+                searchAbortControllerRef.current = null;
+            }
+        }
+        
+        return [];
+    };
+
+    const handleStudentInputChange = (value: string) => {
+        setStudentDraft(value);
+        setShowSuggestions(value.trim().length > 0);
+        setSelectedSuggestionIndex(0);
+        
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+        
+        if (value.trim().length > 0) {
+            const timeout = setTimeout(() => {
+                searchStudentsFromDB(value).then(results => {
+                    setStudents(results);
+                });
+            }, 300);
+            setSearchTimeout(timeout);
+        } else {
+            setStudents([]);
+        }
+    };
+
+    const searchStudents = (query: string): Array<{ id: string; name: string }> => {
+        if (!query.trim() || students.length === 0) return [];
+        
+        const trimmed = query.trim().toLowerCase();
+        
+        if (/^\d+$/.test(trimmed)) {
+            return students.filter(student => 
+                student.id.toLowerCase().includes(trimmed)
+            );
+        }
+        
+        return students.filter(student => 
+            student.name.toLowerCase().includes(trimmed)
+        );
+    };
+
+    const suggestions = useMemo(() => {
+        return searchStudents(studentDraft);
+    }, [studentDraft, students]);
+
+    const addStudent = (student: { id: string; name: string }) => {
+        if (reportForm.students_involved.some(s => s.id === student.id)) {
+            return;
+        }
+        
+        setReportForm(prev => ({ 
+            ...prev, 
+            students_involved: [...prev.students_involved, student] 
+        }));
+        setStudentDraft('');
+        setShowSuggestions(false);
+        setSelectedSuggestionIndex(0);
+    };
+
+    const removeStudent = (studentId: string) => {
+        setReportForm(prev => ({ 
+            ...prev, 
+            students_involved: prev.students_involved.filter(s => s.id !== studentId) 
+        }));
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (!showSuggestions || suggestions.length === 0) {
+            if (e.key === 'Enter' && studentDraft.trim()) {
+                e.preventDefault();
+                const trimmed = studentDraft.trim();
+                if (/^\d+$/.test(trimmed)) {
+                    const student = students.find(s => s.id === trimmed);
+                    if (student && !reportForm.students_involved.some(s => s.id === student.id)) {
+                        addStudent(student);
+                    }
+                } else {
+                    const student = students.find(s => 
+                        s.name.toLowerCase() === trimmed.toLowerCase()
+                    );
+                    if (student && !reportForm.students_involved.some(s => s.id === student.id)) {
+                        addStudent(student);
+                    }
+                }
+            }
+            return;
+        }
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                setSelectedSuggestionIndex(prev => 
+                    prev < suggestions.length - 1 ? prev + 1 : 0
+                );
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                setSelectedSuggestionIndex(prev => 
+                    prev > 0 ? prev - 1 : suggestions.length - 1
+                );
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (suggestions[selectedSuggestionIndex]) {
+                    addStudent(suggestions[selectedSuggestionIndex]);
+                }
+                break;
+            case 'Escape':
+                setShowSuggestions(false);
+                setSelectedSuggestionIndex(0);
+                break;
+        }
+    };
 
     const submitReportIncident = () => {
         setReportProcessing(true);
@@ -189,10 +361,13 @@ export default function StudentDashboard({
         router.post(
             studentIncidentsStore(),
             {
+                violation_id: reportForm.violation_id,
                 incident_type: reportForm.incident_type,
                 incident_date: reportForm.incident_date,
                 incident_time: reportForm.incident_time,
                 location: reportForm.location,
+                reported_by: reportForm.reported_by,
+                students_involved: reportForm.students_involved,
                 classification: reportForm.classification,
                 description: reportForm.description,
                 evidences: reportForm.evidences,
@@ -202,15 +377,23 @@ export default function StudentDashboard({
                 forceFormData: true,
                 onSuccess: () => {
                     setReportIncidentOpen(false);
+                    setReportStep(1);
                     setReportForm({
+                        violation_id: null,
                         incident_type: '',
                         incident_date: '',
                         incident_time: '',
                         location: '',
-                        classification: 'Minor',
+                        reported_by: '',
+                        students_involved: [],
+                        classification: 'Warning',
                         description: '',
                         evidences: [],
                     });
+                    setStudentDraft('');
+                    setShowSuggestions(false);
+                    setSelectedSuggestionIndex(0);
+                    setStudents([]);
                 },
                 onError: (errors: Record<string, unknown>) => {
                     const mapped = Object.entries(errors).reduce<
@@ -325,264 +508,336 @@ export default function StudentDashboard({
 
             <Dialog
                 open={reportIncidentOpen}
-                onOpenChange={setReportIncidentOpen}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setReportIncidentOpen(false);
+                        setReportStep(1);
+                        setReportForm({
+                            violation_id: null,
+                            incident_type: '',
+                            incident_date: '',
+                            incident_time: '',
+                            location: '',
+                            reported_by: '',
+                            students_involved: [],
+                            classification: 'Warning',
+                            description: '',
+                            evidences: [],
+                        });
+                        setStudentDraft('');
+                        setShowSuggestions(false);
+                        setSelectedSuggestionIndex(0);
+                        setStudents([]);
+                    } else {
+                        setReportIncidentOpen(true);
+                    }
+                }}
             >
-                <DialogContent className="flex max-h-[90vh] w-[96vw] max-w-2xl flex-col overflow-hidden rounded-3xl border-0 bg-white p-0 shadow-2xl dark:bg-slate-900">
-                    <div className="relative bg-gradient-to-br from-[#0b2d66] to-[#1e40af] px-8 py-8 text-white">
-                        <div className="absolute top-0 right-0 h-64 w-64 translate-x-1/2 -translate-y-1/2 rounded-full bg-white/5 blur-3xl" />
-                        <div className="relative flex items-center gap-6">
-                            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/20 bg-white/10 shadow-inner backdrop-blur-xl">
-                                <AlertTriangle className="h-8 w-8 text-rose-300" />
-                            </div>
-                            <div>
-                                <DialogTitle className="text-2xl font-black tracking-tight text-white">
-                                    Report Incident
-                                </DialogTitle>
-                                <DialogDescription className="mt-1 text-sm font-medium text-blue-100/70">
-                                    Your safety is our priority. Submit a report
-                                    for administrative review.
-                                </DialogDescription>
-                            </div>
+                <DialogContent className="sm:max-w-3xl overflow-hidden p-0 bg-white dark:bg-slate-800">
+                    <div className="bg-gradient-to-r from-[#0b2d66] to-[#1e40af] px-6 py-5 text-white">
+                        <DialogHeader className="space-y-1">
+                            <DialogTitle className="text-white">
+                                Report Incident (Step {reportStep} of 3)
+                            </DialogTitle>
+                            <DialogDescription className="text-white/80">
+                                Provide details about the incident to create a new report.
+                            </DialogDescription>
+                        </DialogHeader>
+                    </div>
+
+                    <div className="px-6 pt-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3 bg-slate-50/50 dark:bg-slate-800/50">
+                        <div className="flex items-center gap-2">
+                            <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold ${reportStep === 1 ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>1</span>
+                            <span className="text-xs font-medium text-slate-700 dark:text-slate-300">General Info</span>
+                        </div>
+                        <div className="h-0.5 w-12 bg-slate-200 dark:bg-slate-700 flex-1 mx-4" />
+                        <div className="flex items-center gap-2">
+                            <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold ${reportStep === 2 ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>2</span>
+                            <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Details</span>
+                        </div>
+                        <div className="h-0.5 w-12 bg-slate-200 dark:bg-slate-700 flex-1 mx-4" />
+                        <div className="flex items-center gap-2">
+                            <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold ${reportStep === 3 ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>3</span>
+                            <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Narrative & Evidence</span>
                         </div>
                     </div>
 
-                    <div className="min-h-0 flex-1 overflow-y-auto p-8">
-                        <div className="space-y-8">
-                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                <div className="space-y-2.5 md:col-span-2">
-                                    <Label
-                                        htmlFor="incident_type"
-                                        className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
-                                    >
-                                        Incident Type
-                                    </Label>
-                                    <Input
-                                        id="incident_type"
-                                        value={reportForm.incident_type}
-                                        onChange={(e) =>
-                                            setReportForm((prev) => ({
-                                                ...prev,
-                                                incident_type: e.target.value,
-                                            }))
-                                        }
-                                        placeholder="What happened?"
-                                        className="h-12 rounded-2xl border-slate-200 bg-slate-50 px-4 transition-all focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50"
-                                    />
-                                    {reportErrors.incident_type && (
-                                        <div className="ml-1 text-[11px] font-bold text-rose-500">
-                                            {reportErrors.incident_type}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="space-y-2.5">
-                                    <Label
-                                        htmlFor="incident_date"
-                                        className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
-                                    >
-                                        Date
-                                    </Label>
-                                    <Input
-                                        id="incident_date"
-                                        type="date"
-                                        value={reportForm.incident_date}
-                                        onChange={(e) =>
-                                            setReportForm((prev) => ({
-                                                ...prev,
-                                                incident_date: e.target.value,
-                                            }))
-                                        }
-                                        className="h-12 rounded-2xl border-slate-200 bg-slate-50 px-4 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50"
-                                    />
-                                    {reportErrors.incident_date && (
-                                        <div className="ml-1 text-[11px] font-bold text-rose-500">
-                                            {reportErrors.incident_date}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="space-y-2.5">
-                                    <Label
-                                        htmlFor="incident_time"
-                                        className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
-                                    >
-                                        Time
-                                    </Label>
-                                    <Input
-                                        id="incident_time"
-                                        type="time"
-                                        value={reportForm.incident_time}
-                                        onChange={(e) =>
-                                            setReportForm((prev) => ({
-                                                ...prev,
-                                                incident_time: e.target.value,
-                                            }))
-                                        }
-                                        className="h-12 rounded-2xl border-slate-200 bg-slate-50 px-4 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50"
-                                    />
-                                    {reportErrors.incident_time && (
-                                        <div className="ml-1 text-[11px] font-bold text-rose-500">
-                                            {reportErrors.incident_time}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="space-y-2.5">
-                                    <Label
-                                        htmlFor="location"
-                                        className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
-                                    >
-                                        Location
-                                    </Label>
-                                    <Input
-                                        id="location"
-                                        value={reportForm.location}
-                                        onChange={(e) =>
-                                            setReportForm((prev) => ({
-                                                ...prev,
-                                                location: e.target.value,
-                                            }))
-                                        }
-                                        placeholder="Where did it occur?"
-                                        className="h-12 rounded-2xl border-slate-200 bg-slate-50 px-4 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50"
-                                    />
-                                    {reportErrors.location && (
-                                        <div className="ml-1 text-[11px] font-bold text-rose-500">
-                                            {reportErrors.location}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="space-y-2.5">
-                                    <Label className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400">
-                                        Classification
-                                    </Label>
-                                    <Select
-                                        value={reportForm.classification}
-                                        onValueChange={(v) =>
-                                            setReportForm((prev) => ({
-                                                ...prev,
-                                                classification: v as
-                                                    | 'Minor'
-                                                    | 'Major',
-                                            }))
-                                        }
-                                    >
-                                        <SelectTrigger className="h-12 rounded-2xl border-slate-200 bg-slate-50 px-4 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50">
-                                            <SelectValue placeholder="Select" />
-                                        </SelectTrigger>
-                                        <SelectContent className="rounded-2xl border-slate-200 dark:border-slate-800">
-                                            <SelectItem
-                                                value="Minor"
-                                                className="rounded-xl"
-                                            >
-                                                Minor Violation
-                                            </SelectItem>
-                                            <SelectItem
-                                                value="Major"
-                                                className="rounded-xl"
-                                            >
-                                                Major Violation
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2.5">
-                                <Label
-                                    htmlFor="description"
-                                    className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
-                                >
-                                    Detailed Description
-                                </Label>
-                                <textarea
-                                    id="description"
-                                    value={reportForm.description}
-                                    onChange={(e) =>
-                                        setReportForm((prev) => ({
-                                            ...prev,
-                                            description: e.target.value,
-                                        }))
-                                    }
-                                    className="min-h-32 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition-all outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50"
-                                    placeholder="Please provide as much detail as possible to help us investigate..."
-                                />
-                                {reportErrors.description && (
-                                    <div className="ml-1 text-[11px] font-bold text-rose-500">
-                                        {reportErrors.description}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="space-y-2.5">
-                                <Label
-                                    htmlFor="evidences"
-                                    className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
-                                >
-                                    Supporting Evidence
-                                </Label>
-                                <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-6 dark:border-slate-800 dark:bg-slate-900/50">
-                                    <div className="flex flex-col items-center gap-3">
-                                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                                            <Activity className="h-6 w-6 text-blue-600" />
-                                        </div>
-                                        <div className="text-center">
-                                            <p className="text-xs font-bold text-slate-900 dark:text-white">
-                                                Upload evidence files
-                                            </p>
-                                            <p className="mt-1 text-[10px] text-slate-500">
-                                                Max 5 files (JPG, PNG, PDF)
-                                            </p>
-                                        </div>
-                                        <Input
-                                            id="evidences"
-                                            type="file"
-                                            multiple
-                                            accept=".jpg,.jpeg,.png,.pdf"
-                                            onChange={(e) =>
-                                                setReportForm((prev) => ({
+                    <div className="max-h-[60vh] min-h-[300px] space-y-5 overflow-y-auto px-6 py-6">
+                        {reportStep === 1 && (
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                    <div className="grid gap-2 md:col-span-2">
+                                        <Label className="text-slate-700 dark:text-slate-300">
+                                            Violation <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Select
+                                            value={reportForm.violation_id ? String(reportForm.violation_id) : ''}
+                                            onValueChange={(v) => {
+                                                const violation = violations.find(x => x.id === Number(v));
+                                                setReportForm(prev => ({
                                                     ...prev,
-                                                    evidences: Array.from(
-                                                        e.target.files ?? [],
-                                                    ).slice(0, 5),
-                                                }))
-                                            }
-                                            className="h-10 cursor-pointer border-slate-200 bg-white transition-all file:mr-4 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:text-[10px] file:font-black file:tracking-widest file:text-white file:uppercase hover:file:bg-blue-700 dark:border-slate-700 dark:bg-slate-800"
+                                                    violation_id: violation ? violation.id : null,
+                                                    incident_type: violation ? violation.name : prev.incident_type,
+                                                    classification: violation ? violation.section as any : prev.classification,
+                                                }));
+                                            }}
+                                            required
+                                        >
+                                            <SelectTrigger className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600">
+                                                <SelectValue placeholder="Select violation" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {['Warning', 'Suspension', 'Exclusion', 'Expulsion'].map((section, idx, arr) => {
+                                                    const sectionViolations = violations.filter((v) => v.section === section);
+                                                    if (sectionViolations.length === 0) return null;
+                                                    return (
+                                                        <React.Fragment key={section}>
+                                                            <SelectGroup key={section}>
+                                                                <SelectLabel className="text-xs font-bold text-slate-500 uppercase tracking-wider">{section} Infractions</SelectLabel>
+                                                                {sectionViolations.map((violation) => (
+                                                                    <SelectItem key={violation.id} value={String(violation.id)} className="pl-4">
+                                                                        {violation.name}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectGroup>
+                                                            {idx < arr.length - 1 && <SelectSeparator key={`sep-${section}`} />}
+                                                        </React.Fragment>
+                                                    );
+                                                })}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="incident_date" className="text-slate-700 dark:text-slate-300">
+                                            Date of Incident <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Input
+                                            id="incident_date"
+                                            type="date"
+                                            value={reportForm.incident_date}
+                                            onChange={(e) => setReportForm(prev => ({ ...prev, incident_date: e.target.value }))}
+                                            className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white"
+                                            required
                                         />
-                                        {reportForm.evidences.length > 0 && (
-                                            <p className="text-[10px] font-black tracking-widest text-blue-600 uppercase">
-                                                {reportForm.evidences.length}{' '}
-                                                files selected
-                                            </p>
-                                        )}
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="incident_time" className="text-slate-700 dark:text-slate-300">
+                                            Time of Incident <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Input
+                                            id="incident_time"
+                                            type="time"
+                                            value={reportForm.incident_time}
+                                            onChange={(e) => setReportForm(prev => ({ ...prev, incident_time: e.target.value }))}
+                                            className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="grid gap-2 md:col-span-2">
+                                        <Label htmlFor="location" className="text-slate-700 dark:text-slate-300">
+                                            Location <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Input
+                                            id="location"
+                                            value={reportForm.location}
+                                            onChange={(e) => setReportForm(prev => ({ ...prev, location: e.target.value }))}
+                                            placeholder="Where did it occur?"
+                                            className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="grid gap-2 md:col-span-2">
+                                        <Label htmlFor="reported_by" className="text-slate-700 dark:text-slate-300">
+                                            Reported By (Name/Position) <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Input
+                                            id="reported_by"
+                                            value={reportForm.reported_by}
+                                            onChange={(e) => setReportForm(prev => ({ ...prev, reported_by: e.target.value }))}
+                                            placeholder="Your name and position"
+                                            className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white"
+                                            required
+                                        />
                                     </div>
                                 </div>
                             </div>
+                        )}
+
+                        {reportStep === 2 && (
+                        <div className="space-y-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="incident_type" className="text-slate-700 dark:text-slate-300">
+                                    Incident Summary <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    id="incident_type"
+                                    value={reportForm.incident_type}
+                                    onChange={(e) => setReportForm(prev => ({ ...prev, incident_type: e.target.value }))}
+                                    placeholder="Brief summary of what happened..."
+                                    className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white"
+                                    required
+                                />
+                            </div>
+                            
+                            <div className="grid gap-2">
+                                <Label htmlFor="students_involved" className="text-slate-700 dark:text-slate-300">
+                                    Students Involved <span className="text-red-500">*</span>
+                                </Label>
+                                <div className="relative">
+                                    <Input
+                                        id="students_involved"
+                                        placeholder={loadingStudents ? 'Loading students...' : 'Enter student ID or name...'}
+                                        value={studentDraft}
+                                        onChange={(e) => handleStudentInputChange(e.target.value)}
+                                        onKeyDown={handleKeyDown}
+                                        onFocus={() => {
+                                            setShowSuggestions(studentDraft.trim().length > 0);
+                                        }}
+                                        className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white"
+                                    />
+
+                                    {showSuggestions && suggestions.length > 0 && !loadingStudents ? (
+                                        <div
+                                            className="absolute top-full left-0 right-0 z-50 mt-1 max-h-60 overflow-auto rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 shadow-lg"
+                                            onMouseLeave={() => setShowSuggestions(false)}
+                                        >
+                                            {suggestions.map((student, index) => (
+                                                <div
+                                                    key={student.id}
+                                                    className={`cursor-pointer px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-600 ${
+                                                        index === selectedSuggestionIndex ? 'bg-slate-100 dark:bg-slate-600' : ''
+                                                    }`}
+                                                    onClick={() => addStudent(student)}
+                                                    onMouseEnter={() => setSelectedSuggestionIndex(index)}
+                                                >
+                                                    <div className="font-medium text-slate-900 dark:text-white">{student.name}</div>
+                                                    <div className="text-xs text-slate-500 dark:text-slate-400">ID: {student.id}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : null}
+                                </div>
+
+                                {reportForm.students_involved.length > 0 ? (
+                                    <div className="flex flex-wrap gap-2">
+                                        {reportForm.students_involved.map((student) => (
+                                            <Badge key={student.id} variant="secondary" className="gap-1 bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200">
+                                                {student.name} ({student.id})
+                                                <button
+                                                    type="button"
+                                                    className="ml-1 rounded-sm opacity-70 hover:opacity-100"
+                                                    onClick={() => removeStudent(student.id)}
+                                                    aria-label={`Remove ${student.name}`}
+                                                >
+                                                    <X className="h-3 w-3" />
+                                                </button>
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                ) : null}
+
+                                <div className="text-xs text-slate-500 dark:text-slate-400">
+                                    Start typing a student ID or name to see suggestions. Use arrow keys to navigate, Enter to select.
+                                </div>
+                            </div>
                         </div>
+                    )}
+
+                        {reportStep === 3 && (
+                            <div className="space-y-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="description" className="uppercase font-semibold tracking-wider text-slate-800 dark:text-slate-200">
+                                        Narrative of the Incident <span className="text-red-500">*</span>
+                                    </Label>
+                                    <textarea
+                                        id="description"
+                                        value={reportForm.description}
+                                        onChange={(e) => setReportForm(prev => ({ ...prev, description: e.target.value }))}
+                                        rows={4}
+                                        placeholder="Please provide a detailed narrative of the incident..."
+                                        className="flex w-full rounded-md border border-slate-200 dark:border-slate-600 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-slate-300"
+                                        required
+                                    />
+                                </div>
+
+                                <div className="space-y-2.5">
+                                    <Label
+                                        htmlFor="evidences"
+                                        className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
+                                    >
+                                        Supporting Evidence
+                                    </Label>
+                                    <div className="rounded-md border-2 border-dashed border-slate-200 bg-slate-50/50 p-6 dark:border-slate-800 dark:bg-slate-900/50">
+                                        <div className="flex flex-col items-center gap-3">
+                                            <div className="flex h-12 w-12 items-center justify-center rounded-md border border-slate-100 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                                                <Activity className="h-6 w-6 text-blue-600" />
+                                            </div>
+                                            <div className="text-center">
+                                                <p className="text-xs font-bold text-slate-900 dark:text-white">
+                                                    Upload evidence files
+                                                </p>
+                                                <p className="mt-1 text-[10px] text-slate-500">
+                                                    Max 5 files (JPG, PNG, PDF)
+                                                </p>
+                                            </div>
+                                            <Input
+                                                id="evidences"
+                                                type="file"
+                                                multiple
+                                                accept=".jpg,.jpeg,.png,.pdf"
+                                                onChange={(e) =>
+                                                    setReportForm((prev) => ({
+                                                        ...prev,
+                                                        evidences: Array.from(e.target.files ?? []).slice(0, 5),
+                                                    }))
+                                                }
+                                                className="h-10 cursor-pointer border-slate-200 bg-white transition-all file:mr-4 file:rounded-md file:border-0 file:bg-blue-600 file:px-3 file:text-[10px] file:font-semibold file:text-white file:uppercase hover:file:bg-blue-700 dark:border-slate-700 dark:bg-slate-800"
+                                            />
+                                            {reportForm.evidences.length > 0 && (
+                                                <p className="text-[10px] font-bold tracking-widest text-blue-600 uppercase">
+                                                    {reportForm.evidences.length} files selected
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    <DialogFooter className="gap-3 border-t border-slate-100 bg-slate-50/50 px-8 py-6 dark:border-slate-800 dark:bg-slate-900/50">
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            onClick={() => setReportIncidentOpen(false)}
-                            disabled={reportProcessing}
-                            className="rounded-xl px-6 text-[10px] font-black tracking-widest text-slate-500 uppercase transition-all hover:bg-slate-100"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            type="button"
-                            onClick={submitReportIncident}
-                            disabled={reportProcessing}
-                            className="rounded-xl bg-blue-600 px-8 text-[10px] font-black tracking-widest text-white uppercase shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-700 active:scale-95"
-                        >
-                            {reportProcessing
-                                ? 'Processing...'
-                                : 'Submit Report'}
-                        </Button>
-                    </DialogFooter>
+                    <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-6 py-4">
+                        <div className="flex items-center gap-2">
+                            {reportStep > 1 && (
+                                <Button type="button" variant="outline" className="h-10 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700" onClick={() => setReportStep(prev => prev - 1)}>
+                                    Back
+                                </Button>
+                            )}
+                            <Button type="button" variant="outline" className="h-10 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700" onClick={() => setReportIncidentOpen(false)}>
+                                Cancel
+                            </Button>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            {reportStep < 3 ? (
+                                <Button type="button" className="h-10 bg-blue-600 hover:bg-blue-700 text-white" onClick={() => setReportStep(prev => prev + 1)}>
+                                    Next
+                                </Button>
+                            ) : (
+                                <Button
+                                    type="button"
+                                    className="h-10 bg-red-600 hover:bg-red-700 text-white"
+                                    disabled={reportProcessing}
+                                    onClick={submitReportIncident}
+                                >
+                                    {reportProcessing ? 'Processing...' : 'Submit Report'}
+                                </Button>
+                            )}
+                        </div>
+                    </div>
                 </DialogContent>
             </Dialog>
 
@@ -1006,15 +1261,19 @@ export default function StudentDashboard({
                                         if (activeEvents.length > 0) {
                                             router.visit(studentAttendanceDynamicQrScan(activeEvents[0].id));
                                         } else {
-                                            // Handle no active events or show a message (optional)
-                                            alert("No active attendance sessions at the moment.");
+                                            Swal.fire({
+                                                icon: 'info',
+                                                title: 'No Active Sessions',
+                                                text: 'There are no active attendance sessions at the moment.',
+                                                confirmButtonColor: '#0b2d66',
+                                            });
                                         }
                                     }}
                                     className="group relative cursor-pointer overflow-hidden rounded-2xl border-none bg-white shadow-lg backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-violet-500/10 active:scale-[0.98] dark:bg-slate-900/40"
                                 >
                                     <div className="absolute top-0 right-0 -mt-16 -mr-16 h-32 w-32 rounded-full bg-violet-500/5 blur-3xl transition-colors group-hover:bg-violet-500/10" />
                                     <CardContent className="p-6">
-                                        <div className="flex flex-col items-center gap-6 text-center sm:flex-row sm:text-left lg:flex-col lg:text-center">
+                                        <div className="flex flex-col items-center gap-6 text-center lg:flex-col lg:text-center">
                                             <div className="relative">
                                                 <div className="absolute -inset-3 rounded-full bg-violet-500/20 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100" />
                                                 <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600 shadow-inner transition-all duration-700 group-hover:scale-110 group-hover:-rotate-3 dark:bg-violet-500/10 dark:text-violet-400">
@@ -1053,14 +1312,14 @@ export default function StudentDashboard({
                                 >
                                     <div className="absolute top-0 right-0 -mt-16 -mr-16 h-32 w-32 rounded-full bg-rose-500/5 blur-3xl transition-colors group-hover:bg-rose-500/10" />
                                     <CardContent className="p-6">
-                                        <div className="flex flex-col items-center gap-6 text-center sm:flex-row sm:text-left">
+                                        <div className="flex flex-col items-center gap-6 text-center lg:flex-col lg:text-center">
                                             <div className="relative">
                                                 <div className="absolute -inset-3 rounded-full bg-rose-500/20 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100" />
                                                 <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600 shadow-inner transition-all duration-700 group-hover:scale-110 group-hover:-rotate-3 dark:bg-rose-500/10 dark:text-rose-400">
                                                     <AlertTriangle className="h-7 w-7" />
                                                 </div>
                                             </div>
-                                            <div className="flex-1 space-y-4">
+                                            <div className="flex-1 space-y-4 w-full">
                                                 <div className="space-y-1">
                                                     <h3 className="text-lg font-black tracking-tight tracking-wider text-slate-900 uppercase dark:text-white">
                                                         Report Incident
@@ -1072,7 +1331,7 @@ export default function StudentDashboard({
                                                         Dean for review.
                                                     </p>
                                                 </div>
-                                                <Button className="group h-9 rounded-lg border border-rose-600 bg-rose-600 px-5 text-[10px] font-black tracking-[0.2em] text-white uppercase transition-all duration-300 hover:border-rose-300 hover:bg-rose-600 hover:shadow-[0_0_12px_rgba(251,113,133,0.8)] active:scale-95">
+                                                <Button className="w-full group h-9 rounded-lg border border-rose-600 bg-rose-600 px-5 text-[10px] font-black tracking-[0.2em] text-white uppercase transition-all duration-300 hover:border-rose-300 hover:bg-rose-600 hover:shadow-[0_0_12px_rgba(251,113,133,0.8)] active:scale-95">
                                                     Begin Report
                                                     <ChevronRight className="ml-1.5 h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
                                                 </Button>
@@ -1082,20 +1341,25 @@ export default function StudentDashboard({
                                 </Card>
                             </div>
 
-                            {/* ACTION: ADMISSION SLIP (Center) */}
-                            <div className="flex justify-center lg:col-span-1">
-                                <Card className="group relative w-full max-w-[420px] cursor-pointer overflow-hidden rounded-2xl border-none bg-white shadow-lg backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-blue-500/10 active:scale-[0.98] dark:bg-slate-900/40">
+                            {/* ACTION: ADMISSION SLIP */}
+                            <div className="lg:col-span-1">
+                                <Card 
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        setAdmissionSlipOpen(true);
+                                    }}
+                                    className="group relative w-full cursor-pointer overflow-hidden rounded-2xl border-none bg-white shadow-lg backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-blue-500/10 active:scale-[0.98] dark:bg-slate-900/40"
+                                >
                                     <div className="absolute top-0 right-0 -mt-16 -mr-16 h-32 w-32 rounded-full bg-blue-500/5 blur-3xl transition-colors group-hover:bg-blue-500/10" />
-
                                     <CardContent className="p-6">
-                                        <div className="flex flex-col items-center gap-6 text-center sm:flex-row sm:text-left">
+                                        <div className="flex flex-col items-center gap-6 text-center lg:flex-col lg:text-center">
                                             <div className="relative">
                                                 <div className="absolute -inset-3 rounded-full bg-blue-500/20 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100" />
                                                 <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 shadow-inner transition-all duration-700 group-hover:scale-110 group-hover:rotate-3 dark:bg-blue-500/10 dark:text-blue-400">
                                                     <ClipboardList className="h-7 w-7" />
                                                 </div>
                                             </div>
-                                            <div className="flex-1 space-y-4">
+                                            <div className="flex-1 space-y-4 w-full">
                                                 <div className="space-y-1">
                                                     <h3 className="text-lg font-black tracking-tight tracking-wider text-slate-900 uppercase dark:text-white">
                                                         Admission Slip
@@ -1107,13 +1371,7 @@ export default function StudentDashboard({
                                                     </p>
                                                 </div>
                                                 <Button
-                                                    onClick={(e) => {
-                                                        e.preventDefault();
-                                                        setAdmissionSlipOpen(
-                                                            true,
-                                                        );
-                                                    }}
-                                                    className="group !hover:bg-blue-600 !hover:text-white h-9 rounded-lg border border-blue-600 !bg-blue-600 px-5 text-[10px] font-black tracking-[0.2em] !text-white uppercase transition-all duration-300 hover:border-blue-300 hover:shadow-[0_0_12px_rgba(59,130,246,0.7)] active:scale-95"
+                                                    className="w-full group h-9 rounded-lg border border-blue-600 bg-blue-600 px-5 text-[10px] font-black tracking-[0.2em] text-white uppercase transition-all duration-300 hover:border-blue-300 hover:bg-blue-600 hover:shadow-[0_0_12px_rgba(59,130,246,0.7)] active:scale-95"
                                                 >
                                                     Request Slip
                                                     <ChevronRight className="ml-1.5 h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
@@ -1134,14 +1392,14 @@ export default function StudentDashboard({
                                 >
                                     <div className="absolute top-0 right-0 -mt-16 -mr-16 h-32 w-32 rounded-full bg-emerald-500/5 blur-3xl transition-colors group-hover:bg-emerald-500/10" />
                                     <CardContent className="p-6">
-                                        <div className="flex flex-col items-center gap-6 text-center sm:flex-row sm:text-left">
+                                        <div className="flex flex-col items-center gap-6 text-center lg:flex-col lg:text-center">
                                             <div className="relative">
                                                 <div className="absolute -inset-3 rounded-full bg-emerald-500/20 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100" />
                                                 <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 shadow-inner transition-all duration-700 group-hover:scale-110 group-hover:rotate-3 dark:bg-emerald-500/10 dark:text-emerald-400">
                                                     <Award className="h-7 w-7" />
                                                 </div>
                                             </div>
-                                            <div className="flex-1 space-y-4">
+                                            <div className="flex-1 space-y-4 w-full">
                                                 <div className="space-y-1">
                                                     <h3 className="text-lg font-black tracking-tight tracking-wider text-slate-900 uppercase dark:text-white">
                                                         E-Certificates
@@ -1153,7 +1411,7 @@ export default function StudentDashboard({
                                                         earned.
                                                     </p>
                                                 </div>
-                                                <Button className="group !hover:bg-emerald-600 !hover:text-white h-9 rounded-lg border border-emerald-600 !bg-emerald-600 px-5 text-[10px] font-black tracking-[0.2em] !text-white uppercase transition-all duration-300 hover:border-emerald-300 hover:shadow-[0_0_12px_rgba(52,211,153,0.7)] active:scale-95">
+                                                <Button className="w-full group h-9 rounded-lg border border-emerald-600 bg-emerald-600 px-5 text-[10px] font-black tracking-[0.2em] text-white uppercase transition-all duration-300 hover:border-emerald-300 hover:bg-emerald-600 hover:shadow-[0_0_12px_rgba(52,211,153,0.7)] active:scale-95">
                                                     View Awards
                                                     <ChevronRight className="ml-1.5 h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
                                                 </Button>

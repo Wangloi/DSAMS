@@ -143,12 +143,16 @@ class AdminDashboardController extends Controller
         }
 
         $incidentBase = Incident::query()->where('is_archived', false);
-        $minorCases = (clone $incidentBase)->where('classification', 'Minor')->count();
-        $majorCases = (clone $incidentBase)->where('classification', 'Major')->count();
+        $warningCases = (clone $incidentBase)->where('classification', 'Warning')->count();
+        $suspensionCases = (clone $incidentBase)->where('classification', 'Suspension')->count();
+        $exclusionCases = (clone $incidentBase)->where('classification', 'Exclusion')->count();
+        $expulsionCases = (clone $incidentBase)->where('classification', 'Expulsion')->count();
 
         return [
-            ['name' => 'Minor', 'value' => $minorCases, 'color' => '#22c55e'],
-            ['name' => 'Major', 'value' => $majorCases, 'color' => '#ef4444'],
+            ['name' => 'Warning', 'value' => $warningCases, 'color' => '#f59e0b'],
+            ['name' => 'Suspension', 'value' => $suspensionCases, 'color' => '#3b82f6'],
+            ['name' => 'Exclusion', 'value' => $exclusionCases, 'color' => '#8b5cf6'],
+            ['name' => 'Expulsion', 'value' => $expulsionCases, 'color' => '#ef4444'],
         ];
     }
 

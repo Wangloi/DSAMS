@@ -40,6 +40,18 @@ export default function ProgramHeadLogin({
     const isBlocked = (remainingSeconds ?? 0) > 0;
 
     useEffect(() => {
+        if (status) {
+            Swal.fire({
+                title: 'Success!',
+                text: status,
+                icon: 'success',
+                timer: 3000,
+                showConfirmButton: false,
+            });
+        }
+    }, [status]);
+
+    useEffect(() => {
         const interval = setInterval(async () => {
             try {
                 const res = await fetch('/api/auth/status/login-block', {
