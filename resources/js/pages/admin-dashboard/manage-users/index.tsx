@@ -160,7 +160,7 @@ export default function AdminManageUsersPage() {
     const isAdminRow = (u: (typeof students)[number]) =>
         String((u as any)?.userType ?? '').toLowerCase() === 'admin';
 
-    const [roleFilter, setRoleFilter] = useState<'all' | 'students' | 'program' | 'admin'>('all');
+    const [roleFilter, setRoleFilter] = useState<string>('all');
     const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
     const [searchQuery, setSearchQuery] = useState('');
     const [pageIndex, setPageIndex] = useState(1);
@@ -279,6 +279,10 @@ export default function AdminManageUsersPage() {
                 );
             if (roleFilter === 'program') return roleRaw.includes('program');
             if (roleFilter === 'admin') return roleRaw.includes('admin');
+            // Year level filters
+            if (['1st Year', '2nd Year', '3rd Year', '4th Year', 'Irregular'].includes(roleFilter)) {
+                return (u.year_level ?? '') === roleFilter;
+            }
             return true;
         };
 
@@ -538,9 +542,10 @@ export default function AdminManageUsersPage() {
 
                                     <Select
                                         value={roleFilter}
-                                        onValueChange={(v) =>
-                                            setRoleFilter(v as any)
-                                        }
+                                        onValueChange={(v) => {
+                                            setRoleFilter(v as any);
+                                            setPageIndex(1);
+                                        }}
                                     >
                                         <SelectTrigger className="h-9 border border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-800">
                                             <SelectValue placeholder="All Users" />
@@ -557,6 +562,21 @@ export default function AdminManageUsersPage() {
                                             </SelectItem>
                                             <SelectItem value="admin">
                                                 Administrators
+                                            </SelectItem>
+                                            <SelectItem value="1st Year">
+                                                1st Year
+                                            </SelectItem>
+                                            <SelectItem value="2nd Year">
+                                                2nd Year
+                                            </SelectItem>
+                                            <SelectItem value="3rd Year">
+                                                3rd Year
+                                            </SelectItem>
+                                            <SelectItem value="4th Year">
+                                                4th Year
+                                            </SelectItem>
+                                            <SelectItem value="Irregular">
+                                                Irregular
                                             </SelectItem>
                                         </SelectContent>
                                     </Select>

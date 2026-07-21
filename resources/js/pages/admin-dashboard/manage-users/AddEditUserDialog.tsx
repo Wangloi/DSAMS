@@ -4,6 +4,7 @@ import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -327,20 +328,77 @@ export default function AddEditUserDialog({
 
                                         <div className="grid gap-2">
                                             <Label htmlFor="role" className="text-slate-700 dark:text-slate-300">Role</Label>
-                                            <Input
-                                                id="role"
-                                                placeholder="Student"
+                                            <Select
                                                 value={form.role}
-                                                onChange={(e) =>
+                                                onValueChange={(value) =>
                                                     setForm((p) => ({
                                                         ...p,
-                                                        role: e.target.value,
+                                                        role: value,
                                                     }))
                                                 }
-                                                className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white"
-                                            />
+                                            >
+                                                <SelectTrigger id="role" className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600">
+                                                    <SelectValue placeholder="Select role" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="Student">Student</SelectItem>
+                                                    <SelectItem value="President">President</SelectItem>
+                                                    <SelectItem value="Vice President">Vice President</SelectItem>
+                                                    <SelectItem value="Secretary">Secretary</SelectItem>
+                                                    <SelectItem value="Finance Officer">Finance Officer</SelectItem>
+                                                    <SelectItem value="Auditor">Auditor</SelectItem>
+                                                    <SelectItem value="PIO">PIO</SelectItem>
+                                                    <SelectItem value="1st Year Representative">1st Year Representative</SelectItem>
+                                                    <SelectItem value="2nd Year Representative">2nd Year Representative</SelectItem>
+                                                    <SelectItem value="3rd Year Representative">3rd Year Representative</SelectItem>
+                                                    <SelectItem value="4th Year Representative">4th Year Representative</SelectItem>
+                                                    <SelectItem value="Program Head">Program Head</SelectItem>
+                                                    <SelectItem value="Admin">Admin</SelectItem>
+                                                </SelectContent>
+                                            </Select>
                                             <InputError message={errors.role} />
                                         </div>
+
+                                        {['President', 'Vice President', 'Secretary', 'Finance Officer', 'Auditor', 'PIO', '1st Year Representative', '2nd Year Representative', '3rd Year Representative', '4th Year Representative'].includes(form.role) && (
+                                            <div className="grid gap-2 sm:col-span-2 mt-2">
+                                                <Label className="text-slate-700 dark:text-slate-300 mb-2">Officer Features</Label>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 p-4 border rounded-md border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50">
+                                                    {[
+                                                        { id: 'manage_users', label: 'Manage Users' },
+                                                        { id: 'events', label: 'Events' },
+                                                        { id: 'attendance', label: 'Attendance' },
+                                                        { id: 'reports', label: 'Reports' },
+                                                        { id: 'lost_found', label: 'Lost and Found' },
+                                                        { id: 'incidents', label: 'Incidents/Violations' },
+                                                        { id: 'announcements', label: 'Announcements' },
+                                                    ].map((feature) => (
+                                                        <div key={feature.id} className="flex items-center space-x-2">
+                                                            <Checkbox
+                                                                id={`feature-${feature.id}`}
+                                                                checked={(form.officer_features ?? []).includes(feature.id)}
+                                                                onCheckedChange={(checked) => {
+                                                                    setForm((p) => {
+                                                                        const current = p.officer_features ?? [];
+                                                                        return {
+                                                                            ...p,
+                                                                            officer_features: checked
+                                                                                ? [...current, feature.id]
+                                                                                : current.filter((f) => f !== feature.id),
+                                                                        };
+                                                                    });
+                                                                }}
+                                                            />
+                                                            <label
+                                                                htmlFor={`feature-${feature.id}`}
+                                                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-700 dark:text-slate-300"
+                                                            >
+                                                                {feature.label}
+                                                            </label>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </>
                                 )}
                             </div>

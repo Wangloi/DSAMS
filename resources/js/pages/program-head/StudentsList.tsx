@@ -176,7 +176,6 @@ export default function StudentsList({ user, program, students }: Props) {
                                     </div>
                                 </div>
                             </div>
-                            </div>
                         </CardHeader>
                         {selectedUserIds.length > 0 && (
                             <div className="flex items-center justify-between border-y border-emerald-200 bg-emerald-50/50 px-6 py-3 dark:border-emerald-800/30 dark:bg-emerald-900/10 transition-all">

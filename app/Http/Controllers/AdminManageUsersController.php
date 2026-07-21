@@ -254,6 +254,8 @@ class AdminManageUsersController extends Controller
             'role' => ['required', 'string', 'max:255'],
             'is_active' => ['sometimes', 'boolean'],
             'qr_code_data_url' => ['nullable', 'string'],
+            'officer_features' => ['nullable', 'array'],
+            'officer_features.*' => ['string'],
         ]);
 
         $name = trim(implode(' ', array_filter([
@@ -281,6 +283,7 @@ class AdminManageUsersController extends Controller
             'is_active' => $validated['is_active'] ?? true,
             'status' => 'pending',
             'qr_code_path' => $qrCodePath,
+            'officer_features' => $validated['officer_features'] ?? null,
         ];
 
         if (Schema::hasColumn('students', 'is_archived')) {
@@ -471,6 +474,8 @@ class AdminManageUsersController extends Controller
             'role' => ['required', 'string', 'max:255'],
             'is_active' => ['sometimes', 'boolean'],
             'qr_code_data_url' => ['nullable', 'string'],
+            'officer_features' => ['nullable', 'array'],
+            'officer_features.*' => ['string'],
         ]);
 
         $name = trim(implode(' ', array_filter([
@@ -494,6 +499,7 @@ class AdminManageUsersController extends Controller
             'year_level' => $validated['year_level'],
             'role' => $validated['role'],
             'is_active' => $validated['is_active'] ?? $student->is_active,
+            'officer_features' => $validated['officer_features'] ?? null,
         ]);
 
         if (!empty($validated['password'])) {

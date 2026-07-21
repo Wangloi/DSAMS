@@ -54,6 +54,7 @@ class Student extends Authenticatable
         'guardian_name',
         'guardian_relation',
         'guardian_contact',
+        'officer_features',
     ];
 
     protected $hidden = [
@@ -70,6 +71,7 @@ class Student extends Authenticatable
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
             'is_active' => 'boolean',
+            'officer_features' => 'array',
         ];
     }
 

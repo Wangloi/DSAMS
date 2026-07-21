@@ -21,6 +21,7 @@ export function useManageUsers(errors: Record<string, string> = {}) {
         course: '',
         year_level: '',
         role: 'Student',
+        officer_features: [],
     };
 
     const [form, setForm] = useState<UserForm>(emptyForm);
@@ -53,6 +54,7 @@ export function useManageUsers(errors: Record<string, string> = {}) {
                 program: user.program ?? user.course ?? '',
                 password: '',
                 role: user.role ?? 'Program Head',
+                officer_features: user.officer_features ?? [],
             });
             setOpen(true);
             return;
@@ -68,6 +70,7 @@ export function useManageUsers(errors: Record<string, string> = {}) {
             course: user.course ?? '',
             year_level: user.year_level ?? '',
             role: user.role ?? 'Student',
+            officer_features: user.officer_features ?? [],
         });
         setOpen(true);
     };

@@ -41,6 +41,7 @@ export type UserRow = {
     created_at?: string | null;
     updated_at?: string | null;
     userType?: 'student' | 'program_head' | string;
+    officer_features?: string[] | null;
 };
 
 export type PageProps = {
@@ -64,4 +65,5 @@ export type UserForm = {
     course: string;
     year_level: string;
     role: string;
+    officer_features?: string[];
 };
