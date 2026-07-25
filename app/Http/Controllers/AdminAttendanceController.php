@@ -87,6 +87,7 @@ class AdminAttendanceController extends Controller
                     'geofenceLatitude' => $event->geofence_latitude,
                     'geofenceLongitude' => $event->geofence_longitude,
                     'geofenceRadiusM' => (int) ($event->geofence_radius_m ?? 50),
+                    'attendance_type' => $event->attendance_type ?? 'qr_scanner',
                 ];
             });
 
@@ -222,7 +223,7 @@ class AdminAttendanceController extends Controller
     public function logs(Request $request, Event $event): JsonResponse
     {
         if (Schema::hasColumn('events', 'scanner_portal_active') && ! empty($event->registration_end_time)) {
-            $cutoff = Carbon::parse($event->event_date->format('Y-m-d').' '.$event->registration_end_time);
+            $cutoff = Carbon::parse(Carbon::parse($event->event_date)->format('Y-m-d').' '.$event->registration_end_time);
             $blockAt = $cutoff->copy()->addMinutes(30);
             if (Carbon::now()->greaterThanOrEqualTo($blockAt) && (bool) $event->scanner_portal_active) {
                 $event->update(['scanner_portal_active' => false]);
@@ -367,7 +368,7 @@ class AdminAttendanceController extends Controller
         }
 
         if (Schema::hasColumn('events', 'scanner_portal_active') && ! empty($event->registration_end_time)) {
-            $cutoff = Carbon::parse($event->event_date->format('Y-m-d').' '.$event->registration_end_time);
+            $cutoff = Carbon::parse(Carbon::parse($event->event_date)->format('Y-m-d').' '.$event->registration_end_time);
             $blockAt = $cutoff->copy()->addMinutes(30);
             if (Carbon::now()->greaterThanOrEqualTo($blockAt) && (bool) $event->scanner_portal_active) {
                 $event->update(['scanner_portal_active' => false]);
@@ -461,7 +462,7 @@ class AdminAttendanceController extends Controller
         $status = 'present';
 
         if (! empty($event->registration_end_time)) {
-            $cutoff = Carbon::parse($event->event_date->format('Y-m-d').' '.$event->registration_end_time);
+            $cutoff = Carbon::parse(Carbon::parse($event->event_date)->format('Y-m-d').' '.$event->registration_end_time);
 
             $blockAt = $cutoff->copy()->addMinutes(30);
             if ($now->greaterThanOrEqualTo($blockAt)) {
@@ -586,6 +587,7 @@ class AdminAttendanceController extends Controller
             'geofenceLatitude' => 'nullable|numeric',
             'geofenceLongitude' => 'nullable|numeric',
             'geofenceRadiusM' => 'nullable|integer|min:10|max:500',
+            'attendanceType' => 'nullable|string|in:qr_scanner,dynamic_qr',
         ]);
 
         $geofenceEnabled = (bool) ($validated['geofenceEnabled'] ?? false);
@@ -626,6 +628,7 @@ class AdminAttendanceController extends Controller
                 'geofence_latitude' => $geofenceEnabled ? $geofenceLat : null,
                 'geofence_longitude' => $geofenceEnabled ? $geofenceLng : null,
                 'geofence_radius_m' => $geofenceRadius,
+                'attendance_type' => $validated['attendanceType'] ?? 'qr_scanner',
             ]);
 
             $dispatcher = app(StudentNotificationDispatcher::class);
@@ -670,6 +673,7 @@ class AdminAttendanceController extends Controller
             'geofenceLatitude' => 'nullable|numeric',
             'geofenceLongitude' => 'nullable|numeric',
             'geofenceRadiusM' => 'nullable|integer|min:10|max:500',
+            'attendanceType' => 'nullable|string|in:qr_scanner,dynamic_qr',
         ]);
 
         $geofenceEnabled = (bool) ($validated['geofenceEnabled'] ?? false);
@@ -711,6 +715,7 @@ class AdminAttendanceController extends Controller
                 'geofence_latitude' => $geofenceEnabled ? $geofenceLat : null,
                 'geofence_longitude' => $geofenceEnabled ? $geofenceLng : null,
                 'geofence_radius_m' => $geofenceRadius,
+                'attendance_type' => $validated['attendanceType'] ?? $event->attendance_type ?? 'qr_scanner',
             ]);
             $changedFields = array_keys($event->getDirty());
             $event->save();
@@ -819,7 +824,7 @@ class AdminAttendanceController extends Controller
             ];
         }
 
-        $dateLabel = $event->event_date ? $event->event_date->format('F d, Y') : '';
+        $dateLabel = $event->event_date ? Carbon::parse($event->event_date)->format('F d, Y') : '';
         $timeLabel = (string) ($event->event_time ?? '');
         $locationLabel = (string) ($event->location ?? '');
         $eventDateTimeLabel = trim($dateLabel.($timeLabel ? ' | '.$timeLabel : '').($locationLabel ? ' | '.$locationLabel : ''));

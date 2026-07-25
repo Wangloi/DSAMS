@@ -75,78 +75,88 @@ class FortifyServiceProvider extends ServiceProvider
 
     /**
      * Configure rate limiting.
+     *
+     * The throttle key combines the normalized identifier value submitted by
+     * the user with their IP address. This mirrors the pattern used by
+     * Laravel Fortify's own AttemptToAuthenticate action and ensures:
+     *
+     *  - Per-user throttling (keyed on the identifier they submit)
+     *  - Per-IP throttling (prevents distributing attempts across accounts)
+     *  - No empty-key collapse (unlike Fortify::username() which reads 'email',
+     *    a field our unified login form never sends)
      */
-    /**
- * Configure rate limiting.
- */
-private function configureRateLimiting(): void
-{
-    RateLimiter::for('two-factor', function (Request $request) {
-        return Limit::perMinute(5)->by($request->session()->get('login.id'));
-    });
+    private function configureRateLimiting(): void
+    {
+        RateLimiter::for('two-factor', function (Request $request) {
+            return Limit::perMinute(5)->by($request->session()->get('login.id'));
+        });
 
-    // Default / Student Login Rate Limiter
-    RateLimiter::for('login', function (Request $request) {
-        $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())));
+        // Default / Student login rate limiter
+        RateLimiter::for('login', function (Request $request) {
+            // Use 'identifier' — the actual field name submitted by the unified
+            // login form — rather than Fortify::username() which resolves to
+            // 'email' (a field that is never present in our form).
+            $throttleKey = Str::transliterate(Str::lower($request->input('identifier', '')))
+                . '|' . $request->ip();
 
-        return Limit::perMinute(5)
-            ->by($throttleKey)
-            ->response(function (Request $req) use ($throttleKey) {
-                $seconds = RateLimiter::availableIn($throttleKey);
-                
-                if ($req->expectsJson()) {
-                    return response()->json([
-                        'message' => 'Too many login attempts. Please try again in ' . $seconds . ' seconds.',
-                    ], 429);
-                }
-                
-                $req->session()->put('active_guard', 'student');
-                return response()->view('auth.lockout', ['seconds' => $seconds], 200);
-            });
-    });
+            return Limit::perMinute(5)
+                ->by($throttleKey)
+                ->response(function (Request $req) use ($throttleKey) {
+                    $seconds = RateLimiter::availableIn($throttleKey);
 
-    // Admin login rate limiter
-    RateLimiter::for('admin-login', function (Request $request) {
-        $throttleKey = 'admin|' . Str::transliterate(Str::lower($request->input(Fortify::username())));
+                    if ($req->expectsJson()) {
+                        return response()->json([
+                            'message' => 'Too many login attempts. Please try again in ' . $seconds . ' seconds.',
+                        ], 429);
+                    }
 
-        return Limit::perMinute(5)
-            ->by($throttleKey)
-            ->response(function (Request $req) use ($throttleKey) {
-                $seconds = RateLimiter::availableIn($throttleKey);
-                
-                // 1. Check if the request is from Inertia (JSON)
-                if ($req->expectsJson()) {
-                    return response()->json([
-                        'message' => 'Too many login attempts. Please try again in ' . $seconds . ' seconds.',
-                    ], 429);
-                }
+                    $req->session()->put('active_guard', 'student');
+                    return response()->view('auth.lockout', ['seconds' => $seconds], 200);
+                });
+        });
 
-                // Fallback for native/non-JS requests
-                $req->session()->put('active_guard', 'admin');
-                return response()->view('auth.admin-lockout', ['seconds' => $seconds], 200);
-            });
-    });
+        // Admin login rate limiter
+        RateLimiter::for('admin-login', function (Request $request) {
+            $throttleKey = 'admin|'
+                . Str::transliterate(Str::lower($request->input('identifier', '')))
+                . '|' . $request->ip();
 
-    // Program Head login rate limiter
-    RateLimiter::for('program-head-login', function (Request $request) {
-        $throttleKey = 'program_head|' . Str::transliterate(Str::lower($request->input(Fortify::username())));
+            return Limit::perMinute(5)
+                ->by($throttleKey)
+                ->response(function (Request $req) use ($throttleKey) {
+                    $seconds = RateLimiter::availableIn($throttleKey);
 
-        return Limit::perMinute(5)
-            ->by($throttleKey)
-            ->response(function (Request $req) use ($throttleKey) {
-                $seconds = RateLimiter::availableIn($throttleKey);
+                    if ($req->expectsJson()) {
+                        return response()->json([
+                            'message' => 'Too many login attempts. Please try again in ' . $seconds . ' seconds.',
+                        ], 429);
+                    }
 
-                // 2. Check if the request is from Inertia (JSON)
-                if ($req->expectsJson()) {
-                    return response()->json([
-                        'message' => 'Too many login attempts. Please try again in ' . $seconds . ' seconds.',
-                    ], 429);
-                }
+                    $req->session()->put('active_guard', 'admin');
+                    return response()->view('auth.admin-lockout', ['seconds' => $seconds], 200);
+                });
+        });
 
-                // Fallback for native/non-JS requests
-                $req->session()->put('active_guard', 'program_head');
-                return response()->view('auth.program-head-lockout', ['seconds' => $seconds], 200);
-            });
-    });
-}
+        // Program Head login rate limiter
+        RateLimiter::for('program-head-login', function (Request $request) {
+            $throttleKey = 'program_head|'
+                . Str::transliterate(Str::lower($request->input('identifier', '')))
+                . '|' . $request->ip();
+
+            return Limit::perMinute(5)
+                ->by($throttleKey)
+                ->response(function (Request $req) use ($throttleKey) {
+                    $seconds = RateLimiter::availableIn($throttleKey);
+
+                    if ($req->expectsJson()) {
+                        return response()->json([
+                            'message' => 'Too many login attempts. Please try again in ' . $seconds . ' seconds.',
+                        ], 429);
+                    }
+
+                    $req->session()->put('active_guard', 'program_head');
+                    return response()->view('auth.program-head-lockout', ['seconds' => $seconds], 200);
+                });
+        });
+    }
 }

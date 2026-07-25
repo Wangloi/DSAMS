@@ -6,18 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 
-/**
- * EventForm props. The parent component (CreateEventPage) should pass all state
- * and handlers needed for the multi‑step form. This component only renders the
- * UI and forwards user interactions back via the supplied callbacks.
- */
 interface EventFormProps {
   formData: any;
   setFormData: (updater: React.SetStateAction<any>) => void;
   validationErrors: Record<string, string>;
   clearFieldError: (field: string) => void;
   currentStep: number;
-  setCurrentStep: (step: number) => void;
+  setCurrentStep: React.Dispatch<React.SetStateAction<number>>;
   computedExpectedAttendees: number;
   showMapSelector: boolean;
   setShowMapSelector: (show: boolean) => void;
@@ -64,11 +59,11 @@ export default function EventForm({
   const handleNext = () => {
     // In a real implementation the parent should expose validation functions.
     // Here we simply increment the step.
-    setCurrentStep(prev => Math.min(prev + 1, 3));
+    setCurrentStep((prev: number) => Math.min(prev + 1, 3));
   };
 
   const handleBack = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 1));
+    setCurrentStep((prev: number) => Math.max(prev - 1, 1));
   };
 
   // The UI markup below is largely copied from the original create.tsx file.
@@ -115,7 +110,7 @@ export default function EventForm({
             <Input
               id="event_name"
               value={formData.event_name}
-              onChange={e => { setFormData(prev => ({ ...prev, event_name: e.target.value })); clearFieldError('event_name'); }}
+              onChange={e => { setFormData((prev: any) => ({ ...prev, event_name: e.target.value })); clearFieldError('event_name'); }}
               className={validationErrors.event_name ? 'border-rose-500' : ''}
               required
             />
@@ -124,16 +119,14 @@ export default function EventForm({
           {/* Organizer */}
           <div className="grid gap-2">
             <Label htmlFor="organizer" className="text-sm font-medium">Organizer *</Label>
-            <Select value={formData.organizer} onValueChange={v => { setFormData(prev => ({ ...prev, organizer: v })); clearFieldError('organizer'); }}>
+            <Select value={formData.organizer} onValueChange={v => { setFormData((prev: any) => ({ ...prev, organizer: v })); clearFieldError('organizer'); }}>
               <SelectTrigger id="organizer" className={validationErrors.organizer ? 'border-rose-500' : ''}>
                 <SelectValue placeholder="Select organizer" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Admin Office">Admin Office</SelectItem>
-                <SelectItem value="Academic Affairs">Academic Affairs</SelectItem>
-                <SelectItem value="Student Affairs">Student Affairs</SelectItem>
-                <SelectItem value="Sports Department">Sports Department</SelectItem>
-                <SelectItem value="Library">Library</SelectItem>
+                <SelectItem value="Office Student Affairs">Office Student Affairs</SelectItem>
+                <SelectItem value="Dean of College">Dean of College</SelectItem>
+                <SelectItem value="HED Library">HED Library</SelectItem>
                 <SelectItem value="Guidance Office">Guidance Office</SelectItem>
               </SelectContent>
             </Select>
@@ -143,12 +136,12 @@ export default function EventForm({
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="event_date" className="text-sm font-medium">Date *</Label>
-              <Input id="event_date" type="date" value={formData.event_date} onChange={e => { setFormData(prev => ({ ...prev, event_date: e.target.value })); clearFieldError('event_date'); }} className={validationErrors.event_date ? 'border-rose-500' : ''} required />
+              <Input id="event_date" type="date" value={formData.event_date} onChange={e => { setFormData((prev: any) => ({ ...prev, event_date: e.target.value })); clearFieldError('event_date'); }} className={validationErrors.event_date ? 'border-rose-500' : ''} required />
               {validationErrors.event_date && <span className="text-xs text-rose-500">{validationErrors.event_date}</span>}
             </div>
             <div className="grid gap-2">
               <Label htmlFor="event_time" className="text-sm font-medium">Time *</Label>
-              <Input id="event_time" type="time" value={formData.event_time} onChange={e => { setFormData(prev => ({ ...prev, event_time: e.target.value })); clearFieldError('event_time'); }} className={validationErrors.event_time ? 'border-rose-500' : ''} required />
+              <Input id="event_time" type="time" value={formData.event_time} onChange={e => { setFormData((prev: any) => ({ ...prev, event_time: e.target.value })); clearFieldError('event_time'); }} className={validationErrors.event_time ? 'border-rose-500' : ''} required />
               {validationErrors.event_time && <span className="text-xs text-rose-500">{validationErrors.event_time}</span>}
             </div>
           </div>

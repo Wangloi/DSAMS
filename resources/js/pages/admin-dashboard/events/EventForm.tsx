@@ -92,18 +92,7 @@ export default function EventForm({
             {errors.event_name && <p className="text-sm text-red-500 mt-1">{errors.event_name}</p>}
           </div>
 
-          <div>
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={data.description}
-              onChange={e => setData('description', e.target.value)}
-              placeholder="Enter event description"
-              rows={3}
-              className={errors.description ? 'border-red-500' : ''}
-            />
-            {errors.description && <p className="text-sm text-red-500 mt-1">{errors.description}</p>}
-          </div>
+
 
           <div>
             <Label htmlFor="organizer">Organizer *</Label>

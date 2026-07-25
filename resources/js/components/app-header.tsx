@@ -107,38 +107,32 @@ export function AppHeader({
                                             page.props.recentNotifications.length >
                                             0 ? (
                                             <div className="max-h-[320px] overflow-auto">
-                                                {page.props.recentNotifications.map(
-                                                    (n: any) => (
-                                                        <div
-                                                            key={
-                                                                n?.id ??
-                                                                Math.random()
-                                                            }
-                                                            className="cursor-default rounded-lg px-2 py-2 hover:bg-neutral-50"
+                                                {page.props.recentNotifications.map((n: any) => {
+                                                    const Wrapper = n?.url ? Link : 'div';
+                                                    return (
+                                                        <Wrapper
+                                                            key={n?.id ?? Math.random()}
+                                                            href={n?.url}
+                                                            className={`block rounded-lg px-2 py-2 hover:bg-neutral-50 ${n?.url ? 'cursor-pointer' : 'cursor-default'}`}
                                                         >
                                                             <div className="min-w-0">
                                                                 <div className="truncate text-sm font-medium text-neutral-900">
-                                                                    {n?.title ??
-                                                                        'Notification'}
+                                                                    {n?.title ?? 'Notification'}
                                                                 </div>
                                                                 {n?.subtitle && (
                                                                     <div className="truncate text-xs text-neutral-600">
-                                                                        {
-                                                                            n.subtitle
-                                                                        }
+                                                                        {n.subtitle}
                                                                     </div>
                                                                 )}
                                                                 {n?.timeAgo && (
                                                                     <div className="mt-1 text-[11px] text-neutral-500">
-                                                                        {
-                                                                            n.timeAgo
-                                                                        }
+                                                                        {n.timeAgo}
                                                                     </div>
                                                                 )}
                                                             </div>
-                                                        </div>
-                                                    ),
-                                                )}
+                                                        </Wrapper>
+                                                    );
+                                                })}
                                             </div>
                                         ) : (
                                             <div className="px-2 py-3 text-sm text-neutral-600">

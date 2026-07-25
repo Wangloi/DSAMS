@@ -145,7 +145,8 @@ return [
 
     'features' => [
         Features::registration(),
-        Features::resetPasswords(),
+        // resetPasswords() is intentionally disabled — handled by custom ForgotPasswordController
+        // and ResetPasswordController which support students, admin_users, and program_heads
         Features::emailVerification(),
         Features::twoFactorAuthentication([
             'confirm' => true,

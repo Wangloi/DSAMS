@@ -30,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
             HandleInertiaRequests::class,
             \App\Http\Middleware\SecurityAudit::class,
+            \App\Http\Middleware\HandleAppearance::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

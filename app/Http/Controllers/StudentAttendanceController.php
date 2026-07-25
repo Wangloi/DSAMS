@@ -102,7 +102,7 @@ class StudentAttendanceController extends Controller
         }
 
         $accuracyM = (float) $accuracyM;
-        if ($accuracyM > 50) {
+        if ($accuracyM > 150) {
             if (Schema::hasTable('activity_logs')) {
                 ActivityLog::logForUser($scanner, 'Attendance', 'Denied', 'Location accuracy too low (' . $accuracyM . 'm) for event #' . $event->id, $request);
             }
@@ -120,11 +120,16 @@ class StudentAttendanceController extends Controller
         }
 
         $distance = $this->haversineDistanceMeters((float) $lat, (float) $lng, (float) $eventLat, (float) $eventLng);
-        if ($distance > $radius) {
+        $buffer = min($accuracyM, 50.0);
+        if (($distance - $buffer) > $radius) {
             if (Schema::hasTable('activity_logs')) {
-                ActivityLog::logForUser($scanner, 'Attendance', 'Denied', "Geofence violation: {$distance}m from event #{$event->id} (radius: {$radius}m)", $request);
+                ActivityLog::logForUser($scanner, 'Attendance', 'Denied', "Geofence violation: {$distance}m from event #{$event->id} (radius: {$radius}m, accuracy buffer: {$buffer}m)", $request);
             }
-            return response()->json(['message' => 'You are not within the event area. Please go near the event location to attend.'], 403);
+            return response()->json([
+                'message' => 'Geofence violation: You must be physically at the event venue to check-in/out.',
+                'distance_m' => round($distance, 1),
+                'allowed_radius_m' => $radius,
+            ], 403);
         }
 
         return null;
@@ -346,7 +351,8 @@ class StudentAttendanceController extends Controller
         }
 
         if (Schema::hasColumn('events', 'scanner_portal_active') && ! empty($event->registration_end_time)) {
-            $cutoff = Carbon::parse($event->event_date->format('Y-m-d').' '.$event->registration_end_time);
+            $eventDate = Carbon::parse($event->event_date);
+            $cutoff = Carbon::parse($eventDate->format('Y-m-d').' '.$event->registration_end_time);
             $blockAt = $cutoff->copy()->addMinutes(30);
             if (Carbon::now()->greaterThanOrEqualTo($blockAt) && (bool) $event->scanner_portal_active) {
                 $event->update(['scanner_portal_active' => false]);
@@ -418,7 +424,8 @@ class StudentAttendanceController extends Controller
         }
 
         if (Schema::hasColumn('events', 'scanner_portal_active') && ! empty($event->registration_end_time)) {
-            $cutoff = Carbon::parse($event->event_date->format('Y-m-d').' '.$event->registration_end_time);
+            $eventDate = Carbon::parse($event->event_date);
+            $cutoff = Carbon::parse($eventDate->format('Y-m-d').' '.$event->registration_end_time);
             $blockAt = $cutoff->copy()->addMinutes(30);
             if (Carbon::now()->greaterThanOrEqualTo($blockAt) && (bool) $event->scanner_portal_active) {
                 $event->update(['scanner_portal_active' => false]);
@@ -502,13 +509,14 @@ class StudentAttendanceController extends Controller
         $status = 'present';
 
         if (! empty($event->registration_end_time)) {
-            $cutoff = Carbon::parse($event->event_date->format('Y-m-d').' '.$event->registration_end_time);
+            $eventDate = Carbon::parse($event->event_date);
+            $cutoff = Carbon::parse($eventDate->format('Y-m-d').' '.$event->registration_end_time);
             $blockAt = $cutoff->copy()->addMinutes(30);
 
             \Log::warning('[ScannerPortal][scanAttendance] time check', [
                 'now' => $now->toDateTimeString(),
                 'app_timezone' => (string) config('app.timezone'),
-                'event_date' => $event->event_date?->toDateString(),
+                'event_date' => $event->event_date ? Carbon::parse($event->event_date)->toDateString() : null,
                 'registration_end_time' => $event->registration_end_time,
                 'cutoff' => $cutoff->toDateTimeString(),
                 'blockAt' => $blockAt->toDateTimeString(),
@@ -679,7 +687,7 @@ class StudentAttendanceController extends Controller
             }
 
             $accuracyM = (float) $accuracyM;
-            if ($accuracyM > 50) {
+            if ($accuracyM > 150) {
                 return response()->json(['message' => 'Location accuracy is too low. Please move to an open area and try again.'], 422);
             }
 
@@ -692,9 +700,10 @@ class StudentAttendanceController extends Controller
             }
 
             $distance = $this->haversineDistanceMeters((float) $lat, (float) $lng, (float) $eventLat, (float) $eventLng);
-            if ($distance > $radius) {
+            $buffer = min($accuracyM, 50.0);
+            if (($distance - $buffer) > $radius) {
                 if (Schema::hasTable('activity_logs')) {
-                    ActivityLog::logForUser($student, 'Attendance', 'Denied', "Geofence violation: {$distance}m from event #{$event->id} (radius: {$radius}m)", $request);
+                    ActivityLog::logForUser($student, 'Attendance', 'Denied', "Geofence violation: {$distance}m from event #{$event->id} (radius: {$radius}m, accuracy buffer: {$buffer}m)", $request);
                 }
                 return response()->json([
                     'message'  => 'You are not within the event area. Please move closer to the venue.',
@@ -747,7 +756,8 @@ class StudentAttendanceController extends Controller
         $status = 'present';
 
         if (! empty($event->registration_end_time)) {
-            $cutoff  = Carbon::parse($event->event_date->format('Y-m-d') . ' ' . $event->registration_end_time);
+            $eventDate = Carbon::parse($event->event_date);
+            $cutoff  = Carbon::parse($eventDate->format('Y-m-d') . ' ' . $event->registration_end_time);
             $blockAt = $cutoff->copy()->addMinutes(30);
 
             if ($now->greaterThanOrEqualTo($blockAt)) {

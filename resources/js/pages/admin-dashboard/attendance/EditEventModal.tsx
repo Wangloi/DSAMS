@@ -43,6 +43,7 @@ type AttendanceRow = {
     geofenceLatitude?: number | string | null;
     geofenceLongitude?: number | string | null;
     geofenceRadiusM?: number | string | null;
+    attendance_type?: string;
 };
 
 type EditEventPayload = {
@@ -62,6 +63,7 @@ type EditEventPayload = {
     geofenceLatitude: string;
     geofenceLongitude: string;
     geofenceRadiusM: string;
+    attendanceType: string;
 };
 
 type Props = {
@@ -92,6 +94,7 @@ export default function EditEventModal({ open, onOpenChange, onClose, onSubmit, 
         geofenceLatitude: '',
         geofenceLongitude: '',
         geofenceRadiusM: '50',
+        attendanceType: 'qr_scanner',
     });
 
     const [scannerStudentIdInput, setScannerStudentIdInput] = useState<string>('');
@@ -106,6 +109,7 @@ export default function EditEventModal({ open, onOpenChange, onClose, onSubmit, 
             ...prev,
             geofenceLatitude: lat.toFixed(6),
             geofenceLongitude: lng.toFixed(6),
+            ...(name ? { location: name } : {}),
         }));
         setSelectedLocationName(name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
     };
@@ -137,6 +141,7 @@ export default function EditEventModal({ open, onOpenChange, onClose, onSubmit, 
                 geofenceLatitude: String((editingEvent as any)?.geofenceLatitude ?? ''),
                 geofenceLongitude: String((editingEvent as any)?.geofenceLongitude ?? ''),
                 geofenceRadiusM: String((editingEvent as any)?.geofenceRadiusM ?? 50),
+                attendanceType: editingEvent.attendance_type ?? 'qr_scanner',
             });
 
             setScannerStudentIdInput('');
@@ -169,6 +174,7 @@ export default function EditEventModal({ open, onOpenChange, onClose, onSubmit, 
             geofenceLatitude: '',
             geofenceLongitude: '',
             geofenceRadiusM: '50',
+            attendanceType: 'qr_scanner',
         });
         setScannerStudentIdInput('');
         setScannerStudentName('');
@@ -323,12 +329,10 @@ export default function EditEventModal({ open, onOpenChange, onClose, onSubmit, 
                                         <SelectValue placeholder="Select organizer" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="Admin Office">Admin Office</SelectItem>
-                                        <SelectItem value="Academic Affairs">Academic Affairs</SelectItem>
-                                        <SelectItem value="Student Affairs">Student Affairs</SelectItem>
-                                        <SelectItem value="Sports Department">Sports Department</SelectItem>
-                                        <SelectItem value="Library">Library</SelectItem>
-                                        <SelectItem value="Guidance Office">Guidance Office</SelectItem>
+                                         <SelectItem value="Office Student Affairs">Office Student Affairs</SelectItem>
+                                         <SelectItem value="Dean of College">Dean of College</SelectItem>
+                                         <SelectItem value="HED Library">HED Library</SelectItem>
+                                         <SelectItem value="Guidance Office">Guidance Office</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -345,6 +349,24 @@ export default function EditEventModal({ open, onOpenChange, onClose, onSubmit, 
                                     className="h-9"
                                     required
                                 />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="attendanceType" className="text-sm font-medium text-slate-700">
+                                    Attendance Method *
+                                </Label>
+                                <Select
+                                    value={formData.attendanceType || 'qr_scanner'}
+                                    onValueChange={(val) => setFormData(prev => ({ ...prev, attendanceType: val }))}
+                                >
+                                    <SelectTrigger className="h-9">
+                                        <SelectValue placeholder="Select check-in method" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="qr_scanner">QR Scanner (Camera scan by admin)</SelectItem>
+                                        <SelectItem value="dynamic_qr">Dynamic Rotation QR (Self scan by students)</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             <div className="grid gap-2">
@@ -547,20 +569,6 @@ export default function EditEventModal({ open, onOpenChange, onClose, onSubmit, 
                                         </div>
                                     )}
                                 </div>
-                            </div>
-
-                            <div className="grid gap-2 sm:col-span-2">
-                                <Label htmlFor="description" className="text-sm font-medium text-slate-700">
-                                    Description
-                                </Label>
-                                <textarea
-                                    id="description"
-                                    value={formData.description}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                                    placeholder="Enter event description (optional)"
-                                    className="min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                    rows={3}
-                                />
                             </div>
 
                             <div className="grid gap-2 sm:col-span-2">

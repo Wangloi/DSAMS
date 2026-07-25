@@ -127,6 +127,24 @@ return [
             'expire' => 60,
             'throttle' => 60,
         ],
+        'students' => [
+            'provider' => 'students',
+            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+        'admin_users' => [
+            'provider' => 'admin_users',
+            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+        'program_heads' => [
+            'provider' => 'program_heads',
+            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
+            'expire' => 60,
+            'throttle' => 60,
+        ],
     ],
 
     /*

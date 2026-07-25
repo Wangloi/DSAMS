@@ -1,7 +1,7 @@
 import { Transition } from '@headlessui/react';
 import { Form } from '@inertiajs/react';
-import { CheckCircle2, Lock } from 'lucide-react';
-import { useRef } from 'react';
+import { CheckCircle2, Eye, EyeOff, Lock } from 'lucide-react';
+import { useRef, useState } from 'react';
 import PasswordController from '@/actions/App/Http/Controllers/Settings/PasswordController';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,10 @@ const inputClassName =
 export default function Password() {
     const passwordInput = useRef<HTMLInputElement>(null);
     const currentPasswordInput = useRef<HTMLInputElement>(null);
+
+    const [showCurrent, setShowCurrent] = useState(false);
+    const [showNew, setShowNew] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
 
     return (
         <SettingsPageLayout title="Password settings">
@@ -54,15 +58,26 @@ export default function Password() {
                                     <Label htmlFor="current_password" className="text-slate-700 dark:text-slate-300">
                                         Current password
                                     </Label>
-                                    <Input
-                                        id="current_password"
-                                        ref={currentPasswordInput}
-                                        name="current_password"
-                                        type="password"
-                                        className={inputClassName}
-                                        autoComplete="current-password"
-                                        placeholder="Enter current password"
-                                    />
+                                    <div className="relative">
+                                        <Input
+                                            id="current_password"
+                                            ref={currentPasswordInput}
+                                            name="current_password"
+                                            type={showCurrent ? 'text' : 'password'}
+                                            className={inputClassName + ' pr-10'}
+                                            autoComplete="current-password"
+                                            placeholder="Enter current password"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowCurrent((v) => !v)}
+                                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                                            tabIndex={-1}
+                                            aria-label={showCurrent ? 'Hide password' : 'Show password'}
+                                        >
+                                            {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                        </button>
+                                    </div>
                                     <InputError message={errors.current_password} />
                                 </div>
 
@@ -71,29 +86,51 @@ export default function Password() {
                                         <Label htmlFor="password" className="text-slate-700 dark:text-slate-300">
                                             New password
                                         </Label>
-                                        <Input
-                                            id="password"
-                                            ref={passwordInput}
-                                            name="password"
-                                            type="password"
-                                            className={inputClassName}
-                                            autoComplete="new-password"
-                                            placeholder="New password"
-                                        />
+                                        <div className="relative">
+                                            <Input
+                                                id="password"
+                                                ref={passwordInput}
+                                                name="password"
+                                                type={showNew ? 'text' : 'password'}
+                                                className={inputClassName + ' pr-10'}
+                                                autoComplete="new-password"
+                                                placeholder="New password"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowNew((v) => !v)}
+                                                className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                                                tabIndex={-1}
+                                                aria-label={showNew ? 'Hide password' : 'Show password'}
+                                            >
+                                                {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            </button>
+                                        </div>
                                         <InputError message={errors.password} />
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="password_confirmation" className="text-slate-700 dark:text-slate-300">
                                             Confirm new password
                                         </Label>
-                                        <Input
-                                            id="password_confirmation"
-                                            name="password_confirmation"
-                                            type="password"
-                                            className={inputClassName}
-                                            autoComplete="new-password"
-                                            placeholder="Repeat new password"
-                                        />
+                                        <div className="relative">
+                                            <Input
+                                                id="password_confirmation"
+                                                name="password_confirmation"
+                                                type={showConfirm ? 'text' : 'password'}
+                                                className={inputClassName + ' pr-10'}
+                                                autoComplete="new-password"
+                                                placeholder="Repeat new password"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowConfirm((v) => !v)}
+                                                className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                                                tabIndex={-1}
+                                                aria-label={showConfirm ? 'Hide password' : 'Show password'}
+                                            >
+                                                {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            </button>
+                                        </div>
                                         <InputError message={errors.password_confirmation} />
                                     </div>
                                 </div>

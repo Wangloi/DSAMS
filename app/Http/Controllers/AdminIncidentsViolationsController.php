@@ -469,9 +469,9 @@ class AdminIncidentsViolationsController extends Controller
             'id' => 0,
             'incident_id' => $incident->id,
             'action_type' => $actionType,
-            'date' => $incident->incident_date ? \Illuminate\Support\Carbon::parse($incident->incident_date)->format('M Y') : '—',
+            'date' => $incident->incident_date ? Carbon::parse($incident->incident_date)->format('M Y') : '—',
             'description' => $incident->incident_type,
-            'case_ref' => $incident->incident_date ? (\Illuminate\Support\Carbon::parse($incident->incident_date)->format('Y') . '-' . str_pad((string)$incident->id, 4, '0', STR_PAD_LEFT)) : null,
+            'case_ref' => $incident->incident_date ? (Carbon::parse($incident->incident_date)->format('Y') . '-' . str_pad((string)$incident->id, 4, '0', STR_PAD_LEFT)) : null,
             'is_current' => true,
         ];
 

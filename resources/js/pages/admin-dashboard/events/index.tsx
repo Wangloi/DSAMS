@@ -763,91 +763,6 @@ export default function AdminEventsIndex() {
                                             editable={true}
                                         />
                                     </div>
-                                    <CreateEventModal
-                                        open={isEventModalOpen}
-                                        onOpenChange={setIsEventModalOpen}
-                                        onClose={() => setIsEventModalOpen(false)}
-                                        onSubmit={(payload: CreateEventPayload) => {
-                                            if (modalMode === 'create') {
-                                                Swal.fire({
-                                                    title: 'Confirm Create Event',
-                                                    text: 'Are you sure you want to create this event?',
-                                                    icon: 'question',
-                                                    showCancelButton: true,
-                                                    confirmButtonColor: '#1e40af',
-                                                    cancelButtonColor: '#6b7280',
-                                                    confirmButtonText: 'Yes, create',
-                                                }).then((result) => {
-                                                    if (result.isConfirmed) {
-                                                        router.post(adminEvents(), {
-                                                            event_name: payload.eventName,
-                                                            description: payload.description,
-                                                            courses: payload.courses,
-                                                            year_levels: payload.yearLevels,
-                                                            location: payload.location,
-                                                            event_date: payload.eventDate,
-                                                            event_time: payload.eventTime,
-                                                            registration_end_time: payload.registrationEndTime,
-                                                            organizer: payload.organizer,
-                                                            geofence_enabled: payload.geofenceEnabled,
-                                                            geofence_latitude: payload.geofenceLatitude,
-                                                            geofence_longitude: payload.geofenceLongitude,
-                                                            geofence_radius_m: payload.geofenceRadiusM,
-                                                            scanner_portal_active: true,
-                                                        }, {
-                                                            onSuccess: () => {
-                                                                setIsEventModalOpen(false);
-                                                                Swal.fire({ icon: 'success', title: 'Created!', text: 'Event created successfully.', timer: 2000, showConfirmButton: false });
-                                                            },
-                                                            onError: () => Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to create event. Please check the form.' }),
-                                                        });
-                                                    }
-                                                });
-                                            } else if (modalMode === 'edit' && modalData?.id) {
-                                                Swal.fire({
-                                                    title: 'Confirm Update Event',
-                                                    text: 'Are you sure you want to update this event?',
-                                                    icon: 'question',
-                                                    showCancelButton: true,
-                                                    confirmButtonColor: '#1e40af',
-                                                    cancelButtonColor: '#6b7280',
-                                                    confirmButtonText: 'Yes, update',
-                                                }).then((result) => {
-                                                    if (result.isConfirmed) {
-                                                        router.put(`/admin/events/${modalData.id}`, {
-                                                            event_name: payload.eventName,
-                                                            description: payload.description,
-                                                            courses: payload.courses,
-                                                            year_levels: payload.yearLevels,
-                                                            location: payload.location,
-                                                            event_date: payload.eventDate,
-                                                            event_time: payload.eventTime,
-                                                            registration_end_time: payload.registrationEndTime,
-                                                            organizer: payload.organizer,
-                                                            geofence_enabled: payload.geofenceEnabled,
-                                                            geofence_latitude: payload.geofenceLatitude,
-                                                            geofence_longitude: payload.geofenceLongitude,
-                                                            geofence_radius_m: payload.geofenceRadiusM,
-                                                            scanner_portal_active: modalData.scanner_portal_active ?? true,
-                                                        }, {
-                                                            onSuccess: () => {
-                                                                setIsEventModalOpen(false);
-                                                                Swal.fire({ icon: 'success', title: 'Updated!', text: 'Event updated successfully.', timer: 2000, showConfirmButton: false });
-                                                            },
-                                                            onError: () => Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to update event. Please check the form.' }),
-                                                        });
-                                                    }
-                                                });
-                                            }
-                                        }}
-                                        courses={courses}
-                                        yearLevels={yearLevels}
-                                        totalStudents={totalStudents}
-                                        studentCountsByCourseYear={studentCountsByCourseYear}
-                                        announcements={announcements}
-                                        mode={modalMode}
-                                        initialEvent={modalData}
-                                    />
                                 </div>
                             </div>
                         )}
@@ -1060,6 +975,92 @@ export default function AdminEventsIndex() {
                 </div>
             </div>
 
+
+            <CreateEventModal
+                open={isEventModalOpen}
+                onOpenChange={setIsEventModalOpen}
+                onClose={() => setIsEventModalOpen(false)}
+                onSubmit={(payload: CreateEventPayload) => {
+                    if (modalMode === 'create') {
+                        Swal.fire({
+                            title: 'Confirm Create Event',
+                            text: 'Are you sure you want to create this event?',
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonColor: '#1e40af',
+                            cancelButtonColor: '#6b7280',
+                            confirmButtonText: 'Yes, create',
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                router.post(adminEvents(), {
+                                    event_name: payload.eventName,
+                                    description: payload.description,
+                                    courses: payload.courses,
+                                    year_levels: payload.yearLevels,
+                                    location: payload.location,
+                                    event_date: payload.eventDate,
+                                    event_time: payload.eventTime,
+                                    registration_end_time: payload.registrationEndTime,
+                                    organizer: payload.organizer,
+                                    geofence_enabled: payload.geofenceEnabled,
+                                    geofence_latitude: payload.geofenceLatitude,
+                                    geofence_longitude: payload.geofenceLongitude,
+                                    geofence_radius_m: payload.geofenceRadiusM,
+                                    scanner_portal_active: true,
+                                }, {
+                                    onSuccess: () => {
+                                        setIsEventModalOpen(false);
+                                        Swal.fire({ icon: 'success', title: 'Created!', text: 'Event created successfully.', timer: 2000, showConfirmButton: false });
+                                    },
+                                    onError: () => Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to create event. Please check the form.' }),
+                                });
+                            }
+                        });
+                    } else if (modalMode === 'edit' && modalData?.id) {
+                        Swal.fire({
+                            title: 'Confirm Update Event',
+                            text: 'Are you sure you want to update this event?',
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonColor: '#1e40af',
+                            cancelButtonColor: '#6b7280',
+                            confirmButtonText: 'Yes, update',
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                router.put(`/admin/events/${modalData.id}`, {
+                                    event_name: payload.eventName,
+                                    description: payload.description,
+                                    courses: payload.courses,
+                                    year_levels: payload.yearLevels,
+                                    location: payload.location,
+                                    event_date: payload.eventDate,
+                                    event_time: payload.eventTime,
+                                    registration_end_time: payload.registrationEndTime,
+                                    organizer: payload.organizer,
+                                    geofence_enabled: payload.geofenceEnabled,
+                                    geofence_latitude: payload.geofenceLatitude,
+                                    geofence_longitude: payload.geofenceLongitude,
+                                    geofence_radius_m: payload.geofenceRadiusM,
+                                    scanner_portal_active: modalData.scanner_portal_active ?? true,
+                                }, {
+                                    onSuccess: () => {
+                                        setIsEventModalOpen(false);
+                                        Swal.fire({ icon: 'success', title: 'Updated!', text: 'Event updated successfully.', timer: 2000, showConfirmButton: false });
+                                    },
+                                    onError: () => Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to update event. Please check the form.' }),
+                                });
+                            }
+                        });
+                    }
+                }}
+                courses={courses}
+                yearLevels={yearLevels}
+                totalStudents={totalStudents}
+                studentCountsByCourseYear={studentCountsByCourseYear}
+                announcements={announcements}
+                mode={modalMode}
+                initialEvent={modalData}
+            />
 
             <EventViewModal
                 open={viewOpen}

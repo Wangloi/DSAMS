@@ -16,6 +16,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { adminEventsUpdate } from '@/routes';
 import {
     deriveEventLifecycleStatus,
@@ -34,6 +41,7 @@ type EventEditRecord = EventViewRecord & {
     geofence_latitude?: number | string | null;
     geofence_longitude?: number | string | null;
     geofence_radius_m?: number | null;
+    attendance_type?: string | null;
 };
 
 interface FormData {
@@ -51,6 +59,7 @@ interface FormData {
     geofence_longitude: string;
     geofence_radius_m: string;
     scanner_portal_active: boolean;
+    attendance_type: string;
 }
 
 function buildDefaults(
@@ -96,6 +105,7 @@ function buildDefaults(
                 ? String(event.geofence_radius_m)
                 : '50',
         scanner_portal_active: event.scanner_portal_active || false,
+        attendance_type: event.attendance_type || 'qr_scanner',
     };
 }
 
@@ -363,27 +373,7 @@ export default function EventEditModal({
                                         />
                                     </div>
 
-                                    <div className="grid gap-2 sm:col-span-2">
-                                        <Label
-                                            htmlFor="description"
-                                            className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                                        >
-                                            Description
-                                        </Label>
-                                        <Textarea
-                                            id="description"
-                                            value={data.description}
-                                            onChange={(e) =>
-                                                setData(
-                                                    'description',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            className="min-h-[80px] bg-white"
-                                            rows={3}
-                                        />
-                                    </div>
-                                </div>
+
 
                                 <div className="grid gap-2 border-t border-slate-100 pt-4 sm:col-span-2 dark:border-slate-800">
                                     <div className="flex items-center gap-2">
@@ -404,7 +394,8 @@ export default function EventEditModal({
                                     </div>
                                 </div>
                             </div>
-                        )}
+                        </div>
+                    )}
 
                         {currentStep === 2 && (
                             <div className="grid animate-in grid-cols-1 gap-6 transition-all duration-200 duration-300 ease-in-out fade-in">
@@ -432,6 +423,24 @@ export default function EventEditModal({
                                                 {String(errors.location)}
                                             </span>
                                         )}
+                                    </div>
+
+                                    <div className="grid gap-2 sm:col-span-2">
+                                        <Label htmlFor="attendance_type" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                            Attendance Method *
+                                        </Label>
+                                        <Select
+                                            value={data.attendance_type || 'qr_scanner'}
+                                            onValueChange={(val: string) => setData('attendance_type', val)}
+                                        >
+                                            <SelectTrigger id="attendance_type" className="h-9 dark:border-slate-600 dark:bg-slate-800">
+                                                <SelectValue placeholder="Select check-in method" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="qr_scanner">QR Scanner (Camera scan by admin)</SelectItem>
+                                                <SelectItem value="dynamic_qr">Dynamic Rotation QR (Self scan by students)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </div>
 
                                     <div className="grid gap-2 border-t border-slate-100 pt-4 sm:col-span-2 dark:border-slate-800">

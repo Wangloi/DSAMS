@@ -40,6 +40,7 @@ type CreateEventPayload = {
     geofenceLatitude: string;
     geofenceLongitude: string;
     geofenceRadiusM: string;
+    attendanceType: string;
 };
 
 type Props = {
@@ -71,6 +72,7 @@ export default function CreateEventModal({ open, onOpenChange, onClose, onSubmit
         geofenceLatitude: '',
         geofenceLongitude: '',
         geofenceRadiusM: '50',
+        attendanceType: 'qr_scanner',
     });
 
     const [currentStep, setCurrentStep] = useState(1);
@@ -90,14 +92,18 @@ export default function CreateEventModal({ open, onOpenChange, onClose, onSubmit
             ...prev,
             geofenceLatitude: lat.toFixed(6),
             geofenceLongitude: lng.toFixed(6),
+            ...(name ? { location: name } : {}),
         }));
         setSelectedLocationName(name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
         
-        // Clear latitude/longitude errors if they were set
+        // Clear latitude/longitude/location errors if they were set
         setValidationErrors(prev => {
             const next = { ...prev };
             delete next.geofenceLatitude;
             delete next.geofenceLongitude;
+            if (name) {
+                delete next.location;
+            }
             return next;
         });
     };
@@ -224,6 +230,7 @@ export default function CreateEventModal({ open, onOpenChange, onClose, onSubmit
             geofenceLatitude: '',
             geofenceLongitude: '',
             geofenceRadiusM: '50',
+            attendanceType: 'qr_scanner',
         });
         setScannerStudentQuery('');
         setSelectedScannerStudents([]);
@@ -417,12 +424,10 @@ export default function CreateEventModal({ open, onOpenChange, onClose, onSubmit
                                                         <SelectValue placeholder="Select organizer" />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        <SelectItem value="Admin Office">Admin Office</SelectItem>
-                                                        <SelectItem value="Academic Affairs">Academic Affairs</SelectItem>
-                                                        <SelectItem value="Student Affairs">Student Affairs</SelectItem>
-                                                        <SelectItem value="Sports Department">Sports Department</SelectItem>
-                                                        <SelectItem value="Library">Library</SelectItem>
-                                                        <SelectItem value="Guidance Office">Guidance Office</SelectItem>
+                                                         <SelectItem value="Office Student Affairs">Office Student Affairs</SelectItem>
+                                                         <SelectItem value="Dean of College">Dean of College</SelectItem>
+                                                         <SelectItem value="HED Library">HED Library</SelectItem>
+                                                         <SelectItem value="Guidance Office">Guidance Office</SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                                 {validationErrors.organizer && (
@@ -492,20 +497,6 @@ export default function CreateEventModal({ open, onOpenChange, onClose, onSubmit
                                                     className="h-9 dark:border-slate-600 dark:bg-slate-800"
                                                 />
                                             </div>
-
-                                            <div className="grid gap-2 sm:col-span-2">
-                                                <Label htmlFor="description" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                                    Description
-                                                </Label>
-                                                <textarea
-                                                    id="description"
-                                                    value={formData.description}
-                                                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                                                    placeholder="Enter event description (optional)"
-                                                    className="min-h-[90px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 ring-offset-background placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus-visible:ring-slate-400 dark:ring-offset-slate-900"
-                                                    rows={3}
-                                                />
-                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -537,6 +528,24 @@ export default function CreateEventModal({ open, onOpenChange, onClose, onSubmit
                                                 {validationErrors.location && (
                                                     <p className="text-xs text-rose-500 font-medium">{validationErrors.location}</p>
                                                 )}
+                                            </div>
+
+                                            <div className="grid gap-2 sm:col-span-2">
+                                                <Label htmlFor="attendanceType" className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                                                    Attendance Method <span className="text-rose-500">*</span>
+                                                </Label>
+                                                <Select
+                                                    value={formData.attendanceType || 'qr_scanner'}
+                                                    onValueChange={(val) => setFormData(prev => ({ ...prev, attendanceType: val }))}
+                                                >
+                                                    <SelectTrigger id="attendanceType" className="h-9 dark:border-slate-600 dark:bg-slate-800">
+                                                        <SelectValue placeholder="Select check-in method" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="qr_scanner">QR Scanner (Camera scan by admin)</SelectItem>
+                                                        <SelectItem value="dynamic_qr">Dynamic Rotation QR (Self scan by students)</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
 
                                             <div className="grid gap-2 sm:col-span-2 border-t border-slate-100 pt-4 dark:border-slate-800">

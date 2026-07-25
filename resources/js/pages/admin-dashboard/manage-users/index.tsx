@@ -105,14 +105,27 @@ export default function AdminManageUsersPage() {
 
     // ── Tab state (persisted in URL) ──────────────────────────────────────────
     const urlParams = new URLSearchParams(window.location.search);
-    const initialTab = urlParams.get('tab') === 'programs' ? 'programs' : 'users';
-    const [activeTab, setActiveTab] = useState<'users' | 'programs'>(initialTab);
+    const initialTabParam = urlParams.get('tab');
+    const initialTab = ['programs', 'users', 'password-resets'].includes(initialTabParam ?? '') 
+        ? (initialTabParam as 'users' | 'programs' | 'password-resets') 
+        : 'users';
+    const [activeTab, setActiveTab] = useState<'users' | 'programs' | 'password-resets'>(initialTab);
+    const { url } = usePage();
 
-    const switchTab = (tab: 'users' | 'programs') => {
+    useEffect(() => {
+        const search = url.split('?')[1];
+        const params = new URLSearchParams(search || '');
+        const tab = params.get('tab');
+        if (tab && ['programs', 'users', 'password-resets'].includes(tab) && tab !== activeTab) {
+            setActiveTab(tab as any);
+        }
+    }, [url]);
+
+    const switchTab = (tab: 'users' | 'programs' | 'password-resets') => {
         setActiveTab(tab);
-        const url = new URL(window.location.href);
-        url.searchParams.set('tab', tab);
-        window.history.replaceState({}, '', url.toString());
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('tab', tab);
+        window.history.replaceState({}, '', currentUrl.toString());
     };
 
     const getInitials = (name: string) =>
@@ -347,10 +360,14 @@ export default function AdminManageUsersPage() {
                             </div>
                             <div>
                                 <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                                    {activeTab === 'users' ? 'Manage Users' : 'Academic Programs'}
+                                    {activeTab === 'users' && 'Manage Users'}
+                                    {activeTab === 'programs' && 'Academic Programs'}
+                                    {activeTab === 'password-resets' && 'Password Resets'}
                                 </h1>
                                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                                    {activeTab === 'users' ? 'Manage user accounts, roles, and permissions' : 'Manage curriculums, departments, and course offerings'}
+                                    {activeTab === 'users' && 'Manage user accounts, roles, and permissions'}
+                                    {activeTab === 'programs' && 'Manage curriculums, departments, and course offerings'}
+                                    {activeTab === 'password-resets' && 'Review and approve pending password reset requests'}
                                 </p>
                             </div>
                         </div>
@@ -390,6 +407,23 @@ export default function AdminManageUsersPage() {
                                         activeTab === 'programs' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
                                     }`}>
                                         {progStats.total}
+                                    </span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => switchTab('password-resets')}
+                                    className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+                                        activeTab === 'password-resets'
+                                            ? 'bg-blue-600 text-white shadow-sm'
+                                            : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'
+                                    }`}
+                                >
+                                    <Edit className="h-4 w-4" />
+                                    Password Resets
+                                    <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                                        activeTab === 'password-resets' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
+                                    }`}>
+                                        {props.passwordResetRequests?.filter((r: any) => r.status === 'pending').length ?? 0}
                                     </span>
                                 </button>
                             </div>
@@ -1575,6 +1609,78 @@ export default function AdminManageUsersPage() {
                         </Card>
                     </>
                     )} {/* end activeTab === 'programs' */}
+
+                    {/* ── PASSWORD RESETS TAB ──────────────────────────────────────────────────────────── */}
+                    {activeTab === 'password-resets' && (
+                        <Card className="border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#0B192C]/50">
+                            <CardHeader>
+                                <CardTitle className="text-lg font-semibold text-slate-800 dark:text-white">
+                                    Pending Password Reset Requests
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
+                                    <table className="w-full text-left text-sm text-slate-600 dark:text-slate-400">
+                                        <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                            <tr>
+                                                <th className="px-4 py-3 font-medium">User Email</th>
+                                                <th className="px-4 py-3 font-medium">User Type</th>
+                                                <th className="px-4 py-3 font-medium">Requested At</th>
+                                                <th className="px-4 py-3 font-medium text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-200 bg-white dark:divide-slate-700 dark:bg-slate-900/50">
+                                            {props.passwordResetRequests?.filter((r: any) => r.status === 'pending').map((request: any) => (
+                                                <tr key={request.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                                    <td className="px-4 py-3 text-slate-900 dark:text-slate-100 font-medium">
+                                                        {request.email}
+                                                    </td>
+                                                    <td className="px-4 py-3 capitalize">
+                                                        {request.user_type.replace('_', ' ')}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        {new Date(request.created_at).toLocaleString()}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right space-x-2">
+                                                        <Button
+                                                            size="sm"
+                                                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                                                            onClick={() => {
+                                                                if (confirm('Are you sure you want to approve this request and reset the password to the default static password?')) {
+                                                                    router.post(`/admin/password-resets/${request.id}/approve`);
+                                                                }
+                                                            }}
+                                                        >
+                                                            Approve
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="destructive"
+                                                            onClick={() => {
+                                                                if (confirm('Are you sure you want to reject this request?')) {
+                                                                    router.post(`/admin/password-resets/${request.id}/reject`);
+                                                                }
+                                                            }}
+                                                        >
+                                                            Reject
+                                                        </Button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {(!props.passwordResetRequests || props.passwordResetRequests.filter((r: any) => r.status === 'pending').length === 0) && (
+                                                <tr>
+                                                    <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
+                                                        No pending password reset requests.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
 
                 </div>
             </div>

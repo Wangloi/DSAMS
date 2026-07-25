@@ -43,7 +43,7 @@ type Props = {
     setSearchQuery: (query: string) => void;
     onEdit?: (event: AttendanceRow) => void;
     onDelete?: (eventId: string) => void;
-    onOpenRealTimeMonitoring?: (eventId: string) => void;
+    onOpenRealTimeMonitoring?: (eventId: string, tab?: 'dashboard' | 'scanner' | 'dynamic-qr') => void;
     onPrintSummary?: () => void;
     onViewStudents?: (eventId: string) => void;
     hideScanner?: boolean;
@@ -358,6 +358,7 @@ export default function AttendanceTable({
                                                             e.stopPropagation();
                                                             onOpenRealTimeMonitoring(
                                                                 row.id,
+                                                                'dashboard'
                                                             );
                                                         }}
                                                         title="Real-Time Attendance Monitoring"
@@ -365,23 +366,7 @@ export default function AttendanceTable({
                                                         <Activity className="h-4 w-4" />
                                                     </Button>
                                                 )}
-                                                {!hideScanner && (
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-indigo-50 hover:text-indigo-600 dark:text-slate-400 dark:hover:bg-indigo-950/30 dark:hover:text-indigo-300"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            router.visit(
-                                                                `${adminQrScanner()}?event=${row.id}`,
-                                                            );
-                                                        }}
-                                                        title="Open Scanner Portal"
-                                                    >
-                                                        <QrCode className="h-4 w-4" />
-                                                    </Button>
-                                                )}
+
 
                                                 <Button
                                                     type="button"

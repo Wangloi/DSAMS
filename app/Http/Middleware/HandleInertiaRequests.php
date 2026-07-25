@@ -158,6 +158,7 @@ class HandleInertiaRequests extends Middleware
                         'evaluationId' => $evaluationId,
                         'title' => $title,
                         'subtitle' => $subtitle,
+                        'url' => (string) ($data['url'] ?? ''),
                         'timeAgo' => $notification->created_at?->diffForHumans() ?? '',
                         'is_read' => $notification->read_at !== null,
                     ];

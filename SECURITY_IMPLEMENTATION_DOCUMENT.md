@@ -197,26 +197,44 @@ This reduces brute-force attacks.
 
 ### Rate Limiter Code
 
-#### Fortify Rate Limiting from [app/Providers/FortifyServiceProvider.php](file:///c:/laragon/www/DSAMS/app/Providers/FortifyServiceProvider.php#L82-L150):
+#### Fortify Rate Limiting from [app/Providers/FortifyServiceProvider.php](file:///c:/laragon/www/DSAMS/app/Providers/FortifyServiceProvider.php#L88-L161):
 ```php
+/**
+ * The throttle key combines the normalized identifier value submitted by
+ * the user with their IP address. This mirrors the pattern used by
+ * Laravel Fortify's own AttemptToAuthenticate action and ensures:
+ *
+ *  - Per-user throttling (keyed on the identifier they submit)
+ *  - Per-IP throttling (prevents distributing attempts across accounts)
+ *  - No empty-key collapse (unlike Fortify::username() which reads 'email',
+ *    a field our unified login form never sends)
+ */
 private function configureRateLimiting(): void
 {
     RateLimiter::for('two-factor', function (Request $request) {
         return Limit::perMinute(5)->by($request->session()->get('login.id'));
     });
 
+    // Use 'identifier' — the actual field name submitted by the unified
+    // login form — rather than Fortify::username() which resolves to
+    // 'email' (a field that is never present in our form).
     RateLimiter::for('login', function (Request $request) {
-        $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())));
+        $throttleKey = Str::transliterate(Str::lower($request->input('identifier', '')))
+            . '|' . $request->ip();
         return Limit::perMinute(5)->by($throttleKey);
     });
 
     RateLimiter::for('admin-login', function (Request $request) {
-        $throttleKey = 'admin|' . Str::transliterate(Str::lower($request->input(Fortify::username())));
+        $throttleKey = 'admin|'
+            . Str::transliterate(Str::lower($request->input('identifier', '')))
+            . '|' . $request->ip();
         return Limit::perMinute(5)->by($throttleKey);
     });
 
     RateLimiter::for('program-head-login', function (Request $request) {
-        $throttleKey = 'program_head|' . Str::transliterate(Str::lower($request->input(Fortify::username())));
+        $throttleKey = 'program_head|'
+            . Str::transliterate(Str::lower($request->input('identifier', '')))
+            . '|' . $request->ip();
         return Limit::perMinute(5)->by($throttleKey);
     });
 }
@@ -249,7 +267,7 @@ Route::post('/program-head-login', [ProgramHeadLoginController::class, 'login'])
 
 ### Known Gaps in Current Implementation
 - **Legacy Student Login Route**: The `/student-login` POST route defined at `routes/web.php:70` does not have a throttle middleware applied, unlike the unified `/login`, `/admin-login`, and `/program-head-login` routes. This leaves the legacy student login endpoint vulnerable to unlimited brute-force attempts.
-- **Rate Limiter Key Mismatch**: The `login` rate limiter in `FortifyServiceProvider.php` uses `Fortify::username()` as the throttle key. `config/fortify.php` sets `'username' => 'email'`, but the unified login form submits the field as `identifier` (not `email`). This causes the throttle key to resolve to an empty/null value, effectively sharing a single global throttle bucket across all users. After 5 total failed login attempts from any user, all login attempts for all users will be blocked until the rate limit window resets.
+- ~~**Rate Limiter Key Mismatch**~~: **Resolved** — The throttle key mismatch (`Fortify::username()` → `'email'` vs. form field `identifier`) has been fixed in `app/Providers/FortifyServiceProvider.php`. All three rate limiters (`login`, `admin-login`, `program-head-login`) now use `$request->input('identifier', '')` combined with `$request->ip()` as the throttle key, ensuring per-user, per-IP isolation.
 
 ---
 
@@ -287,20 +305,21 @@ Route::post('/program-head-login', [ProgramHeadLoginController::class, 'login'])
       - Continue applying API rate limiting (60 requests per minute).
       - Monitor API activity through audit logs.
 
-3. **Rate Limiting Misconfiguration on Unified Login**
-   - **Current Status**: The `login` rate limiter in `app/Providers/FortifyServiceProvider.php` uses `Fortify::username()` as the throttle key. `config/fortify.php` sets `'username' => 'email'`, but the unified login form submits the field as `identifier` (not `email`). This causes the throttle key to resolve to an empty/null value, effectively sharing a single global throttle bucket across all users.
-   - **Risk**: After 5 total failed login attempts from any user, all login attempts (for all users) will be blocked until the rate limit window resets. This creates a denial-of-service vector where an attacker can lock out all users with only 5 requests.
-   - **Remediation**:
-     - Change the throttle key to use `$request->input('identifier')` instead of `Fortify::username()`, OR
-     - Rename the form field from `identifier` to `email`, OR
-     - Publish the Fortify config and change the `'username'` value to `'identifier'` to match the form field.
+3. **Rate Limiting Misconfiguration on Unified Login** ✅ **Resolved**
+   - **Previous Status**: The `login` rate limiter in `app/Providers/FortifyServiceProvider.php` used `Fortify::username()` as the throttle key. `config/fortify.php` sets `'username' => 'email'`, but the unified login form submits the field as `identifier` (not `email`). This caused the throttle key to resolve to an empty string, effectively sharing a single global throttle bucket across all users across all three rate limiters (`login`, `admin-login`, `program-head-login`).
+   - **Previous Risk**: After only 5 total failed login attempts from any user, all login attempts system-wide would be blocked until the rate limit window reset. This created a denial-of-service vector where an attacker could lock out all users with just 5 requests. Additionally, because the key had no per-user component, there was effectively no per-user brute-force protection.
+   - **Fix Applied** (`app/Providers/FortifyServiceProvider.php`):
+     - Replaced `$request->input(Fortify::username())` with `$request->input('identifier', '')` in all three rate limiters to correctly read the field submitted by the unified login form.
+     - Appended `'|' . $request->ip()` to the throttle key, following Laravel Fortify's own `AttemptToAuthenticate` pattern, to ensure per-user and per-IP isolation and prevent IP-rotation brute-force attacks.
+     - `config/fortify.php` was intentionally left unchanged (`'username' => 'email'`) because changing it would break Fortify's internal credential lookup, password reset flow, and other internals that depend on it. The rate limiter is decoupled from Fortify's credential system and should read the form field directly.
+   - **Result**: Each login attempt is now throttled independently per identifier and per IP address, eliminating both the global lockout DoS vector and the per-user brute-force bypass.
 
-4. **Missing Rate Limiting on Legacy Student Login**
-   - **Current Status**: The `/student-login` POST route in `routes/web.php:70` does not have a throttle middleware applied.
-   - **Risk**: Attackers can perform unlimited brute-force attacks against student accounts through this endpoint without being blocked.
-   - **Remediation**:
-     - Apply `->middleware('throttle:login')` to the `/student-login` route, OR
-     - Create a dedicated `student-login` rate limiter with the same 5 attempts per minute limit.
+4. **Missing Rate Limiting on Legacy Student Login** ✅ **Resolved**
+   - **Previous Status**: The `/student-login` POST route in `routes/web.php` did not have a throttle middleware applied.
+   - **Previous Risk**: Attackers could perform unlimited brute-force attacks against student accounts through this endpoint without being blocked.
+   - **Fix Applied** (`routes/web.php`):
+     - Applied `->middleware('throttle:login')` to the `/student-login` POST route.
+   - **Result**: The legacy student login endpoint is now protected by the same rate limiter as the unified login, limiting attempts to 5 per minute per identifier and IP address.
 
 ---
 

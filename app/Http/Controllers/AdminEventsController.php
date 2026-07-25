@@ -112,6 +112,7 @@ class AdminEventsController extends Controller
             'geofence_latitude' => 'nullable|numeric|required_if:geofence_enabled,1',
             'geofence_longitude' => 'nullable|numeric|required_if:geofence_enabled,1',
             'geofence_radius_m' => 'nullable|integer|required_if:geofence_enabled,1',
+            'attendance_type' => 'nullable|string|in:qr_scanner,dynamic_qr',
         ]);
 
         $event = Event::create([
@@ -128,6 +129,7 @@ class AdminEventsController extends Controller
             'geofence_latitude' => $validated['geofence_latitude'] ?? null,
             'geofence_longitude' => $validated['geofence_longitude'] ?? null,
             'geofence_radius_m' => $validated['geofence_radius_m'] ?? 50,
+            'attendance_type' => $validated['attendance_type'] ?? 'qr_scanner',
         ]);
 
         // Generate QR code
@@ -193,6 +195,7 @@ class AdminEventsController extends Controller
             'geofence_latitude' => 'nullable|numeric|required_if:geofence_enabled,1',
             'geofence_longitude' => 'nullable|numeric|required_if:geofence_enabled,1',
             'geofence_radius_m' => 'nullable|integer|required_if:geofence_enabled,1',
+            'attendance_type' => 'nullable|string|in:qr_scanner,dynamic_qr',
         ]);
 
         // Normalize registration_end_time coming from frontend pickers.
@@ -221,6 +224,7 @@ class AdminEventsController extends Controller
             'geofence_latitude' => $geofenceEnabled ? ($validated['geofence_latitude'] ?? null) : null,
             'geofence_longitude' => $geofenceEnabled ? ($validated['geofence_longitude'] ?? null) : null,
             'geofence_radius_m' => $geofenceEnabled ? ($validated['geofence_radius_m'] ?? 50) : ($event->geofence_radius_m ?? 50),
+            'attendance_type' => $validated['attendance_type'] ?? $event->attendance_type ?? 'qr_scanner',
         ]);
 
         return redirect()->route('admin.events')->with('success', 'Event updated successfully!');

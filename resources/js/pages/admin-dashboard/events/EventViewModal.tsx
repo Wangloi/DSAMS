@@ -79,7 +79,7 @@ export default function EventViewModal({
     onEdit,
 }: Props) {
     const page = usePage();
-  console.log('EventViewModal event data:', event);
+    console.log('EventViewModal event data:', event);
     const geofenceConfig = (page.props as Record<string, any>).geofence as
         | { campus?: { latitude?: number; longitude?: number } }
         | undefined;
@@ -103,24 +103,24 @@ export default function EventViewModal({
         [event],
     );
 
-const mapPoint = useMemo(() => {
-    if (!event) return null;
-    if (
-        event.geofence_latitude == null ||
-        event.geofence_longitude == null
-    )
-        return null;
-    const lat = Number(event.geofence_latitude);
-    const lng = Number(event.geofence_longitude);
-    if (isNaN(lat) || isNaN(lng)) return null;
+    const mapPoint = useMemo(() => {
+        if (!event) return null;
+        if (
+            event.geofence_latitude == null ||
+            event.geofence_longitude == null
+        )
+            return null;
+        const lat = Number(event.geofence_latitude);
+        const lng = Number(event.geofence_longitude);
+        if (isNaN(lat) || isNaN(lng)) return null;
 
-    const y = 50 - (lat - campusCenter.lat) / 0.0001;
-    const x = 50 + (lng - campusCenter.lng) / 0.0001;
-    return {
-        x: Math.max(0, Math.min(100, x)),
-        y: Math.max(0, Math.min(100, y)),
-    };
-}, [event, campusCenter]);
+        const y = 50 - (lat - campusCenter.lat) / 0.0001;
+        const x = 50 + (lng - campusCenter.lng) / 0.0001;
+        return {
+            x: Math.max(0, Math.min(100, x)),
+            y: Math.max(0, Math.min(100, y)),
+        };
+    }, [event, campusCenter]);
 
     if (!event) return null;
 
@@ -142,11 +142,10 @@ const mapPoint = useMemo(() => {
                     <div className="mx-auto mt-6 flex max-w-xl items-center justify-between px-4">
                         <div className="relative flex flex-1 flex-col items-center">
                             <div
-                                className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-all duration-300 ${
-                                    currentStep === 1
+                                className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-all duration-300 ${currentStep === 1
                                         ? 'scale-110 bg-white text-blue-900 shadow-md ring-4 ring-white/20'
                                         : 'bg-emerald-500 text-white'
-                                }`}
+                                    }`}
                             >
                                 {currentStep > 1 ? (
                                     <Check className="h-5 w-5" />
@@ -172,13 +171,12 @@ const mapPoint = useMemo(() => {
 
                         <div className="relative flex flex-1 flex-col items-center">
                             <div
-                                className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-all duration-300 ${
-                                    currentStep === 2
+                                className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-all duration-300 ${currentStep === 2
                                         ? 'scale-110 bg-white text-blue-900 shadow-md ring-4 ring-white/20'
                                         : currentStep > 2
-                                          ? 'bg-emerald-500 text-white'
-                                          : 'bg-blue-800 text-blue-200'
-                                }`}
+                                            ? 'bg-emerald-500 text-white'
+                                            : 'bg-blue-800 text-blue-200'
+                                    }`}
                             >
                                 {currentStep > 2 ? (
                                     <Check className="h-5 w-5" />
@@ -204,11 +202,10 @@ const mapPoint = useMemo(() => {
 
                         <div className="relative flex flex-1 flex-col items-center">
                             <div
-                                className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-all duration-300 ${
-                                    currentStep === 3
+                                className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-all duration-300 ${currentStep === 3
                                         ? 'scale-110 bg-white text-blue-900 shadow-md ring-4 ring-white/20'
                                         : 'bg-blue-800 text-blue-200'
-                                }`}
+                                    }`}
                             >
                                 3
                             </div>
@@ -382,23 +379,23 @@ const mapPoint = useMemo(() => {
                                                 </Label>
                                                 <div className="grid gap-2 rounded-lg border border-slate-200 bg-white p-2 sm:col-span-2 dark:border-slate-800 dark:bg-slate-950/40">
                                                     <SchoolMapSelector
-                                                        onLocationSelect={() => {}}
+                                                        onLocationSelect={() => { }}
                                                         initialLocation={
                                                             event.geofence_latitude !=
                                                                 null &&
-                                                            event.geofence_longitude !=
+                                                                event.geofence_longitude !=
                                                                 null
                                                                 ? {
-                                                                      latitude:
-                                                                          Number(
-                                                                              event.geofence_latitude,
-                                                                          ),
-                                                                      longitude:
-                                                                          Number(
-                                                                              event.geofence_longitude,
-                                                                          ),
-                                                                      name: 'Selected facility',
-                                                                  }
+                                                                    latitude:
+                                                                        Number(
+                                                                            event.geofence_latitude,
+                                                                        ),
+                                                                    longitude:
+                                                                        Number(
+                                                                            event.geofence_longitude,
+                                                                        ),
+                                                                    name: 'Selected facility',
+                                                                }
                                                                 : undefined
                                                         }
                                                     />
@@ -412,10 +409,10 @@ const mapPoint = useMemo(() => {
                                                 <Input
                                                     value={
                                                         event.geofence_latitude !=
-                                                        null
+                                                            null
                                                             ? Number(
-                                                                  event.geofence_latitude,
-                                                              ).toFixed(6)
+                                                                event.geofence_latitude,
+                                                            ).toFixed(6)
                                                             : ''
                                                     }
                                                     readOnly
@@ -430,10 +427,10 @@ const mapPoint = useMemo(() => {
                                                 <Input
                                                     value={
                                                         event.geofence_longitude !=
-                                                        null
+                                                            null
                                                             ? Number(
-                                                                  event.geofence_longitude,
-                                                              ).toFixed(6)
+                                                                event.geofence_longitude,
+                                                            ).toFixed(6)
                                                             : ''
                                                     }
                                                     readOnly
@@ -473,7 +470,7 @@ const mapPoint = useMemo(() => {
                                             </Label>
                                             <div className="flex flex-wrap gap-2">
                                                 {coursesForDisplay.length ===
-                                                0 ? (
+                                                    0 ? (
                                                     <span className="text-sm text-slate-500">
                                                         None
                                                     </span>
@@ -498,7 +495,7 @@ const mapPoint = useMemo(() => {
                                             </Label>
                                             <div className="flex flex-wrap gap-2">
                                                 {event.year_levels.length ===
-                                                0 ? (
+                                                    0 ? (
                                                     <span className="text-sm text-slate-500">
                                                         None
                                                     </span>

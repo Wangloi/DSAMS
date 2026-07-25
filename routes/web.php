@@ -37,6 +37,15 @@ use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use App\Models\Student;
 
+// Custom password reset routes (handle students, admin_users, and program_heads)
+use App\Http\Controllers\ForgotPasswordController;
+use App\Http\Controllers\ResetPasswordController;
+
+Route::get('/forgot-password', [ForgotPasswordController::class, 'create'])->name('password.request');
+Route::post('/forgot-password', [ForgotPasswordController::class, 'store'])->name('password.email');
+Route::get('/reset-password/{token}', [ResetPasswordController::class, 'create'])->name('password.reset');
+Route::post('/reset-password', [ResetPasswordController::class, 'store'])->name('password.update');
+
 Route::get('/', [LandingController::class, 'index'])->name('landing');
 
 Route::get('/__debug/config', function () {
@@ -67,7 +76,7 @@ Route::post('/login', [UnifiedLoginController::class, 'login'])->middleware('thr
 
 // Keep existing login routes for backward compatibility
 Route::post('/admin-login', [AdminLoginController::class, 'login'])->middleware('throttle:admin-login');
-Route::post('/student-login', [StudentLoginController::class, 'login']);
+Route::post('/student-login', [StudentLoginController::class, 'login'])->middleware('throttle:login');
 Route::post('/program-head-login', [ProgramHeadLoginController::class, 'login'])->middleware('throttle:program-head-login');
 
 // Test route to check controllers
@@ -245,6 +254,9 @@ Route::get('/program-head/activity-log', function () {
 })->middleware(['auth:program_head', 'verified'])->name('program-head.activity-log');
 
 Route::get('/admin/notifications', [App\Http\Controllers\NotificationController::class, 'index'])->middleware('auth:admin')->name('admin.notifications');
+
+Route::post('/admin/password-resets/{passwordResetRequest}/approve', [\App\Http\Controllers\AdminPasswordResetController::class, 'approve'])->middleware('auth:admin')->name('admin.password-resets.approve');
+Route::post('/admin/password-resets/{passwordResetRequest}/reject', [\App\Http\Controllers\AdminPasswordResetController::class, 'reject'])->middleware('auth:admin')->name('admin.password-resets.reject');
 Route::get('/admin-dashboard', [AdminDashboardController::class, 'index'])->middleware('auth:admin')->name('admin.dashboard');
 
 Route::get('/admin', function () {
@@ -550,7 +562,7 @@ Route::get('/login', function () {
     }
 
     return Inertia::render('auth/login', [
-        'canResetPassword' => Features::enabled(Features::resetPasswords()),
+        'canResetPassword' => true, // Custom password reset is always available (see ForgotPasswordController)
         'canRegister' => true,
         'status' => session()->get('status'),
         'securityAlerts' => $alerts,

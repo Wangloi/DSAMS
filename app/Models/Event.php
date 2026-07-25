@@ -30,6 +30,7 @@ class Event extends Model
         'geofence_longitude',
         'geofence_radius_m',
         'qr_code',
+        'attendance_type',
     ];
 
     protected $casts = [
@@ -47,6 +48,7 @@ class Event extends Model
         'geofence_latitude' => 'float',
         'geofence_longitude' => 'float',
         'geofence_radius_m' => 'integer',
+        'attendance_type' => 'string',
     ];
 
     protected static function booted(): void
@@ -178,6 +180,14 @@ class Event extends Model
      */
     public function scopeActive($query)
     {
+        try {
+            self::whereNull('archived_at')
+                ->whereDate('event_date', '<', Carbon::now()->toDateString())
+                ->update(['archived_at' => Carbon::now()]);
+        } catch (\Throwable $e) {
+            // Prevent query failure if DB is not ready during migration/seeding
+        }
+
         return $query->whereNull('archived_at');
     }
 

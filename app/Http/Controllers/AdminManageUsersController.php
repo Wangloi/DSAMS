@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
+use App\Models\PasswordResetRequest;
 use App\Models\Program;
 use App\Models\AdminUser;
 use App\Models\ProgramHead;
@@ -212,9 +213,12 @@ class AdminManageUsersController extends Controller
                 ];
             });
 
+        $passwordResetRequests = PasswordResetRequest::orderByDesc('id')->get();
+
         return Inertia::render('admin-dashboard/manage-users/index', [
             'students' => $users,
             'programs' => $programs,
+            'passwordResetRequests' => $passwordResetRequests,
         ]);
     }
 
