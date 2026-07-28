@@ -3,6 +3,7 @@
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\StudentDashboardController;
 use App\Http\Controllers\StudentRegistrationController;
+use App\Http\Controllers\StudentProfileController;
 use App\Http\Controllers\ProgramHeadDashboardController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminManageUsersController;
@@ -210,13 +211,14 @@ Route::post('/student/admission-slip', [\App\Http\Controllers\StudentAdmissionSl
 // Route::post('/student/lost-found/report-lost', [StudentLostFoundController::class, 'storeLostReport'])->middleware(['auth:student', 'verified'])->name('student.lost-found.report-lost');
 // Route::post('/student/lost-found/report-found', [StudentLostFoundController::class, 'storeFoundItem'])->middleware(['auth:student', 'verified'])->name('student.lost-found.report-found');
 
-// Student Registration Routes (Modal Only)
+// Student Registration Routes — now single-step (credentials only)
 Route::post('/student-register/step1', [StudentRegistrationController::class, 'storeStep1'])->name('student.register.step1.store');
-Route::post('/student-register/step2', [StudentRegistrationController::class, 'storeStep2'])->name('student.register.step2.store');
-Route::post('/student-register/step3', [StudentRegistrationController::class, 'storeStep3'])->name('student.register.step3.store');
-Route::post('/student-register/step4', [StudentRegistrationController::class, 'storeStep4'])->name('student.register.step4.store');
-Route::post('/student-register/complete', [StudentRegistrationController::class, 'complete'])->name('student.register.complete');
 Route::post('/student-register/restart', [StudentRegistrationController::class, 'restart'])->name('student.register.restart');
+
+// Student Profile Completion — called after first login when personal info is missing
+Route::post('/student/complete-profile', [StudentProfileController::class, 'store'])
+    ->middleware(['auth:student'])
+    ->name('student.complete-profile.store');
 
 Route::get('/program-head-dashboard', [ProgramHeadDashboardController::class, 'index'])->middleware(['auth:program_head', 'verified'])->name('program-head.dashboard');
 Route::get('/program-head/students', [ProgramHeadDashboardController::class, 'students'])->middleware(['auth:program_head', 'verified'])->name('program-head.students');

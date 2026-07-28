@@ -29,19 +29,32 @@ class SecurityAudit
 
 
         // Prepare audit payload
+        $rawTargetId = $route ? $route->parameter('id') : null;
+
+        // target_id is bigint unsigned — only store numeric IDs, not UUIDs or string slugs
+        $targetId = ($rawTargetId !== null && is_numeric($rawTargetId))
+            ? (int) $rawTargetId
+            : null;
+
+        // Sanitize request data — never log passwords or tokens
+        $sanitized = collect($request->all())
+            ->except(['password', 'password_confirmation', 'token', '_token'])
+            ->toArray();
+
         $payload = [
             'actor_id' => $actor?->id,
-            'role' => $actor?->role,
-            'target_id' => $route ? $route->parameter('id') : null,
-            'action' => $routeName,
-            'old' => $request->old(),
-            'new' => $request->all(),
-            'ip' => $request->ip(),
-            'device' => $request->header('User-Agent'),
+            'role'     => $actor?->role,
+            'target_id' => $targetId,
+            'action'   => $routeName,
+            'old'      => $request->old(),
+            'new'      => $sanitized,
+            'ip'       => $request->ip(),
+            'device'   => $request->header('User-Agent'),
         ];
 
         // Dispatch audit log
         Audit::log($routeName ?? 'unknown', $payload);
+
 
         // Track failed login attempts
         if ($routeName === 'login' && $response->getStatusCode() === 401) {

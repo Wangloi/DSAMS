@@ -2,9 +2,16 @@ import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import axios from 'axios';
 import '../css/app.css';
 import { initializeTheme } from './hooks/use-appearance';
 import { configureEcho } from '@laravel/echo-react';
+
+// Configure axios with CSRF token for all requests
+// Laravel sets an XSRF-TOKEN cookie; axios reads it automatically as X-XSRF-TOKEN
+axios.defaults.withCredentials = true;
+axios.defaults.withXSRFToken = true;
+axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
 configureEcho({
     broadcaster: 'reverb',

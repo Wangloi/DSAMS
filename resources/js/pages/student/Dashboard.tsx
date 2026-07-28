@@ -1,4 +1,5 @@
 import { AppShell } from '@/components/app-shell';
+import StudentProfileCompletionModal from '@/components/StudentProfileCompletionModal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -123,6 +124,9 @@ export default function StudentDashboard({
 
     const props = page.props as unknown as SharedData;
     const authUser = props?.auth?.user ?? user;
+
+    // Profile completion gate — true when the student hasn't filled in personal info yet
+    const needsProfileCompletion = !!(page.props as any)?.needsProfileCompletion;
 
     const displayName = authUser?.name || 'Student';
     const studentId = (authUser as any)?.student_id || '2023-0000';
@@ -503,6 +507,11 @@ export default function StudentDashboard({
 
     return (
         <AppShell>
+            {/* Profile completion gate — non-dismissible until student fills in personal info */}
+            <StudentProfileCompletionModal
+                isOpen={needsProfileCompletion}
+                onComplete={() => window.location.reload()}
+            />
             <StudentHeader />
             <Head title="Student Dashboard" />
 

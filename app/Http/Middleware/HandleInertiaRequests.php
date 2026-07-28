@@ -256,6 +256,9 @@ class HandleInertiaRequests extends Middleware
                     'longitude' => config('geofence.campus_longitude'),
                 ],
             ],
+            // Gate flag: true when student has logged in but not yet completed their profile info
+            'needsProfileCompletion' => $user instanceof Student && empty($user->home_address),
         ];
+
     }
 }
