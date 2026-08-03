@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { BrowserQRCodeReader } from '@zxing/browser';
+import axios from 'axios';
 import {
     ArrowLeft,
     CheckCircle2,
@@ -161,43 +162,32 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
                     body.accuracy_m = freshGeo.accuracy_m;
                 }
 
-                const res = await fetch(studentAttendanceDynamicQrScan(event.id), {
-                    method:      'POST',
-                    credentials: 'include',
+                const res = await axios.post(studentAttendanceDynamicQrScan(event.id), body, {
                     headers: {
-                        Accept:            'application/json',
-                        'Content-Type':    'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN':    csrfToken(),
-                    },
-                    body: JSON.stringify(body),
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                    }
                 });
 
-                const data = await res.json().catch(() => ({}));
-
-                if (res.ok) {
-                    setSuccessData({
-                        name:   String(data?.student?.name ?? 'You'),
-                        status: String(data?.status ?? 'present'),
-                    });
+                const data = res.data ?? {};
+                setSuccessData({
+                    name:   String(data?.student?.name ?? 'You'),
+                    status: String(data?.status ?? 'present'),
+                });
+                setPhase('success');
+            } catch (e: any) {
+                const status = e?.response?.status;
+                const data = e?.response?.data ?? {};
+                
+                if (status === 409) {
+                    // Already checked in — show as success (idempotent)
+                    setSuccessData({ name: 'You', status: 'already-checked-in' });
                     setPhase('success');
                 } else {
-                    const message = String(
-                        (data as any)?.message ?? 'Something went wrong. Please try again.',
-                    );
-
-                    if (res.status === 409) {
-                        // Already checked in — show as success (idempotent)
-                        setSuccessData({ name: 'You', status: 'already-checked-in' });
-                        setPhase('success');
-                    } else {
-                        setErrorMsg(message);
-                        setPhase('error');
-                    }
+                    const message = String(data?.message ?? e?.message ?? 'Something went wrong. Please try again.');
+                    setErrorMsg(message);
+                    setPhase('error');
                 }
-            } catch (e: any) {
-                setErrorMsg(e?.message ?? 'Network error. Please try again.');
-                setPhase('error');
             }
         },
         [event.id, geo, stopCamera],

@@ -1006,6 +1006,7 @@ export default function AdminEventsIndex() {
                                     geofence_latitude: payload.geofenceLatitude,
                                     geofence_longitude: payload.geofenceLongitude,
                                     geofence_radius_m: payload.geofenceRadiusM,
+                                    attendance_type: payload.attendanceType,
                                     scanner_portal_active: true,
                                 }, {
                                     onSuccess: () => {
@@ -1041,6 +1042,7 @@ export default function AdminEventsIndex() {
                                     geofence_latitude: payload.geofenceLatitude,
                                     geofence_longitude: payload.geofenceLongitude,
                                     geofence_radius_m: payload.geofenceRadiusM,
+                                    attendance_type: payload.attendanceType,
                                     scanner_portal_active: modalData.scanner_portal_active ?? true,
                                 }, {
                                     onSuccess: () => {

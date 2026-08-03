@@ -2,15 +2,20 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
 import { defineConfig } from 'vite';
+import fs from 'fs';
+import path from 'path';
 
 export default defineConfig({
     server: {
         host: '0.0.0.0',
         cors: true,
-        https: true,
-        origin: 'https://172.16.101.138:5173',
+        https: {
+            key: fs.readFileSync('C:/laragon/etc/ssl/laragon.key'),
+            cert: fs.readFileSync('C:/laragon/etc/ssl/laragon.crt'),
+        },
+        origin: 'https://192.168.137.1:5173',
         hmr: {
-            host: '172.16.101.138',
+            host: '192.168.137.1',
             protocol: 'wss',
         },
     },

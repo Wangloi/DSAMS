@@ -1108,28 +1108,29 @@ export default function AdminAttendancePage() {
                                                                 ? "bg-white text-slate-900 shadow-sm"
                                                                 : "text-white/80 hover:text-white hover:bg-white/10"
                                                         )}
-                                                    >
-                                                        <Camera className="h-3.5 w-3.5 mr-1" />
-                                                        QR Scanner
-                                                    </Button>
+                                                     >
+                                                         <Camera className="h-3.5 w-3.5 mr-1" />
+                                                         {monitoredEvent?.geofence_enabled ? 'Geotagging Scanner' : 'QR Scanner'}
+                                                     </Button>
                                                 )}
                                                 {(monitoredEvent && monitoredEvent.attendance_type === 'dynamic_qr') && (
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => setMonitoringTab('dynamic-qr')}
-                                                        className={cn(
-                                                            "h-8 px-3 text-xs font-bold uppercase tracking-widest rounded-lg transition-all duration-300",
-                                                            monitoringTab === 'dynamic-qr'
-                                                                ? "bg-white text-slate-900 shadow-sm"
-                                                                : "text-white/80 hover:text-white hover:bg-white/10"
-                                                        )}
+                                                     <Button
+                                                         type="button"
+                                                         variant="ghost"
+                                                         size="sm"
+                                                         onClick={() => setMonitoringTab('dynamic-qr')}
+                                                         className={cn(
+                                                             "h-8 px-3 text-xs font-bold uppercase tracking-widest rounded-lg transition-all duration-300",
+                                                             monitoringTab === 'dynamic-qr'
+                                                                 ? "bg-white text-slate-900 shadow-sm"
+                                                                 : "text-white/80 hover:text-white hover:bg-white/10"
+                                                         )}
                                                     >
                                                         <QrCode className="h-3.5 w-3.5 mr-1" />
-                                                        Dynamic QR
+                                                        {monitoredEvent?.geofence_enabled ? 'Geotagged Dynamic QR' : 'Dynamic QR'}
                                                     </Button>
                                                 )}
+
                                             </div>
 
                                             <div className="hidden items-center gap-2 rounded-lg bg-slate-800/50 px-3 py-1.5 border border-slate-700 sm:flex">
