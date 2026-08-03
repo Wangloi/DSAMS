@@ -30,9 +30,38 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->configureUrl();
         $this->configureDefaults();
         $this->registerEventListeners();
         $this->configureRateLimiting();
+    }
+
+    protected function configureUrl(): void
+    {
+        $appUrl = config('app.url');
+
+        // Force HTTPS ONLY if the request is actually coming through HTTPS / SSL proxy (e.g. Laragon SSL port 443)
+        $isHttpsRequest = request()->isSecure()
+            || (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on')
+            || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)
+            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+
+        if ($isHttpsRequest) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
+        if (($appUrl === 'http://localhost' || empty($appUrl)) && app()->environment('local')) {
+            $host = request()->getHost();
+            $scheme = $isHttpsRequest ? 'https' : 'http';
+            $port = request()->getPort();
+
+            $portSuffix = (($scheme === 'http' && $port != 80) || ($scheme === 'https' && $port != 443))
+                ? ':' . $port
+                : '';
+
+            config(['app.url' => "{$scheme}://{$host}{$portSuffix}"]);
+            \Illuminate\Support\Facades\URL::forceRootUrl("{$scheme}://{$host}{$portSuffix}");
+        }
     }
 
     protected function configureRateLimiting(): void

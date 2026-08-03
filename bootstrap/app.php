@@ -9,6 +9,10 @@ use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Auth\AuthenticationException;
 use Inertia\Inertia;
 
+if (file_exists(dirname(__DIR__).'/.env')) {
+    \Dotenv\Dotenv::createMutable(dirname(__DIR__))->safeLoad();
+}
+
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
