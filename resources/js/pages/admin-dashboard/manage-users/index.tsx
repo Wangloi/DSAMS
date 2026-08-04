@@ -44,6 +44,7 @@ import {
 import type { BreadcrumbItem } from '@/types';
 import AdminLayout from '../admin-layout';
 import AddEditUserDialog from './AddEditUserDialog';
+import BulkAddUsersDialog from './BulkAddUsersDialog';
 import type { PageProps } from './types';
 import { useManageUsers } from './useManageUsers';
 import ViewStudentDialog from './ViewStudentDialog';
@@ -180,6 +181,7 @@ export default function AdminManageUsersPage() {
     const [viewOpen, setViewOpen] = useState(false);
     const [viewStudent, setViewStudent] = useState<(typeof students)[number] | null>(null);
     const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
+    const [bulkAddOpen, setBulkAddOpen] = useState(false);
 
     const handleSelectAll = (checked: boolean) => {
         const pageIds = pagedStudents.map((u) => Number((u as any).id)).filter((id) => !Number.isNaN(id));
@@ -430,18 +432,32 @@ export default function AdminManageUsersPage() {
 
                             {/* Context action button */}
                             {activeTab === 'users' ? (
-                                <AddEditUserDialog
-                                    open={open}
-                                    onOpenChange={setOpen}
-                                    editingUser={editingUser}
-                                    hasAnyError={hasAnyError}
-                                    errors={errors}
-                                    form={form}
-                                    setForm={setForm}
-                                    onOpenCreate={openCreateModal}
-                                    onClose={closeModal}
-                                    onSubmit={submit}
-                                />
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        type="button"
+                                        onClick={() => setBulkAddOpen(true)}
+                                        className="h-11 shrink-0 gap-2 rounded-xl bg-emerald-600 px-4 font-bold text-white shadow-md shadow-emerald-500/20 transition-all duration-200 hover:bg-emerald-700"
+                                    >
+                                        <Users className="h-4 w-4" />
+                                        Bulk Add
+                                    </Button>
+                                    <AddEditUserDialog
+                                        open={open}
+                                        onOpenChange={setOpen}
+                                        editingUser={editingUser}
+                                        hasAnyError={hasAnyError}
+                                        errors={errors}
+                                        form={form}
+                                        setForm={setForm}
+                                        onOpenCreate={openCreateModal}
+                                        onClose={closeModal}
+                                        onSubmit={submit}
+                                    />
+                                    <BulkAddUsersDialog
+                                        open={bulkAddOpen}
+                                        onOpenChange={setBulkAddOpen}
+                                    />
+                                </div>
                             ) : (
                                 <Button
                                     onClick={() => setIsCreateModalOpen(true)}
