@@ -11,12 +11,20 @@ class StudentLoginController extends Controller
 {
     public function login(Request $request)
     {
-        $credentials = $request->validate([
+        $request->validate([
             'email' => ['required', 'string'],
             'password' => ['required', 'string'],
         ]);
 
-        if (Auth::guard('student')->attempt($credentials, $request->boolean('remember'))) {
+        $loginInput = $request->input('email');
+        $password = $request->input('password');
+        $remember = $request->boolean('remember');
+
+        // Check by student_id or email
+        if (
+            Auth::guard('student')->attempt(['student_id' => $loginInput, 'password' => $password], $remember) ||
+            Auth::guard('student')->attempt(['email' => $loginInput, 'password' => $password], $remember)
+        ) {
             $request->session()->regenerate();
             $request->session()->flash('status', 'Login successful! Welcome back!');
 
