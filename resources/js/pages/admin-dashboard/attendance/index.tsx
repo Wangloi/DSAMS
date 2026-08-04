@@ -289,6 +289,7 @@ export default function AdminAttendancePage() {
 
     // --- QR Scanner state ---
     const videoRef = useRef<HTMLVideoElement>(null);
+    const streamRef = useRef<MediaStream | null>(null);
     const codeReaderRef = useRef<BrowserQRCodeReader | null>(null);
     const lastValueRef = useRef<{ value: string; at: number } | null>(null);
     const [scanState, setScanState] = useState<{ status: 'idle' | 'starting' | 'running' | 'error'; message?: string }>({
@@ -320,28 +321,86 @@ export default function AdminAttendancePage() {
     // --- Camera scanner actions ---
     const startScanner = async () => {
         if (!videoRef.current || !monitorEventId) return;
+
+        if (typeof window !== 'undefined' && !window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+            const msg = 'Camera access requires a Secure Context (HTTPS or http://localhost). Please access this site over HTTPS or via localhost.';
+            setScanState({ status: 'error', message: msg });
+            Swal.fire({
+                icon: 'warning',
+                title: 'HTTPS / Localhost Required',
+                text: msg,
+                confirmButtonColor: '#0b2d66',
+            });
+            return;
+        }
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            const msg = 'Camera API (navigator.mediaDevices) is not supported or blocked by browser settings.';
+            setScanState({ status: 'error', message: msg });
+            Swal.fire({
+                icon: 'error',
+                title: 'Camera Unsupported',
+                text: msg,
+                confirmButtonColor: '#0b2d66',
+            });
+            return;
+        }
+
         setScanState({ status: 'starting' });
         try {
+            stopScanner(); // stop any active stream first
+
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { ideal: 'environment' } },
+                audio: false,
+            });
+            streamRef.current = stream;
+
+            const video = videoRef.current;
+            video.srcObject = stream;
+            await video.play();
+
             if (!codeReaderRef.current) {
                 codeReaderRef.current = new BrowserQRCodeReader();
             }
-            await codeReaderRef.current.decodeFromVideoElement(videoRef.current, (result, error) => {
+            await codeReaderRef.current.decodeFromVideoElement(video, (result) => {
                 if (result) {
                     void processScan(result.getText());
                 }
             });
             setScanState({ status: 'running' });
         } catch (err: any) {
-            console.error(err);
-            setScanState({ status: 'error', message: err.message || 'Failed to start camera' });
+            console.error('Camera startup error:', err);
+            const errMsg = err?.name === 'NotAllowedError'
+                ? 'Camera access permission was denied. Please grant camera permission in your browser.'
+                : err?.name === 'NotFoundError'
+                ? 'No camera device found on this system.'
+                : err?.message || 'Failed to start camera.';
+            
+            setScanState({ status: 'error', message: errMsg });
+            Swal.fire({
+                icon: 'error',
+                title: 'Camera Error',
+                text: errMsg,
+                confirmButtonColor: '#0b2d66',
+            });
         }
     };
 
     const stopScanner = () => {
+        if (streamRef.current) {
+            for (const track of streamRef.current.getTracks()) {
+                track.stop();
+            }
+            streamRef.current = null;
+        }
+        if (videoRef.current) {
+            videoRef.current.srcObject = null;
+        }
         if (codeReaderRef.current) {
             codeReaderRef.current = null;
-            setScanState({ status: 'idle' });
         }
+        setScanState({ status: 'idle' });
     };
 
     const processScan = async (code: string) => {
