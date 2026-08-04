@@ -593,17 +593,19 @@ export default function StudentAttendanceScannerPortalPage({
                                                 playsInline
                                                 muted
                                             />
-                                            {scanState.status !== 'running' && (
-                                                <div className="absolute inset-0 grid place-items-center">
-                                                    <div className="grid h-16 w-16 place-items-center rounded-2xl bg-white/10 text-white">
-                                                        <QrCode className="h-8 w-8" />
-                                                    </div>
+                                            <div className="absolute inset-0 pointer-events-none">
+                                                <div className="absolute inset-0 border-[40px] border-black/40" />
+                                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border-2 border-white/50 rounded-2xl shadow-[0_0_0_1000px_rgba(0,0,0,0.3)]">
+                                                    <div className="absolute inset-0 border-2 border-blue-500 rounded-2xl animate-pulse" />
+                                                    <div className="absolute -left-1 -top-1 w-8 h-8 border-t-4 border-l-4 border-blue-500 rounded-tl-lg" />
+                                                    <div className="absolute -right-1 -top-1 w-8 h-8 border-t-4 border-r-4 border-blue-500 rounded-tr-lg" />
+                                                    <div className="absolute -left-1 -bottom-1 w-8 h-8 border-b-4 border-l-4 border-blue-500 rounded-bl-lg" />
+                                                    <div className="absolute -right-1 -bottom-1 w-8 h-8 border-b-4 border-r-4 border-blue-500 rounded-br-lg" />
+                                                    {scanState.status === 'running' && (
+                                                        <div className="absolute left-0 top-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_15px_rgba(96,165,250,0.8)] animate-scan-line" />
+                                                    )}
                                                 </div>
-                                            )}
-                                            <div className="absolute top-4 left-4 h-10 w-10 rounded-lg border-2 border-white/70" />
-                                            <div className="absolute top-4 right-4 h-10 w-10 rounded-lg border-2 border-white/70" />
-                                            <div className="absolute bottom-4 left-4 h-10 w-10 rounded-lg border-2 border-white/70" />
-                                            <div className="absolute right-4 bottom-4 h-10 w-10 rounded-lg border-2 border-white/70" />
+                                            </div>
                                         </div>
                                         {lastScanned ? (
                                             <div

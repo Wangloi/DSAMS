@@ -318,9 +318,24 @@ export default function AdminAttendancePage() {
     const [qrError, setQrError] = useState<string | null>(null);
     const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
+    const intervalRef = useRef<number | null>(null);
+    const zxingRef = useRef<{ reader: BrowserQRCodeReader; stop: () => void } | null>(null);
+
+    const barcodeDetectorSupported = useMemo(() => {
+        return typeof window !== 'undefined' && 'BarcodeDetector' in window;
+    }, []);
+
     // --- Camera scanner actions ---
     const startScanner = async () => {
-        if (!videoRef.current || !monitorEventId) return;
+        if (!monitorEventId) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Select an Event',
+                text: 'Please select an event first before starting the camera scanner.',
+                confirmButtonColor: '#0b2d66',
+            });
+            return;
+        }
 
         if (typeof window !== 'undefined' && !window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
             const msg = 'Camera access requires a Secure Context (HTTPS or http://localhost). Please access this site over HTTPS or via localhost.';
@@ -350,27 +365,73 @@ export default function AdminAttendancePage() {
         try {
             stopScanner(); // stop any active stream first
 
+            const video = videoRef.current;
+            if (!video) {
+                setScanState({ status: 'error', message: 'Video element not available.' });
+                return;
+            }
+
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: { ideal: 'environment' } },
                 audio: false,
             });
             streamRef.current = stream;
 
-            const video = videoRef.current;
             video.srcObject = stream;
-            await video.play();
-
-            if (!codeReaderRef.current) {
-                codeReaderRef.current = new BrowserQRCodeReader();
-            }
-            await codeReaderRef.current.decodeFromVideoElement(video, (result) => {
-                if (result) {
-                    void processScan(result.getText());
+            try {
+                await video.play();
+            } catch (playErr: any) {
+                if (playErr?.name !== 'AbortError') {
+                    throw playErr;
                 }
-            });
-            setScanState({ status: 'running' });
+            }
+
+            if (barcodeDetectorSupported) {
+                const Detector = (window as any).BarcodeDetector as new (options: { formats: string[] }) => {
+                    detect: (source: CanvasImageSource) => Promise<Array<{ rawValue?: string }>>;
+                };
+                const detector = new Detector({ formats: ['qr_code'] });
+
+                setScanState({ status: 'running' });
+
+                intervalRef.current = window.setInterval(async () => {
+                    const v = videoRef.current;
+                    if (!v || v.readyState < 2) return;
+                    try {
+                        const results = await detector.detect(v);
+                        const value = results?.[0]?.rawValue;
+                        if (value) void processScan(value);
+                    } catch {
+                        return;
+                    }
+                }, 250);
+            } else {
+                const reader = new BrowserQRCodeReader();
+                const controls = await reader.decodeFromVideoDevice(
+                    undefined,
+                    video,
+                    (result) => {
+                        const value = result?.getText?.() ?? '';
+                        if (value) void processScan(value);
+                    }
+                );
+
+                zxingRef.current = {
+                    reader,
+                    stop: () => {
+                        try {
+                            controls.stop();
+                        } catch {
+                            // ignore
+                        }
+                    },
+                };
+
+                setScanState({ status: 'running' });
+            }
         } catch (err: any) {
             console.error('Camera startup error:', err);
+            stopScanner();
             const errMsg = err?.name === 'NotAllowedError'
                 ? 'Camera access permission was denied. Please grant camera permission in your browser.'
                 : err?.name === 'NotFoundError'
@@ -388,20 +449,42 @@ export default function AdminAttendancePage() {
     };
 
     const stopScanner = () => {
+        if (intervalRef.current != null) {
+            window.clearInterval(intervalRef.current);
+            intervalRef.current = null;
+        }
+
+        if (zxingRef.current) {
+            zxingRef.current.stop();
+            zxingRef.current = null;
+        }
+
         if (streamRef.current) {
             for (const track of streamRef.current.getTracks()) {
                 track.stop();
             }
             streamRef.current = null;
         }
+
         if (videoRef.current) {
             videoRef.current.srcObject = null;
         }
+
         if (codeReaderRef.current) {
             codeReaderRef.current = null;
         }
+
         setScanState({ status: 'idle' });
     };
+
+    useEffect(() => {
+        if (monitoringTab === 'scanner' && monitorEventId) {
+            void startScanner();
+        } else {
+            stopScanner();
+        }
+        return () => stopScanner();
+    }, [monitoringTab, monitorEventId]);
 
     const processScan = async (code: string) => {
         const now = Date.now();
