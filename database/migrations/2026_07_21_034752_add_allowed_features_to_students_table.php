@@ -12,17 +12,22 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('students', function (Blueprint $table) {
-            //
+            if (!Schema::hasColumn('students', 'allowed_features')) {
+                if (Schema::hasColumn('students', 'verification_status')) {
+                    $table->json('allowed_features')->nullable()->after('verification_status');
+                } else {
+                    $table->json('allowed_features')->nullable();
+                }
+            }
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('students', function (Blueprint $table) {
-            //
+            if (Schema::hasColumn('students', 'allowed_features')) {
+                $table->dropColumn('allowed_features');
+            }
         });
     }
 };

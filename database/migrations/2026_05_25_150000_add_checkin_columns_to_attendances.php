@@ -8,15 +8,23 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('attendances', function (Blueprint $table) {
-            $table->timestamp('checked_in_at')->nullable()->after('status');
-            $table->timestamp('checked_out_at')->nullable()->after('checked_in_at');
+            if (!Schema::hasColumn('attendances', 'checked_in_at')) {
+                $table->timestamp('checked_in_at')->nullable();
+            }
+            if (!Schema::hasColumn('attendances', 'checked_out_at')) {
+                $table->timestamp('checked_out_at')->nullable();
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('attendances', function (Blueprint $table) {
-            $table->dropColumn(['checked_in_at', 'checked_out_at']);
+            $colsToDrop = array_filter(['checked_in_at', 'checked_out_at'], fn($c) => Schema::hasColumn('attendances', $c));
+            if (!empty($colsToDrop)) {
+                $table->dropColumn($colsToDrop);
+            }
         });
     }
 };
+

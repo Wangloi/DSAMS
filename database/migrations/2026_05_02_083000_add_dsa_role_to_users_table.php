@@ -11,18 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->enum('role', ['student', 'program_head', 'admin', 'dsa'])->default('student')->change();
-        });
+        if (Schema::hasTable('users')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->enum('role', ['student', 'program_head', 'admin', 'dsa'])->default('student')->change();
+            });
+        }
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->enum('role', ['student', 'program_head', 'admin'])->default('student')->change();
-        });
+        if (Schema::hasTable('users')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->enum('role', ['student', 'program_head', 'admin'])->default('student')->change();
+            });
+        }
     }
 };

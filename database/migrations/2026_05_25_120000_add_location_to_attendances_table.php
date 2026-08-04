@@ -11,17 +11,18 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('attendances', function (Blueprint $table) {
-            $table->string('location')->nullable()->after('status');
+            if (!Schema::hasColumn('attendances', 'location')) {
+                $table->string('location')->nullable()->after('status');
+            }
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('attendances', function (Blueprint $table) {
-            $table->dropColumn('location');
+            if (Schema::hasColumn('attendances', 'location')) {
+                $table->dropColumn('location');
+            }
         });
     }
 };
