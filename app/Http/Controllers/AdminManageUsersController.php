@@ -197,7 +197,7 @@ class AdminManageUsersController extends Controller
                 });
         }
 
-        $users = $students->concat($programHeads)->concat($adminUsers)->values();
+        $users = $adminUsers->concat($programHeads)->concat($students)->values();
 
         $programs = Program::withCount('students')
             ->orderBy('name')
@@ -855,6 +855,10 @@ class AdminManageUsersController extends Controller
 
     public function bulkImport(Request $request): RedirectResponse
     {
+        if ($request->isMethod('get')) {
+            return redirect()->route('admin.manage-users');
+        }
+
         $rowsToImport = [];
 
         if ($request->hasFile('file')) {
@@ -903,57 +907,117 @@ class AdminManageUsersController extends Controller
         }
 
         $importedCount = 0;
-        $updatedCount = 0;
+        $skippedCount = 0;
 
-        foreach ($rowsToImport as $row) {
-            $rawId = $row['student_id'] ?? '';
-            if (empty($rawId)) {
-                continue;
-            }
+        // Pre-compute defaults and cache schema checks outside loop for performance
+        $defaultPasswordHash = Hash::make('password123');
+        $hasIsArchived = Schema::hasColumn('students', 'is_archived');
+        $hasVerificationStatus = Schema::hasColumn('students', 'verification_status');
 
-            // Format Student ID: Ensure ID- prefix is present exactly once
-            if (preg_match('/^ID-/i', $rawId)) {
-                $studentId = 'ID-' . preg_replace('/^ID-/i', '', $rawId);
-            } else {
-                $studentId = 'ID-' . $rawId;
-            }
+        // Pre-fetch existing values for duplicate checking (case-insensitive)
+        $existingStudentIds = Student::pluck('student_id')
+            ->map(fn($v) => strtolower(trim((string)$v)))
+            ->filter()
+            ->flip()
+            ->all();
 
-            $firstName = $row['first_name'] ?? '';
-            $lastName = $row['last_name'] ?? '';
-            $fullName = trim($firstName . ' ' . $lastName);
+        $existingNames = Student::pluck('name')
+            ->map(fn($v) => strtolower(trim((string)$v)))
+            ->filter()
+            ->flip()
+            ->all();
 
-            $studentData = [
-                'student_id' => $studentId,
-                'first_name' => $firstName,
-                'last_name' => $lastName,
-                'name' => $fullName,
-                'year_level' => $row['year_level'] ?? '',
-                'course' => $row['course'] ?? '',
-                'program' => $row['program'] ?? '',
-                'email' => !empty($row['email']) ? $row['email'] : null,
-                'role' => 'Student',
-                'is_active' => true,
-                'status' => 'approved',
-            ];
+        $existingFirstNames = Student::pluck('first_name')
+            ->map(fn($v) => strtolower(trim((string)$v)))
+            ->filter()
+            ->flip()
+            ->all();
 
-            if (Schema::hasColumn('students', 'is_archived')) {
-                $studentData['is_archived'] = false;
-            }
+        $existingLastNames = Student::pluck('last_name')
+            ->map(fn($v) => strtolower(trim((string)$v)))
+            ->filter()
+            ->flip()
+            ->all();
 
-            if (Schema::hasColumn('students', 'verification_status')) {
-                $studentData['verification_status'] = 'approved';
-            }
+        \Illuminate\Support\Facades\DB::transaction(function () use (
+            $rowsToImport,
+            $defaultPasswordHash,
+            $hasIsArchived,
+            $hasVerificationStatus,
+            &$existingStudentIds,
+            &$existingNames,
+            &$existingFirstNames,
+            &$existingLastNames,
+            &$importedCount,
+            &$skippedCount
+        ) {
+            foreach ($rowsToImport as $row) {
+                $rawId = $row['student_id'] ?? '';
+                if (empty($rawId)) {
+                    continue;
+                }
 
-            $existing = Student::where('student_id', $studentId)->first();
-            if ($existing) {
-                $existing->update($studentData);
-                $updatedCount++;
-            } else {
-                $studentData['password'] = Hash::make('password123');
+                // Format Student ID: Ensure ID- prefix is present exactly once
+                if (preg_match('/^ID-/i', $rawId)) {
+                    $studentId = 'ID-' . preg_replace('/^ID-/i', '', $rawId);
+                } else {
+                    $studentId = 'ID-' . $rawId;
+                }
+
+                $firstName = $row['first_name'] ?? '';
+                $lastName = $row['last_name'] ?? '';
+                $fullName = trim($firstName . ' ' . $lastName);
+
+                $studentIdLower = strtolower(trim($studentId));
+                $firstNameLower = strtolower(trim($firstName));
+                $lastNameLower = strtolower(trim($lastName));
+                $nameLower = strtolower(trim($fullName));
+
+                // Duplicate checking: If student ID, name, first_name, or last_name already exists, skip
+                $isDuplicateId = isset($existingStudentIds[$studentIdLower]);
+                $isDuplicateName = !empty($nameLower) && isset($existingNames[$nameLower]);
+                $isDuplicateFirstName = !empty($firstNameLower) && isset($existingFirstNames[$firstNameLower]);
+                $isDuplicateLastName = !empty($lastNameLower) && isset($existingLastNames[$lastNameLower]);
+
+                if ($isDuplicateId || $isDuplicateName || $isDuplicateFirstName || $isDuplicateLastName) {
+                    $skippedCount++;
+                    continue;
+                }
+
+                $studentData = [
+                    'student_id' => $studentId,
+                    'first_name' => $firstName,
+                    'last_name' => $lastName,
+                    'name' => $fullName,
+                    'year_level' => $row['year_level'] ?? '',
+                    'course' => $row['course'] ?? '',
+                    'program' => $row['program'] ?? '',
+                    'email' => !empty($row['email']) ? $row['email'] : null,
+                    'role' => 'Student',
+                    'is_active' => true,
+                    'status' => 'approved',
+                    'password' => $defaultPasswordHash,
+                ];
+
+                if ($hasIsArchived) {
+                    $studentData['is_archived'] = false;
+                }
+
+                if ($hasVerificationStatus) {
+                    $studentData['verification_status'] = 'approved';
+                }
+
                 Student::create($studentData);
+
+                // Register into tracked sets so duplicate rows within the file are also caught
+                $existingStudentIds[$studentIdLower] = true;
+                if (!empty($nameLower)) $existingNames[$nameLower] = true;
+                if (!empty($firstNameLower)) $existingFirstNames[$firstNameLower] = true;
+                if (!empty($lastNameLower)) $existingLastNames[$lastNameLower] = true;
+
                 $importedCount++;
             }
-        }
+        });
 
         if (Schema::hasTable('activity_logs')) {
             $admin = auth()->guard('admin')->user();
@@ -961,7 +1025,7 @@ class AdminManageUsersController extends Controller
                 $admin,
                 'User Management',
                 'Bulk Import',
-                "Bulk imported students: {$importedCount} created, {$updatedCount} updated.",
+                "Bulk imported students: {$importedCount} created, {$skippedCount} skipped as duplicate.",
                 $request
             );
         }
@@ -970,13 +1034,15 @@ class AdminManageUsersController extends Controller
         if ($importedCount > 0) {
             $msgParts[] = "{$importedCount} student(s) added";
         }
-        if ($updatedCount > 0) {
-            $msgParts[] = "{$updatedCount} existing student(s) updated";
+        if ($skippedCount > 0) {
+            $msgParts[] = "{$skippedCount} duplicate record(s) skipped";
         }
 
         $resultMsg = !empty($msgParts)
-            ? 'Bulk import successful: ' . implode(', ', $msgParts) . '.'
-            : 'No student records were created or updated.';
+            ? 'Bulk import completed: ' . implode(', ', $msgParts) . '.'
+            : 'No new student records were added.';
+
+        return redirect()->route('admin.manage-users')->with('success', $resultMsg)->setStatusCode(303);
 
         return redirect()->route('admin.manage-users')->with('success', $resultMsg)->setStatusCode(303);
     }

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\AdminUser;
 use App\Models\Student;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
@@ -34,8 +35,6 @@ class BulkAddStudentsTest extends TestCase
 
     public function test_can_bulk_import_students_with_formatting_and_defaults(): void
     {
-        $this->withoutMiddleware();
-
         $admin = $this->createAdmin();
 
         $payload = [
@@ -83,5 +82,94 @@ class BulkAddStudentsTest extends TestCase
         $student2 = Student::where('student_id', 'ID-C230104')->first();
         $this->assertNotNull($student2);
         $this->assertEquals('Maria Santos', $student2->name);
+    }
+
+    public function test_can_bulk_import_uploaded_file_without_audit_serialization_error(): void
+    {
+        $admin = $this->createAdmin();
+
+        $csvContent = "Student ID,Firstname,Lastname,Grade/Year Level,Section/Course,Department\n"
+            . "C999888,FileUser,Testing,3rd Year,BSIT,HED\n";
+
+        $file = UploadedFile::fake()->createWithContent('students.csv', $csvContent);
+
+        $response = $this->actingAs($admin, 'admin')->post(route('admin.manage-users.bulk-import'), [
+            'file' => $file,
+        ]);
+
+        $response->assertStatus(303);
+
+        $imported = Student::where('student_id', 'ID-C999888')->first();
+        $this->assertNotNull($imported);
+        $this->assertEquals('FileUser Testing', $imported->name);
+    }
+
+    public function test_skips_duplicate_student_id_firstname_lastname_or_name(): void
+    {
+        $admin = $this->createAdmin();
+
+        // Create an existing student
+        Student::create([
+            'student_id' => 'ID-C111111',
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+            'name' => 'John Doe',
+            'course' => 'BSIT',
+            'year_level' => '1st Year',
+            'program' => 'HED',
+            'password' => Hash::make('password123'),
+        ]);
+
+        $payload = [
+            'rows' => [
+                // Duplicate Student ID -> should be skipped
+                [
+                    'Student ID' => 'C111111',
+                    'Firstname' => 'UniqueName',
+                    'Lastname' => 'UniqueLast',
+                    'Grade/Year Level' => '1st Year',
+                    'Section/Course' => 'BSIT',
+                    'Department' => 'HED',
+                ],
+                // Duplicate Firstname -> should be skipped
+                [
+                    'Student ID' => 'C222222',
+                    'Firstname' => 'John',
+                    'Lastname' => 'Smith',
+                    'Grade/Year Level' => '2nd Year',
+                    'Section/Course' => 'BSBA',
+                    'Department' => 'HED',
+                ],
+                // Duplicate Lastname -> should be skipped
+                [
+                    'Student ID' => 'C333333',
+                    'Firstname' => 'Alice',
+                    'Lastname' => 'Doe',
+                    'Grade/Year Level' => '3rd Year',
+                    'Section/Course' => 'BEED',
+                    'Department' => 'HED',
+                ],
+                // Entirely New Student -> should be added
+                [
+                    'Student ID' => 'C444444',
+                    'Firstname' => 'Bob',
+                    'Lastname' => 'Marley',
+                    'Grade/Year Level' => '4th Year',
+                    'Section/Course' => 'BSHM',
+                    'Department' => 'HED',
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($admin, 'admin')->post(route('admin.manage-users.bulk-import'), $payload);
+
+        $response->assertStatus(303);
+
+        // Only John Doe (initial) and Bob Marley should exist
+        $this->assertEquals(2, Student::count());
+
+        $bob = Student::where('student_id', 'ID-C444444')->first();
+        $this->assertNotNull($bob);
+        $this->assertEquals('Bob Marley', $bob->name);
     }
 }

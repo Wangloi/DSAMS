@@ -36,14 +36,7 @@ function splitCsvLine(line: string) {
         .map((v) => (v.startsWith('"') && v.endsWith('"') ? v.slice(1, -1) : v));
 }
 
-function getCsrfToken(): string {
-    const meta = document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement;
-    if (meta && meta.content) {
-        return meta.content;
-    }
-    const match = document.cookie.match(new RegExp('(?:^|; )XSRF-TOKEN=([^;]+)'));
-    return match ? decodeURIComponent(match[1]) : '';
-}
+
 
 export default function BulkAddUsersDialog({ open, onOpenChange }: Props) {
     const [mode, setMode] = useState<'file' | 'text'>('file');
@@ -112,9 +105,6 @@ export default function BulkAddUsersDialog({ open, onOpenChange }: Props) {
     };
 
     const submit = () => {
-        const token = getCsrfToken();
-        const headers: Record<string, string> = token ? { 'X-CSRF-TOKEN': token } : {};
-
         if (mode === 'file') {
             if (!selectedFile) {
                 Swal.fire({
@@ -128,12 +118,8 @@ export default function BulkAddUsersDialog({ open, onOpenChange }: Props) {
             setIsSubmitting(true);
             const formData = new FormData();
             formData.append('file', selectedFile);
-            if (token) {
-                formData.append('_token', token);
-            }
 
             router.post('/admin/manage-users/bulk-import', formData, {
-                headers,
                 preserveScroll: true,
                 onSuccess: () => {
                     close();
@@ -164,12 +150,8 @@ export default function BulkAddUsersDialog({ open, onOpenChange }: Props) {
             setIsSubmitting(true);
             router.post(
                 '/admin/manage-users/bulk-import',
+                { rows: parsedTextRows },
                 {
-                    rows: parsedTextRows,
-                    _token: token,
-                },
-                {
-                    headers,
                     preserveScroll: true,
                     onSuccess: () => {
                         close();

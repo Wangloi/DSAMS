@@ -36,9 +36,22 @@ class SecurityAudit
             ? (int) $rawTargetId
             : null;
 
-        // Sanitize request data — never log passwords or tokens
+        // Sanitize request data — never log passwords or tokens, and convert UploadedFile objects to strings
         $sanitized = collect($request->all())
             ->except(['password', 'password_confirmation', 'token', '_token'])
+            ->map(function ($value) {
+                if ($value instanceof \Illuminate\Http\UploadedFile) {
+                    return '[File: ' . $value->getClientOriginalName() . ']';
+                }
+                if (is_array($value)) {
+                    return array_map(function ($item) {
+                        return ($item instanceof \Illuminate\Http\UploadedFile)
+                            ? '[File: ' . $item->getClientOriginalName() . ']'
+                            : $item;
+                    }, $value);
+                }
+                return $value;
+            })
             ->toArray();
 
         $payload = [
