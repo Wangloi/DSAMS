@@ -1,5 +1,5 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { Archive, BookOpen, Edit, Eye, Pencil, Plus, Search, Trash2, Users, CheckCircle, XCircle, UserCheck, UserX, ChevronDown, GraduationCap } from 'lucide-react';
+import { Archive, BookOpen, Edit, Eye, KeyRound, Pencil, Plus, Search, Trash2, Users, CheckCircle, XCircle, UserCheck, UserX, ChevronDown, GraduationCap } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import Swal from 'sweetalert2';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -386,7 +386,7 @@ export default function AdminManageUsersPage() {
                                             : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'
                                     }`}
                                 >
-                                    <Users className="h-4 w-4" />
+                                    <UserCheck className="h-4 w-4" />
                                     Users
                                     <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
                                         activeTab === 'users' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
@@ -403,7 +403,7 @@ export default function AdminManageUsersPage() {
                                             : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'
                                     }`}
                                 >
-                                    <BookOpen className="h-4 w-4" />
+                                    <GraduationCap className="h-4 w-4" />
                                     Programs
                                     <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
                                         activeTab === 'programs' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
@@ -420,7 +420,7 @@ export default function AdminManageUsersPage() {
                                             : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'
                                     }`}
                                 >
-                                    <Edit className="h-4 w-4" />
+                                    <KeyRound className="h-4 w-4" />
                                     Password Resets
                                     <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
                                         activeTab === 'password-resets' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'

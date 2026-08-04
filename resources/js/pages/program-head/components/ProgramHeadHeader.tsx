@@ -1,8 +1,15 @@
-import { Link, router, usePage } from '@inertiajs/react';
-import { Bell, ChevronDown, Menu, X } from 'lucide-react';
+import { Bell, BookOpen, CheckCircle2, ChevronDown, HelpCircle, LifeBuoy, Mail, Menu, Shield, X } from 'lucide-react';
 import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -14,7 +21,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useInitials } from '@/hooks/use-initials';
 import { MobileNavigation } from '@/pages/admin-dashboard/mobile-navigation';
-import type { SharedData } from '@/types'
+import type { SharedData } from '@/types';
 
 
 export function ProgramHeadHeader() {
@@ -23,6 +30,7 @@ export function ProgramHeadHeader() {
     const getInitials = useInitials();
     const [notificationsRead, setNotificationsRead] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [helpOpen, setHelpOpen] = useState(false);
 
     const recentNotifications = Array.isArray((page.props as any)?.recentNotifications)
         ? ((page.props as any).recentNotifications ?? [])
@@ -139,6 +147,68 @@ export function ProgramHeadHeader() {
 
                 {/* Right side actions */}
                 <div className="ml-auto flex items-center gap-2 sm:gap-3">
+                    {/* Help Support Guide */}
+                    <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
+                        <DialogTrigger asChild>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-full text-white hover:bg-white/15 hover:text-white"
+                                title="Program Head Help & Support"
+                            >
+                                <HelpCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-xl rounded-2xl bg-white dark:bg-[#0B192C] text-slate-900 dark:text-white p-6 shadow-xl border border-slate-200 dark:border-white/10">
+                            <DialogHeader>
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2.5 rounded-xl bg-blue-600/10 text-blue-600 dark:bg-blue-400/10 dark:text-blue-400">
+                                        <LifeBuoy className="h-6 w-6" />
+                                    </div>
+                                    <div>
+                                        <DialogTitle className="text-lg font-bold">Program Head Help & Guide</DialogTitle>
+                                        <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+                                            Quick reference and system support for managing your department
+                                        </DialogDescription>
+                                    </div>
+                                </div>
+                            </DialogHeader>
+
+                            <div className="mt-4 space-y-4 text-sm leading-relaxed">
+                                <div className="rounded-xl bg-slate-50 dark:bg-white/5 p-4 border border-slate-100 dark:border-white/5 space-y-3">
+                                    <div className="flex items-center gap-2 font-semibold text-blue-700 dark:text-blue-400">
+                                        <BookOpen className="h-4 w-4" />
+                                        <span>Key Features Guide</span>
+                                    </div>
+                                    <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
+                                        <li className="flex items-start gap-2">
+                                            <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                                            <span><strong>Student Roster:</strong> View department student profiles, statuses, and course enrollments.</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                                            <span><strong>Attendance Monitoring:</strong> Track student event check-in/out records in real time.</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                                            <span><strong>Violations & Clearance:</strong> Manage student infractions and sanction resolutions.</span>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <div className="rounded-xl bg-slate-50 dark:bg-white/5 p-4 border border-slate-100 dark:border-white/5 space-y-2">
+                                    <div className="flex items-center gap-2 font-semibold text-slate-800 dark:text-slate-200">
+                                        <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                        <span>Technical Support</span>
+                                    </div>
+                                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                                        Need assistance or account adjustments? Contact the System Administrator or Student Affairs Office at <strong className="text-blue-600 dark:text-blue-400">dsa@srcb.edu.ph</strong>.
+                                    </p>
+                                </div>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
                     {/* Notifications */}
                     <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild>

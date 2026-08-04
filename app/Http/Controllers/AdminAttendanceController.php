@@ -280,13 +280,15 @@ class AdminAttendanceController extends Controller
             ->map(function (Attendance $attendance) {
                 $student = $attendance->student;
 
+                $timeCarbon = $attendance->checked_in_at ?? $attendance->scanned_at;
+
                 return [
                     'id' => (string) $attendance->id,
                     'student_id' => (string) ($student?->student_id ?? $attendance->student_id ?? ''),
                     'name' => (string) ($student?->name ?? ''),
                     'program' => (string) (($student?->course ?? $student?->program ?? '') ?: '—'),
-                    'checked_in_at' => optional($attendance->checked_in_at)->toDateTimeString(),
-                    'time' => optional($attendance->checked_in_at)->format('h:i A') ?: '—',
+                    'checked_in_at' => optional($timeCarbon)->toDateTimeString(),
+                    'time' => optional($timeCarbon)->format('h:i A') ?: '—',
                     'status' => (string) ($attendance->status ?? ''),
                 ];
             })
@@ -488,7 +490,11 @@ class AdminAttendanceController extends Controller
 
         $attendance = Attendance::query()->updateOrCreate(
             ['event_id' => $event->id, 'student_id' => $student->id],
-            ['scanned_at' => $now, 'status' => $status]
+            [
+                'scanned_at' => $now,
+                'checked_in_at' => $now,
+                'status' => $status,
+            ]
         );
 
         $event->updateAttendanceCounts();

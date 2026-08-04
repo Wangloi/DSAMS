@@ -499,9 +499,11 @@ export default function AdminAttendancePage() {
         try {
             const res = await fetch(`/admin/attendance/${monitorEventId}/scan`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as any)?.content || '',
                 },
                 body: JSON.stringify({ value: code }),
