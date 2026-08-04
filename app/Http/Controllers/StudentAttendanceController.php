@@ -656,9 +656,28 @@ class StudentAttendanceController extends Controller
         ]);
 
         $rawToken = trim((string) $validated['token']);
+
+        // Debug: log what the student is submitting
+        $cacheKey = DynamicAttendanceQrController::cacheKey($rawToken);
+        $cacheValue = \Illuminate\Support\Facades\Cache::get($cacheKey);
+        \Illuminate\Support\Facades\Log::debug('DynamicQR scan attempt', [
+            'student_id'  => $student->id,
+            'event_id'    => $event->id,
+            'token_len'   => strlen($rawToken),
+            'token_first' => substr($rawToken, 0, 12),
+            'cache_key'   => $cacheKey,
+            'cache_value' => $cacheValue,
+        ]);
+
         $tokenData = DynamicAttendanceQrController::consumeToken($rawToken);
 
         if ($tokenData === null) {
+            \Illuminate\Support\Facades\Log::warning('DynamicQR token FAILED', [
+                'student_id' => $student->id,
+                'event_id'   => $event->id,
+                'token_first' => substr($rawToken, 0, 12),
+                'cache_key'  => $cacheKey,
+            ]);
             if (Schema::hasTable('activity_logs')) {
                 ActivityLog::logForUser($student, 'Attendance', 'Denied', 'Dynamic QR token invalid or expired for event #' . $event->id, $request);
             }
@@ -667,6 +686,10 @@ class StudentAttendanceController extends Controller
 
         // Verify token is bound to this specific event
         if ((int) ($tokenData['event_id'] ?? 0) !== (int) $event->id) {
+            \Illuminate\Support\Facades\Log::warning('DynamicQR event mismatch', [
+                'token_event' => $tokenData['event_id'] ?? null,
+                'request_event' => $event->id
+            ]);
             if (Schema::hasTable('activity_logs')) {
                 ActivityLog::logForUser($student, 'Attendance', 'Denied', 'Dynamic QR token event mismatch for event #' . $event->id, $request);
             }
@@ -678,8 +701,16 @@ class StudentAttendanceController extends Controller
         $lng      = $validated['longitude'] ?? null;
         $accuracyM = $validated['accuracy_m'] ?? null;
 
+        \Illuminate\Support\Facades\Log::debug('DynamicQR GPS check', [
+            'geofence_enabled' => (bool) ($event->geofence_enabled ?? false),
+            'lat' => $lat,
+            'lng' => $lng,
+            'accuracy_m' => $accuracyM
+        ]);
+
         if ((bool) ($event->geofence_enabled ?? false)) {
             if ($lat === null || $lng === null || $accuracyM === null) {
+                \Illuminate\Support\Facades\Log::warning('DynamicQR geofence location missing');
                 if (Schema::hasTable('activity_logs')) {
                     ActivityLog::logForUser($student, 'Attendance', 'Denied', 'Location missing for geofenced event #' . $event->id, $request);
                 }
@@ -688,6 +719,7 @@ class StudentAttendanceController extends Controller
 
             $accuracyM = (float) $accuracyM;
             if ($accuracyM > 150) {
+                \Illuminate\Support\Facades\Log::warning('DynamicQR geofence accuracy too low', ['accuracy' => $accuracyM]);
                 return response()->json(['message' => 'Location accuracy is too low. Please move to an open area and try again.'], 422);
             }
 
@@ -696,11 +728,20 @@ class StudentAttendanceController extends Controller
             $radius   = (int) ($event->geofence_radius_m ?? 50);
 
             if ($eventLat === null || $eventLng === null) {
+                \Illuminate\Support\Facades\Log::warning('DynamicQR geofence not configured on event');
                 return response()->json(['message' => 'Event geofence is not configured. Please contact DSA.'], 422);
             }
 
             $distance = $this->haversineDistanceMeters((float) $lat, (float) $lng, (float) $eventLat, (float) $eventLng);
             $buffer = min($accuracyM, 50.0);
+            
+            \Illuminate\Support\Facades\Log::debug('DynamicQR distance calculation', [
+                'distance' => $distance,
+                'buffer' => $buffer,
+                'radius' => $radius,
+                'is_outside' => (($distance - $buffer) > $radius)
+            ]);
+
             if (($distance - $buffer) > $radius) {
                 if (Schema::hasTable('activity_logs')) {
                     ActivityLog::logForUser($student, 'Attendance', 'Denied', "Geofence violation: {$distance}m from event #{$event->id} (radius: {$radius}m, accuracy buffer: {$buffer}m)", $request);
@@ -718,6 +759,10 @@ class StudentAttendanceController extends Controller
             ->where('event_id', $event->id)
             ->where('student_id', $student->id)
             ->first();
+
+        \Illuminate\Support\Facades\Log::debug('DynamicQR duplicate check', [
+            'has_existing' => ($existing !== null)
+        ]);
 
         if ($existing) {
             return response()->json(['message' => 'You have already checked in for this event.'], 409);
@@ -742,6 +787,11 @@ class StudentAttendanceController extends Controller
                         ->where('evaluation_responses.student_id', $student->id);
                 })
                 ->exists();
+
+            \Illuminate\Support\Facades\Log::debug('DynamicQR pending evaluations gate', [
+                'student_program' => $studentProgram,
+                'has_pending' => $pendingEvaluations
+            ]);
 
             if ($pendingEvaluations) {
                 return response()->json([

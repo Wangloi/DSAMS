@@ -82,6 +82,7 @@ type AttendanceRow = {
     location: string;
     scannerPortalActive?: boolean;
     attendance_type?: string;
+    geofence_enabled?: boolean;
 };
 
 type LiveLogRow = {
@@ -122,112 +123,11 @@ export default function AdminAttendancePage() {
         console.error('Backend Error:', page.error);
     }
 
-    // Sample events data for testing
-    const sampleEvents: AttendanceRow[] = [
-
-        {
-            id: '1',
-            event: 'Annual Sports Festival 2026',
-            dateTime: '2026-03-15 08:00 AM',
-            organizer: 'Student Affairs Office',
-            totalAttendees: 150,
-            presentCount: 142,
-            scannedCount: 142,
-            lateCount: 8,
-            eligibleStudentsCount: 150,
-            expectedAttendees: 0,
-            attendanceDenominator: 150,
-            status: 'completed',
-            location: 'Main Sports Complex',
-            scannerPortalActive: false
-        },
-        {
-            id: '2',
-            event: 'Career Fair 2026',
-            dateTime: '2026-03-20 09:00 AM',
-            organizer: 'Career Services',
-            totalAttendees: 200,
-            presentCount: 185,
-            scannedCount: 185,
-            lateCount: 15,
-            eligibleStudentsCount: 200,
-            expectedAttendees: 0,
-            attendanceDenominator: 200,
-            status: 'completed',
-            location: 'University Gymnasium',
-            scannerPortalActive: false
-        },
-        {
-            id: '3',
-            event: 'Tech Innovation Summit',
-            dateTime: '2026-03-25 01:00 PM',
-            organizer: 'Computer Science Department',
-            totalAttendees: 75,
-            presentCount: 68,
-            scannedCount: 68,
-            lateCount: 7,
-            eligibleStudentsCount: 75,
-            expectedAttendees: 0,
-            attendanceDenominator: 75,
-            status: 'ongoing',
-            location: 'Conference Hall A',
-            scannerPortalActive: true
-        },
-        {
-            id: '4',
-            event: 'Spring Music Concert',
-            dateTime: '2026-04-01 06:00 PM',
-            organizer: 'Cultural Affairs',
-            totalAttendees: 300,
-            presentCount: 0,
-            scannedCount: 0,
-            lateCount: 0,
-            eligibleStudentsCount: 300,
-            expectedAttendees: 0,
-            attendanceDenominator: 300,
-            status: 'upcoming',
-            location: 'Auditorium Main Hall',
-            scannerPortalActive: false
-        },
-        {
-            id: '5',
-            event: 'Research Symposium 2026',
-            dateTime: '2026-04-10 10:00 AM',
-            organizer: 'Research Office',
-            totalAttendees: 120,
-            presentCount: 0,
-            scannedCount: 0,
-            lateCount: 0,
-            eligibleStudentsCount: 120,
-            expectedAttendees: 0,
-            attendanceDenominator: 120,
-            status: 'upcoming',
-            location: 'Science Building Room 301',
-            scannerPortalActive: false
-        },
-        {
-            id: '6',
-            event: 'Leadership Workshop',
-            dateTime: '2026-04-15 02:00 PM',
-            organizer: 'Student Development',
-            totalAttendees: 50,
-            presentCount: 45,
-            scannedCount: 45,
-            lateCount: 5,
-            eligibleStudentsCount: 50,
-            expectedAttendees: 0,
-            attendanceDenominator: 50,
-            status: 'ongoing',
-            location: 'Training Room B',
-            scannerPortalActive: true
-        }
-    ];
-
-    // Use backend data if available, otherwise use sample data
+    // Use backend data if available, otherwise initialize as empty
     const [events, setEvents] = useState<AttendanceRow[]>(
         (page.events as AttendanceRow[] && (page.events as any[]).length > 0)
             ? page.events as AttendanceRow[]
-            : sampleEvents
+            : []
     );
 
     const incomingEvents = page.events as AttendanceRow[] | undefined;
@@ -512,6 +412,10 @@ export default function AdminAttendancePage() {
 
     const fetchDynamicQrToken = useCallback(async () => {
         if (!monitorEventId) return;
+        if (!scannerPortalActive) {
+            setQrError('Activate the attendance session first (click "Activate Scanner Portal" or "Start Live Monitoring").');
+            return;
+        }
         setQrLoading(true);
         setQrError(null);
         try {
@@ -549,7 +453,7 @@ export default function AdminAttendancePage() {
         } finally {
             setQrLoading(false);
         }
-    }, [monitorEventId, renderQr]);
+    }, [monitorEventId, renderQr, scannerPortalActive]);
 
     const fetchLiveCounts = useCallback(async () => {
         if (!monitorEventId) return;
@@ -630,7 +534,7 @@ export default function AdminAttendancePage() {
         setMonitorEventId(id);
         setShowRealTimeMonitoring(true);
         setMonitoringEnabled(false);
-        setScannerPortalActive(false);
+        setScannerPortalActive(ev ? !!ev.scannerPortalActive : false);
         setLastUpdatedAt(null);
         setLiveCurrentPage(1);
         setMonitoringTab(tab);
@@ -1139,14 +1043,44 @@ export default function AdminAttendancePage() {
                                             </div>
                                             
                                             <div className="flex items-center gap-2">
-                                                <div className={`flex items-center gap-2 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider border ${
-                                                    scannerPortalActive 
-                                                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                                                        : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                                                }`}>
-                                                    <Zap className={`h-2.5 w-2.5 ${scannerPortalActive ? 'animate-pulse' : ''}`} />
-                                                    Portal {scannerPortalActive ? 'Active' : 'Inactive'}
-                                                </div>
+                                                 <div className={`flex items-center gap-2 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider border ${
+                                                     scannerPortalActive 
+                                                         ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                                                         : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                                                 }`}>
+                                                     <Zap className={`h-2.5 w-2.5 ${scannerPortalActive ? 'animate-pulse' : ''}`} />
+                                                     Portal {scannerPortalActive ? 'Active' : 'Inactive'}
+                                                 </div>
+                                                 <Button
+                                                     type="button"
+                                                     variant={monitoringEnabled ? 'outline' : 'default'}
+                                                     size="sm"
+                                                     className={cn(
+                                                         "h-8 gap-1 rounded-lg px-2.5 text-xs font-bold transition-all duration-300",
+                                                         monitoringEnabled
+                                                             ? "bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 hover:text-white"
+                                                             : "bg-blue-600 text-white hover:bg-blue-700 border-transparent shadow-md shadow-blue-500/20"
+                                                     )}
+                                                     onClick={() => {
+                                                         if (monitoringEnabled) {
+                                                             setMonitoringEnabled(false);
+                                                         } else {
+                                                             handleActivatePortalAndStartMonitoring();
+                                                         }
+                                                     }}
+                                                 >
+                                                     {monitoringEnabled ? (
+                                                         <>
+                                                             <Pause className="h-3.5 w-3.5 mr-0.5 fill-current" />
+                                                             Pause Live
+                                                         </>
+                                                     ) : (
+                                                         <>
+                                                             <Play className="h-3.5 w-3.5 mr-0.5 fill-current" />
+                                                             Start Live
+                                                         </>
+                                                     )}
+                                                 </Button>
                                                 <Button
                                                     type="button"
                                                     variant="ghost"
@@ -1629,7 +1563,21 @@ export default function AdminAttendancePage() {
                                                     <div className="flex flex-col items-center gap-3 text-center">
                                                         <WifiOff className="h-12 w-12 text-rose-500" />
                                                         <p className="text-sm font-medium text-rose-600">{qrError}</p>
-                                                        <Button onClick={fetchDynamicQrToken} variant="outline" className="h-9">Retry</Button>
+                                                        <div className="flex gap-2.5">
+                                                            <Button 
+                                                                onClick={handleActivatePortalAndStartMonitoring} 
+                                                                className="h-9 bg-blue-600 text-white hover:bg-blue-700 font-bold shadow-md shadow-blue-500/10 rounded-xl"
+                                                            >
+                                                                Activate Portal & Live Feed
+                                                            </Button>
+                                                            <Button 
+                                                                onClick={fetchDynamicQrToken} 
+                                                                variant="outline" 
+                                                                className="h-9 rounded-xl font-bold border-slate-200"
+                                                            >
+                                                                Retry
+                                                            </Button>
+                                                        </div>
                                                     </div>
                                                 ) : (
                                                     <>

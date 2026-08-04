@@ -15,6 +15,9 @@ class DynamicAttendanceQrController extends Controller
     /** Token lifetime in seconds — must match the frontend countdown. */
     private const LIFETIME_SECONDS = 30;
 
+    /** Cache lifetime in seconds to handle clock drift/network latency. */
+    private const CACHE_LIFETIME_SECONDS = 90;
+
     // ─── Admin: display the rotating QR code page ────────────────────────────
 
     public function show(Event $event): Response
@@ -45,7 +48,7 @@ class DynamicAttendanceQrController extends Controller
         );
 
         $token     = Str::random(48);
-        $expiresAt = now()->addSeconds(self::LIFETIME_SECONDS);
+        $expiresAt = now()->addSeconds(self::CACHE_LIFETIME_SECONDS);
 
         Cache::put(
             self::cacheKey($token),
@@ -53,12 +56,14 @@ class DynamicAttendanceQrController extends Controller
             $expiresAt
         );
 
+        $frontendExpiresAt = now()->addSeconds(self::LIFETIME_SECONDS);
+
         return response()->json([
             'payload'    => json_encode(
                 ['type' => 'dsams-attendance-token', 'event_id' => $event->id, 'token' => $token],
                 JSON_UNESCAPED_SLASHES
             ),
-            'expires_at' => $expiresAt->toIso8601String(),
+            'expires_at' => $frontendExpiresAt->toIso8601String(),
         ]);
     }
 
