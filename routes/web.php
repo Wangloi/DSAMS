@@ -278,6 +278,8 @@ Route::match(['put', 'post'], '/admin/manage-users/{student}/archive', [AdminMan
 Route::match(['put', 'post'], '/admin/manage-users/program-heads/{programHead}/verification/approve', [AdminManageUsersController::class, 'approveProgramHead'])->middleware('auth:admin')->name('admin.manage-users.program-heads.approve');
 Route::match(['put', 'post'], '/admin/manage-users/program-heads/{programHead}/verification/reject', [AdminManageUsersController::class, 'rejectProgramHead'])->middleware('auth:admin')->name('admin.manage-users.program-heads.reject');
 
+Route::get('/admin/manage-users/bulk-template', [AdminManageUsersController::class, 'downloadBulkTemplate'])->middleware('auth:admin')->name('admin.manage-users.bulk-template');
+Route::match(['get', 'post'], '/admin/manage-users/bulk-import', [AdminManageUsersController::class, 'bulkImport'])->middleware('auth:admin')->name('admin.manage-users.bulk-import');
 Route::post('/admin/manage-users/bulk/verification/approve', [AdminManageUsersController::class, 'bulkApproveVerification'])->middleware('auth:admin')->name('admin.manage-users.bulk-verification-approve');
 Route::post('/admin/manage-users/bulk/verification/reject', [AdminManageUsersController::class, 'bulkRejectVerification'])->middleware('auth:admin')->name('admin.manage-users.bulk-verification-reject');
 Route::post('/admin/manage-users/bulk/status/activate', [AdminManageUsersController::class, 'bulkActivate'])->middleware('auth:admin')->name('admin.manage-users.bulk-status-activate');
