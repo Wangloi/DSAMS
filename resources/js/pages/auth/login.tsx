@@ -12,8 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import VideoBackground from '@/components/VideoBackground';
-import { landing } from '@/routes';
-import { request } from '@/routes/password';
+import { landing, forgotPassword } from '@/routes';
 import { AuthLoadingOverlay } from '@/components/AuthLoadingOverlay';
 
 type Props = {
@@ -180,7 +179,7 @@ export default function Login({ status, canResetPassword, canRegister }: Props) 
                                         </div>
 
                                         {canResetPassword && (
-                                            <TextLink href={request()} className="text-sm text-white/80 font-medium hover:text-white" tabIndex={5}>
+                                            <TextLink href={forgotPassword()} className="text-sm text-white/80 font-medium hover:text-white" tabIndex={5}>
                                                 Forgot password?
                                             </TextLink>
                                         )}

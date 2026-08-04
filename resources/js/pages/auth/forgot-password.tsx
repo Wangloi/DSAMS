@@ -7,8 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import VideoBackground from '@/components/VideoBackground';
-import { login } from '@/routes';
-import { email } from '@/routes/password';
+import { login, forgotPassword } from '@/routes';
 
 export default function ForgotPassword({ status }: { status?: string }) {
     return (
@@ -47,7 +46,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
                             </div>
                         )}
 
-                        <Form {...email.form()} className="mt-4">
+                        <Form action={forgotPassword()} method="post" className="mt-4">
                             {({ processing, errors }) => (
                                 <>
                                     <div className="grid gap-2">

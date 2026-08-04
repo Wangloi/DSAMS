@@ -8,8 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useTwoFactorAuth } from '@/hooks/use-two-factor-auth';
 import AppLayout from '@/layouts/app-layout';
-import SettingsLayout from '@/layouts/settings/layout';
-import { disable, enable, show } from '@/routes/two-factor';
 import type { BreadcrumbItem } from '@/types';
 
 type Props = {
@@ -20,7 +18,7 @@ type Props = {
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Two-Factor Authentication',
-        href: show.url(),
+        href: '/settings/two-factor',
     },
 ];
 

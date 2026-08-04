@@ -11,8 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import VideoBackground from '@/components/VideoBackground';
-import { adminLogin, programHeadLogin, register, login } from '@/routes';
-import { request } from '@/routes/password';
+import { adminLogin, programHeadLogin, register, login, forgotPassword } from '@/routes';
 
 type Props = {
     status?: string;

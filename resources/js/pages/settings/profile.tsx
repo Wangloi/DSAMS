@@ -1,7 +1,6 @@
 import { Transition } from '@headlessui/react';
 import { Form, Link, usePage } from '@inertiajs/react';
 import { AlertCircle, CheckCircle2, Mail, UserRound } from 'lucide-react';
-import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/delete-user';
 import InputError from '@/components/input-error';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -11,8 +10,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useInitials } from '@/hooks/use-initials';
-import SettingsPageLayout from '@/layouts/settings/settings-page-layout';
-import { send } from '@/routes/verification';
 import type { SharedData } from '@/types';
 
 const inputClassName =
@@ -91,7 +88,8 @@ export default function Profile({
                     </CardHeader>
                     <CardContent className="pt-6">
                         <Form
-                            {...ProfileController.update.form()}
+                            action="/settings/profile"
+                            method="patch"
                             options={{
                                 preserveScroll: true,
                             }}
@@ -143,7 +141,8 @@ export default function Profile({
                                             <p className="mt-1 text-amber-800/90 dark:text-amber-200/90">
                                                 Your email is not verified yet.{' '}
                                                 <Link
-                                                    href={send()}
+                                                    href="/email/verification-notification"
+                                                    method="post"
                                                     as="button"
                                                     className="font-semibold text-[#23509A] underline underline-offset-2 hover:text-[#000D6A] dark:text-blue-300"
                                                 >

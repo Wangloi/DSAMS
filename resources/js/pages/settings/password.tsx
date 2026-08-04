@@ -2,7 +2,6 @@ import { Transition } from '@headlessui/react';
 import { Form } from '@inertiajs/react';
 import { CheckCircle2, Eye, EyeOff, Lock } from 'lucide-react';
 import { useRef, useState } from 'react';
-import PasswordController from '@/actions/App/Http/Controllers/Settings/PasswordController';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,7 +41,8 @@ export default function Password() {
                 </CardHeader>
                 <CardContent className="pt-6">
                     <Form
-                        {...PasswordController.update.form()}
+                        action="/settings/password"
+                        method="put"
                         options={{ preserveScroll: true }}
                         resetOnError={['password', 'password_confirmation', 'current_password']}
                         resetOnSuccess

@@ -1,7 +1,6 @@
 import { Form } from '@inertiajs/react';
 import { AlertTriangle } from 'lucide-react';
 import { useRef } from 'react';
-import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -60,7 +59,8 @@ export default function DeleteUser() {
                         </DialogHeader>
 
                         <Form
-                            {...ProfileController.destroy.form()}
+                            action="/settings/profile"
+                            method="delete"
                             options={{
                                 preserveScroll: true,
                             }}

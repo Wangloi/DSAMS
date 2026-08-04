@@ -218,5 +218,8 @@ export const adminLogin = () => '/admin-login';
 export const studentLogin = () => '/student-login';
 export const programHeadLogin = () => '/program-head-login';
 
+export const forgotPassword = () => '/forgot-password';
+
 // Aliases
 export const login = () => '/login';
+

@@ -10,14 +10,13 @@ import {
     useSidebar,
 } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
-import programHead from '@/routes/program-head';
-const {
-    attendance: programHeadAttendance,
-    dashboard: programHeadDashboard,
-    reports: programHeadReports,
-    violations: programHeadViolations,
-    calendarEvents: eventManagement,
-} = programHead;
+import {
+    programHeadAttendance,
+    programHeadDashboard,
+    programHeadReports,
+    programHeadViolations,
+    programHeadCalendarEvents as eventManagement,
+} from '@/routes';
 
 import { Link, usePage } from '@inertiajs/react';
 import {
@@ -40,22 +39,22 @@ type NavItemWithChildren = NavItem & {
 const programHeadNavItems: NavItemWithChildren[] = [
     {
         title: 'Dashboard',
-        href: programHeadDashboard.url(),
+        href: programHeadDashboard(),
         icon: LayoutGrid,
     },
     {
         title: 'Attendance',
-        href: programHeadAttendance.url(),
+        href: programHeadAttendance(),
         icon: Users,
     },
     {
         title: 'Violations',
-        href: programHeadViolations.url(),
+        href: programHeadViolations(),
         icon: ShieldAlert,
     },
     {
         title: 'Event Management',
-        href: eventManagement.url(),
+        href: eventManagement(),
         icon: CalendarDays,
     },
     {
