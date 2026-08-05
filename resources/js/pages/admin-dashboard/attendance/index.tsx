@@ -1091,159 +1091,228 @@ export default function AdminAttendancePage() {
                 <div className="flex w-full flex-col gap-6 px-6 py-6">
                     {showRealTimeMonitoring ? (
                         <div className="flex flex-col gap-6 animate-in fade-in duration-500">
-                            {/* --- MODERN MONITORING HEADER --- */}
-                            <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0B192C]/50 shadow-sm">
-                                <div className="border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-slate-900 to-slate-800 px-6 py-4 text-white">
-                                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                                        <div className="flex items-center gap-4">
+                            {/* --- REDESIGNED MONITORING HEADER (UX Heuristics) --- */}
+                            <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0B192C]/50 shadow-lg">
+                                {/* PRIMARY HEADER: 3-Zone Layout */}
+                                <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-6 py-5 text-white">
+                                    <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                                        {/* ZONE 1: Navigation + Event Identity (Heuristic #6: Recognition over Recall) */}
+                                        <div className="flex items-start gap-4 min-w-0 flex-1">
                                             <Button
                                                 type="button"
                                                 variant="ghost"
-                                                size="icon"
-                                                className="h-10 w-10 rounded-full bg-white/10 text-white hover:bg-white/20"
+                                                className="h-10 shrink-0 rounded-xl bg-white/10 px-3 text-sm font-semibold text-white hover:bg-white/20 gap-2 border border-white/5 transition-all duration-200 active:scale-95"
                                                 onClick={() => {
                                                     setShowRealTimeMonitoring(false);
                                                     setMonitoringEnabled(false);
                                                 }}
+                                                title="Return to event list"
                                             >
-                                                <ArrowLeft className="h-5 w-5" />
+                                                <ArrowLeft className="h-4 w-4" />
+                                                <span className="hidden sm:inline">Back to Events</span>
                                             </Button>
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <LayoutDashboard className="h-5 w-5 text-blue-400" />
-                                                    <h2 className="text-xl font-bold tracking-tight">
-                                                        {monitoringTab === 'scanner' ? 'Camera QR Scanner' : monitoringTab === 'dynamic-qr' ? 'Dynamic Rotation QR' : 'Real-Time Command Center'}
-                                                    </h2>
-                                                </div>
-                                                <div className="mt-1 flex items-center gap-3 text-xs text-slate-400">
-                                                    <span className="flex items-center gap-1.5">
-                                                        <Activity className={`h-3 w-3 ${monitoringEnabled ? 'text-emerald-400 animate-pulse' : 'text-slate-500'}`} />
-                                                        {monitoringEnabled ? 'System Live' : 'System Paused'}
-                                                    </span>
-                                                    <span>•</span>
-                                                    <span>{monitoredEvent?.event || 'Select an event'}</span>
+                                            <div className="min-w-0 flex-1">
+                                                <h2 className="text-xl font-bold tracking-tight truncate leading-tight">
+                                                    {monitoredEvent?.event || 'Select an event'}
+                                                </h2>
+                                                <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+                                                    {monitoredEvent?.dateTime && (
+                                                        <span className="flex items-center gap-1.5">
+                                                            <Clock className="h-3 w-3 text-slate-500" />
+                                                            {monitoredEvent.dateTime}
+                                                        </span>
+                                                    )}
+                                                    {monitoredEvent?.location && (
+                                                        <span className="flex items-center gap-1.5">
+                                                            <span className="text-slate-600">📍</span>
+                                                            {monitoredEvent.location}
+                                                        </span>
+                                                    )}
+                                                    {monitoredEvent?.organizer && (
+                                                        <span className="flex items-center gap-1.5">
+                                                            <Users className="h-3 w-3 text-slate-500" />
+                                                            {monitoredEvent.organizer}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="flex flex-wrap items-center gap-3">
-                                            {/* Segmented Tab Switcher */}
-                                            <div className="inline-flex rounded-xl bg-white/10 p-1 gap-1 border border-white/5">
-                                                <Button
+                                        {/* ZONE 2: System Status (Heuristic #1: Visibility of System Status) */}
+                                        <div className="flex items-center justify-center lg:justify-end gap-3 shrink-0">
+                                            <div className={cn(
+                                                "flex items-center gap-2.5 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider border transition-all duration-500",
+                                                monitoringEnabled
+                                                    ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.15)]"
+                                                    : "bg-slate-700/50 text-slate-400 border-slate-600/30"
+                                            )}>
+                                                <span className="relative flex h-2.5 w-2.5">
+                                                    {monitoringEnabled && (
+                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                    )}
+                                                    <span className={cn(
+                                                        "relative inline-flex rounded-full h-2.5 w-2.5",
+                                                        monitoringEnabled ? "bg-emerald-400" : "bg-slate-500"
+                                                    )}></span>
+                                                </span>
+                                                {monitoringEnabled ? 'System Live' : 'System Paused'}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* ZONE 3: Tabs + Controls (Miller's Law: grouped) */}
+                                    <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        {/* Tab Switcher */}
+                                        <div className="inline-flex rounded-xl bg-white/[0.07] p-1 gap-0.5 border border-white/[0.06]">
+                                            <button
+                                                type="button"
+                                                onClick={() => setMonitoringTab('dashboard')}
+                                                className={cn(
+                                                    "flex items-center gap-1.5 h-9 px-4 text-xs font-bold uppercase tracking-widest rounded-lg transition-all duration-300",
+                                                    monitoringTab === 'dashboard'
+                                                        ? "bg-white text-slate-900 shadow-md"
+                                                        : "text-white/70 hover:text-white hover:bg-white/10"
+                                                )}
+                                            >
+                                                <Activity className="h-3.5 w-3.5" />
+                                                Dashboard
+                                            </button>
+                                            {(!monitoredEvent || monitoredEvent.attendance_type !== 'dynamic_qr') && (
+                                                <button
                                                     type="button"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => setMonitoringTab('dashboard')}
+                                                    onClick={() => setMonitoringTab('scanner')}
                                                     className={cn(
-                                                        "h-8 px-3 text-xs font-bold uppercase tracking-widest rounded-lg transition-all duration-300",
-                                                        monitoringTab === 'dashboard'
-                                                            ? "bg-white text-slate-900 shadow-sm"
-                                                            : "text-white/80 hover:text-white hover:bg-white/10"
+                                                        "flex items-center gap-1.5 h-9 px-4 text-xs font-bold uppercase tracking-widest rounded-lg transition-all duration-300",
+                                                        monitoringTab === 'scanner'
+                                                            ? "bg-white text-slate-900 shadow-md"
+                                                            : "text-white/70 hover:text-white hover:bg-white/10"
                                                     )}
                                                 >
-                                                    <Activity className="h-3.5 w-3.5 mr-1" />
-                                                    Dashboard
-                                                </Button>
-                                                {(!monitoredEvent || monitoredEvent.attendance_type !== 'dynamic_qr') && (
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => setMonitoringTab('scanner')}
-                                                        className={cn(
-                                                            "h-8 px-3 text-xs font-bold uppercase tracking-widest rounded-lg transition-all duration-300",
-                                                            monitoringTab === 'scanner'
-                                                                ? "bg-white text-slate-900 shadow-sm"
-                                                                : "text-white/80 hover:text-white hover:bg-white/10"
-                                                        )}
-                                                     >
-                                                         <Camera className="h-3.5 w-3.5 mr-1" />
-                                                         {monitoredEvent?.geofence_enabled ? 'Geotagging Scanner' : 'QR Scanner'}
-                                                     </Button>
-                                                )}
-                                                {(monitoredEvent && monitoredEvent.attendance_type === 'dynamic_qr') && (
-                                                     <Button
-                                                         type="button"
-                                                         variant="ghost"
-                                                         size="sm"
-                                                         onClick={() => setMonitoringTab('dynamic-qr')}
-                                                         className={cn(
-                                                             "h-8 px-3 text-xs font-bold uppercase tracking-widest rounded-lg transition-all duration-300",
-                                                             monitoringTab === 'dynamic-qr'
-                                                                 ? "bg-white text-slate-900 shadow-sm"
-                                                                 : "text-white/80 hover:text-white hover:bg-white/10"
-                                                         )}
-                                                    >
-                                                        <QrCode className="h-3.5 w-3.5 mr-1" />
-                                                        {monitoredEvent?.geofence_enabled ? 'Geotagged Dynamic QR' : 'Dynamic QR'}
-                                                    </Button>
-                                                )}
-
-                                            </div>
-
-                                            <div className="hidden items-center gap-2 rounded-lg bg-slate-800/50 px-3 py-1.5 border border-slate-700 sm:flex">
-                                                <Clock className="h-3.5 w-3.5 text-slate-400" />
-                                                <span className="text-xs font-medium text-slate-300">Last Sync: {lastUpdatedAt ? lastUpdatedAt.split(',')[1]?.trim() || lastUpdatedAt : 'Never'}</span>
-                                            </div>
-                                            
-                                            <div className="flex items-center gap-2">
-                                                 <div className={`flex items-center gap-2 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider border ${
-                                                     scannerPortalActive 
-                                                         ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                                                         : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                                                 }`}>
-                                                     <Zap className={`h-2.5 w-2.5 ${scannerPortalActive ? 'animate-pulse' : ''}`} />
-                                                     Portal {scannerPortalActive ? 'Active' : 'Inactive'}
-                                                 </div>
-                                                 <Button
-                                                     type="button"
-                                                     variant={monitoringEnabled ? 'outline' : 'default'}
-                                                     size="sm"
-                                                     className={cn(
-                                                         "h-8 gap-1 rounded-lg px-2.5 text-xs font-bold transition-all duration-300",
-                                                         monitoringEnabled
-                                                             ? "bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 hover:text-white"
-                                                             : "bg-blue-600 text-white hover:bg-blue-700 border-transparent shadow-md shadow-blue-500/20"
-                                                     )}
-                                                     onClick={() => {
-                                                         if (monitoringEnabled) {
-                                                             setMonitoringEnabled(false);
-                                                         } else {
-                                                             handleActivatePortalAndStartMonitoring();
-                                                         }
-                                                     }}
-                                                 >
-                                                     {monitoringEnabled ? (
-                                                         <>
-                                                             <Pause className="h-3.5 w-3.5 mr-0.5 fill-current" />
-                                                             Pause Live
-                                                         </>
-                                                     ) : (
-                                                         <>
-                                                             <Play className="h-3.5 w-3.5 mr-0.5 fill-current" />
-                                                             Start Live
-                                                         </>
-                                                     )}
-                                                 </Button>
-                                                <Button
+                                                    <Camera className="h-3.5 w-3.5" />
+                                                    {monitoredEvent?.geofence_enabled ? 'Geotagging' : 'QR Scanner'}
+                                                </button>
+                                            )}
+                                            {(monitoredEvent && monitoredEvent.attendance_type === 'dynamic_qr') && (
+                                                <button
                                                     type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 rounded-lg bg-slate-800/50 text-white hover:bg-white/10 border border-slate-700"
-                                                    onClick={() => void refreshLogs()}
-                                                    disabled={!monitorEventId}
-                                                    title="Refresh Logs"
+                                                    onClick={() => setMonitoringTab('dynamic-qr')}
+                                                    className={cn(
+                                                        "flex items-center gap-1.5 h-9 px-4 text-xs font-bold uppercase tracking-widest rounded-lg transition-all duration-300",
+                                                        monitoringTab === 'dynamic-qr'
+                                                            ? "bg-white text-slate-900 shadow-md"
+                                                            : "text-white/70 hover:text-white hover:bg-white/10"
+                                                    )}
                                                 >
-                                                    <RefreshCw className={`h-3.5 w-3.5 text-slate-300 ${monitoringEnabled ? 'animate-[spin_3s_linear_infinite]' : ''}`} />
-                                                </Button>
-                                            </div>
+                                                    <QrCode className="h-3.5 w-3.5" />
+                                                    {monitoredEvent?.geofence_enabled ? 'Geo Dynamic QR' : 'Dynamic QR'}
+                                                </button>
+                                            )}
                                         </div>
+
+                                        {/* Action Buttons */}
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                type="button"
+                                                variant={monitoringEnabled ? 'outline' : 'default'}
+                                                size="sm"
+                                                className={cn(
+                                                    "h-9 gap-2 rounded-xl px-4 text-xs font-bold transition-all duration-300 active:scale-95",
+                                                    monitoringEnabled
+                                                        ? "bg-white/10 text-white border-white/20 hover:bg-white/20"
+                                                        : "bg-blue-600 text-white hover:bg-blue-500 border-transparent shadow-lg shadow-blue-600/25"
+                                                )}
+                                                onClick={() => {
+                                                    if (monitoringEnabled) {
+                                                        setMonitoringEnabled(false);
+                                                    } else {
+                                                        handleActivatePortalAndStartMonitoring();
+                                                    }
+                                                }}
+                                                title={monitoringEnabled ? 'Pause live data sync' : 'Start live monitoring & activate scanner portal'}
+                                            >
+                                                {monitoringEnabled ? (
+                                                    <><Pause className="h-3.5 w-3.5 fill-current" /> Pause</>
+                                                ) : (
+                                                    <><Play className="h-3.5 w-3.5 fill-current" /> Start Live</>
+                                                )}
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-9 w-9 rounded-xl bg-white/[0.07] text-white hover:bg-white/15 border border-white/[0.06] transition-all active:scale-95"
+                                                onClick={() => void refreshLogs()}
+                                                disabled={!monitorEventId}
+                                                title="Manually refresh attendance data"
+                                            >
+                                                <RefreshCw className={`h-4 w-4 ${monitoringEnabled ? 'animate-[spin_3s_linear_infinite]' : ''}`} />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* LIVE STATUS STRIP (Heuristic #1: Visibility — persistent status bar) */}
+                                <div className={cn(
+                                    "flex flex-wrap items-center justify-between gap-3 px-6 py-2.5 text-xs transition-colors duration-500",
+                                    monitoringEnabled
+                                        ? "bg-gradient-to-r from-emerald-50 via-emerald-50/80 to-teal-50 dark:from-emerald-950/30 dark:via-emerald-950/20 dark:to-teal-950/20 border-t border-emerald-100 dark:border-emerald-900/30"
+                                        : "bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800"
+                                )}>
+                                    <div className="flex items-center gap-4">
+                                        <div className={cn(
+                                            "flex items-center gap-1.5 font-bold uppercase tracking-wider",
+                                            scannerPortalActive ? "text-emerald-700 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                                        )}>
+                                            <Zap className={cn("h-3 w-3", scannerPortalActive && "animate-pulse")} />
+                                            Portal {scannerPortalActive ? 'Active' : 'Inactive'}
+                                        </div>
+                                        <span className="text-slate-300 dark:text-slate-700">|</span>
+                                        <div className="flex items-center gap-1.5 font-medium text-slate-500 dark:text-slate-400">
+                                            <Clock className="h-3 w-3" />
+                                            Last sync: {lastUpdatedAt ? lastUpdatedAt.split(',')[1]?.trim() || lastUpdatedAt : 'Never'}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 font-medium text-slate-500 dark:text-slate-400">
+                                        <Activity className={cn("h-3 w-3", monitoringEnabled && "text-emerald-500 animate-pulse")} />
+                                        {monitoringEnabled ? 'Syncing every 2.5s' : 'Auto-sync paused'}
                                     </div>
                                 </div>
                             </div>
 
                             {/* TABBED CONTENTS */}
                             {monitoringTab === 'dashboard' && (
+                                <>
+                                {/* INLINE STATS STRIP (Gestalt: Proximity — stats near data) */}
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div className="flex items-center gap-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 px-5 py-4 shadow-sm">
+                                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600/10 dark:bg-blue-500/15">
+                                            <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Checked In</p>
+                                            <p className="text-2xl font-black text-slate-900 dark:text-white leading-tight">{liveCounts.total}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/50 dark:bg-emerald-950/20 px-5 py-4 shadow-sm">
+                                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15">
+                                            <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600/70 dark:text-emerald-400/70">On Time</p>
+                                            <p className="text-2xl font-black text-emerald-700 dark:text-emerald-300 leading-tight">{liveCounts.present}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-4 rounded-2xl border border-amber-100 dark:border-amber-900/30 bg-amber-50/50 dark:bg-amber-950/20 px-5 py-4 shadow-sm">
+                                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 dark:bg-amber-500/15">
+                                            <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600/70 dark:text-amber-400/70">Late Arrivals</p>
+                                            <p className="text-2xl font-black text-amber-700 dark:text-amber-300 leading-tight">{liveCounts.late}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
                                     {/* LEFT COLUMN: LIVE FEED (8/12) */}
                                     <div className="lg:col-span-8 flex flex-col gap-6">
@@ -1373,114 +1442,130 @@ export default function AdminAttendancePage() {
                                         </Card>
                                     </div>
 
-                                    {/* RIGHT COLUMN: STATS & BREAKDOWN (4/12) */}
-                                    <div className="lg:col-span-4 flex flex-col gap-6">
-                                        {/* LIVE STATS CARDS */}
-                                        <div className="grid grid-cols-1 gap-4">
-                                            <Card className="relative overflow-hidden border-none bg-blue-600 shadow-lg shadow-blue-600/20 dark:bg-[#0B192C]/50 dark:shadow-none">
-                                                <div className="absolute right-[-10%] top-[-20%] h-32 w-32 rounded-full bg-white/10 blur-2xl"></div>
-                                                <CardContent className="p-5">
-                                                    <div className="flex items-center justify-between">
-                                                        <div>
-                                                            <p className="text-[10px] font-bold uppercase tracking-widest text-blue-100">Total Attendees</p>
-                                                            <h3 className="mt-1 text-3xl font-black text-white">{liveCounts.total}</h3>
-                                                        </div>
-                                                        <div className="rounded-xl bg-white/20 p-2.5 backdrop-blur-sm">
-                                                            <Users className="h-5 w-5 text-white" />
-                                                        </div>
-                                                    </div>
-                                                    <div className="mt-4 flex items-center gap-2">
-                                                        <div className="h-1.5 flex-1 rounded-full bg-white/20 overflow-hidden">
-                                                            <div className="h-full bg-white transition-all duration-1000" style={{ width: '100%' }}></div>
-                                                        </div>
-                                                        <span className="text-[10px] font-bold text-blue-100">LIVE</span>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <Card className="border-slate-200 dark:border-slate-800 shadow-sm dark:bg-[#0B192C]/50">
-                                                    <CardContent className="p-4">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="rounded-lg bg-emerald-50 dark:bg-emerald-900/30 p-1.5">
-                                                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                                    {/* RIGHT COLUMN: ATTENDANCE OVERVIEW (4/12) */}
+                                    <div className="lg:col-span-4 flex flex-col gap-5">
+                                        {/* ATTENDANCE RATE DONUT (Heuristic #2: Real-world metaphor) */}
+                                        <Card className="border-slate-200 dark:border-slate-800 shadow-sm dark:bg-slate-900/50">
+                                            <CardContent className="p-5">
+                                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4">Attendance Rate</p>
+                                                <div className="flex items-center justify-center">
+                                                    {(() => {
+                                                        const rate = liveCounts.total > 0 ? Math.round((liveCounts.present / liveCounts.total) * 100) : 0;
+                                                        const circumference = 2 * Math.PI * 54;
+                                                        const presentArc = liveCounts.total > 0 ? (liveCounts.present / liveCounts.total) * circumference : 0;
+                                                        const lateArc = liveCounts.total > 0 ? (liveCounts.late / liveCounts.total) * circumference : 0;
+                                                        return (
+                                                            <div className="relative">
+                                                                <svg width="140" height="140" viewBox="0 0 140 140">
+                                                                    {/* Background ring */}
+                                                                    <circle cx="70" cy="70" r="54" fill="none" strokeWidth="12" className="stroke-slate-100 dark:stroke-slate-800" />
+                                                                    {/* Present arc (emerald) */}
+                                                                    <circle
+                                                                        cx="70" cy="70" r="54" fill="none" strokeWidth="12"
+                                                                        stroke="#10b981" strokeLinecap="round"
+                                                                        strokeDasharray={`${presentArc} ${circumference}`}
+                                                                        transform="rotate(-90 70 70)"
+                                                                        className="transition-all duration-1000"
+                                                                    />
+                                                                    {/* Late arc (amber) */}
+                                                                    <circle
+                                                                        cx="70" cy="70" r="54" fill="none" strokeWidth="12"
+                                                                        stroke="#f59e0b" strokeLinecap="round"
+                                                                        strokeDasharray={`${lateArc} ${circumference}`}
+                                                                        strokeDashoffset={`${-presentArc}`}
+                                                                        transform="rotate(-90 70 70)"
+                                                                        className="transition-all duration-1000"
+                                                                    />
+                                                                </svg>
+                                                                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                                                    <span className="text-2xl font-black text-slate-900 dark:text-white">{rate}%</span>
+                                                                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">On Time</span>
+                                                                </div>
                                                             </div>
-                                                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Present</p>
-                                                        </div>
-                                                        <h3 className="mt-2 text-xl font-black text-slate-900 dark:text-white">{liveCounts.present}</h3>
-                                                        <p className="mt-1 text-[9px] font-bold text-emerald-600 uppercase">On Schedule</p>
-                                                    </CardContent>
-                                                </Card>
+                                                        );
+                                                    })()}
+                                                </div>
+                                                <div className="mt-4 flex items-center justify-center gap-5">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                                                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">On Time ({liveCounts.present})</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+                                                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">Late ({liveCounts.late})</span>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
 
-                                                <Card className="border-slate-200 dark:border-slate-800 shadow-sm dark:bg-[#0B192C]/50">
-                                                    <CardContent className="p-4">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="rounded-lg bg-amber-50 dark:bg-amber-900/30 p-1.5">
-                                                                <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                                                            </div>
-                                                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Late</p>
-                                                        </div>
-                                                        <h3 className="mt-2 text-xl font-black text-slate-900 dark:text-white">{liveCounts.late}</h3>
-                                                        <p className="mt-1 text-[9px] font-bold text-amber-600 uppercase">Behind Time</p>
-                                                    </CardContent>
-                                                </Card>
-                                            </div>
-                                        </div>
-
-                                        {/* COURSE BREAKDOWN */}
-                                        <Card className="border-slate-200 dark:border-slate-800 shadow-sm dark:bg-[#0B192C]/50">
-                                            <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-transparent px-5 py-4">
-                                                <div className="flex items-center gap-2">
-                                                    <BarChart3 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                                    <CardTitle className="text-sm font-bold">Program Breakdown</CardTitle>
+                                        {/* PROGRAM BREAKDOWN */}
+                                        <Card className="border-slate-200 dark:border-slate-800 shadow-sm dark:bg-slate-900/50 flex-1">
+                                            <CardHeader className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-transparent px-5 py-3.5">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <BarChart3 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                                        <CardTitle className="text-sm font-bold">By Program</CardTitle>
+                                                    </div>
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{byCourse.length} Programs</span>
                                                 </div>
                                             </CardHeader>
                                             <CardContent className="p-0">
-                                                <div className="max-h-[400px] overflow-y-auto p-2">
+                                                <div className="max-h-[320px] overflow-y-auto">
                                                     {byCourse.length > 0 ? (
-                                                        <div className="flex flex-col gap-1">
-                                                            {byCourse.sort((a, b) => (b.expected - b.scanned) - (a.expected - a.scanned)).map((c) => (
+                                                        <div className="divide-y divide-slate-50 dark:divide-slate-800">
+                                                            {[...byCourse].sort((a, b) => b.percentage - a.percentage).map((c) => (
                                                                 <div 
                                                                     key={c.program} 
-                                                                    className="group flex flex-col gap-2 rounded-xl border border-transparent p-3 transition-all hover:border-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
+                                                                    className="group flex flex-col gap-2 px-5 py-3.5 transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/30 cursor-pointer"
                                                                     onClick={() => handleViewStudentsByCourse(String(c.program))}
                                                                 >
                                                                     <div className="flex items-center justify-between">
-                                                                        <div className="flex items-center gap-2 overflow-hidden">
-                                                                            <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                                                                        <div className="flex items-center gap-2.5 overflow-hidden min-w-0">
+                                                                            <div className={cn(
+                                                                                "h-2 w-2 rounded-full shrink-0",
+                                                                                c.percentage >= 90 ? 'bg-emerald-500' : c.percentage >= 50 ? 'bg-blue-500' : 'bg-amber-500'
+                                                                            )} />
                                                                             <span className="truncate text-xs font-bold text-slate-900 dark:text-white">{c.program}</span>
                                                                         </div>
-                                                                        <div className="flex items-center gap-1.5 shrink-0">
-                                                                            <span className="text-[10px] font-black text-slate-900 dark:text-white">{c.scanned}</span>
-                                                                            <span className="text-[10px] font-bold text-slate-400">/</span>
-                                                                            <span className="text-[10px] font-bold text-slate-400">{c.expected}</span>
+                                                                        <div className="flex items-center gap-1 shrink-0 ml-2">
+                                                                            <span className="text-xs font-black text-slate-900 dark:text-white">{c.scanned}</span>
+                                                                            <span className="text-[10px] text-slate-400">/</span>
+                                                                            <span className="text-[10px] text-slate-400">{c.expected}</span>
+                                                                            <span className={cn(
+                                                                                "ml-1.5 text-[10px] font-black",
+                                                                                c.percentage >= 90 ? 'text-emerald-600 dark:text-emerald-400' : c.percentage >= 50 ? 'text-blue-600 dark:text-blue-400' : 'text-amber-600 dark:text-amber-400'
+                                                                            )}>{c.percentage}%</span>
+                                                                            <ChevronRight className="h-3 w-3 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                                                                         </div>
                                                                     </div>
-                                                                    <div className="flex items-center gap-3">
-                                                                        <div className="h-1.5 flex-1 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                                                                            <div 
-                                                                                className={`h-full transition-all duration-1000 ${
-                                                                                    c.percentage >= 90 ? 'bg-emerald-500' : c.percentage >= 50 ? 'bg-blue-500' : 'bg-amber-500'
-                                                                                }`}
-                                                                                style={{ width: `${Math.min(c.percentage, 100)}%` }}
-                                                                            ></div>
-                                                                        </div>
-                                                                        <span className="text-[10px] font-black text-slate-600 dark:text-slate-400 w-8 text-right">{c.percentage}%</span>
+                                                                    <div className="h-1 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                                                        <div 
+                                                                            className={cn(
+                                                                                "h-full rounded-full transition-all duration-1000",
+                                                                                c.percentage >= 90 ? 'bg-emerald-500' : c.percentage >= 50 ? 'bg-blue-500' : 'bg-amber-500'
+                                                                            )}
+                                                                            style={{ width: `${Math.min(c.percentage, 100)}%` }}
+                                                                        />
                                                                     </div>
                                                                 </div>
                                                             ))}
                                                         </div>
                                                     ) : (
-                                                        <div className="flex flex-col items-center gap-2 py-10 opacity-50">
-                                                            <BarChart3 className="h-8 w-8 text-slate-300" />
-                                                            <p className="text-xs font-medium">No program data available</p>
+                                                        <div className="flex flex-col items-center gap-3 py-12">
+                                                            <div className="rounded-2xl bg-slate-50 dark:bg-slate-800 p-4">
+                                                                <BarChart3 className="h-8 w-8 text-slate-300 dark:text-slate-600" />
+                                                            </div>
+                                                            <div className="text-center">
+                                                                <p className="text-sm font-bold text-slate-900 dark:text-white">No program data</p>
+                                                                <p className="mt-0.5 text-xs text-slate-500">Data will appear as students check in.</p>
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>
-                                                <div className="border-t border-slate-100 dark:border-slate-800 p-4">
+                                                <div className="border-t border-slate-100 dark:border-slate-800 p-3">
                                                     <Button 
                                                         variant="outline" 
-                                                        className="w-full h-9 rounded-xl text-xs font-bold gap-2 border-slate-200 dark:border-slate-800"
+                                                        className="w-full h-9 rounded-xl text-xs font-bold gap-2 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                                                         onClick={() => monitorEventId && handleViewStudentsByCourse(byCourse[0]?.program || '')}
                                                         disabled={byCourse.length === 0}
                                                     >
@@ -1490,23 +1575,9 @@ export default function AdminAttendancePage() {
                                                 </div>
                                             </CardContent>
                                         </Card>
-
-                                        {/* SYSTEM HEALTH / INFO */}
-                                        <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 p-4">
-                                            <div className="flex items-start gap-3">
-                                                <div className="rounded-lg bg-white dark:bg-slate-800 p-2 shadow-sm">
-                                                    <AlertCircle className="h-4 w-4 text-slate-400" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-[11px] font-bold text-slate-900 dark:text-white uppercase tracking-wider">Monitoring Active</p>
-                                                    <p className="mt-1 text-[10px] leading-relaxed text-slate-500">
-                                                        Attendance data is being synced every 2.5 seconds. Ensure the scanner portal is active for incoming scans.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
+                                </>
                             )}
 
                             {monitoringTab === 'scanner' && (
