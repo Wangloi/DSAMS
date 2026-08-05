@@ -236,36 +236,43 @@ class ProgramHeadAttendanceController extends Controller
     public function printEvent(Request $request, Event $event): \Illuminate\Http\Response
     {
         $program = $this->programHeadProgram();
-        $rowCount = (int) $request->query('rows', 25);
-        $rowCount = max(10, min($rowCount, 100));
 
-        $students = Student::query()
-            ->select(['id', 'name', 'course', 'year_level'])
-            ->where('course', $program)
-            ->when(! empty($event->year_levels), function ($q) use ($event) {
-                $q->whereIn('year_level', is_array($event->year_levels) ? $event->year_levels : []);
+        // Fetch only students who actually have attendance records for this event
+        $attendances = Attendance::where('event_id', $event->id)
+            ->with('student')
+            ->whereHas('student', function ($q) use ($program) {
+                if ($program !== '') {
+                    $q->where('course', $program);
+                }
             })
-            ->orderBy('name')
-            ->limit($rowCount)
+            ->orderBy('checked_in_at', 'asc')
             ->get();
 
-        $tableRows = $students
-            ->map(fn ($student) => [
-                'name' => (string) ($student->name ?? ''),
-                'major' => (string) ($student->course ?? ''),
-                'year_level' => (string) ($student->year_level ?? ''),
-            ])
-            ->toArray();
+        $tableRows = $attendances
+            ->filter(fn ($a) => $a->student !== null)
+            ->map(function ($a) {
+                $checkedInAt = $a->checked_in_at
+                    ? $a->checked_in_at->format('g:i A')
+                    : ($a->scanned_at ? $a->scanned_at->format('g:i A') : '');
 
-        $missing = max(0, $rowCount - count($tableRows));
-        for ($i = 0; $i < $missing; $i++) {
-            $tableRows[] = ['name' => '', 'major' => '', 'year_level' => ''];
-        }
+                return [
+                    'name' => (string) ($a->student->name ?? ''),
+                    'major' => (string) ($a->student->course ?? ''),
+                    'year_level' => (string) ($a->student->year_level ?? ''),
+                    'checked_in_at' => $checkedInAt,
+                    'status' => ucfirst((string) ($a->status ?? 'present')),
+                ];
+            })
+            ->sortBy('name')
+            ->values()
+            ->toArray();
 
         $dateLabel = $event->event_date ? $event->event_date->format('F d, Y') : '';
         $timeLabel = (string) ($event->event_time ?? '');
         $locationLabel = (string) ($event->location ?? '');
         $eventDateTimeLabel = trim($dateLabel.($timeLabel ? ' | '.$timeLabel : '').($locationLabel ? ' | '.$locationLabel : ''));
+
+        $totalAttendees = count($tableRows);
 
         return response()->view('admin.attendance.print-sheet', [
             'event' => $event,
@@ -275,6 +282,7 @@ class ProgramHeadAttendanceController extends Controller
                 'course' => $program ?: 'Program',
                 'tableRows' => $tableRows,
             ]],
+            'totalAttendees' => $totalAttendees,
         ]);
     }
 

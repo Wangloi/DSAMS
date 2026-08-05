@@ -773,56 +773,36 @@ class AdminAttendanceController extends Controller
 
     public function printEvent(Request $request, Event $event): \Illuminate\Http\Response
     {
-        $rowCount = (int) $request->query('rows', 25);
-        if ($rowCount < 10) {
-            $rowCount = 10;
-        }
-        if ($rowCount > 100) {
-            $rowCount = 100;
-        }
+        // Fetch only students who actually have attendance records for this event
+        $attendances = Attendance::where('event_id', $event->id)
+            ->with('student')
+            ->orderBy('checked_in_at', 'asc')
+            ->get();
 
-        $eventCourses = is_array($event->courses) ? $event->courses : [];
-        $eventYearLevels = is_array($event->year_levels) ? $event->year_levels : [];
-
-        $baseQuery = Student::query();
-        if (! empty($eventCourses)) {
-            $baseQuery->whereIn('course', $eventCourses);
-        }
-        if (! empty($eventYearLevels)) {
-            $baseQuery->whereIn('year_level', $eventYearLevels);
-        }
-
-        $courses = (clone $baseQuery)
-            ->whereNotNull('course')
-            ->where('course', '!=', '')
-            ->distinct()
-            ->orderBy('course')
-            ->pluck('course')
-            ->values();
+        // Group by course/program
+        $grouped = $attendances
+            ->filter(fn ($a) => $a->student !== null)
+            ->groupBy(fn ($a) => (string) ($a->student->course ?? 'Unknown'));
 
         $sections = [];
-        foreach ($courses as $course) {
-            $students = (clone $baseQuery)
-                ->select(['id', 'name', 'course', 'year_level'])
-                ->where('course', $course)
-                ->orderBy('name')
-                ->limit($rowCount)
-                ->get();
+        foreach ($grouped->sortKeys() as $course => $courseAttendances) {
+            $tableRows = $courseAttendances
+                ->map(function ($a) {
+                    $checkedInAt = $a->checked_in_at
+                        ? Carbon::parse($a->checked_in_at)->format('g:i A')
+                        : ($a->scanned_at ? Carbon::parse($a->scanned_at)->format('g:i A') : '');
 
-            $tableRows = $students
-                ->map(function ($s) {
                     return [
-                        'name' => (string) ($s->name ?? ''),
-                        'major' => (string) ($s->course ?? ''),
-                        'year_level' => (string) ($s->year_level ?? ''),
+                        'name' => (string) ($a->student->name ?? ''),
+                        'major' => (string) ($a->student->course ?? ''),
+                        'year_level' => (string) ($a->student->year_level ?? ''),
+                        'checked_in_at' => $checkedInAt,
+                        'status' => ucfirst((string) ($a->status ?? 'present')),
                     ];
                 })
+                ->sortBy('name')
+                ->values()
                 ->toArray();
-
-            $missing = max(0, $rowCount - count($tableRows));
-            for ($i = 0; $i < $missing; $i++) {
-                $tableRows[] = ['name' => '', 'major' => '', 'year_level' => ''];
-            }
 
             $sections[] = [
                 'course' => (string) $course,
@@ -835,11 +815,14 @@ class AdminAttendanceController extends Controller
         $locationLabel = (string) ($event->location ?? '');
         $eventDateTimeLabel = trim($dateLabel.($timeLabel ? ' | '.$timeLabel : '').($locationLabel ? ' | '.$locationLabel : ''));
 
+        $totalAttendees = $attendances->filter(fn ($a) => $a->student !== null)->count();
+
         return response()->view('admin.attendance.print-sheet', [
             'event' => $event,
             'academicYear' => now()->format('Y').' - '.(now()->addYear()->format('Y')),
             'eventDateTimeLabel' => $eventDateTimeLabel,
             'sections' => $sections,
+            'totalAttendees' => $totalAttendees,
         ]);
     }
 
