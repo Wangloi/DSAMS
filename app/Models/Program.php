@@ -32,15 +32,17 @@ class Program extends Model
      */
     public function students()
     {
-        return $this->hasMany(Student::class, 'program_id');
+        return $this->hasMany(Student::class, 'course', 'code');
     }
 
     /**
-     * Get the student count for this program.
+     * Get the student count for this program based on Section / Course.
      */
     public function getStudentCountAttribute()
     {
-        return $this->students()->count();
+        return Student::whereRaw('LOWER(TRIM(course)) = ?', [strtolower(trim((string) $this->code))])
+            ->orWhereRaw('LOWER(TRIM(course)) = ?', [strtolower(trim((string) $this->name))])
+            ->count();
     }
 
     /**

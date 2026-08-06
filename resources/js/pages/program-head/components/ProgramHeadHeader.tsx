@@ -1,3 +1,4 @@
+import { Link, usePage } from '@inertiajs/react';
 import { Bell, BookOpen, CheckCircle2, ChevronDown, HelpCircle, LifeBuoy, Mail, Menu, Shield, X } from 'lucide-react';
 import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';

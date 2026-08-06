@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useInitials } from '@/hooks/use-initials';
+import SettingsPageLayout from '@/layouts/settings/settings-page-layout';
 import type { SharedData } from '@/types';
 
 const inputClassName =

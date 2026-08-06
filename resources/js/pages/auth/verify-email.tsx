@@ -1,5 +1,4 @@
-// Components
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, router } from '@inertiajs/react';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -7,6 +6,10 @@ import AuthLayout from '@/layouts/auth-layout';
 import { logout } from '@/routes';
 
 export default function VerifyEmail({ status }: { status?: string }) {
+    const handleLogout = () => {
+        router.post(logout());
+    };
+
     return (
         <AuthLayout
             title="Verify email"
@@ -29,12 +32,13 @@ export default function VerifyEmail({ status }: { status?: string }) {
                             Resend verification email
                         </Button>
 
-                        <TextLink
-                            href={logout()}
-                            className="mx-auto block text-sm"
+                        <button
+                            type="button"
+                            onClick={handleLogout}
+                            className="mx-auto block text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
                         >
                             Log out
-                        </TextLink>
+                        </button>
                     </>
                 )}
             </Form>

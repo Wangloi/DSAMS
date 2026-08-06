@@ -131,8 +131,32 @@ export default function ProgramHeadLogin({
                                     </div>
                                 )}
 
-                                <Form action="/program-head-login" method="post" resetOnSuccess={['password']} className="mt-8">
-                                    {({ processing, errors }: { processing: boolean; errors: Record<string, string | undefined> }) => (
+                                <Form
+                                    action="/program-head-login"
+                                    method="post"
+                                    resetOnSuccess={['password']}
+                                    className="mt-8"
+                                >
+                                    {({ processing, errors }: { processing: boolean; errors: Record<string, string | undefined> }) => {
+                                        useEffect(() => {
+                                            if (processing) {
+                                                Swal.fire({
+                                                    title: 'Signing in...',
+                                                    text: 'Please wait while we verify your credentials.',
+                                                    allowOutsideClick: false,
+                                                    allowEscapeKey: false,
+                                                    didOpen: () => {
+                                                        Swal.showLoading();
+                                                    },
+                                                });
+                                            } else {
+                                                if (Swal.isVisible() && Swal.getTitle()?.textContent === 'Signing in...') {
+                                                    Swal.close();
+                                                }
+                                            }
+                                        }, [processing]);
+
+                                        return (
                                         <>
                                             <div className="space-y-5">
                                                 <div className="space-y-2">
@@ -236,7 +260,8 @@ export default function ProgramHeadLogin({
                                                 <div className="mt-5 text-center text-sm font-medium text-green-600">{status}</div>
                                             )}
                                         </>
-                                    )}
+                                        );
+                                    }}
                                 </Form>
                             </div>
                         </div>

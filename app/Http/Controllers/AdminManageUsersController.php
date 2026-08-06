@@ -71,7 +71,7 @@ class AdminManageUsersController extends Controller
 
         $columns = array_values(array_filter($columns, fn ($col) => Schema::hasColumn('students', $col)));
 
-        $query = Student::query()->orderByDesc('id');
+        $query = Student::query()->orderBy('last_name', 'asc')->orderBy('first_name', 'asc');
 
         if (Schema::hasColumn('students', 'is_archived')) {
             $query->where(function ($q) {
@@ -84,125 +84,169 @@ class AdminManageUsersController extends Controller
             ->map(function (Student $student) {
                 $row = $student->toArray();
                 $row['userType'] = 'student';
-                // Ensure that 'status' reflects 'verification_status' if that column exists
                 if (Schema::hasColumn('students', 'verification_status')) {
                     $row['status'] = $student->verification_status ?? $row['status'] ?? 'pending';
                 }
                 return $row;
             });
 
-        $programHeads = collect();
-        if (Schema::hasTable('program_heads')) {
-            $programHeads = ProgramHead::query()
-                ->orderByDesc('id')
-                ->get(['id', 'name', 'email', 'program', 'created_at', 'updated_at'])
-                ->map(function (ProgramHead $ph) {
-                    $syntheticId = 1000000000 + (int) $ph->id;
-                    return [
-                        'id' => $syntheticId,
-                        'program_head_id' => (int) $ph->id,
-                        'student_id' => 'PH-' . $ph->id,
-                        'first_name' => null,
-                        'middle_name' => null,
-                        'last_name' => null,
-                        'name' => $ph->name,
-                        'email' => $ph->email,
-                        'course' => $ph->program ?? '',
-                        'year_level' => '',
-                        'role' => 'Program Head',
-                        'is_active' => true,
-                        'status' => 'approved',
-                        'qr_code_path' => null,
-                        'entry_status' => null,
-                        'program' => $ph->program,
-                        'major' => null,
-                        'home_address' => null,
-                        'birthday' => null,
-                        'place_of_birth' => null,
-                        'religion' => null,
-                        'gender' => null,
-                        'contact_no' => null,
-                        'nationality' => null,
-                        'elementary_school' => null,
-                        'elementary_year_graduated' => null,
-                        'junior_high_school' => null,
-                        'junior_high_year_graduated' => null,
-                        'senior_high_school' => null,
-                        'senior_high_year_graduated' => null,
-                        'mother_name' => null,
-                        'mother_contact' => null,
-                        'father_name' => null,
-                        'father_contact' => null,
-                        'guardian_name' => null,
-                        'guardian_relation' => null,
-                        'guardian_contact' => null,
-                        'is_archived' => false,
-                        'created_at' => optional($ph->created_at)->toISOString(),
-                        'updated_at' => optional($ph->updated_at)->toISOString(),
-                        'userType' => 'program_head',
-                    ];
-                });
+        $users = $this->getAdminUsers()
+            ->concat($this->getProgramHeads())
+            ->concat($students)
+            ->values();
+
+        $passwordResetRequests = PasswordResetRequest::orderByDesc('id')->get();
+
+        return Inertia::render('admin-dashboard/manage-users/index', [
+            'students' => $users,
+            'programs' => $this->getPrograms(),
+            'passwordResetRequests' => $passwordResetRequests,
+        ]);
+    }
+
+    private function getProgramHeads(): \Illuminate\Support\Collection
+    {
+        if (!Schema::hasTable('program_heads')) {
+            return collect();
         }
 
-        $adminUsers = collect();
-        if (Schema::hasTable('admin_users')) {
-            $adminUsers = AdminUser::query()
-                ->orderByDesc('id')
-                ->get(['id', 'name', 'email', 'created_at', 'updated_at'])
-                ->map(function (AdminUser $admin) {
-                    $syntheticId = 2000000000 + (int) $admin->id;
-                    return [
-                        'id' => $syntheticId,
-                        'admin_user_id' => (int) $admin->id,
-                        'student_id' => 'ADMIN-' . $admin->id,
-                        'first_name' => null,
-                        'middle_name' => null,
-                        'last_name' => null,
-                        'name' => $admin->name,
-                        'email' => $admin->email,
-                        'course' => 'System Administration',
-                        'year_level' => '',
-                        'role' => 'Administrator',
-                        'is_active' => true,
-                        'status' => 'approved',
-                        'qr_code_path' => null,
-                        'entry_status' => null,
-                        'program' => 'System Administration',
-                        'major' => null,
-                        'home_address' => null,
-                        'birthday' => null,
-                        'place_of_birth' => null,
-                        'religion' => null,
-                        'gender' => null,
-                        'contact_no' => null,
-                        'nationality' => null,
-                        'elementary_school' => null,
-                        'elementary_year_graduated' => null,
-                        'junior_high_school' => null,
-                        'junior_high_year_graduated' => null,
-                        'senior_high_school' => null,
-                        'senior_high_year_graduated' => null,
-                        'mother_name' => null,
-                        'mother_contact' => null,
-                        'father_name' => null,
-                        'father_contact' => null,
-                        'guardian_name' => null,
-                        'guardian_relation' => null,
-                        'guardian_contact' => null,
-                        'is_archived' => false,
-                        'created_at' => optional($admin->created_at)->toISOString(),
-                        'updated_at' => optional($admin->updated_at)->toISOString(),
-                        'userType' => 'admin',
-                    ];
-                });
+        return ProgramHead::query()
+            ->orderByDesc('id')
+            ->get(['id', 'name', 'email', 'program', 'created_at', 'updated_at'])
+            ->map(function (ProgramHead $ph) {
+                return [
+                    'id' => 1000000000 + (int) $ph->id,
+                    'program_head_id' => (int) $ph->id,
+                    'student_id' => 'PH-' . $ph->id,
+                    'first_name' => null,
+                    'middle_name' => null,
+                    'last_name' => null,
+                    'name' => $ph->name,
+                    'email' => $ph->email,
+                    'course' => $ph->program ?? '',
+                    'year_level' => '',
+                    'role' => 'Program Head',
+                    'is_active' => true,
+                    'status' => 'approved',
+                    'qr_code_path' => null,
+                    'entry_status' => null,
+                    'program' => $ph->program,
+                    'major' => null,
+                    'home_address' => null,
+                    'birthday' => null,
+                    'place_of_birth' => null,
+                    'religion' => null,
+                    'gender' => null,
+                    'contact_no' => null,
+                    'nationality' => null,
+                    'elementary_school' => null,
+                    'elementary_year_graduated' => null,
+                    'junior_high_school' => null,
+                    'junior_high_year_graduated' => null,
+                    'senior_high_school' => null,
+                    'senior_high_year_graduated' => null,
+                    'mother_name' => null,
+                    'mother_contact' => null,
+                    'father_name' => null,
+                    'father_contact' => null,
+                    'guardian_name' => null,
+                    'guardian_relation' => null,
+                    'guardian_contact' => null,
+                    'is_archived' => false,
+                    'created_at' => optional($ph->created_at)->toISOString(),
+                    'updated_at' => optional($ph->updated_at)->toISOString(),
+                    'userType' => 'program_head',
+                ];
+            });
+    }
+
+    private function getAdminUsers(): \Illuminate\Support\Collection
+    {
+        if (!Schema::hasTable('admin_users')) {
+            return collect();
         }
 
-        $users = $adminUsers->concat($programHeads)->concat($students)->values();
+        return AdminUser::query()
+            ->orderByDesc('id')
+            ->get(['id', 'name', 'email', 'created_at', 'updated_at'])
+            ->map(function (AdminUser $admin) {
+                return [
+                    'id' => 2000000000 + (int) $admin->id,
+                    'admin_user_id' => (int) $admin->id,
+                    'student_id' => 'ADMIN-' . $admin->id,
+                    'first_name' => null,
+                    'middle_name' => null,
+                    'last_name' => null,
+                    'name' => $admin->name,
+                    'email' => $admin->email,
+                    'course' => 'System Administration',
+                    'year_level' => '',
+                    'role' => 'Administrator',
+                    'is_active' => true,
+                    'status' => 'approved',
+                    'qr_code_path' => null,
+                    'entry_status' => null,
+                    'program' => 'System Administration',
+                    'major' => null,
+                    'home_address' => null,
+                    'birthday' => null,
+                    'place_of_birth' => null,
+                    'religion' => null,
+                    'gender' => null,
+                    'contact_no' => null,
+                    'nationality' => null,
+                    'elementary_school' => null,
+                    'elementary_year_graduated' => null,
+                    'junior_high_school' => null,
+                    'junior_high_year_graduated' => null,
+                    'senior_high_school' => null,
+                    'senior_high_year_graduated' => null,
+                    'mother_name' => null,
+                    'mother_contact' => null,
+                    'father_name' => null,
+                    'father_contact' => null,
+                    'guardian_name' => null,
+                    'guardian_relation' => null,
+                    'guardian_contact' => null,
+                    'is_archived' => false,
+                    'created_at' => optional($admin->created_at)->toISOString(),
+                    'updated_at' => optional($admin->updated_at)->toISOString(),
+                    'userType' => 'admin',
+                ];
+            });
+    }
 
-        $programs = Program::withCount('students')
+    private function getPrograms(): \Illuminate\Support\Collection
+    {
+        if (Program::count() === 0) {
+            $defaultPrograms = [
+                ['code' => 'BSIT', 'name' => 'Bachelor of Science in Information Technology', 'department' => 'HED', 'duration' => '4 Years', 'is_active' => true],
+                ['code' => 'BSBA', 'name' => 'Bachelor of Science in Business Administration', 'department' => 'HED', 'duration' => '4 Years', 'is_active' => true],
+                ['code' => 'BEED', 'name' => 'Bachelor of Elementary Education', 'department' => 'HED', 'duration' => '4 Years', 'is_active' => true],
+                ['code' => 'BSED', 'name' => 'Bachelor of Secondary Education', 'department' => 'HED', 'duration' => '4 Years', 'is_active' => true],
+                ['code' => 'BSCrim', 'name' => 'Bachelor of Science in Criminology', 'department' => 'HED', 'duration' => '4 Years', 'is_active' => true],
+                ['code' => 'BSHM', 'name' => 'Bachelor of Science in Hospitality Management', 'department' => 'HED', 'duration' => '4 Years', 'is_active' => true],
+            ];
+            foreach ($defaultPrograms as $prog) {
+                Program::firstOrCreate(['code' => $prog['code']], $prog);
+            }
+        }
+
+        $courseCounts = Student::query()
+            ->selectRaw('LOWER(TRIM(course)) as course_key, COUNT(*) as aggregate')
+            ->groupBy('course_key')
+            ->pluck('aggregate', 'course_key')
+            ->all();
+
+        return Program::query()
             ->orderBy('name')
             ->get()
-            ->map(function ($program) {
+            ->map(function ($program) use ($courseCounts) {
+                $codeKey = strtolower(trim((string) $program->code));
+                $nameKey = strtolower(trim((string) $program->name));
+
+                $count = $courseCounts[$codeKey] ?? $courseCounts[$nameKey] ?? 0;
+
                 return [
                     'id'           => $program->id,
                     'name'         => $program->name,
@@ -211,19 +255,11 @@ class AdminManageUsersController extends Controller
                     'description'  => $program->description ?? '',
                     'duration'     => $program->duration ?? 'N/A',
                     'status'       => $program->is_active ? 'active' : 'inactive',
-                    'studentCount' => $program->students_count ?? 0,
-                    'createdAt'    => $program->created_at->format('M d, Y'),
-                    'updatedAt'    => $program->updated_at->format('M d, Y'),
+                    'studentCount' => (int) $count,
+                    'createdAt'    => $program->created_at ? $program->created_at->format('M d, Y') : '',
+                    'updatedAt'    => $program->updated_at ? $program->updated_at->format('M d, Y') : '',
                 ];
             });
-
-        $passwordResetRequests = PasswordResetRequest::orderByDesc('id')->get();
-
-        return Inertia::render('admin-dashboard/manage-users/index', [
-            'students' => $users,
-            'programs' => $programs,
-            'passwordResetRequests' => $passwordResetRequests,
-        ]);
     }
 
     private function storeQrCodePng(string $studentId, string $dataUrl): string
@@ -252,14 +288,15 @@ class AdminManageUsersController extends Controller
     {
         $validated = $request->validate([
             'student_id' => ['required', 'string', 'max:255', 'unique:students,student_id'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:students,email'],
-            'password' => ['required', 'string', 'min:8'],
+            'email' => ['nullable', 'string', 'email', 'max:255', 'unique:students,email'],
+            'password' => ['nullable', 'string', 'min:6'],
             'first_name' => ['required', 'string', 'max:255'],
             'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'course' => ['required', 'string', 'max:255'],
             'year_level' => ['required', 'string', 'max:255'],
-            'role' => ['required', 'string', 'max:255'],
+            'program' => ['nullable', 'string', 'max:255'],
+            'role' => ['sometimes', 'string', 'max:255'],
             'is_active' => ['sometimes', 'boolean'],
             'qr_code_data_url' => ['nullable', 'string'],
             'officer_features' => ['nullable', 'array'],
@@ -277,17 +314,21 @@ class AdminManageUsersController extends Controller
             $qrCodePath = $this->storeQrCodePng($validated['student_id'], $validated['qr_code_data_url']);
         }
 
+        $rawPassword = !empty($validated['password']) ? $validated['password'] : 'password123';
+        $rawEmail = !empty($validated['email']) ? $validated['email'] : null;
+
         $studentData = [
             'student_id' => $validated['student_id'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
+            'email' => $rawEmail,
+            'password' => Hash::make($rawPassword),
             'first_name' => $validated['first_name'],
             'middle_name' => $validated['middle_name'] ?? null,
             'last_name' => $validated['last_name'],
             'name' => $name,
             'course' => $validated['course'],
             'year_level' => $validated['year_level'],
-            'role' => $validated['role'],
+            'program' => $validated['program'] ?? null,
+            'role' => $validated['role'] ?? 'Student',
             'is_active' => $validated['is_active'] ?? true,
             'status' => 'pending',
             'qr_code_path' => $qrCodePath,
@@ -921,19 +962,7 @@ class AdminManageUsersController extends Controller
             ->flip()
             ->all();
 
-        $existingNames = Student::pluck('name')
-            ->map(fn($v) => strtolower(trim((string)$v)))
-            ->filter()
-            ->flip()
-            ->all();
-
-        $existingFirstNames = Student::pluck('first_name')
-            ->map(fn($v) => strtolower(trim((string)$v)))
-            ->filter()
-            ->flip()
-            ->all();
-
-        $existingLastNames = Student::pluck('last_name')
+        $existingEmails = Student::pluck('email')
             ->map(fn($v) => strtolower(trim((string)$v)))
             ->filter()
             ->flip()
@@ -945,9 +974,7 @@ class AdminManageUsersController extends Controller
             $hasIsArchived,
             $hasVerificationStatus,
             &$existingStudentIds,
-            &$existingNames,
-            &$existingFirstNames,
-            &$existingLastNames,
+            &$existingEmails,
             &$importedCount,
             &$skippedCount
         ) {
@@ -968,18 +995,16 @@ class AdminManageUsersController extends Controller
                 $lastName = $row['last_name'] ?? '';
                 $fullName = trim($firstName . ' ' . $lastName);
 
+                $rawIdLower = strtolower(trim($rawId));
                 $studentIdLower = strtolower(trim($studentId));
-                $firstNameLower = strtolower(trim($firstName));
-                $lastNameLower = strtolower(trim($lastName));
-                $nameLower = strtolower(trim($fullName));
+                $email = !empty($row['email']) ? trim((string)$row['email']) : null;
+                $emailLower = $email !== null ? strtolower(trim($email)) : null;
 
-                // Duplicate checking: If student ID, name, first_name, or last_name already exists, skip
-                $isDuplicateId = isset($existingStudentIds[$studentIdLower]);
-                $isDuplicateName = !empty($nameLower) && isset($existingNames[$nameLower]);
-                $isDuplicateFirstName = !empty($firstNameLower) && isset($existingFirstNames[$firstNameLower]);
-                $isDuplicateLastName = !empty($lastNameLower) && isset($existingLastNames[$lastNameLower]);
+                // Duplicate checking: Skip ONLY if Student ID or Email already exists
+                $isDuplicateId = isset($existingStudentIds[$studentIdLower]) || isset($existingStudentIds[$rawIdLower]);
+                $isDuplicateEmail = $emailLower !== null && isset($existingEmails[$emailLower]);
 
-                if ($isDuplicateId || $isDuplicateName || $isDuplicateFirstName || $isDuplicateLastName) {
+                if ($isDuplicateId || $isDuplicateEmail) {
                     $skippedCount++;
                     continue;
                 }
@@ -992,7 +1017,7 @@ class AdminManageUsersController extends Controller
                     'year_level' => $row['year_level'] ?? '',
                     'course' => $row['course'] ?? '',
                     'program' => $row['program'] ?? '',
-                    'email' => !empty($row['email']) ? $row['email'] : null,
+                    'email' => $email,
                     'role' => 'Student',
                     'is_active' => true,
                     'status' => 'approved',
@@ -1011,9 +1036,10 @@ class AdminManageUsersController extends Controller
 
                 // Register into tracked sets so duplicate rows within the file are also caught
                 $existingStudentIds[$studentIdLower] = true;
-                if (!empty($nameLower)) $existingNames[$nameLower] = true;
-                if (!empty($firstNameLower)) $existingFirstNames[$firstNameLower] = true;
-                if (!empty($lastNameLower)) $existingLastNames[$lastNameLower] = true;
+                $existingStudentIds[$rawIdLower] = true;
+                if ($emailLower !== null) {
+                    $existingEmails[$emailLower] = true;
+                }
 
                 $importedCount++;
             }
@@ -1041,8 +1067,6 @@ class AdminManageUsersController extends Controller
         $resultMsg = !empty($msgParts)
             ? 'Bulk import completed: ' . implode(', ', $msgParts) . '.'
             : 'No new student records were added.';
-
-        return redirect()->route('admin.manage-users')->with('success', $resultMsg)->setStatusCode(303);
 
         return redirect()->route('admin.manage-users')->with('success', $resultMsg)->setStatusCode(303);
     }

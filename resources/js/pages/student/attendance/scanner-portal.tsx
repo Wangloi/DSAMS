@@ -239,11 +239,18 @@ export default function StudentAttendanceScannerPortalPage({
         lastValueRef.current = { value, at: now };
 
         try {
-            const token = (
-                document.querySelector(
-                    'meta[name="csrf-token"]',
-                ) as HTMLMetaElement | null
-            )?.content;
+            const getCsrfToken = () => {
+                const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+                if (match) {
+                    return decodeURIComponent(match[1]);
+                }
+                return (
+                    document.querySelector(
+                        'meta[name="csrf-token"]',
+                    ) as HTMLMetaElement | null
+                )?.content || '';
+            };
+            const token = getCsrfToken();
 
             const geo = await getGeo();
             if (!geo) {
@@ -253,8 +260,8 @@ export default function StudentAttendanceScannerPortalPage({
                 });
                 const next: AttendanceLogRow = {
                     id: value,
-                    name: 'Location is required. Please enable GPS/location permission and try again.',
-                    program: '—',
+                    name: 'Location Required (Turn on GPS)',
+                    program: 'GPS disabled or blocked',
                     time,
                     status: 'invalid',
                 };
@@ -271,7 +278,7 @@ export default function StudentAttendanceScannerPortalPage({
                     Accept: 'application/json',
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
-                    ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+                    ...(token ? { 'X-CSRF-TOKEN': token, 'X-XSRF-TOKEN': token } : {}),
                 },
                 body: JSON.stringify({ value, ...geo }),
             });

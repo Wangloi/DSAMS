@@ -72,6 +72,10 @@ Route::get('/get-started', function () {
     return Inertia::render('landing/get-started');
 })->name('landing.get-started');
 
+Route::get('/help', function () {
+    return Inertia::render('help');
+})->name('landing.help');
+
 // Unified login route
 Route::post('/login', [UnifiedLoginController::class, 'login'])->middleware('throttle:login');
 
@@ -120,7 +124,7 @@ Route::post('/student/attendance/{event}/scan', [StudentAttendanceController::cl
 Route::get('/student/attendance/{event}/dynamic-qr-scan', function (\App\Models\Event $event) {
     $student = auth()->guard('student')->user();
     if (! $student) { abort(403); }
-    return \Inertia\Inertia::render('student/attendance/dynamic-qr-scan', [
+    return Inertia::render('student/attendance/dynamic-qr-scan', [
         'event' => [
             'id'                  => $event->id,
             'name'                => $event->event_name,

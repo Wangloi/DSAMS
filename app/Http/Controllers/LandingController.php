@@ -21,9 +21,17 @@ class LandingController extends Controller
             }
         }
 
+        $stats = [
+            'totalStudents' => \App\Models\Student::count(),
+            'totalEvents' => \App\Models\Event::count(),
+            'totalAdmissionSlips' => \App\Models\AdmissionSlip::count(),
+            'totalPrograms' => \App\Models\Program::count(),
+        ];
+
         return Inertia::render('landing-page', [
             'isAuthed' => auth()->check(),
             'canRegister' => \Laravel\Fortify\Features::enabled(\Laravel\Fortify\Features::registration()),
+            'stats' => $stats,
         ]);
     }
 }

@@ -182,13 +182,24 @@ export default function AdminQrScannerPage({ event, logs, breakdown, tokenLifeti
         }
         lastValueRef.current = { value: code, at: now };
 
+        const getCsrfToken = () => {
+            const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+            if (match) {
+                return decodeURIComponent(match[1]);
+            }
+            return (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '';
+        };
+        const csrfToken = getCsrfToken();
+
         try {
             const res = await fetch(adminAttendanceLogs(event.id), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as any)?.content,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-XSRF-TOKEN': csrfToken,
                 },
                 body: JSON.stringify({ student_qr: code }),
             });
@@ -1156,7 +1167,7 @@ export default function AdminQrScannerPage({ event, logs, breakdown, tokenLifeti
                                                 className="h-10 w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 pl-10 pr-4 text-sm font-bold text-slate-700 dark:text-slate-200 shadow-sm transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20"
                                             >
                                                 <option value="" disabled>Select event to monitor...</option>
-                                                {(events?.length > 0 ? events : [event]).filter(Boolean).map((ev) => (
+                                                {(events?.length > 0 ? events : [event]).filter(Boolean).map((ev: any) => (
                                                     <option key={ev.id} value={String(ev.id)}>{ev.name}</option>
                                                 ))}
                                             </select>

@@ -14,7 +14,7 @@ export function useManageUsers(errors: Record<string, string> = {}) {
         program: '',
         student_id: '',
         email: '',
-        password: '',
+        password: 'password123',
         first_name: '',
         middle_name: '',
         last_name: '',
@@ -93,15 +93,9 @@ export function useManageUsers(errors: Record<string, string> = {}) {
             { key: 'student_id', label: 'Student ID' },
             { key: 'first_name', label: 'First Name' },
             { key: 'last_name', label: 'Last Name' },
-            { key: 'email', label: 'Email' },
-            { key: 'course', label: 'Course' },
-            { key: 'year_level', label: 'Year Level' },
-            { key: 'role', label: 'Role' },
+            { key: 'year_level', label: 'Grade/Year Level' },
+            { key: 'course', label: 'Section/Course' },
         ];
-
-        if (mode === 'create') {
-            required.push({ key: 'password', label: 'Password' });
-        }
 
         const missing = required
             .filter(({ key }) => !String(form[key] ?? '').trim())

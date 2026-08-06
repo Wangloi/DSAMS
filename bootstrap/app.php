@@ -24,6 +24,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
         $middleware->validateCsrfTokens(except: [
             'admin/manage-users/bulk-import',
+            'admin/attendance/*/scan',
+            'admin/attendance/*/logs',
+            'admin/attendance/*/activate-scanner-portal',
+            'student/attendance/*/scan',
+            'student/attendance/*/dynamic-qr-scan',
         ]);
 
         $middleware->alias([

@@ -496,6 +496,15 @@ export default function AdminAttendancePage() {
         }
         lastValueRef.current = { value: code, at: now };
 
+        const getCsrfToken = () => {
+            const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+            if (match) {
+                return decodeURIComponent(match[1]);
+            }
+            return (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '';
+        };
+        const csrfToken = getCsrfToken();
+
         try {
             const res = await fetch(`/admin/attendance/${monitorEventId}/scan`, {
                 method: 'POST',
@@ -504,7 +513,8 @@ export default function AdminAttendancePage() {
                     'Content-Type': 'application/json',
                     Accept: 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as any)?.content || '',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-XSRF-TOKEN': csrfToken,
                 },
                 body: JSON.stringify({ value: code }),
             });

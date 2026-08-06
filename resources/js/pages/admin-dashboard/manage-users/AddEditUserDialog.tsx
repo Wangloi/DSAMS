@@ -207,7 +207,7 @@ export default function AddEditUserDialog({
                                         </div>
 
                                         <div className="grid gap-2">
-                                            <Label htmlFor="first_name" className="text-slate-700 dark:text-slate-300">First Name</Label>
+                                            <Label htmlFor="first_name" className="text-slate-700 dark:text-slate-300">Firstname</Label>
                                             <Input
                                                 id="first_name"
                                                 placeholder="e.g. Juan"
@@ -224,7 +224,7 @@ export default function AddEditUserDialog({
                                         </div>
 
                                         <div className="grid gap-2">
-                                            <Label htmlFor="last_name" className="text-slate-700 dark:text-slate-300">Last Name</Label>
+                                            <Label htmlFor="last_name" className="text-slate-700 dark:text-slate-300">Lastname</Label>
                                             <Input
                                                 id="last_name"
                                                 placeholder="e.g. Dela Cruz"
@@ -241,43 +241,24 @@ export default function AddEditUserDialog({
                                         </div>
 
                                         <div className="grid gap-2">
-                                            <Label htmlFor="email" className="text-slate-700 dark:text-slate-300">Email</Label>
+                                            <Label htmlFor="year_level" className="text-slate-700 dark:text-slate-300">Grade / Year Level</Label>
                                             <Input
-                                                id="email"
-                                                type="email"
-                                                placeholder="e.g. user@srcb.edu.ph"
-                                                value={form.email}
+                                                id="year_level"
+                                                placeholder="e.g. 1st year, 4th year"
+                                                value={form.year_level}
                                                 onChange={(e) =>
                                                     setForm((p) => ({
                                                         ...p,
-                                                        email: e.target.value,
+                                                        year_level: e.target.value,
                                                     }))
                                                 }
                                                 className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white"
                                             />
-                                            <InputError message={errors.email} />
+                                            <InputError message={errors.year_level} />
                                         </div>
 
                                         <div className="grid gap-2">
-                                            <Label htmlFor="password" className="text-slate-700 dark:text-slate-300">Password</Label>
-                                            <Input
-                                                id="password"
-                                                type="password"
-                                                placeholder={editingUser ? 'Leave blank to keep current password' : 'Minimum 8 characters'}
-                                                value={form.password}
-                                                onChange={(e) =>
-                                                    setForm((p) => ({
-                                                        ...p,
-                                                        password: e.target.value,
-                                                    }))
-                                                }
-                                                className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white"
-                                            />
-                                            <InputError message={errors.password} />
-                                        </div>
-
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="course" className="text-slate-700 dark:text-slate-300">Course</Label>
+                                            <Label htmlFor="course" className="text-slate-700 dark:text-slate-300">Section / Course</Label>
                                             <Select
                                                 value={form.course}
                                                 onValueChange={(value) =>
@@ -287,7 +268,7 @@ export default function AddEditUserDialog({
                                                     }))
                                                 }
                                             >
-                                                <SelectTrigger id="course" className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600">
+                                                <SelectTrigger id="course" className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white">
                                                     <SelectValue placeholder="Select course" />
                                                 </SelectTrigger>
                                                 <SelectContent>
@@ -303,27 +284,32 @@ export default function AddEditUserDialog({
                                         </div>
 
                                         <div className="grid gap-2">
-                                            <Label htmlFor="year_level" className="text-slate-700 dark:text-slate-300">Year Level</Label>
-                                            <Select
-                                                value={form.year_level}
-                                                onValueChange={(value) =>
+                                            <Label htmlFor="program" className="text-slate-700 dark:text-slate-300">Department</Label>
+                                            <Input
+                                                id="program"
+                                                placeholder="e.g. HED"
+                                                value={form.program ?? ''}
+                                                onChange={(e) =>
                                                     setForm((p) => ({
                                                         ...p,
-                                                        year_level: value,
+                                                        program: e.target.value,
                                                     }))
                                                 }
-                                            >
-                                                <SelectTrigger id="year_level" className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600">
-                                                    <SelectValue placeholder="Select year level" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="1st year">1st year</SelectItem>
-                                                    <SelectItem value="2nd year">2nd year</SelectItem>
-                                                    <SelectItem value="3rd year">3rd year</SelectItem>
-                                                    <SelectItem value="4th year">4th year</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <InputError message={errors.year_level} />
+                                                className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white"
+                                            />
+                                            <InputError message={(errors as any).program} />
+                                        </div>
+
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="password" className="text-slate-700 dark:text-slate-300">Password</Label>
+                                            <Input
+                                                id="password"
+                                                type="text"
+                                                readOnly
+                                                value={form.password || 'password123'}
+                                                className="bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 font-mono font-medium cursor-not-allowed"
+                                            />
+                                            <span className="text-[11px] text-slate-500 dark:text-slate-400">Static default password: <code className="font-mono text-blue-600 dark:text-blue-400">password123</code></span>
                                         </div>
 
                                         <div className="grid gap-2">

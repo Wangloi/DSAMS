@@ -15,8 +15,8 @@ import {
     PlusCircle,
     ArrowRight
 } from 'lucide-react';
-import { useMemo } from 'react';
-import React from 'react';
+import React, { useMemo } from 'react';
+import Swal from 'sweetalert2';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -89,6 +89,19 @@ export default function ProgramHeadDashboard({ user }: Props) {
     const today = new Date().toLocaleDateString('en-US', {
         weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
     });
+
+    React.useEffect(() => {
+        const status = (page.props as any)?.status || (page.props as any)?.flash?.status || (page.props as any)?.flash?.success;
+        if (status) {
+            Swal.fire({
+                title: 'Success!',
+                text: status,
+                icon: 'success',
+                timer: 3000,
+                showConfirmButton: false,
+            });
+        }
+    }, [page.props]);
 
     React.useEffect(() => {
         // Poll for real-time attendance updates every 10 seconds

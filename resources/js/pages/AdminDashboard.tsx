@@ -1,4 +1,5 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import Swal from 'sweetalert2';
 import { 
     Briefcase, 
     CalendarDays, 
@@ -92,6 +93,21 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function AdminDashboard({ user, recentActivities, recentEvents }: Props) {
+    const page = usePage();
+    const status = (page.props as any)?.status || (page.props as any)?.flash?.status || (page.props as any)?.flash?.success;
+
+    React.useEffect(() => {
+        if (status) {
+            Swal.fire({
+                title: 'Success!',
+                text: status,
+                icon: 'success',
+                timer: 3000,
+                showConfirmButton: false,
+            });
+        }
+    }, [status]);
+
     const kpiConfig = [
         { title: "Today's Attendance", href: adminAttendance(), color: 'bg-blue-600', icon: ClipboardCheck },
         { title: 'Admission Slips', href: adminAdmissionSlip(), color: 'bg-emerald-600', icon: Ticket },

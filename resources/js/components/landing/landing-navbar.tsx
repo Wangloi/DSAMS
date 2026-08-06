@@ -1,6 +1,6 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { dashboard, login } from '@/routes';
 
 export default function LandingNavbar({
@@ -9,8 +9,49 @@ export default function LandingNavbar({
   isAuthed: boolean;
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { url } = usePage();
+  const [currentHash, setCurrentHash] = useState('');
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      setCurrentHash(window.location.hash);
+    };
+
+    handleHashChange();
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const isLinkActive = (targetUrl: string) => {
+    // If targetUrl is an exact path like '/help'
+    if (targetUrl === '/help' && url.startsWith('/help')) return true;
+    if (targetUrl === '/about' && url.startsWith('/about')) return true;
+    if (targetUrl === '/features' && url.startsWith('/features')) return true;
+
+    // For landing page section hashes (/ #home, / #about, etc)
+    const isLandingPage = url === '/' || url.startsWith('/#') || url === '';
+    if (isLandingPage) {
+      if (targetUrl === '/#home' && (currentHash === '' || currentHash === '#home')) return true;
+      if (targetUrl === '/#about' && currentHash === '#about') return true;
+      if (targetUrl === '/#mission' && currentHash === '#mission') return true;
+      if (targetUrl === '/#contact' && currentHash === '#contact') return true;
+      if (targetUrl === '/#services' && (currentHash === '#services' || currentHash === '#features')) return true;
+    }
+
+    return false;
+  };
+
+  const navItemClass = (targetUrl: string) => {
+    const active = isLinkActive(targetUrl);
+    return `relative py-2 transition-colors duration-200 hover:text-[#23509A] after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-full after:origin-left after:bg-[#23509A] after:transition-transform after:duration-300 hover:after:scale-x-100 ${
+      active
+        ? 'text-[#23509A] font-bold after:scale-x-100'
+        : 'text-[#000D6A] after:scale-x-0'
+    }`;
+  };
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+
   return (
     <header className="fixed top-0 z-50 w-full border-b border-[#23509A]/10 bg-[#FBFBFB]/95 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-8">
@@ -42,37 +83,37 @@ export default function LandingNavbar({
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
             <Link
               href="/#home"
-              className="relative py-2 text-[#000D6A] transition-colors duration-200 hover:text-[#23509A] after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-[#23509A] after:transition-transform after:duration-300 hover:after:scale-x-100"
+              className={navItemClass('/#home')}
             >
               Home
             </Link>
             <Link
               href="/#about"
-              className="relative py-2 text-[#000D6A] transition-colors duration-200 hover:text-[#23509A] after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-[#23509A] after:transition-transform after:duration-300 hover:after:scale-x-100"
+              className={navItemClass('/#about')}
             >
               About Us
             </Link>
             <Link
-              href="#"
-              className="relative py-2 text-[#000D6A] transition-colors duration-200 hover:text-[#23509A] after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-[#23509A] after:transition-transform after:duration-300 hover:after:scale-x-100"
+              href="/#mission"
+              className={navItemClass('/#mission')}
             >
               Mission & Vision
             </Link>
             <Link
               href="/#contact"
-              className="relative py-2 text-[#000D6A] transition-colors duration-200 hover:text-[#23509A] after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-[#23509A] after:transition-transform after:duration-300 hover:after:scale-x-100"
+              className={navItemClass('/#contact')}
             >
               Contact
             </Link>
             <Link
-              href="#"
-              className="relative py-2 text-[#000D6A] transition-colors duration-200 hover:text-[#23509A] after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-[#23509A] after:transition-transform after:duration-300 hover:after:scale-x-100"
+              href="/#services"
+              className={navItemClass('/#services')}
             >
               Services
             </Link>
             <Link
               href="/help"
-              className="relative py-2 text-[#000D6A] transition-colors duration-200 hover:text-[#23509A] after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-[#23509A] after:transition-transform after:duration-300 hover:after:scale-x-100"
+              className={navItemClass('/help')}
             >
               Help
             </Link>
@@ -113,42 +154,42 @@ export default function LandingNavbar({
             <Link
               href="/#home"
               onClick={() => setIsMenuOpen(false)}
-              className="block py-2 text-[#000D6A] hover:text-[#23509A] transition-colors duration-200"
+              className={`block py-2 transition-colors duration-200 ${isLinkActive('/#home') ? 'font-bold text-[#23509A] border-l-2 border-[#23509A] pl-3' : 'text-[#000D6A] hover:text-[#23509A]'}`}
             >
               Home
             </Link>
             <Link
               href="/#about"
               onClick={() => setIsMenuOpen(false)}
-              className="block py-2 text-[#000D6A] hover:text-[#23509A] transition-colors duration-200"
+              className={`block py-2 transition-colors duration-200 ${isLinkActive('/#about') ? 'font-bold text-[#23509A] border-l-2 border-[#23509A] pl-3' : 'text-[#000D6A] hover:text-[#23509A]'}`}
             >
               About Us
             </Link>
             <Link
-              href="#"
+              href="/#mission"
               onClick={() => setIsMenuOpen(false)}
-              className="block py-2 text-[#000D6A] hover:text-[#23509A] transition-colors duration-200"
+              className={`block py-2 transition-colors duration-200 ${isLinkActive('/#mission') ? 'font-bold text-[#23509A] border-l-2 border-[#23509A] pl-3' : 'text-[#000D6A] hover:text-[#23509A]'}`}
             >
-              Admission Slip
+              Mission &amp; Vision
             </Link>
             <Link
               href="/#contact"
               onClick={() => setIsMenuOpen(false)}
-              className="block py-2 text-[#000D6A] hover:text-[#23509A] transition-colors duration-200"
+              className={`block py-2 transition-colors duration-200 ${isLinkActive('/#contact') ? 'font-bold text-[#23509A] border-l-2 border-[#23509A] pl-3' : 'text-[#000D6A] hover:text-[#23509A]'}`}
             >
               Contact
             </Link>
             <Link
-              href="#"
+              href="/#services"
               onClick={() => setIsMenuOpen(false)}
-              className="block py-2 text-[#000D6A] hover:text-[#23509A] transition-colors duration-200"
+              className={`block py-2 transition-colors duration-200 ${isLinkActive('/#services') ? 'font-bold text-[#23509A] border-l-2 border-[#23509A] pl-3' : 'text-[#000D6A] hover:text-[#23509A]'}`}
             >
               Services
             </Link>
             <Link
               href="/help"
               onClick={() => setIsMenuOpen(false)}
-              className="block py-2 text-[#000D6A] hover:text-[#23509A] transition-colors duration-200"
+              className={`block py-2 transition-colors duration-200 ${isLinkActive('/help') ? 'font-bold text-[#23509A] border-l-2 border-[#23509A] pl-3' : 'text-[#000D6A] hover:text-[#23509A]'}`}
             >
               Help &amp; Documentation
             </Link>

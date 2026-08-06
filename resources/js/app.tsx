@@ -1,11 +1,12 @@
-import { createInertiaApp } from '@inertiajs/react';
+import { createInertiaApp, router } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
-import { StrictMode } from 'react';
+import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import axios from 'axios';
 import '../css/app.css';
 import { initializeTheme } from './hooks/use-appearance';
 import { configureEcho } from '@laravel/echo-react';
+import { AuthLoadingOverlay } from './components/AuthLoadingOverlay';
 
 // Configure axios with CSRF token for all requests
 // Laravel sets an XSRF-TOKEN cookie; axios reads it automatically as X-XSRF-TOKEN
@@ -27,6 +28,46 @@ configureEcho({
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
+function GlobalAppWrapper({ App, props }: { App: any; props: any }) {
+    const [loadingState, setLoadingState] = useState<{ visible: boolean; state: 'signing-in' | 'signing-out' | 'authenticating' | 'verifying' } | null>(null);
+
+    useEffect(() => {
+        const removeStartListener = router.on('start', (event) => {
+            const url = event.detail.visit.url;
+            const pathname = typeof url === 'string' ? url : url.pathname;
+            const method = event.detail.visit.method.toLowerCase();
+
+            // Only trigger loading overlay on POST requests (form submissions), not links/GET requests
+            if (method === 'post') {
+                if (pathname.includes('/logout')) {
+                    setLoadingState({ visible: true, state: 'signing-out' });
+                } else if (pathname.includes('/login') || pathname.includes('/admin-login') || pathname.includes('/program-head-login')) {
+                    setLoadingState({ visible: true, state: 'signing-in' });
+                }
+            }
+        });
+
+        const removeFinishListener = router.on('finish', () => {
+            setLoadingState(null);
+        });
+
+        return () => {
+            removeStartListener();
+            removeFinishListener();
+        };
+    }, []);
+
+    return (
+        <>
+            <App {...props} />
+            <AuthLoadingOverlay 
+                visible={loadingState !== null} 
+                state={loadingState?.state || 'authenticating'} 
+            />
+        </>
+    );
+}
+
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     resolve: (name) =>
@@ -39,7 +80,7 @@ createInertiaApp({
 
         root.render(
             <StrictMode>
-                <App {...props} />
+                <GlobalAppWrapper App={App} props={props} />
             </StrictMode>
         );
     },

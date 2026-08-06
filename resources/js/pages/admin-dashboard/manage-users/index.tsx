@@ -324,9 +324,13 @@ export default function AdminManageUsersPage() {
             return haystack.includes(q);
         };
 
-        return [...students].filter(
-            (u) => matchesRole(u) && matchesStatus(u) && matchesSearch(u),
-        );
+        return [...students]
+            .filter((u) => matchesRole(u) && matchesStatus(u) && matchesSearch(u))
+            .sort((a, b) => {
+                const nameA = (a.last_name || a.name || '').trim().toLowerCase();
+                const nameB = (b.last_name || b.name || '').trim().toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
     }, [students, roleFilter, statusFilter, searchQuery]);
 
     const [pageSize, setPageSize] = useState(10);
@@ -380,15 +384,16 @@ export default function AdminManageUsersPage() {
                                 <button
                                     type="button"
                                     onClick={() => switchTab('users')}
-                                    className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+                                    title="Users"
+                                    aria-label="Users"
+                                    className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
                                         activeTab === 'users'
                                             ? 'bg-blue-600 text-white shadow-sm'
                                             : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'
                                     }`}
                                 >
-                                    <UserCheck className="h-4 w-4" />
-                                    Users
-                                    <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                                    <UserCheck className="h-5 w-5" />
+                                    <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
                                         activeTab === 'users' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
                                     }`}>
                                         {totalUsers}
@@ -397,15 +402,16 @@ export default function AdminManageUsersPage() {
                                 <button
                                     type="button"
                                     onClick={() => switchTab('programs')}
-                                    className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+                                    title="Programs"
+                                    aria-label="Programs"
+                                    className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
                                         activeTab === 'programs'
                                             ? 'bg-blue-600 text-white shadow-sm'
                                             : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'
                                     }`}
                                 >
-                                    <GraduationCap className="h-4 w-4" />
-                                    Programs
-                                    <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                                    <GraduationCap className="h-5 w-5" />
+                                    <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
                                         activeTab === 'programs' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
                                     }`}>
                                         {progStats.total}
@@ -414,18 +420,19 @@ export default function AdminManageUsersPage() {
                                 <button
                                     type="button"
                                     onClick={() => switchTab('password-resets')}
-                                    className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+                                    title="Password Resets"
+                                    aria-label="Password Resets"
+                                    className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
                                         activeTab === 'password-resets'
                                             ? 'bg-blue-600 text-white shadow-sm'
                                             : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'
                                     }`}
                                 >
-                                    <KeyRound className="h-4 w-4" />
-                                    Password Resets
-                                    <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                                    <KeyRound className="h-5 w-5" />
+                                    <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
                                         activeTab === 'password-resets' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
                                     }`}>
-                                        {props.passwordResetRequests?.filter((r: any) => r.status === 'pending').length ?? 0}
+                                        {(props.passwordResetRequests as any[])?.filter((r: any) => r.status === 'pending').length ?? 0}
                                     </span>
                                 </button>
                             </div>
@@ -897,17 +904,9 @@ export default function AdminManageUsersPage() {
                                                             </span>
                                                         </td>
                                                         <td className="px-6 py-4 text-slate-600 dark:text-slate-400 font-medium">
-                                                            {(() => {
-                                                                const course =
-                                                                    String(
-                                                                        u.course ??
-                                                                            '',
-                                                                    ).trim();
-                                                                return (
-                                                                    course ||
-                                                                    '—'
-                                                                );
-                                                            })()}
+                                                            <div className="font-semibold text-slate-800 dark:text-slate-200">
+                                                                {String(u.course ?? '').trim() || '—'}
+                                                            </div>
                                                         </td>
 
                                                         <td className="px-4 py-3">
@@ -1646,7 +1645,7 @@ export default function AdminManageUsersPage() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-200 bg-white dark:divide-slate-700 dark:bg-slate-900/50">
-                                            {props.passwordResetRequests?.filter((r: any) => r.status === 'pending').map((request: any) => (
+                                            {(props.passwordResetRequests as any[])?.filter((r: any) => r.status === 'pending').map((request: any) => (
                                                 <tr key={request.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                                                     <td className="px-4 py-3 text-slate-900 dark:text-slate-100 font-medium">
                                                         {request.email}
@@ -1683,7 +1682,7 @@ export default function AdminManageUsersPage() {
                                                     </td>
                                                 </tr>
                                             ))}
-                                            {(!props.passwordResetRequests || props.passwordResetRequests.filter((r: any) => r.status === 'pending').length === 0) && (
+                                            {(!props.passwordResetRequests || (props.passwordResetRequests as any[]).filter((r: any) => r.status === 'pending').length === 0) && (
                                                 <tr>
                                                     <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
                                                         No pending password reset requests.

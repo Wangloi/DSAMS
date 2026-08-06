@@ -14,10 +14,35 @@ class AdminProgramsController extends Controller
 {
     public function index(): Response
     {
-        $programs = Program::withCount('students')
+        if (Program::count() === 0) {
+            $defaultPrograms = [
+                ['code' => 'BSIT', 'name' => 'Bachelor of Science in Information Technology', 'department' => 'HED', 'duration' => '4 Years', 'is_active' => true],
+                ['code' => 'BSBA', 'name' => 'Bachelor of Science in Business Administration', 'department' => 'HED', 'duration' => '4 Years', 'is_active' => true],
+                ['code' => 'BEED', 'name' => 'Bachelor of Elementary Education', 'department' => 'HED', 'duration' => '4 Years', 'is_active' => true],
+                ['code' => 'BSED', 'name' => 'Bachelor of Secondary Education', 'department' => 'HED', 'duration' => '4 Years', 'is_active' => true],
+                ['code' => 'BSCrim', 'name' => 'Bachelor of Science in Criminology', 'department' => 'HED', 'duration' => '4 Years', 'is_active' => true],
+                ['code' => 'BSHM', 'name' => 'Bachelor of Science in Hospitality Management', 'department' => 'HED', 'duration' => '4 Years', 'is_active' => true],
+            ];
+            foreach ($defaultPrograms as $prog) {
+                Program::firstOrCreate(['code' => $prog['code']], $prog);
+            }
+        }
+
+        $courseCounts = \App\Models\Student::query()
+            ->selectRaw('LOWER(TRIM(course)) as course_key, COUNT(*) as aggregate')
+            ->groupBy('course_key')
+            ->pluck('aggregate', 'course_key')
+            ->all();
+
+        $programs = Program::query()
             ->orderBy('name')
             ->get()
-            ->map(function ($program) {
+            ->map(function ($program) use ($courseCounts) {
+                $codeKey = strtolower(trim((string) $program->code));
+                $nameKey = strtolower(trim((string) $program->name));
+
+                $count = $courseCounts[$codeKey] ?? $courseCounts[$nameKey] ?? 0;
+
                 return [
                     'id' => $program->id,
                     'name' => $program->name,
@@ -26,9 +51,9 @@ class AdminProgramsController extends Controller
                     'description' => $program->description ?? '',
                     'duration' => $program->duration ?? 'N/A',
                     'status' => $program->is_active ? 'active' : 'inactive',
-                    'studentCount' => $program->students_count ?? 0,
-                    'createdAt' => $program->created_at->format('M d, Y'),
-                    'updatedAt' => $program->updated_at->format('M d, Y'),
+                    'studentCount' => (int) $count,
+                    'createdAt' => $program->created_at ? $program->created_at->format('M d, Y') : '',
+                    'updatedAt' => $program->updated_at ? $program->updated_at->format('M d, Y') : '',
                 ];
             });
 
@@ -71,7 +96,7 @@ class AdminProgramsController extends Controller
 
     public function show(Program $program, Request $request): Response
     {
-        $page = $request->get('page', 1);
+        $page = (int) $request->input('page', 1);
         $perPage = 10;
 
         $students = $program->students()

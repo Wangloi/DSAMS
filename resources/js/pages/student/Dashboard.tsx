@@ -128,6 +128,20 @@ export default function StudentDashboard({
     // Profile completion gate — true when the student hasn't filled in personal info yet
     const needsProfileCompletion = !!(page.props as any)?.needsProfileCompletion;
 
+    const status = (page.props as any)?.status || (page.props as any)?.flash?.status || (page.props as any)?.flash?.success;
+
+    React.useEffect(() => {
+        if (status) {
+            Swal.fire({
+                title: 'Success!',
+                text: status,
+                icon: 'success',
+                timer: 3000,
+                showConfirmButton: false,
+            });
+        }
+    }, [status]);
+
     const displayName = authUser?.name || 'Student';
     const studentId = (authUser as any)?.student_id || '2023-0000';
     const program = (authUser as any)?.program || 'General Education';
