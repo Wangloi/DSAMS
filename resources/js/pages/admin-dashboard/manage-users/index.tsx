@@ -176,6 +176,7 @@ export default function AdminManageUsersPage() {
 
     const [roleFilter, setRoleFilter] = useState<string>('all');
     const [statusFilter, setStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
+    const [courseFilter, setCourseFilter] = useState<'all' | string>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [pageIndex, setPageIndex] = useState(1);
     const [viewOpen, setViewOpen] = useState(false);
@@ -282,18 +283,31 @@ export default function AdminManageUsersPage() {
         return (userId: number) => activeById[userId] !== false;
     }, [activeById]);
 
+    const availableCourses = useMemo(() => {
+        const list = ['BSIT', 'BSBA', 'BEED', 'BSED', 'BSCrim', 'BSHM'];
+        students.forEach((s) => {
+            const c = String(s.course ?? '').trim();
+            if (c && !list.includes(c) && !c.toLowerCase().includes('admin')) {
+                list.push(c);
+            }
+        });
+        return list.filter((c) => !c.toLowerCase().includes('admin'));
+    }, [students]);
+
     const filteredStudents = useMemo(() => {
         const q = searchQuery.trim().toLowerCase();
 
         const matchesRole = (u: (typeof students)[number]) => {
-            if (roleFilter === 'all') return true;
             const roleRaw = String(u.role ?? 'Student').toLowerCase();
+            // Exclude System Admin accounts from the user table list
+            if (roleRaw.includes('admin')) return false;
+
+            if (roleFilter === 'all') return true;
             if (roleFilter === 'students')
                 return (
                     !roleRaw.includes('admin') && !roleRaw.includes('program')
                 );
             if (roleFilter === 'program') return roleRaw.includes('program');
-            if (roleFilter === 'admin') return roleRaw.includes('admin');
             // Year level filters
             if (['1st Year', '2nd Year', '3rd Year', '4th Year', 'Irregular'].includes(roleFilter)) {
                 return (u.year_level ?? '') === roleFilter;
@@ -306,6 +320,11 @@ export default function AdminManageUsersPage() {
             if (isProgramHeadRow(u)) return statusFilter === 'active';
             const active = isActive(u.id);
             return statusFilter === 'active' ? active : !active;
+        };
+
+        const matchesCourse = (u: (typeof students)[number]) => {
+            if (courseFilter === 'all') return true;
+            return String(u.course ?? '').trim().toLowerCase() === courseFilter.trim().toLowerCase();
         };
 
         const matchesSearch = (u: (typeof students)[number]) => {
@@ -325,13 +344,13 @@ export default function AdminManageUsersPage() {
         };
 
         return [...students]
-            .filter((u) => matchesRole(u) && matchesStatus(u) && matchesSearch(u))
+            .filter((u) => matchesRole(u) && matchesStatus(u) && matchesCourse(u) && matchesSearch(u))
             .sort((a, b) => {
                 const nameA = (a.last_name || a.name || '').trim().toLowerCase();
                 const nameB = (b.last_name || b.name || '').trim().toLowerCase();
                 return nameA.localeCompare(nameB);
             });
-    }, [students, roleFilter, statusFilter, searchQuery]);
+    }, [students, roleFilter, statusFilter, courseFilter, searchQuery]);
 
     const [pageSize, setPageSize] = useState(10);
     const totalPages = Math.max(
@@ -358,216 +377,197 @@ export default function AdminManageUsersPage() {
             <Head title="Manage Users & Programs" />
             <div className="min-h-[calc(100vh-4rem)] bg-slate-100 dark:bg-slate-900">
                 <div className="flex w-full flex-col gap-6 px-6 py-6">
-                    {/* ── Page header with tab switcher ──────────────────────── */}
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
-                        <div className="flex items-center gap-4">
-                            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-600/10 text-blue-600 dark:bg-blue-600/20 dark:text-blue-400">
-                                {activeTab === 'users' ? <Users className="h-6 w-6" /> : <BookOpen className="h-6 w-6" />}
-                            </div>
-                            <div>
-                                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                                    {activeTab === 'users' && 'Manage Users'}
-                                    {activeTab === 'programs' && 'Academic Programs'}
-                                    {activeTab === 'password-resets' && 'Password Resets'}
-                                </h1>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">
-                                    {activeTab === 'users' && 'Manage user accounts, roles, and permissions'}
-                                    {activeTab === 'programs' && 'Manage curriculums, departments, and course offerings'}
-                                    {activeTab === 'password-resets' && 'Review and approve pending password reset requests'}
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Tab buttons */}
-                        <div className="flex items-center gap-2">
-                            <div className="flex items-center rounded-xl border border-slate-200 bg-white p-1 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                                <button
-                                    type="button"
-                                    onClick={() => switchTab('users')}
-                                    title="Users"
-                                    aria-label="Users"
-                                    className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
-                                        activeTab === 'users'
-                                            ? 'bg-blue-600 text-white shadow-sm'
-                                            : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'
-                                    }`}
-                                >
-                                    <UserCheck className="h-5 w-5" />
-                                    <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                                        activeTab === 'users' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
-                                    }`}>
-                                        {totalUsers}
-                                    </span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => switchTab('programs')}
-                                    title="Programs"
-                                    aria-label="Programs"
-                                    className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
-                                        activeTab === 'programs'
-                                            ? 'bg-blue-600 text-white shadow-sm'
-                                            : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'
-                                    }`}
-                                >
-                                    <GraduationCap className="h-5 w-5" />
-                                    <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                                        activeTab === 'programs' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
-                                    }`}>
-                                        {progStats.total}
-                                    </span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => switchTab('password-resets')}
-                                    title="Password Resets"
-                                    aria-label="Password Resets"
-                                    className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
-                                        activeTab === 'password-resets'
-                                            ? 'bg-blue-600 text-white shadow-sm'
-                                            : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'
-                                    }`}
-                                >
-                                    <KeyRound className="h-5 w-5" />
-                                    <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                                        activeTab === 'password-resets' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
-                                    }`}>
-                                        {(props.passwordResetRequests as any[])?.filter((r: any) => r.status === 'pending').length ?? 0}
-                                    </span>
-                                </button>
-                            </div>
-
-                            {/* Context action button */}
-                            {activeTab === 'users' ? (
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        type="button"
-                                        onClick={() => setBulkAddOpen(true)}
-                                        className="h-11 shrink-0 gap-2 rounded-xl bg-emerald-600 px-4 font-bold text-white shadow-md shadow-emerald-500/20 transition-all duration-200 hover:bg-emerald-700"
-                                    >
-                                        <Users className="h-4 w-4" />
-                                        Bulk Add
-                                    </Button>
-                                    <AddEditUserDialog
-                                        open={open}
-                                        onOpenChange={setOpen}
-                                        editingUser={editingUser}
-                                        hasAnyError={hasAnyError}
-                                        errors={errors}
-                                        form={form}
-                                        setForm={setForm}
-                                        onOpenCreate={openCreateModal}
-                                        onClose={closeModal}
-                                        onSubmit={submit}
-                                    />
-                                    <BulkAddUsersDialog
-                                        open={bulkAddOpen}
-                                        onOpenChange={setBulkAddOpen}
-                                    />
+                    {/* ── Hero Header ── */}
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] p-6 shadow-xl shadow-blue-900/20">
+                        <div className="pointer-events-none absolute -right-12 -top-12 h-56 w-56 rounded-full bg-white/5" />
+                        <div className="pointer-events-none absolute -right-4 -top-4 h-32 w-32 rounded-full bg-white/5" />
+                        <div className="pointer-events-none absolute bottom-0 left-1/3 h-48 w-48 -translate-y-1/4 rounded-full bg-blue-400/10 blur-2xl" />
+                        <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/10 text-white shadow-inner backdrop-blur-sm ring-1 ring-white/20">
+                                    {activeTab === 'users' ? <Users className="h-7 w-7" /> : activeTab === 'programs' ? <GraduationCap className="h-7 w-7" /> : <KeyRound className="h-7 w-7" />}
                                 </div>
-                            ) : (
-                                <Button
-                                    onClick={() => setIsCreateModalOpen(true)}
-                                    className="h-11 shrink-0 gap-2 rounded-xl bg-blue-600 px-5 font-bold text-white shadow-md shadow-blue-500/20 transition-all duration-200 hover:bg-blue-700"
-                                >
-                                    <Plus className="h-5 w-5" />
-                                    Add Program
-                                </Button>
-                            )}
+                                <div>
+                                    <h1 className="text-2xl font-black tracking-tight text-white">
+                                        {activeTab === 'users' && 'Manage Users'}
+                                        {activeTab === 'programs' && 'Academic Programs'}
+                                        {activeTab === 'password-resets' && 'Password Resets'}
+                                    </h1>
+                                    <p className="mt-0.5 text-sm font-medium text-blue-200/80">
+                                        {activeTab === 'users' && 'Manage user accounts, roles, and permissions'}
+                                        {activeTab === 'programs' && 'Manage curriculums, departments, and course offerings'}
+                                        {activeTab === 'password-resets' && 'Review and approve pending password reset requests'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Right side: Tab buttons & Action buttons inside banner */}
+                            <div className="flex flex-wrap items-center gap-3 self-start lg:self-auto">
+                                {/* Tab switcher logos inside banner */}
+                                <div className="flex items-center rounded-xl bg-white/10 p-1 backdrop-blur-md ring-1 ring-white/20">
+                                    <button
+                                        type="button"
+                                        onClick={() => switchTab('users')}
+                                        title="Users"
+                                        aria-label="Users"
+                                        className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
+                                            activeTab === 'users'
+                                                ? 'bg-white text-[#1e3a8a] shadow-sm'
+                                                : 'text-white/80 hover:bg-white/10 hover:text-white'
+                                        }`}
+                                    >
+                                        <UserCheck className="h-5 w-5" />
+                                        <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                                            activeTab === 'users' ? 'bg-[#1e3a8a]/10 text-[#1e3a8a]' : 'bg-white/10 text-white'
+                                        }`}>
+                                            {totalUsers}
+                                        </span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => switchTab('programs')}
+                                        title="Programs"
+                                        aria-label="Programs"
+                                        className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
+                                            activeTab === 'programs'
+                                                ? 'bg-white text-[#1e3a8a] shadow-sm'
+                                                : 'text-white/80 hover:bg-white/10 hover:text-white'
+                                        }`}
+                                    >
+                                        <GraduationCap className="h-5 w-5" />
+                                        <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                                            activeTab === 'programs' ? 'bg-[#1e3a8a]/10 text-[#1e3a8a]' : 'bg-white/10 text-white'
+                                        }`}>
+                                            {progStats.total}
+                                        </span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => switchTab('password-resets')}
+                                        title="Password Resets"
+                                        aria-label="Password Resets"
+                                        className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
+                                            activeTab === 'password-resets'
+                                                ? 'bg-white text-[#1e3a8a] shadow-sm'
+                                                : 'text-white/80 hover:bg-white/10 hover:text-white'
+                                        }`}
+                                    >
+                                        <KeyRound className="h-5 w-5" />
+                                        <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                                            activeTab === 'password-resets' ? 'bg-[#1e3a8a]/10 text-[#1e3a8a]' : 'bg-white/10 text-white'
+                                        }`}>
+                                            {(props.passwordResetRequests as any[])?.filter((r: any) => r.status === 'pending').length ?? 0}
+                                        </span>
+                                    </button>
+                                </div>
+
+                                {/* Action buttons */}
+                                {activeTab === 'users' ? (
+                                    <div className="flex items-center gap-2">
+                                        <AddEditUserDialog
+                                            open={open}
+                                            onOpenChange={setOpen}
+                                            editingUser={editingUser}
+                                            hasAnyError={hasAnyError}
+                                            errors={errors}
+                                            form={form}
+                                            setForm={setForm}
+                                            onOpenCreate={openCreateModal}
+                                            onClose={closeModal}
+                                            onSubmit={submit}
+                                            onOpenBulkAdd={() => setBulkAddOpen(true)}
+                                        />
+                                        <BulkAddUsersDialog
+                                            open={bulkAddOpen}
+                                            onOpenChange={setBulkAddOpen}
+                                        />
+                                    </div>
+                                ) : activeTab === 'programs' ? (
+                                    <Button
+                                        onClick={() => setIsCreateModalOpen(true)}
+                                        className="h-11 gap-2 rounded-xl bg-white px-5 font-bold text-[#1e3a8a] shadow-md transition-all duration-200 hover:bg-blue-50"
+                                    >
+                                        <Plus className="h-5 w-5" />
+                                        Add Program
+                                    </Button>
+                                ) : null}
+                            </div>
                         </div>
                     </div>
 
                     {/* ── USERS TAB ──────────────────────────────────────────────────────────── */}
                     {activeTab === 'users' && (
                     <>
-                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                         {/* Students Card */}
-                        <Card className="overflow-hidden border border-emerald-100 bg-emerald-50/50 shadow-sm dark:border-emerald-500/20 dark:bg-emerald-500/10 group">
-                            <CardContent className="p-5">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                        <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 opacity-70">
-                                            Students
-                                        </div>
-                                        <div className="mt-2 flex items-baseline gap-2">
-                                            <div className="text-3xl font-black text-slate-900 dark:text-white">
-                                                {roleCounts.student}
-                                            </div>
-                                            <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                                                Total Active
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 shadow-inner group-hover:scale-110 transition-transform duration-300">
-                                        <Users className="h-6 w-6" />
-                                    </div>
+                        <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
+                            <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-emerald-500/5" />
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Students</p>
+                                    <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">{roleCounts.student}</p>
+                                    <p className="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">Total Active</p>
                                 </div>
-                            </CardContent>
-                        </Card>
+                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-200/50 dark:bg-emerald-500/20 dark:text-emerald-400 dark:ring-emerald-900/30 transition-transform duration-300 group-hover:scale-110">
+                                    <Users className="h-5 w-5" />
+                                </div>
+                            </div>
+                            <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                <div className="h-full w-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full" />
+                            </div>
+                        </div>
 
                         {/* Program Heads Card */}
-                        <Card className="overflow-hidden border border-amber-100 bg-amber-50/50 shadow-sm dark:border-amber-500/20 dark:bg-amber-500/10 group">
-                            <CardContent className="p-5">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                        <div className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 opacity-70">
-                                            Program Heads
-                                        </div>
-                                        <div className="mt-2 flex items-baseline gap-2">
-                                            <div className="text-3xl font-black text-slate-900 dark:text-white">
-                                                {roleCounts.programHead}
-                                            </div>
-                                            <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400">
-                                                Assigned
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 shadow-inner group-hover:scale-110 transition-transform duration-300">
-                                        <Users className="h-6 w-6" />
-                                    </div>
+                        <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
+                            <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-amber-500/5" />
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Program Heads</p>
+                                    <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">{roleCounts.programHead}</p>
+                                    <p className="mt-1 text-xs font-semibold text-amber-600 dark:text-amber-400">Assigned</p>
                                 </div>
-                            </CardContent>
-                        </Card>
+                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-500/10 text-amber-600 ring-1 ring-amber-200/50 dark:bg-amber-500/20 dark:text-amber-400 dark:ring-amber-900/30 transition-transform duration-300 group-hover:scale-110">
+                                    <Users className="h-5 w-5" />
+                                </div>
+                            </div>
+                            <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                <div className="h-full w-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full" />
+                            </div>
+                        </div>
 
                         {/* Administrators Card */}
-                        <Card className="overflow-hidden border border-blue-100 bg-blue-50/50 shadow-sm dark:border-blue-500/20 dark:bg-blue-500/10 group">
-                            <CardContent className="p-5">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                        <div className="text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 opacity-70">
-                                            Administrators
-                                        </div>
-                                        <div className="mt-2 flex items-baseline gap-2">
-                                            <div className="text-3xl font-black text-slate-900 dark:text-white">
-                                                {roleCounts.admin}
-                                            </div>
-                                            <div className="text-[10px] font-bold text-blue-600 dark:text-blue-400">
-                                                System Admins
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 shadow-inner group-hover:scale-110 transition-transform duration-300">
-                                        <Users className="h-6 w-6" />
-                                    </div>
+                        <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
+                            <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-blue-500/5" />
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Administrators</p>
+                                    <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">{roleCounts.admin}</p>
+                                    <p className="mt-1 text-xs font-semibold text-blue-600 dark:text-blue-400">System Admins</p>
                                 </div>
-                            </CardContent>
-                        </Card>
+                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-500/10 text-blue-600 ring-1 ring-blue-200/50 dark:bg-blue-500/20 dark:text-blue-400 dark:ring-blue-900/30 transition-transform duration-300 group-hover:scale-110">
+                                    <Users className="h-5 w-5" />
+                                </div>
+                            </div>
+                            <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                <div className="h-full w-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full" />
+                            </div>
+                        </div>
                     </div>
 
                     <Card className="border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#0B192C]/50">
-                        <CardHeader>
-                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <CardHeader className="p-2.5 px-4">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
-                                    <CardTitle className="text-lg font-semibold text-slate-800 dark:text-white">
+                                    <CardTitle className="text-lg font-bold text-slate-800 dark:text-white">
                                         User List
                                     </CardTitle>
-                                    <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                                    <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                                         Total: {totalUsers} users
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:items-center">
-                                    <div className="relative">
-                                        <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                    <div className="relative min-w-[180px] sm:w-[220px]">
+                                        <Search className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                                         <input
                                             type="text"
                                             name="fake_username"
@@ -584,7 +584,7 @@ export default function AdminManageUsersPage() {
                                         />
                                         <Input
                                             placeholder="Search user..."
-                                            className="h-9 border border-slate-200 bg-white pl-9 dark:border-slate-600 dark:bg-slate-800"
+                                            className="h-8.5 text-xs border border-slate-200 bg-white pl-8 dark:border-slate-600 dark:bg-slate-800"
                                             name="manage_users_search"
                                             type="search"
                                             autoComplete="new-password"
@@ -604,7 +604,7 @@ export default function AdminManageUsersPage() {
                                             setPageIndex(1);
                                         }}
                                     >
-                                        <SelectTrigger className="h-9 border border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-800">
+                                        <SelectTrigger className="h-8.5 text-xs w-[140px] border border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-800">
                                             <SelectValue placeholder="All Users" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -616,9 +616,6 @@ export default function AdminManageUsersPage() {
                                             </SelectItem>
                                             <SelectItem value="program">
                                                 Program Heads
-                                            </SelectItem>
-                                            <SelectItem value="admin">
-                                                Administrators
                                             </SelectItem>
                                             <SelectItem value="1st Year">
                                                 1st Year
@@ -639,12 +636,32 @@ export default function AdminManageUsersPage() {
                                     </Select>
 
                                     <Select
+                                        value={courseFilter}
+                                        onValueChange={(v) => {
+                                            setCourseFilter(v);
+                                            setPageIndex(1);
+                                        }}
+                                    >
+                                        <SelectTrigger className="h-8.5 text-xs w-[130px] border border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-800">
+                                            <SelectValue placeholder="All Courses" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Courses</SelectItem>
+                                            {availableCourses.map((c) => (
+                                                <SelectItem key={c} value={c}>
+                                                    {c}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+
+                                    <Select
                                         value={statusFilter}
                                         onValueChange={(v) =>
                                             setStatusFilter(v as any)
                                         }
                                     >
-                                        <SelectTrigger className="h-9 border border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-800">
+                                        <SelectTrigger className="h-8.5 text-xs w-[130px] border border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-800">
                                             <SelectValue placeholder="Status: Active" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -1388,59 +1405,74 @@ export default function AdminManageUsersPage() {
                     {activeTab === 'programs' && (
                     <>
                         {/* Stats cards */}
-                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
-                            <Card className="overflow-hidden border border-blue-100 bg-blue-50/50 shadow-sm dark:border-blue-500/20 dark:bg-blue-500/10 group">
-                                <CardContent className="p-5">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div>
-                                            <div className="text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 opacity-70">Total Programs</div>
-                                            <div className="mt-2 text-3xl font-black text-slate-900 dark:text-white">{progStats.total}</div>
-                                        </div>
-                                        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 shadow-inner group-hover:scale-110 transition-transform duration-300">
-                                            <BookOpen className="h-6 w-6" />
-                                        </div>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                            <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
+                                <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-blue-500/5" />
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Total Programs</p>
+                                        <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">{progStats.total}</p>
+                                        <p className="mt-1 text-xs font-semibold text-blue-600 dark:text-blue-400">All Offerings</p>
                                     </div>
-                                </CardContent>
-                            </Card>
-                            <Card className="overflow-hidden border border-emerald-100 bg-emerald-50/50 shadow-sm dark:border-emerald-500/20 dark:bg-emerald-500/10 group">
-                                <CardContent className="p-5">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div>
-                                            <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 opacity-70">Active</div>
-                                            <div className="mt-2 text-3xl font-black text-slate-900 dark:text-white">{progStats.active}</div>
-                                        </div>
-                                        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 shadow-inner group-hover:scale-110 transition-transform duration-300">
-                                            <Users className="h-6 w-6" />
-                                        </div>
+                                    <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-500/10 text-blue-600 ring-1 ring-blue-200/50 dark:bg-blue-500/20 dark:text-blue-400 dark:ring-blue-900/30 transition-transform duration-300 group-hover:scale-110">
+                                        <BookOpen className="h-5 w-5" />
                                     </div>
-                                </CardContent>
-                            </Card>
-                            <Card className="overflow-hidden border border-amber-100 bg-amber-50/50 shadow-sm dark:border-amber-500/20 dark:bg-amber-500/10 group">
-                                <CardContent className="p-5">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div>
-                                            <div className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 opacity-70">Inactive</div>
-                                            <div className="mt-2 text-3xl font-black text-slate-900 dark:text-white">{progStats.inactive}</div>
-                                        </div>
-                                        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 shadow-inner group-hover:scale-110 transition-transform duration-300">
-                                            <BookOpen className="h-6 w-6" />
-                                        </div>
+                                </div>
+                                <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                    <div className="h-full w-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full" />
+                                </div>
+                            </div>
+
+                            <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
+                                <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-emerald-500/5" />
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Active</p>
+                                        <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">{progStats.active}</p>
+                                        <p className="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">Curriculums</p>
                                     </div>
-                                </CardContent>
-                            </Card>
-                            <Card className="overflow-hidden border border-purple-100 bg-purple-50/50 shadow-sm dark:border-purple-500/20 dark:bg-purple-500/10 group">
-                                <CardContent className="p-5">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div>
-                                            <div className="text-[10px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400 opacity-70">Departments</div>
-                                            <div className="mt-2 text-3xl font-black text-slate-900 dark:text-white">{progStats.departments}</div>
-                                        </div>
-                                        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400 shadow-inner group-hover:scale-110 transition-transform duration-300">
-                                            <Users className="h-6 w-6" />
-                                        </div>
+                                    <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-200/50 dark:bg-emerald-500/20 dark:text-emerald-400 dark:ring-emerald-900/30 transition-transform duration-300 group-hover:scale-110">
+                                        <Users className="h-5 w-5" />
                                     </div>
-                                </CardContent>
-                            </Card>
+                                </div>
+                                <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                    <div className="h-full w-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full" />
+                                </div>
+                            </div>
+
+                            <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
+                                <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-amber-500/5" />
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Inactive</p>
+                                        <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">{progStats.inactive}</p>
+                                        <p className="mt-1 text-xs font-semibold text-amber-600 dark:text-amber-400">Archived/Disabled</p>
+                                    </div>
+                                    <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-500/10 text-amber-600 ring-1 ring-amber-200/50 dark:bg-amber-500/20 dark:text-amber-400 dark:ring-amber-900/30 transition-transform duration-300 group-hover:scale-110">
+                                        <BookOpen className="h-5 w-5" />
+                                    </div>
+                                </div>
+                                <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                    <div className="h-full w-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full" />
+                                </div>
+                            </div>
+
+                            <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
+                                <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-purple-500/5" />
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Departments</p>
+                                        <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">{progStats.departments}</p>
+                                        <p className="mt-1 text-xs font-semibold text-purple-600 dark:text-purple-400">Academic Units</p>
+                                    </div>
+                                    <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-purple-500/10 text-purple-600 ring-1 ring-purple-200/50 dark:bg-purple-500/20 dark:text-purple-400 dark:ring-purple-900/30 transition-transform duration-300 group-hover:scale-110">
+                                        <Users className="h-5 w-5" />
+                                    </div>
+                                </div>
+                                <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                    <div className="h-full w-full bg-gradient-to-r from-purple-400 to-purple-600 rounded-full" />
+                                </div>
+                            </div>
                         </div>
 
                         {/* Programs table card */}

@@ -232,30 +232,28 @@ export default function AdminDashboard({ user, recentActivities, recentEvents }:
             <Head title="Admin Dashboard" />
             <div className="min-h-[calc(100vh-4rem)] bg-slate-50 dark:bg-slate-900">
                 <div className="flex w-full flex-col gap-6 px-6 py-6">
-                    <div className="rounded-2xl bg-gradient-to-br from-[#0b2d66] via-[#103875] to-[#1e40af] px-7 py-7 text-white shadow-md relative overflow-hidden group">
-                        {/* Background glowing decorations */}
-                        <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/5 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-700" />
-                        <div className="absolute right-20 -bottom-20 w-60 h-60 bg-blue-500/10 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-700" />
-                        
+                    {/* ── Hero Header ── */}
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] p-6 shadow-xl shadow-blue-900/20">
+                        <div className="pointer-events-none absolute -right-12 -top-12 h-56 w-56 rounded-full bg-white/5" />
+                        <div className="pointer-events-none absolute -right-4 -top-4 h-32 w-32 rounded-full bg-white/5" />
+                        <div className="pointer-events-none absolute bottom-0 left-1/3 h-48 w-48 -translate-y-1/4 rounded-full bg-blue-400/10 blur-2xl" />
                         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-center gap-4">
-                                <div className="grid h-14 w-14 place-items-center rounded-xl bg-white/10 backdrop-blur-md shadow-inner border border-white/10 group-hover:rotate-3 transition-transform duration-300">
-                                    <BarChart3 className="h-7 w-7 text-white" />
+                                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/10 text-white shadow-inner backdrop-blur-sm ring-1 ring-white/20">
+                                    <BarChart3 className="h-7 w-7" />
                                 </div>
-                                <div className="leading-tight">
-                                    <div className="text-xl font-bold tracking-tight">
+                                <div>
+                                    <h1 className="text-2xl font-black tracking-tight text-white">
                                         Welcome Back, {user?.name || 'Administrator'}! 👋
-                                    </div>
-                                    <div className="text-sm text-white/80 mt-1 flex items-center gap-1.5 font-medium">
-                                        <span>System Command Center</span>
-                                        <span className="inline-block h-1 w-1 rounded-full bg-blue-300" />
-                                        <span className="text-blue-200">Data & Student Attendance Management</span>
-                                    </div>
+                                    </h1>
+                                    <p className="mt-0.5 text-sm font-medium text-blue-200/80">
+                                        System Command Center • Data & Student Attendance Management
+                                    </p>
                                 </div>
                             </div>
                             
                             {/* Live Date Indicator widget */}
-                            <div className="hidden md:flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 self-center">
+                            <div className="hidden md:flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/10 ring-1 ring-white/20 self-center text-white">
                                 <CalendarDays className="h-4 w-4 text-blue-200" />
                                 <div className="text-xs font-semibold tracking-wide uppercase text-white/90">
                                     {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
@@ -264,100 +262,74 @@ export default function AdminDashboard({ user, recentActivities, recentEvents }:
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                        {kpis.map((kpi, index) => {
-                            // Map of colors for different KPI indicators
-                            const themeMap: Record<string, { bg: string, text: string, iconBg: string, iconText: string, border: string }> = {
-                                "Today's Attendance": { 
-                                    bg: "bg-indigo-50/50 dark:bg-indigo-500/10", 
-                                    text: "text-indigo-700 dark:text-indigo-300",
-                                    iconBg: "bg-indigo-500/10 dark:bg-indigo-500/20",
-                                    iconText: "text-indigo-600 dark:text-indigo-400",
-                                    border: "border-indigo-100 dark:border-indigo-500/20"
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        {kpis.map((kpi) => {
+                            const themeMap: Record<string, {
+                                glow: string;
+                                subtext: string;
+                                subtextColor: string;
+                                iconBg: string;
+                                barGradient: string;
+                            }> = {
+                                "Today's Attendance": {
+                                    glow: 'bg-blue-500/5',
+                                    subtext: 'Scanned Today',
+                                    subtextColor: 'text-blue-600 dark:text-blue-400',
+                                    iconBg: 'bg-blue-500/10 text-blue-600 ring-1 ring-blue-200/50 dark:bg-blue-500/20 dark:text-blue-400 dark:ring-blue-900/30',
+                                    barGradient: 'from-blue-400 to-blue-600',
                                 },
-                                "Admission Slips": { 
-                                    bg: "bg-emerald-50/50 dark:bg-emerald-500/10", 
-                                    text: "text-emerald-700 dark:text-emerald-300",
-                                    iconBg: "bg-emerald-500/10 dark:bg-emerald-500/20",
-                                    iconText: "text-emerald-600 dark:text-emerald-400",
-                                    border: "border-emerald-100 dark:border-emerald-500/20"
+                                "Admission Slips": {
+                                    glow: 'bg-emerald-500/5',
+                                    subtext: 'Generated Slips',
+                                    subtextColor: 'text-emerald-600 dark:text-emerald-400',
+                                    iconBg: 'bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-200/50 dark:bg-emerald-500/20 dark:text-emerald-400 dark:ring-emerald-900/30',
+                                    barGradient: 'from-emerald-400 to-emerald-600',
                                 },
-                                "Active Cases": { 
-                                    bg: "bg-rose-50/50 dark:bg-rose-500/10", 
-                                    text: "text-rose-700 dark:text-rose-300",
-                                    iconBg: "bg-rose-500/10 dark:bg-rose-500/20",
-                                    iconText: "text-rose-600 dark:text-rose-400",
-                                    border: "border-rose-100 dark:border-rose-500/20"
+                                "Active Cases": {
+                                    glow: 'bg-rose-500/5',
+                                    subtext: 'Incident Records',
+                                    subtextColor: 'text-rose-600 dark:text-rose-400',
+                                    iconBg: 'bg-rose-500/10 text-rose-600 ring-1 ring-rose-200/50 dark:bg-rose-500/20 dark:text-rose-400 dark:ring-rose-900/30',
+                                    barGradient: 'from-rose-400 to-rose-600',
                                 },
-                                "Evaluation Surveys": { 
-                                    bg: "bg-amber-50/50 dark:bg-amber-500/10", 
-                                    text: "text-amber-700 dark:text-amber-300",
-                                    iconBg: "bg-amber-500/10 dark:bg-amber-500/20",
-                                    iconText: "text-amber-600 dark:text-amber-400",
-                                    border: "border-amber-100 dark:border-amber-500/20"
-                                }
+                                "Evaluation Surveys": {
+                                    glow: 'bg-amber-500/5',
+                                    subtext: 'Form Feedback',
+                                    subtextColor: 'text-amber-600 dark:text-amber-400',
+                                    iconBg: 'bg-amber-500/10 text-amber-600 ring-1 ring-amber-200/50 dark:bg-amber-500/20 dark:text-amber-400 dark:ring-amber-900/30',
+                                    barGradient: 'from-amber-400 to-amber-600',
+                                },
                             };
 
                             const theme = themeMap[kpi.title] || themeMap["Today's Attendance"];
-                            
-                            return (
-                                <Card 
-                                    key={kpi.title} 
-                                    onClick={() => router.visit(kpi.href)}
-                                    className={`overflow-hidden border ${theme.border} ${theme.bg} shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer hover:-translate-y-1 flex flex-col justify-between group`}
-                                >
-                                    <CardContent className="relative pt-5 pb-4 px-5 flex-1">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div>
-                                                <div className={`text-xs font-bold uppercase tracking-wider opacity-80 ${theme.text}`}>
-                                                    {kpi.title}
-                                                </div>
-                                                <div className="mt-2 flex items-baseline gap-2">
-                                                    <div className="text-3xl font-black leading-none text-slate-900 dark:text-white">
-                                                        {kpi.value}
-                                                    </div>
-                                                    <div className={`text-[10px] font-bold ${theme.text} opacity-60`}>
-                                                        Total
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className={`grid h-12 w-12 place-items-center rounded-2xl ${theme.iconBg} ${theme.iconText} shadow-inner group-hover:scale-110 transition-transform duration-300`}>
-                                                {React.createElement(kpi.icon, { className: 'h-6 w-6' })}
-                                            </div>
-                                        </div>
-                                    </CardContent>
 
-                                    {/* Action Footers */}
-                                    {(kpi.title === 'Evaluation Surveys' || kpi.title === 'Admission Slips') ? (
-                                        <div className="flex divide-x divide-white/20 dark:divide-slate-800 border-t border-white/20 dark:border-slate-800">
-                                            {kpi.title === 'Evaluation Surveys' && (
-                                                <Link 
-                                                    href={adminEvaluation()} 
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    className="flex-1 py-2 text-center text-[11px] font-bold text-amber-700 dark:text-amber-400 hover:bg-white/30 dark:hover:bg-amber-500/20 transition-colors flex items-center justify-center gap-1.5"
-                                                >
-                                                    <PlusCircle className="h-4 w-4" />
-                                                    View Evaluations
-                                                </Link>
-                                            )}
-                                            {kpi.title === 'Admission Slips' && (
-                                                <Link 
-                                                    href={adminAdmissionSlip() + '?open_add=true'} 
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    className="flex-1 py-2 text-center text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:bg-white/30 dark:hover:bg-emerald-500/20 transition-colors flex items-center justify-center gap-1.5"
-                                                >
-                                                    <PlusCircle className="h-4 w-4" />
-                                                    Create New Slip
-                                                </Link>
-                                            )}
+                            return (
+                                <div
+                                    key={kpi.title}
+                                    onClick={() => router.visit(kpi.href)}
+                                    className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800 cursor-pointer"
+                                >
+                                    <div className={`pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full ${theme.glow}`} />
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                                                {kpi.title}
+                                            </p>
+                                            <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
+                                                {kpi.value}
+                                            </p>
+                                            <p className={`mt-1 text-xs font-semibold ${theme.subtextColor}`}>
+                                                {theme.subtext}
+                                            </p>
                                         </div>
-                                    ) : (
-                                        <div className="px-5 py-2 border-t border-white/20 dark:border-slate-800 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider group-hover:text-slate-900 dark:group-hover:text-white transition-colors flex items-center justify-between">
-                                            <span>Manage Module</span>
-                                            <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
+                                        <div className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${theme.iconBg} transition-transform duration-300 group-hover:scale-110`}>
+                                            {React.createElement(kpi.icon, { className: 'h-5 w-5' })}
                                         </div>
-                                    )}
-                                </Card>
+                                    </div>
+                                    <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                        <div className={`h-full w-full bg-gradient-to-r ${theme.barGradient} rounded-full`} />
+                                    </div>
+                                </div>
                             );
                         })}
                     </div>
