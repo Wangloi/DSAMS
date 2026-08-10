@@ -182,44 +182,133 @@ export default function AdminAnalyticsPage(props: Props) {
         return data;
     }, [reportRange, analyticsData, reportSearch]);
 
+    const totalAttendance = useMemo(() => {
+        return attendanceData.reduce((acc, curr) => acc + (curr.value || 0), 0);
+    }, [attendanceData]);
+
+    const totalViolations = useMemo(() => {
+        const vStats = analyticsData.violationStats || { warning: 0, suspension: 0, exclusion: 0, expulsion: 0 };
+        return vStats.warning + vStats.suspension + vStats.exclusion + vStats.expulsion;
+    }, [analyticsData.violationStats]);
+
+    const avgRating = analyticsData.evaluationSummary?.average || 0;
+    const totalInventory = analyticsData.inventory?.total || 0;
+
     return (
         <AdminLayout breadcrumbs={breadcrumbs}>
             <Head title="Analytics" />
             <div className="min-h-[calc(100vh-4rem)] bg-slate-100 dark:bg-slate-900">
                 <div className="flex w-full flex-col gap-6 px-6 py-6">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 dark:border-slate-800 pb-6">
-                        <div className="flex items-center gap-4">
-                            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-600/10 text-blue-600 dark:bg-blue-600/20 dark:text-blue-400">
-                                <BarChart3 className="h-6 w-6" />
+                    {/* Hero Header Banner */}
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] p-6 shadow-xl shadow-blue-900/20">
+                        <div className="pointer-events-none absolute -right-12 -top-12 h-56 w-56 rounded-full bg-white/5" />
+                        <div className="pointer-events-none absolute -right-4 -top-4 h-32 w-32 rounded-full bg-white/5" />
+                        <div className="pointer-events-none absolute bottom-0 left-1/3 h-48 w-48 -translate-y-1/4 rounded-full bg-blue-400/10 blur-2xl" />
+                        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/10 text-white shadow-inner backdrop-blur-sm ring-1 ring-white/20">
+                                    <BarChart3 className="h-7 w-7" />
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl font-black tracking-tight text-white">
+                                        Analytics Dashboard
+                                    </h1>
+                                    <p className="mt-0.5 text-sm font-medium text-blue-200/80">
+                                        Comprehensive insights and system performance metrics
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                                    Analytics Dashboard
-                                </h1>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">
-                                    Comprehensive insights and system performance metrics
-                                </p>
+                            <div className="flex items-center gap-3">
+                                <div className="hidden text-right sm:block text-white">
+                                    <div className="text-[10px] font-bold uppercase tracking-wider text-blue-200/80">Last updated</div>
+                                    <div className="text-xs font-bold text-white">{lastUpdated.toLocaleTimeString()}</div>
+                                </div>
+                                <Button
+                                    type="button"
+                                    onClick={refreshData}
+                                    disabled={isRefreshing}
+                                    className={cn(
+                                        "h-11 shrink-0 gap-2 rounded-xl px-5 font-bold transition-all duration-200 shadow-md",
+                                        hasUnsavedChanges
+                                            ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-orange-500/20 animate-pulse'
+                                            : 'bg-white text-[#1e3a8a] hover:bg-blue-50 shadow-md'
+                                    )}
+                                >
+                                    <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+                                    {hasUnsavedChanges ? 'Apply Filters' : 'Refresh Data'}
+                                </Button>
                             </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <div className="hidden text-right sm:block">
-                                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Last updated</div>
-                                <div className="text-xs font-bold text-slate-600 dark:text-slate-400">{lastUpdated.toLocaleTimeString()}</div>
+                    </div>
+
+                    {/* KPI Summary Cards Grid */}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
+                            <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-blue-500/5" />
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Total Check-Ins</p>
+                                    <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">{totalAttendance}</p>
+                                    <p className="mt-1 text-xs font-semibold text-blue-600 dark:text-blue-400">Attendance Activity</p>
+                                </div>
+                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-500/10 text-blue-600 ring-1 ring-blue-200/50 dark:bg-blue-500/20 dark:text-blue-400 dark:ring-blue-900/30 transition-transform duration-300 group-hover:scale-110">
+                                    <Users className="h-5 w-5" />
+                                </div>
                             </div>
-                            <Button
-                                type="button"
-                                onClick={refreshData}
-                                disabled={isRefreshing}
-                                className={cn(
-                                    "h-11 shrink-0 gap-2 rounded-xl px-5 font-bold transition-all duration-200 shadow-md",
-                                    hasUnsavedChanges
-                                        ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-orange-500/20 animate-pulse'
-                                        : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/20'
-                                )}
-                            >
-                                <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
-                                {hasUnsavedChanges ? 'Apply Filters' : 'Refresh Data'}
-                            </Button>
+                            <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                <div className="h-full w-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full" />
+                            </div>
+                        </div>
+
+                        <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
+                            <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-amber-500/5" />
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Disciplinary Cases</p>
+                                    <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">{totalViolations}</p>
+                                    <p className="mt-1 text-xs font-semibold text-amber-600 dark:text-amber-400">Recorded Incidents</p>
+                                </div>
+                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-500/10 text-amber-600 ring-1 ring-amber-200/50 dark:bg-amber-500/20 dark:text-amber-400 dark:ring-amber-900/30 transition-transform duration-300 group-hover:scale-110">
+                                    <ShieldAlert className="h-5 w-5" />
+                                </div>
+                            </div>
+                            <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                <div className="h-full w-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full" />
+                            </div>
+                        </div>
+
+                        <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
+                            <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-emerald-500/5" />
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Avg Evaluation</p>
+                                    <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">{avgRating} <span className="text-xl font-bold text-slate-400">/ 5.0</span></p>
+                                    <p className="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">Student Satisfaction</p>
+                                </div>
+                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-200/50 dark:bg-emerald-500/20 dark:text-emerald-400 dark:ring-emerald-900/30 transition-transform duration-300 group-hover:scale-110">
+                                    <TrendingUp className="h-5 w-5" />
+                                </div>
+                            </div>
+                            <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                <div className="h-full w-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full" />
+                            </div>
+                        </div>
+
+                        <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
+                            <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-violet-500/5" />
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Total Inventory</p>
+                                    <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">{totalInventory}</p>
+                                    <p className="mt-1 text-xs font-semibold text-violet-600 dark:text-violet-400">Tracked Equipment</p>
+                                </div>
+                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-violet-500/10 text-violet-600 ring-1 ring-violet-200/50 dark:bg-violet-500/20 dark:text-violet-400 dark:ring-violet-900/30 transition-transform duration-300 group-hover:scale-110">
+                                    <BarChart3 className="h-5 w-5" />
+                                </div>
+                            </div>
+                            <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                <div className="h-full w-full bg-gradient-to-r from-violet-400 to-violet-600 rounded-full" />
+                            </div>
                         </div>
                     </div>
 
@@ -294,7 +383,7 @@ export default function AdminAnalyticsPage(props: Props) {
                     {/* Analytics Main Cards Grid */}
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                         {/* Attendance Trends */}
-                        <Card className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all duration-300 hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900/60 dark:backdrop-blur-xl">
+                        <Card className="group relative overflow-hidden rounded-2xl border-0 bg-white shadow-lg ring-1 ring-slate-200 transition-all duration-300 hover:shadow-xl dark:bg-[#0B192C]/50 dark:ring-slate-800">
                             <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-500" />
                             <CardHeader className="flex flex-row items-center justify-between pb-2 pt-6">
                                 <div className="space-y-1">
@@ -342,7 +431,7 @@ export default function AdminAnalyticsPage(props: Props) {
                         </Card>
 
                         {/* Violation Trends */}
-                        <Card className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all duration-300 hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900/60 dark:backdrop-blur-xl">
+                        <Card className="group relative overflow-hidden rounded-2xl border-0 bg-white shadow-lg ring-1 ring-slate-200 transition-all duration-300 hover:shadow-xl dark:bg-[#0B192C]/50 dark:ring-slate-800">
                             <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-amber-500 via-violet-500 to-rose-500" />
                             <CardHeader className="flex flex-row items-center justify-between pb-2 pt-6">
                                 <div className="space-y-1">
@@ -393,7 +482,7 @@ export default function AdminAnalyticsPage(props: Props) {
                         </Card>
 
                         {/* Evaluation Sentiment */}
-                        <Card className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all duration-300 hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900/60 dark:backdrop-blur-xl">
+                        <Card className="group relative overflow-hidden rounded-2xl border-0 bg-white shadow-lg ring-1 ring-slate-200 transition-all duration-300 hover:shadow-xl dark:bg-[#0B192C]/50 dark:ring-slate-800">
                             <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
                             <CardHeader className="flex flex-row items-center justify-between pb-2 pt-6">
                                 <div className="space-y-1">
@@ -455,7 +544,7 @@ export default function AdminAnalyticsPage(props: Props) {
                         </Card>
 
                         {/* Evaluation Ratings Distribution */}
-                        <Card className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all duration-300 hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900/60 dark:backdrop-blur-xl">
+                        <Card className="group relative overflow-hidden rounded-2xl border-0 bg-white shadow-lg ring-1 ring-slate-200 transition-all duration-300 hover:shadow-xl dark:bg-[#0B192C]/50 dark:ring-slate-800">
                             <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500" />
                             <CardHeader className="flex flex-row items-center justify-between pb-2 pt-6">
                                 <div className="space-y-1">

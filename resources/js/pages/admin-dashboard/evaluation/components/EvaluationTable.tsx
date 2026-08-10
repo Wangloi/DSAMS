@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Archive, BarChart3, Calendar, Eye, Pencil, QrCode, Search, Send, XCircle } from 'lucide-react';
+import { Archive, BarChart3, Calendar, Eye, Pencil, Search, Send, XCircle } from 'lucide-react';
 import { EvaluationForm, EventOption } from './types';
 
 interface EvaluationTableProps {
@@ -13,7 +13,7 @@ interface EvaluationTableProps {
     events: EventOption[];
     handlePublish: (evaluation: EvaluationForm) => void;
     handleUnpublish: (evaluation: EvaluationForm) => void;
-    handleDownloadQR: (evaluation: EvaluationForm) => void;
+    handleDownloadQR?: (evaluation: EvaluationForm) => void;
     handlePreviewEvaluation: (evaluation: EvaluationForm) => void;
     handleEditEvaluation: (evaluation: EvaluationForm) => void;
     handleArchiveEvaluation: (evaluation: EvaluationForm) => void;
@@ -24,7 +24,6 @@ export default function EvaluationTable({
     events,
     handlePublish,
     handleUnpublish,
-    handleDownloadQR,
     handlePreviewEvaluation,
     handleEditEvaluation,
     handleArchiveEvaluation,
@@ -194,17 +193,7 @@ export default function EvaluationTable({
                                                                     <XCircle className="h-4 w-4" />
                                                                 </Button>
                                                             )}
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-sky-50 hover:text-sky-600 dark:text-slate-400 dark:hover:bg-sky-950/30 dark:hover:text-sky-300"
-                                                                onClick={() => handleDownloadQR(evaluation)}
-                                                                title="Download QR Code"
-                                                                aria-label="Download QR Code"
-                                                            >
-                                                                <QrCode className="h-4 w-4" />
-                                                            </Button>
+
                                                             <Button
                                                                 type="button"
                                                                 variant="ghost"

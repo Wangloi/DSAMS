@@ -1,5 +1,5 @@
 import { Head, router, usePage } from '@inertiajs/react';
-import { Activity, Search, Trash2, Users, ChevronLeft, ChevronRight, RefreshCw, Pause, Play } from 'lucide-react';
+import { Activity, Search, Trash2, Users, ChevronLeft, ChevronRight, RefreshCw, Pause, Play, CalendarDays } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -139,108 +139,89 @@ export default function AdminActivityLogPage() {
             <Head title="Activity Log" />
             <div className="min-h-[calc(100vh-4rem)] bg-slate-100 dark:bg-slate-900">
                 <div className="flex w-full flex-col gap-6 px-6 py-6">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 dark:border-slate-800 pb-6">
-                        <div className="flex items-center gap-4">
-                            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-600/10 text-blue-600 dark:bg-blue-600/20 dark:text-blue-400">
-                                <Activity className="h-6 w-6" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                                    Activity Log
-                                </h1>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">
-                                    Monitor system-wide actions and security updates
-                                </p>
-                            </div>
-                        </div>
-                        <div className="hidden sm:flex sm:items-center sm:gap-3 text-right">
-                            <div>
-                                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-end gap-1">
-                                    {isRefreshing && <RefreshCw className="h-3 w-3 animate-spin text-blue-500" />}
-                                    {isAutoRefreshEnabled ? 'Auto-updating' : 'Update paused'}
+                    {/* Hero Header Banner */}
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] p-6 shadow-xl shadow-blue-900/20">
+                        <div className="pointer-events-none absolute -right-12 -top-12 h-56 w-56 rounded-full bg-white/5" />
+                        <div className="pointer-events-none absolute -right-4 -top-4 h-32 w-32 rounded-full bg-white/5" />
+                        <div className="pointer-events-none absolute bottom-0 left-1/3 h-48 w-48 -translate-y-1/4 rounded-full bg-blue-400/10 blur-2xl" />
+                        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/10 text-white shadow-inner backdrop-blur-sm ring-1 ring-white/20">
+                                    <Activity className="h-7 w-7" />
                                 </div>
-                                <div className="text-xs font-bold text-slate-600 dark:text-slate-400">
-                                    {lastUpdated.toLocaleTimeString()}
+                                <div>
+                                    <h1 className="text-2xl font-black tracking-tight text-white">
+                                        Activity Log
+                                    </h1>
+                                    <p className="mt-0.5 text-sm font-medium text-blue-200/80">
+                                        Monitor system-wide actions and security updates in real-time
+                                    </p>
                                 </div>
                             </div>
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-10 w-10 shrink-0 rounded-xl border-slate-200 dark:border-slate-800 text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-300"
-                                onClick={() => setIsAutoRefreshEnabled(!isAutoRefreshEnabled)}
-                                title={isAutoRefreshEnabled ? "Pause auto-refresh" : "Resume auto-refresh"}
-                            >
-                                {isAutoRefreshEnabled ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
-                            </Button>
+                            <div className="hidden sm:flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/10 ring-1 ring-white/20 text-white">
+                                <CalendarDays className="h-4 w-4 text-blue-200" />
+                                <div className="text-xs font-semibold tracking-wide uppercase text-white/90">
+                                    {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                        {/* Total Logs */}
-                        <Card className="overflow-hidden border border-blue-100 bg-blue-50/50 shadow-sm dark:border-blue-500/20 dark:bg-blue-500/10 group">
-                            <CardContent className="p-5">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                        <div className="text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 opacity-70">
-                                            Total Activities
-                                        </div>
-                                        <div className="mt-2 flex items-baseline gap-2">
-                                            <div className="text-3xl font-black text-slate-900 dark:text-white">
-                                                {stats.total}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 shadow-inner group-hover:scale-110 transition-transform duration-300">
-                                        <Activity className="h-6 w-6" />
-                                    </div>
+                    {/* KPI Cards Grid */}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
+                            <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-blue-500/5" />
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Total Activities</p>
+                                    <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">{stats.total}</p>
+                                    <p className="mt-1 text-xs font-semibold text-blue-600 dark:text-blue-400">System Logs</p>
                                 </div>
-                            </CardContent>
-                        </Card>
+                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-500/10 text-blue-600 ring-1 ring-blue-200/50 dark:bg-blue-500/20 dark:text-blue-400 dark:ring-blue-900/30 transition-transform duration-300 group-hover:scale-110">
+                                    <Activity className="h-5 w-5" />
+                                </div>
+                            </div>
+                            <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                <div className="h-full w-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full" />
+                            </div>
+                        </div>
 
-                        {/* Admin Logs */}
-                        <Card className="overflow-hidden border border-emerald-100 bg-emerald-50/50 shadow-sm dark:border-emerald-500/20 dark:bg-emerald-500/10 group">
-                            <CardContent className="p-5">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                        <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 opacity-70">
-                                            Admin Actions
-                                        </div>
-                                        <div className="mt-2 flex items-baseline gap-2">
-                                            <div className="text-3xl font-black text-slate-900 dark:text-white">
-                                                {stats.admin}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 shadow-inner group-hover:scale-110 transition-transform duration-300">
-                                        <Users className="h-6 w-6" />
-                                    </div>
+                        <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
+                            <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-emerald-500/5" />
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Admin Actions</p>
+                                    <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">{stats.admin}</p>
+                                    <p className="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">Administrative Logs</p>
                                 </div>
-                            </CardContent>
-                        </Card>
+                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-200/50 dark:bg-emerald-500/20 dark:text-emerald-400 dark:ring-emerald-900/30 transition-transform duration-300 group-hover:scale-110">
+                                    <Users className="h-5 w-5" />
+                                </div>
+                            </div>
+                            <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                <div className="h-full w-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full" />
+                            </div>
+                        </div>
 
-                        {/* Student Logs */}
-                        <Card className="overflow-hidden border border-amber-100 bg-amber-50/50 shadow-sm dark:border-amber-500/20 dark:bg-amber-500/10 group">
-                            <CardContent className="p-5">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                        <div className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 opacity-70">
-                                            Student Logs
-                                        </div>
-                                        <div className="mt-2 flex items-baseline gap-2">
-                                            <div className="text-3xl font-black text-slate-900 dark:text-white">
-                                                {stats.student}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 shadow-inner group-hover:scale-110 transition-transform duration-300">
-                                        <Users className="h-6 w-6" />
-                                    </div>
+                        <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
+                            <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-amber-500/5" />
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Student Logs</p>
+                                    <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">{stats.student}</p>
+                                    <p className="mt-1 text-xs font-semibold text-amber-600 dark:text-amber-400">Student Activity</p>
                                 </div>
-                            </CardContent>
-                        </Card>
+                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-500/10 text-amber-600 ring-1 ring-amber-200/50 dark:bg-amber-500/20 dark:text-amber-400 dark:ring-amber-900/30 transition-transform duration-300 group-hover:scale-110">
+                                    <Users className="h-5 w-5" />
+                                </div>
+                            </div>
+                            <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                <div className="h-full w-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full" />
+                            </div>
+                        </div>
                     </div>
 
-                    <Card className="w-full bg-white dark:bg-[#0B192C]/50 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                    <Card className="w-full border-0 bg-white shadow-lg ring-1 ring-slate-200 dark:bg-[#0B192C]/50 dark:ring-slate-800 rounded-2xl overflow-hidden">
                         <CardHeader className="pb-6 border-b border-slate-100 dark:border-slate-800">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div>

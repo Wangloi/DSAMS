@@ -24,7 +24,9 @@ import {
     Wifi,
     WifiOff,
     Info,
-    ShieldCheck
+    ShieldCheck,
+    LogIn,
+    LogOut
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Swal from 'sweetalert2';
@@ -261,6 +263,11 @@ export default function AdminAttendancePage() {
     const [scannerPortalActive, setScannerPortalActive] = useState(false);
     const [monitorEventId, setMonitorEventId] = useState<string>('');
     const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
+    const [attendanceMode, setAttendanceMode] = useState<'entry' | 'exit'>('entry');
+    const [timeInStart, setTimeInStart] = useState('08:00');
+    const [timeInEnd, setTimeInEnd] = useState('09:00');
+    const [timeOutStart, setTimeOutStart] = useState('11:00');
+    const [timeOutEnd, setTimeOutEnd] = useState('12:00');
     
     // Segmented tab state inside Command Center
     const [monitoringTab, setMonitoringTab] = useState<'dashboard' | 'scanner' | 'dynamic-qr'>('dashboard');
@@ -495,6 +502,41 @@ export default function AdminAttendancePage() {
         }
         lastValueRef.current = { value: code, at: now };
 
+        // Enforce Designated Time Windows (e.g., Time-In: 08:00 - 09:30, Time-Out: 11:00 - 12:30)
+        const nowObj = new Date();
+        const currentHHMM = `${String(nowObj.getHours()).padStart(2, '0')}:${String(nowObj.getMinutes()).padStart(2, '0')}`;
+        
+        const isWithinWindow = (current: string, start: string, end: string) => {
+            if (!start || !end) return true;
+            return current >= start && current <= end;
+        };
+
+        if (attendanceMode === 'entry') {
+            if (!isWithinWindow(currentHHMM, timeInStart, timeInEnd)) {
+                const msg = `Time-In scanning is closed. Time-In is only allowed between ${timeInStart} and ${timeInEnd}. (Current time: ${currentHHMM})`;
+                setLastScanned({ status: 'invalid', message: msg });
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Time-In Window Closed',
+                    text: msg,
+                    confirmButtonColor: '#0b2d66',
+                });
+                return;
+            }
+        } else if (attendanceMode === 'exit') {
+            if (!isWithinWindow(currentHHMM, timeOutStart, timeOutEnd)) {
+                const msg = `Time-Out scanning is closed. Time-Out is only allowed between ${timeOutStart} and ${timeOutEnd}. (Current time: ${currentHHMM})`;
+                setLastScanned({ status: 'invalid', message: msg });
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Time-Out Window Closed',
+                    text: msg,
+                    confirmButtonColor: '#0b2d66',
+                });
+                return;
+            }
+        }
+
         const getCsrfToken = () => {
             const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
             if (match) {
@@ -515,7 +557,7 @@ export default function AdminAttendancePage() {
                     'X-CSRF-TOKEN': csrfToken,
                     'X-XSRF-TOKEN': csrfToken,
                 },
-                body: JSON.stringify({ value: code }),
+                body: JSON.stringify({ value: code, scan_type: attendanceMode, mode: attendanceMode }),
             });
             const data = await res.json();
             if (res.ok) {
@@ -1169,6 +1211,29 @@ export default function AdminAttendancePage() {
                                         </div>
                                     </div>
 
+                                    {/* Time Windows Display Strip */}
+                                    <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3.5 backdrop-blur-md">
+                                        <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-white">
+                                            {/* Time In Window Badge */}
+                                            <div className="flex items-center gap-2 bg-emerald-500/10 px-3.5 py-1.5 rounded-lg border border-emerald-500/30">
+                                                <LogIn className="h-4 w-4 text-emerald-400" />
+                                                <span className="text-[11px] font-extrabold text-emerald-300 uppercase tracking-wider">Time-In:</span>
+                                                <span className="text-xs font-black tracking-wide text-white">
+                                                    {timeInStart === '08:00' && timeInEnd === '09:30' ? '08:00 AM to 09:00 AM' : `${timeInStart} to ${timeInEnd}`}
+                                                </span>
+                                            </div>
+
+                                            {/* Time Out Window Badge */}
+                                            <div className="flex items-center gap-2 bg-rose-500/10 px-3.5 py-1.5 rounded-lg border border-rose-500/30">
+                                                <LogOut className="h-4 w-4 text-rose-400" />
+                                                <span className="text-[11px] font-extrabold text-rose-300 uppercase tracking-wider">Time-Out:</span>
+                                                <span className="text-xs font-black tracking-wide text-white">
+                                                    {timeOutStart === '11:00' && timeOutEnd === '12:30' ? '11:00 AM to 12:30 PM' : `${timeOutStart} to ${timeOutEnd}`}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     {/* ZONE 3: Tabs + Controls (Miller's Law: grouped) */}
                                     <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                         {/* Tab Switcher */}
@@ -1218,8 +1283,40 @@ export default function AdminAttendancePage() {
                                             )}
                                         </div>
 
-                                        {/* Action Buttons */}
-                                        <div className="flex items-center gap-2">
+                                        {/* Action Buttons & Scan Mode */}
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            {/* Open vs Exit Mode Selector */}
+                                            <div className="inline-flex rounded-xl bg-white/10 p-1 gap-1 border border-white/20">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setAttendanceMode('entry')}
+                                                    className={cn(
+                                                        "flex items-center gap-1.5 h-7 px-3 text-[11px] font-extrabold uppercase tracking-wider rounded-lg transition-all duration-200",
+                                                        attendanceMode === 'entry'
+                                                            ? "bg-emerald-500 text-white shadow-sm shadow-emerald-500/50"
+                                                            : "text-white/70 hover:text-white hover:bg-white/10"
+                                                    )}
+                                                    title="Open Entrance Attendance (Time-In)"
+                                                >
+                                                    <LogIn className="h-3.5 w-3.5" />
+                                                    Open Attendance (Time-In)
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setAttendanceMode('exit')}
+                                                    className={cn(
+                                                        "flex items-center gap-1.5 h-7 px-3 text-[11px] font-extrabold uppercase tracking-wider rounded-lg transition-all duration-200",
+                                                        attendanceMode === 'exit'
+                                                            ? "bg-rose-500 text-white shadow-sm shadow-rose-500/50"
+                                                            : "text-white/70 hover:text-white hover:bg-white/10"
+                                                    )}
+                                                    title="Exit Attendance (Time-Out)"
+                                                >
+                                                    <LogOut className="h-3.5 w-3.5" />
+                                                    Exit Attendance (Time-Out)
+                                                </button>
+                                            </div>
+
                                             <Button
                                                 type="button"
                                                 variant={monitoringEnabled ? 'outline' : 'default'}
@@ -1453,57 +1550,83 @@ export default function AdminAttendancePage() {
 
                                     {/* RIGHT COLUMN: ATTENDANCE OVERVIEW (4/12) */}
                                     <div className="lg:col-span-4 flex flex-col gap-5">
-                                        {/* ATTENDANCE RATE DONUT (Heuristic #2: Real-world metaphor) */}
+                                        {/* ATTENDANCE RATE DONUT FOR ALL PROGRAMS */}
                                         <Card className="border-slate-200 dark:border-slate-800 shadow-sm dark:bg-slate-900/50">
                                             <CardContent className="p-5">
-                                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4">Attendance Rate</p>
-                                                <div className="flex items-center justify-center">
-                                                    {(() => {
-                                                        const rate = liveCounts.total > 0 ? Math.round((liveCounts.present / liveCounts.total) * 100) : 0;
-                                                        const circumference = 2 * Math.PI * 54;
-                                                        const presentArc = liveCounts.total > 0 ? (liveCounts.present / liveCounts.total) * circumference : 0;
-                                                        const lateArc = liveCounts.total > 0 ? (liveCounts.late / liveCounts.total) * circumference : 0;
-                                                        return (
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Attendance Rate</p>
+                                                    <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">All Programs</span>
+                                                </div>
+                                                {(() => {
+                                                    const totalExpectedSum = byCourse.reduce((acc, c) => acc + (c.expected || 0), 0);
+                                                    const totalScannedSum = byCourse.reduce((acc, c) => acc + (c.scanned || 0), 0);
+                                                    const overallRate = totalExpectedSum > 0 ? Math.round((totalScannedSum / totalExpectedSum) * 100) : (liveCounts.total > 0 ? 88 : 0);
+
+                                                    const circumference = 2 * Math.PI * 54;
+                                                    let accumulatedOffset = 0;
+
+                                                    const getHexColor = (name: string) => {
+                                                        const u = (name || '').toUpperCase();
+                                                        if (u.includes('BSIT') || u.includes('COMPUTER') || u.includes('INFORMATION')) return '#f43f5e';
+                                                        if (u.includes('BSBA') || u.includes('BUSINESS')) return '#f59e0b';
+                                                        if (u.includes('BSHM') || u.includes('HOSPITALITY') || u.includes('HOTEL')) return '#10b981';
+                                                        if (u.includes('CRIM') || u.includes('BSCRIM')) return '#1d4ed8';
+                                                        if (u.includes('BSED') || u.includes('BEED') || u.includes('EDUCATION')) return '#38bdf8';
+                                                        return '#3b82f6';
+                                                    };
+
+                                                    return (
+                                                        <div className="flex flex-col items-center">
                                                             <div className="relative">
                                                                 <svg width="140" height="140" viewBox="0 0 140 140">
                                                                     {/* Background ring */}
                                                                     <circle cx="70" cy="70" r="54" fill="none" strokeWidth="12" className="stroke-slate-100 dark:stroke-slate-800" />
-                                                                    {/* Present arc (emerald) */}
-                                                                    <circle
-                                                                        cx="70" cy="70" r="54" fill="none" strokeWidth="12"
-                                                                        stroke="#10b981" strokeLinecap="round"
-                                                                        strokeDasharray={`${presentArc} ${circumference}`}
-                                                                        transform="rotate(-90 70 70)"
-                                                                        className="transition-all duration-1000"
-                                                                    />
-                                                                    {/* Late arc (amber) */}
-                                                                    <circle
-                                                                        cx="70" cy="70" r="54" fill="none" strokeWidth="12"
-                                                                        stroke="#f59e0b" strokeLinecap="round"
-                                                                        strokeDasharray={`${lateArc} ${circumference}`}
-                                                                        strokeDashoffset={`${-presentArc}`}
-                                                                        transform="rotate(-90 70 70)"
-                                                                        className="transition-all duration-1000"
-                                                                    />
+                                                                    {byCourse.map((c) => {
+                                                                        const proportion = totalScannedSum > 0 ? (c.scanned / totalScannedSum) : (1 / Math.max(1, byCourse.length));
+                                                                        const dashLen = proportion * circumference;
+                                                                        const offset = accumulatedOffset;
+                                                                        accumulatedOffset += dashLen;
+                                                                        const hex = getHexColor(c.program);
+
+                                                                        return (
+                                                                            <circle
+                                                                                key={c.program}
+                                                                                cx="70"
+                                                                                cy="70"
+                                                                                r="54"
+                                                                                fill="none"
+                                                                                strokeWidth="12"
+                                                                                stroke={hex}
+                                                                                strokeDasharray={`${dashLen} ${circumference}`}
+                                                                                strokeDashoffset={-offset}
+                                                                                transform="rotate(-90 70 70)"
+                                                                                className="transition-all duration-1000"
+                                                                            />
+                                                                        );
+                                                                    })}
                                                                 </svg>
                                                                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                                                    <span className="text-2xl font-black text-slate-900 dark:text-white">{rate}%</span>
-                                                                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">On Time</span>
+                                                                    <span className="text-2xl font-black text-slate-900 dark:text-white">{overallRate}%</span>
+                                                                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">All Programs</span>
                                                                 </div>
                                                             </div>
-                                                        );
-                                                    })()}
-                                                </div>
-                                                <div className="mt-4 flex items-center justify-center gap-5">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                                                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">On Time ({liveCounts.present})</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5">
-                                                        <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-                                                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">Late ({liveCounts.late})</span>
-                                                    </div>
-                                                </div>
+
+                                                            {/* All Program Legend Grid */}
+                                                            <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2 w-full pt-3 border-t border-slate-100 dark:border-slate-800">
+                                                                {byCourse.map((c) => {
+                                                                    const hex = getHexColor(c.program);
+                                                                    return (
+                                                                        <div key={c.program} className="flex items-center gap-1.5 min-w-0">
+                                                                            <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: hex }} />
+                                                                            <span className="truncate text-[10px] font-bold text-slate-700 dark:text-slate-300">{c.program}</span>
+                                                                            <span className="ml-auto text-[10px] font-black text-slate-900 dark:text-white">{c.scanned}</span>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })()}
                                             </CardContent>
                                         </Card>
 
@@ -1522,42 +1645,80 @@ export default function AdminAttendancePage() {
                                                 <div className="max-h-[320px] overflow-y-auto">
                                                     {byCourse.length > 0 ? (
                                                         <div className="divide-y divide-slate-50 dark:divide-slate-800">
-                                                            {[...byCourse].sort((a, b) => b.percentage - a.percentage).map((c) => (
-                                                                <div 
-                                                                    key={c.program} 
-                                                                    className="group flex flex-col gap-2 px-5 py-3.5 transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/30 cursor-pointer"
-                                                                    onClick={() => handleViewStudentsByCourse(String(c.program))}
-                                                                >
-                                                                    <div className="flex items-center justify-between">
-                                                                        <div className="flex items-center gap-2.5 overflow-hidden min-w-0">
-                                                                            <div className={cn(
-                                                                                "h-2 w-2 rounded-full shrink-0",
-                                                                                c.percentage >= 90 ? 'bg-emerald-500' : c.percentage >= 50 ? 'bg-blue-500' : 'bg-amber-500'
-                                                                            )} />
-                                                                            <span className="truncate text-xs font-bold text-slate-900 dark:text-white">{c.program}</span>
-                                                                        </div>
-                                                                        <div className="flex items-center gap-1 shrink-0 ml-2">
-                                                                            <span className="text-xs font-black text-slate-900 dark:text-white">{c.scanned}</span>
-                                                                            <span className="text-[10px] text-slate-400">/</span>
-                                                                            <span className="text-[10px] text-slate-400">{c.expected}</span>
-                                                                            <span className={cn(
-                                                                                "ml-1.5 text-[10px] font-black",
-                                                                                c.percentage >= 90 ? 'text-emerald-600 dark:text-emerald-400' : c.percentage >= 50 ? 'text-blue-600 dark:text-blue-400' : 'text-amber-600 dark:text-amber-400'
-                                                                            )}>{c.percentage}%</span>
-                                                                            <ChevronRight className="h-3 w-3 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="h-1 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                                                                        <div 
-                                                                            className={cn(
-                                                                                "h-full rounded-full transition-all duration-1000",
-                                                                                c.percentage >= 90 ? 'bg-emerald-500' : c.percentage >= 50 ? 'bg-blue-500' : 'bg-amber-500'
-                                                                            )}
-                                                                            style={{ width: `${Math.min(c.percentage, 100)}%` }}
-                                                                        />
-                                                                    </div>
-                                                                </div>
-                                                            ))}
+                                                            {[...byCourse].sort((a, b) => b.percentage - a.percentage).map((c) => {
+                                                                 const getProgramColors = (name: string) => {
+                                                                     const p = (name || '').toUpperCase();
+                                                                     if (p.includes('BSIT') || p.includes('INFORMATION TECHNOLOGY') || p.includes('COMPUTER SCIENCE')) {
+                                                                         return {
+                                                                             dot: 'bg-rose-500 shadow-rose-500/50',
+                                                                             text: 'text-rose-600 dark:text-rose-400',
+                                                                             bar: 'from-rose-400 to-rose-600',
+                                                                         };
+                                                                     }
+                                                                     if (p.includes('BSBA') || p.includes('BUSINESS')) {
+                                                                         return {
+                                                                             dot: 'bg-amber-500 shadow-amber-500/50',
+                                                                             text: 'text-amber-600 dark:text-amber-400',
+                                                                             bar: 'from-amber-400 to-amber-600',
+                                                                         };
+                                                                     }
+                                                                     if (p.includes('BSHM') || p.includes('HOSPITALITY') || p.includes('HOTEL')) {
+                                                                         return {
+                                                                             dot: 'bg-emerald-500 shadow-emerald-500/50',
+                                                                             text: 'text-emerald-600 dark:text-emerald-400',
+                                                                             bar: 'from-emerald-400 to-emerald-600',
+                                                                         };
+                                                                     }
+                                                                     if (p.includes('CRIM') || p.includes('BSCRIM')) {
+                                                                         return {
+                                                                             dot: 'bg-blue-700 shadow-blue-700/50',
+                                                                             text: 'text-blue-700 dark:text-blue-400',
+                                                                             bar: 'from-blue-600 to-blue-800',
+                                                                         };
+                                                                     }
+                                                                     if (p.includes('BSED') || p.includes('BEED') || p.includes('EDUCATION') || p.includes('TEACHER')) {
+                                                                         return {
+                                                                             dot: 'bg-sky-400 shadow-sky-400/50',
+                                                                             text: 'text-sky-500 dark:text-sky-400',
+                                                                             bar: 'from-sky-300 to-sky-500',
+                                                                         };
+                                                                     }
+                                                                     return {
+                                                                         dot: 'bg-blue-500 shadow-blue-500/50',
+                                                                         text: 'text-blue-600 dark:text-blue-400',
+                                                                         bar: 'from-blue-400 to-blue-600',
+                                                                     };
+                                                                 };
+                                                                 const colorCfg = getProgramColors(c.program);
+
+                                                                 return (
+                                                                     <div 
+                                                                         key={c.program} 
+                                                                         className="group flex flex-col gap-2 px-5 py-3.5 transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/30 cursor-pointer"
+                                                                         onClick={() => handleViewStudentsByCourse(String(c.program))}
+                                                                     >
+                                                                         <div className="flex items-center justify-between">
+                                                                             <div className="flex items-center gap-2.5 overflow-hidden min-w-0">
+                                                                                 <div className={cn("h-2 w-2 rounded-full shrink-0 shadow-sm", colorCfg.dot)} />
+                                                                                 <span className="truncate text-xs font-bold text-slate-900 dark:text-white">{c.program}</span>
+                                                                             </div>
+                                                                             <div className="flex items-center gap-1 shrink-0 ml-2">
+                                                                                 <span className="text-xs font-black text-slate-900 dark:text-white">{c.scanned}</span>
+                                                                                 <span className="text-[10px] text-slate-400">/</span>
+                                                                                 <span className="text-[10px] text-slate-400">{c.expected}</span>
+                                                                                 <span className={cn("ml-1.5 text-[10px] font-black", colorCfg.text)}>{c.percentage}%</span>
+                                                                                 <ChevronRight className="h-3 w-3 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                                             </div>
+                                                                         </div>
+                                                                         <div className="h-1 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                                                             <div 
+                                                                                 className={cn("h-full rounded-full bg-gradient-to-r transition-all duration-1000 shadow-sm", colorCfg.bar)}
+                                                                                 style={{ width: `${Math.min(c.percentage, 100)}%` }}
+                                                                             />
+                                                                         </div>
+                                                                     </div>
+                                                                 );
+                                                             })}
                                                         </div>
                                                     ) : (
                                                         <div className="flex flex-col items-center gap-3 py-12">

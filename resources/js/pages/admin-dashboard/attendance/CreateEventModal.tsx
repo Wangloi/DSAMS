@@ -1,5 +1,5 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { Calendar, MapPin, Users, GraduationCap, Check, Info } from 'lucide-react';
+import { Calendar, MapPin, Users, GraduationCap, Check, Info, Clock, LogIn, LogOut } from 'lucide-react';
 import { XIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { SchoolMapSelector } from '@/components/SchoolMapSelector';
@@ -469,7 +469,25 @@ export default function CreateEventModal({ open, onOpenChange, onClose, onSubmit
                                                     type="time"
                                                     value={formData.eventTime}
                                                     onChange={(e) => {
-                                                        setFormData(prev => ({ ...prev, eventTime: e.target.value }));
+                                                        const val = e.target.value;
+                                                        const calculateTimeInEnd = (start: string) => {
+                                                            if (!start) return '09:30';
+                                                            const [h, m] = start.split(':').map(Number);
+                                                            if (isNaN(h) || isNaN(m)) return '09:30';
+                                                            const date = new Date();
+                                                            date.setHours(h, m + 90, 0, 0);
+                                                            const newH = String(date.getHours()).padStart(2, '0');
+                                                            const newM = String(date.getMinutes()).padStart(2, '0');
+                                                            return `${newH}:${newM}`;
+                                                        };
+
+                                                        setFormData(prev => ({ 
+                                                            ...prev, 
+                                                            eventTime: val,
+                                                            timeInStart: val,
+                                                            timeInEnd: calculateTimeInEnd(val),
+                                                        } as any));
+
                                                         if (validationErrors.eventTime) {
                                                             setValidationErrors(prev => {
                                                                 const next = { ...prev };
@@ -496,6 +514,72 @@ export default function CreateEventModal({ open, onOpenChange, onClose, onSubmit
                                                     onChange={(e) => setFormData((prev) => ({ ...prev, registrationEndTime: e.target.value }))}
                                                     className="h-9 dark:border-slate-600 dark:bg-slate-800"
                                                 />
+                                            </div>
+
+                                            {/* Designated Time-In & Time-Out Windows */}
+                                            <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 dark:border-blue-900/30 dark:bg-blue-950/20 space-y-3 sm:col-span-2">
+                                                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-blue-900 dark:text-blue-300">
+                                                    <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                                    <span>Designated Attendance Time Windows</span>
+                                                </div>
+
+                                                <div className="grid gap-4 sm:grid-cols-2">
+                                                    <div className="space-y-1.5">
+                                                        <Label className="text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                                                            <LogIn className="h-3.5 w-3.5" /> Time-In Window (Entrance)
+                                                        </Label>
+                                                        <div className="flex items-center gap-2">
+                                                            <Input
+                                                                type="time"
+                                                                value={(formData as any).timeInStart || '08:00'}
+                                                                onChange={(e) => {
+                                                                    const val = e.target.value;
+                                                                    const [h, m] = val.split(':').map(Number);
+                                                                    const date = new Date();
+                                                                    date.setHours(isNaN(h) ? 8 : h, (isNaN(m) ? 0 : m) + 90, 0, 0);
+                                                                    const autoEnd = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+                                                                    setFormData(prev => ({ ...prev, timeInStart: val, timeInEnd: autoEnd } as any));
+                                                                }}
+                                                                className="h-8 text-xs font-bold dark:border-slate-600 dark:bg-slate-800"
+                                                            />
+                                                            <span className="text-xs font-bold text-slate-400">to</span>
+                                                            <Input
+                                                                type="time"
+                                                                value={(formData as any).timeInEnd || '09:30'}
+                                                                onChange={(e) => setFormData(prev => ({ ...prev, timeInEnd: e.target.value } as any))}
+                                                                className="h-8 text-xs font-bold dark:border-slate-600 dark:bg-slate-800"
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="space-y-1.5">
+                                                        <Label className="text-xs font-bold text-rose-700 dark:text-rose-400 flex items-center gap-1">
+                                                            <LogOut className="h-3.5 w-3.5" /> Time-Out Window (Exit)
+                                                        </Label>
+                                                        <div className="flex items-center gap-2">
+                                                            <Input
+                                                                type="time"
+                                                                value={(formData as any).timeOutStart || '11:00'}
+                                                                 onChange={(e) => {
+                                                                     const val = e.target.value;
+                                                                     const [h, m] = val.split(':').map(Number);
+                                                                     const date = new Date();
+                                                                     date.setHours(isNaN(h) ? 11 : h, (isNaN(m) ? 0 : m) + 90, 0, 0);
+                                                                     const autoEnd = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+                                                                     setFormData(prev => ({ ...prev, timeOutStart: val, timeOutEnd: autoEnd } as any));
+                                                                 }}
+                                                                className="h-8 text-xs font-bold dark:border-slate-600 dark:bg-slate-800"
+                                                            />
+                                                            <span className="text-xs font-bold text-slate-400">to</span>
+                                                            <Input
+                                                                type="time"
+                                                                value={(formData as any).timeOutEnd || '12:00'}
+                                                                onChange={(e) => setFormData(prev => ({ ...prev, timeOutEnd: e.target.value } as any))}
+                                                                className="h-8 text-xs font-bold dark:border-slate-600 dark:bg-slate-800"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
