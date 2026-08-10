@@ -530,16 +530,34 @@ export default function EventViewModal({
                                     </div>
 
                                     <div className="grid gap-2 border-t border-slate-100 pt-4 sm:col-span-2 dark:border-slate-800">
-                                        <div className="rounded-lg border border-blue-200/50 bg-blue-50/50 p-3.5 dark:border-blue-900/30 dark:bg-blue-950/20">
+                                        <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                            Assigned Attendance Scanner In-Charge
+                                        </Label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {(!event.scanner_student_ids || event.scanner_student_ids.length === 0) ? (
+                                                <span className="text-xs text-slate-500 italic">No individual scanner in-charge assigned.</span>
+                                            ) : (
+                                                event.scanner_student_ids.map((id) => (
+                                                    <span
+                                                        key={id}
+                                                        className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:border-indigo-800/50 dark:bg-indigo-950/40 dark:text-indigo-300"
+                                                    >
+                                                        Student ID: {id}
+                                                    </span>
+                                                ))
+                                            )}
+                                        </div>
+
+                                        <div className="mt-2 rounded-lg border border-blue-200/50 bg-blue-50/50 p-3.5 dark:border-blue-900/30 dark:bg-blue-950/20">
                                             <div className="flex gap-2.5">
                                                 <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
                                                 <div>
                                                     <h4 className="text-xs font-semibold text-blue-950 dark:text-blue-200">
-                                                        Scanner Portal
+                                                        Scanner Portal Access
                                                     </h4>
                                                     <p className="mt-1 text-xs leading-relaxed text-blue-800/80 dark:text-blue-300/80">
                                                         {event.scanner_portal_active
-                                                            ? 'Active: eligible students can scan from their portal.'
+                                                            ? 'Active: assigned students can scan from their portal.'
                                                             : 'Inactive: scanner portal is disabled.'}
                                                     </p>
                                                 </div>

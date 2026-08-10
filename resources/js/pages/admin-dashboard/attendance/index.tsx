@@ -140,25 +140,24 @@ export default function AdminAttendancePage() {
     }, [hasBackendEvents, incomingEvents]);
 
     const [searchQuery, setSearchQuery] = useState('');
-    const [dateRange, setDateRange] = useState({ start: '', end: '' });
+    const [statusFilter, setStatusFilter] = useState('');
     /** Row selected in the event list drives KPI scope (empty = aggregate ongoing + completed in filtered list) */
     const [selectedListEventId, setSelectedListEventId] = useState<string>('');
 
     const filteredEvents = useMemo(() => {
         return events.filter((ev) => {
-            const datePart = (ev.dateTime || '').split(/\s+/)[0]?.trim() ?? '';
-            const inRange =
-                (!dateRange.start || (datePart !== '' && datePart >= dateRange.start)) &&
-                (!dateRange.end || (datePart !== '' && datePart <= dateRange.end));
+            const matchesStatus = !statusFilter
+                ? ev.status !== 'completed'
+                : ev.status === statusFilter;
             const q = searchQuery.trim().toLowerCase();
             const matches =
                 !q ||
                 (ev.event && ev.event.toLowerCase().includes(q)) ||
                 (ev.organizer && ev.organizer.toLowerCase().includes(q)) ||
                 (ev.location && ev.location.toLowerCase().includes(q));
-            return inRange && matches;
+            return matchesStatus && matches;
         });
-    }, [events, dateRange.start, dateRange.end, searchQuery]);
+    }, [events, statusFilter, searchQuery]);
 
     useEffect(() => {
         if (selectedListEventId && !filteredEvents.some((e) => String(e.id) === selectedListEventId)) {
@@ -1895,10 +1894,10 @@ export default function AdminAttendancePage() {
 
                             <AttendanceTable
                                 attendanceEvents={filteredEvents}
-                                dateRange={dateRange}
-                                setDateRange={setDateRange}
                                 searchQuery={searchQuery}
                                 setSearchQuery={setSearchQuery}
+                                statusFilter={statusFilter}
+                                setStatusFilter={setStatusFilter}
                                 onEdit={handleEditEvent}
                                 onDelete={handleDeleteEvent}
                                 onViewStudents={handleViewAttendees}

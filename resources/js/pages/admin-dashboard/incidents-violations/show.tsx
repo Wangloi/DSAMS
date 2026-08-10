@@ -102,70 +102,72 @@ export default function DisciplinaryCaseDetailPage({
             
             <div className="min-h-[calc(100vh-4rem)] bg-slate-100 dark:bg-[#020617] pb-12">
                 
-                <div className="bg-white dark:bg-[#0B192C]/60 border-b border-slate-200 dark:border-slate-800 shadow-sm">
-                    <div className="flex w-full flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-6 py-6">
-                        <div className="flex items-center gap-4">
-                            <Link 
-                                href={adminIncidentsViolations()} 
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors border border-slate-200 dark:border-slate-700"
-                            >
-                                <ArrowLeft className="h-4 w-4" />
-                            </Link>
-                            <div>
-                                <div className="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400">
-                                    <span>Registry</span>
-                                    <span>/</span>
-                                    <span className="text-[#1E3E62] dark:text-blue-400 font-extrabold">Case #{caseId}</span>
+                <div className="flex w-full flex-col gap-6 px-6 py-6">
+                    {/* ── Hero Header ── */}
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] p-6 shadow-xl shadow-blue-900/20">
+                        <div className="pointer-events-none absolute -right-12 -top-12 h-56 w-56 rounded-full bg-white/5" />
+                        <div className="pointer-events-none absolute -right-4 -top-4 h-32 w-32 rounded-full bg-white/5" />
+                        <div className="pointer-events-none absolute bottom-0 left-1/3 h-48 w-48 -translate-y-1/4 rounded-full bg-blue-400/10 blur-2xl" />
+                        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-center gap-4">
+                                <Link 
+                                    href={adminIncidentsViolations()} 
+                                    className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 text-white shadow-inner backdrop-blur-sm ring-1 ring-white/20 transition-all duration-200 hover:bg-white/20"
+                                >
+                                    <ArrowLeft className="h-5 w-5" />
+                                </Link>
+                                <div>
+                                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-200/80">
+                                        <span>Registry</span>
+                                        <span>/</span>
+                                        <span className="font-extrabold text-white">Case #{caseId}</span>
+                                    </div>
+                                    <h1 className="mt-0.5 text-2xl font-black tracking-tight text-white">
+                                        Disciplinary Case Detail
+                                    </h1>
                                 </div>
-                                <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white mt-1">
-                                    Disciplinary Case Detail
-                                </h1>
+                            </div>
+
+                            <div className="flex items-center gap-2 self-start sm:self-auto">
+                                <Button 
+                                    type="button" 
+                                    className="h-11 gap-2 rounded-xl bg-white px-5 font-bold text-[#1e3a8a] shadow-md transition-all duration-200 hover:bg-blue-50 hover:shadow-lg"
+                                    onClick={() => window.print()}
+                                >
+                                    <Printer className="h-5 w-5" />
+                                    <span>Export PDF</span>
+                                </Button>
                             </div>
                         </div>
-
-                        <div className="flex items-center gap-2 self-start sm:self-auto">
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="bg-white hover:bg-slate-50 dark:bg-[#1E3A5F] dark:hover:bg-[#1A304F] border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 h-9 font-bold flex items-center gap-2"
-                                onClick={() => window.print()}
-                            >
-                                <Printer className="h-4 w-4" />
-                                <span>Export PDF</span>
-                            </Button>
-                        </div>
                     </div>
-                </div>
 
-                {/* Main Content Area */}
-                <div className="flex w-full flex-col gap-6 px-6 py-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                         
                         {/* LEFT COLUMN - CASE DETAILS (Col-span 2) */}
-                        <div className="lg:col-span-2 space-y-6">
+                        <div className="space-y-6 lg:col-span-2">
                             
                             {/* Card 1: Main Case Information */}
-                            <Card className="bg-white dark:bg-[#0B192C]/50 border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden border-l-4 border-l-rose-500 dark:border-l-rose-600">
+                            <Card className="overflow-hidden rounded-2xl border-0 bg-white shadow-lg ring-1 ring-slate-200 dark:bg-[#0B192C]/50 dark:ring-slate-800 border-l-4 border-l-rose-500 dark:border-l-rose-600">
                                 <CardContent className="p-6">
-                                    <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-                                        <span className="text-xs font-bold text-slate-450 tracking-wider">CASE_ID: #{caseId}</span>
+                                    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                                        <span className="text-xs font-bold tracking-wider text-slate-500 dark:text-slate-400">CASE_ID: #{caseId}</span>
                                         <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${severityColor}`}>
-                                            <AlertTriangle className="h-3 w-3 mr-1" />
+                                            <AlertTriangle className="mr-1 h-3 w-3" />
                                             {severityText}
                                         </span>
                                     </div>
 
-                                    <h3 className="text-xl font-extrabold text-slate-900 dark:text-white mb-4 tracking-tight leading-snug">
+                                    <h3 className="mb-4 text-xl font-extrabold tracking-tight leading-snug text-slate-900 dark:text-white">
                                         {incidentTitle}
                                     </h3>
 
-                                    <p className="text-slate-600 dark:text-slate-350 text-xs font-medium leading-relaxed mb-6">
+                                    <p className="mb-6 text-xs font-medium leading-relaxed text-slate-600 dark:text-slate-300">
                                         {incidentDescription}
                                     </p>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                    <div className="grid grid-cols-1 gap-4 border-t border-slate-100 pt-4 dark:border-slate-800 sm:grid-cols-3">
                                         <div>
-                                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Investigation Status</span>
+                                            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Investigation Status</span>
                                             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
                                                 <span className={`h-2 w-2 rounded-full ${
                                                     investigationStatus === 'Resolved' ? 'bg-emerald-500' :
@@ -176,16 +178,16 @@ export default function DisciplinaryCaseDetailPage({
                                             </div>
                                         </div>
                                         <div>
-                                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Assigned Officer</span>
-                                            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+                                            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Assigned Officer</span>
+                                            <span className="flex items-center gap-1 text-xs font-bold text-slate-800 dark:text-slate-200">
                                                 <UserCheck className="h-3.5 w-3.5 text-slate-400" />
                                                 {assignedOfficer}
                                             </span>
                                         </div>
                                         <div>
-                                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Location & Date</span>
-                                            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1">
-                                                <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                                            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Location & Date</span>
+                                            <span className="flex items-center gap-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                                                <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" />
                                                 <span className="truncate">{location} ({dateTime.split(' ')[0]})</span>
                                             </span>
                                         </div>
@@ -194,9 +196,9 @@ export default function DisciplinaryCaseDetailPage({
                             </Card>
 
                             {/* Card 2: Statutory Reference */}
-                            <Card className="bg-white dark:bg-[#0B192C]/50 border-slate-200 dark:border-slate-800 shadow-sm">
+                            <Card className="rounded-2xl border-0 bg-white shadow-lg ring-1 ring-slate-200 dark:bg-[#0B192C]/50 dark:ring-slate-800">
                                 <CardContent className="p-6">
-                                    <div className="flex items-center gap-2 mb-4">
+                                    <div className="mb-4 flex items-center gap-2">
                                         <BookOpen className="h-5 w-5 text-slate-700 dark:text-slate-300" />
                                         <h4 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white">Statutory Reference</h4>
                                     </div>
@@ -206,18 +208,18 @@ export default function DisciplinaryCaseDetailPage({
                                         if (violation) {
                                             return (
                                                 <div className="space-y-4">
-                                                    <div className="bg-slate-50 dark:bg-[#1E3A5F]/20 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                                                    <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-[#1E3A5F]/20">
                                                         <span className="block text-sm font-extrabold text-slate-900 dark:text-white">
                                                             {violation.section}: {violation.name}
                                                         </span>
-                                                        <span className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+                                                        <span className="mt-0.5 block text-[11px] font-medium text-slate-500 dark:text-slate-400">
                                                             Student Handbook, Chapter on Student Conduct
                                                         </span>
                                                     </div>
                                                     {violation.description && (
                                                         <ul className="space-y-2">
-                                                            <li className="text-xs font-medium text-slate-600 dark:text-slate-300 flex items-start gap-2">
-                                                                <span className="block h-1.5 w-1.5 rounded-full bg-slate-400 mt-1.5 shrink-0" />
+                                                            <li className="flex items-start gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+                                                                <span className="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
                                                                 <span>{violation.description}</span>
                                                             </li>
                                                         </ul>
@@ -228,9 +230,9 @@ export default function DisciplinaryCaseDetailPage({
                                         // Fallback if no violation selected
                                         return (
                                             <div className="space-y-4">
-                                                <div className="bg-slate-50 dark:bg-[#1E3A5F]/20 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                                                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-[#1E3A5F]/20">
                                                     <span className="block text-sm font-extrabold text-slate-900 dark:text-white">General Code of Conduct</span>
-                                                    <span className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+                                                    <span className="mt-0.5 block text-[11px] font-medium text-slate-500 dark:text-slate-400">
                                                         Student Handbook, Chapter 3: Student Conduct & Disciplinary Action
                                                     </span>
                                                 </div>
@@ -241,9 +243,9 @@ export default function DisciplinaryCaseDetailPage({
                             </Card>
 
                             {/* Card 3: Imposed Effects */}
-                            <Card className="bg-white dark:bg-[#0B192C]/50 border-slate-200 dark:border-slate-800 shadow-sm">
+                            <Card className="rounded-2xl border-0 bg-white shadow-lg ring-1 ring-slate-200 dark:bg-[#0B192C]/50 dark:ring-slate-800">
                                 <CardContent className="p-6">
-                                    <div className="flex items-center gap-2 mb-4">
+                                    <div className="mb-4 flex items-center gap-2">
                                         <Scale className="h-5 w-5 text-slate-700 dark:text-slate-300" />
                                         <h4 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white">Imposed Effects</h4>
                                     </div>
@@ -251,7 +253,7 @@ export default function DisciplinaryCaseDetailPage({
                                     <div className="space-y-2.5">
                                         {/* First show immediate action from incident */}
                                         {incident.raw?.immediateAction && (
-                                            <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold">
+                                            <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3 text-xs font-bold text-slate-700 dark:border-slate-800 dark:bg-slate-800/30 dark:text-slate-200">
                                                 <Clock className="h-4 w-4 shrink-0" />
                                                 <span>Immediate Action: {incident.raw.immediateAction}</span>
                                             </div>
@@ -259,7 +261,7 @@ export default function DisciplinaryCaseDetailPage({
                                         
                                         {/* Show final actions from approved disciplinary actions */}
                                         {disciplinaryActions.filter(da => ['Approved', 'Modified', 'Overridden'].includes(da.status)).map((action) => (
-                                            <div key={action.id} className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 text-blue-800 dark:text-blue-350 text-xs font-bold">
+                                            <div key={action.id} className="flex items-center gap-3 rounded-xl border border-blue-100 bg-blue-50 p-3 text-xs font-bold text-blue-800 dark:border-blue-900/30 dark:bg-blue-950/20 dark:text-blue-300">
                                                 <ShieldAlert className="h-4 w-4 shrink-0" />
                                                 <span>
                                                     {action.final_action || action.recommended_action}: {action.final_action_reason || action.recommendation_reason || 'Disciplinary action recorded'}
@@ -269,7 +271,7 @@ export default function DisciplinaryCaseDetailPage({
                                         
                                         {/* Fallback if no actions yet */}
                                         {!incident.raw?.immediateAction && disciplinaryActions.filter(da => ['Approved', 'Modified', 'Overridden'].includes(da.status)).length === 0 && (
-                                            <div className="text-xs font-medium text-slate-500 text-center py-2">
+                                            <div className="py-2 text-center text-xs font-medium text-slate-500 dark:text-slate-400">
                                                 No disciplinary actions have been imposed yet.
                                             </div>
                                         )}
@@ -278,9 +280,9 @@ export default function DisciplinaryCaseDetailPage({
                             </Card>
 
                             {/* Card 4: Notes & Compliance Tracking */}
-                            <Card className="bg-white dark:bg-[#0B192C]/50 border-slate-200 dark:border-slate-800 shadow-sm">
+                            <Card className="rounded-2xl border-0 bg-white shadow-lg ring-1 ring-slate-200 dark:bg-[#0B192C]/50 dark:ring-slate-800">
                                 <CardContent className="p-6">
-                                    <div className="flex items-center justify-between gap-2 mb-6">
+                                    <div className="mb-6 flex items-center justify-between gap-2">
                                         <div className="flex items-center gap-2">
                                             <FileText className="h-5 w-5 text-slate-700 dark:text-slate-300" />
                                             <h4 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white">Notes & Compliance Tracking</h4>
@@ -290,26 +292,26 @@ export default function DisciplinaryCaseDetailPage({
                                     <div className="space-y-4">
                                         {/* Show immediate action as first entry */}
                                         {incident.raw?.immediateAction && (
-                                            <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
-                                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 dark:bg-[#1E3A5F]/40 text-blue-600 dark:text-blue-400 mt-0.5">
+                                            <div className="flex items-start gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/40">
+                                                <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-[#1E3A5F]/40 dark:text-blue-400">
                                                     <FileText className="h-4 w-4" />
                                                 </div>
-                                                <div className="flex-1 min-w-0">
+                                                <div className="min-w-0 flex-1">
                                                     <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                                                         <span className="text-xs font-black text-slate-900 dark:text-white">Initial Action</span>
-                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
+                                                        <span className="text-[10px] font-bold uppercase tracking-tight text-slate-400 dark:text-slate-500">
                                                             {incident.dateTime.split(' ')[0].toUpperCase()}
                                                         </span>
                                                     </div>
-                                                    <p className="text-[11px] font-medium text-slate-600 dark:text-slate-355 leading-relaxed mt-1">
+                                                    <p className="mt-1 text-[11px] font-medium leading-relaxed text-slate-600 dark:text-slate-300">
                                                         {incident.raw.immediateAction}
                                                     </p>
-                                                    <div className="flex items-center gap-2 mt-2">
-                                                        <Badge className="bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-300 border-0 rounded text-[9px] font-black tracking-wide px-1.5 py-0">
+                                                    <div className="mt-2 flex items-center gap-2">
+                                                        <Badge className="rounded border-0 bg-slate-100 px-1.5 py-0 text-[9px] font-black tracking-wide text-slate-700 dark:bg-slate-900 dark:text-slate-300">
                                                             LOGGED
                                                         </Badge>
                                                         {incident.raw?.receivedBy && (
-                                                            <span className="text-[9px] font-bold text-slate-400 uppercase">
+                                                            <span className="text-[9px] font-bold uppercase text-slate-400 dark:text-slate-500">
                                                                 Officer: {incident.raw.receivedBy}
                                                             </span>
                                                         )}
@@ -320,22 +322,22 @@ export default function DisciplinaryCaseDetailPage({
                                         
                                         {/* Show remarks from disciplinary actions */}
                                         {disciplinaryActions.filter(da => da.remarks).map((action) => (
-                                            <div key={action.id} className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
-                                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 mt-0.5">
+                                            <div key={action.id} className="flex items-start gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/40">
+                                                <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
                                                     <FileText className="h-4 w-4" />
                                                 </div>
-                                                <div className="flex-1 min-w-0">
+                                                <div className="min-w-0 flex-1">
                                                     <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                                                         <span className="text-xs font-black text-slate-900 dark:text-white">Disciplinary Note</span>
-                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">
+                                                        <span className="text-[10px] font-bold uppercase tracking-tight text-slate-400 dark:text-slate-500">
                                                             {action.created_at ? new Date(action.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase() : ''}
                                                         </span>
                                                     </div>
-                                                    <p className="text-[11px] font-medium text-slate-600 dark:text-slate-355 leading-relaxed mt-1">
+                                                    <p className="mt-1 text-[11px] font-medium leading-relaxed text-slate-600 dark:text-slate-300">
                                                         {action.remarks}
                                                     </p>
-                                                    <div className="flex items-center gap-2 mt-2">
-                                                        <Badge className={`text-[9px] font-black tracking-wide px-1.5 py-0 rounded border-0 ${
+                                                    <div className="mt-2 flex items-center gap-2">
+                                                        <Badge className={`rounded border-0 px-1.5 py-0 text-[9px] font-black tracking-wide ${
                                                             action.status === 'Approved' 
                                                             ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' 
                                                             : 'bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-300'
@@ -349,7 +351,7 @@ export default function DisciplinaryCaseDetailPage({
                                         
                                         {/* Fallback if no notes */}
                                         {!incident.raw?.immediateAction && disciplinaryActions.filter(da => da.remarks).length === 0 && (
-                                            <div className="text-xs font-medium text-slate-500 text-center py-4">
+                                            <div className="py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-400">
                                                 No compliance notes have been recorded yet.
                                             </div>
                                         )}
@@ -372,45 +374,45 @@ export default function DisciplinaryCaseDetailPage({
                         <div className="space-y-6">
                             
                             {/* Card 1: Student Profile Card */}
-                            <Card className="bg-[#0B192C] text-white border-slate-800 shadow-md overflow-hidden">
+                            <Card className="overflow-hidden rounded-2xl border-0 bg-white shadow-lg ring-1 ring-slate-200 dark:bg-[#0B192C]/60 dark:ring-slate-800">
                                 <CardContent className="p-6">
                                     <div className="flex items-center gap-4">
-                                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-base font-black text-white ring-2 ring-slate-800 shadow-inner">
+                                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 text-base font-black text-[#1e40af] shadow-sm dark:from-blue-500/20 dark:to-indigo-500/20 dark:text-blue-300">
                                             {studentInitials}
                                         </div>
                                         <div>
-                                            <h4 className="text-base font-extrabold tracking-tight leading-tight">{studentName}</h4>
-                                            <p className="text-[10px] font-semibold text-slate-400 tracking-wider uppercase mt-0.5">ID: {studentId}</p>
+                                            <h4 className="text-base font-extrabold tracking-tight leading-tight text-slate-900 dark:text-white">{studentName}</h4>
+                                            <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">ID: {studentId}</p>
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 gap-4 mt-6 pt-4 border-t border-slate-800">
+                                    <div className="mt-6 grid grid-cols-1 gap-4 border-t border-slate-100 pt-4 dark:border-slate-800">
                                         <div>
-                                            <span className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Year Level</span>
-                                            <span className="text-xs font-bold text-slate-200">{yearLevelMock} ({courseMock})</span>
+                                            <span className="mb-0.5 block text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Year Level & Course</span>
+                                            <span className="text-xs font-bold text-slate-900 dark:text-white">{yearLevelMock} ({courseMock})</span>
                                         </div>
                                     </div>
                                 </CardContent>
                             </Card>
 
                             {/* Card 2: Disciplinary History */}
-                            <Card className="bg-white dark:bg-[#0B192C]/50 border-slate-200 dark:border-slate-800 shadow-sm">
+                            <Card className="rounded-2xl border-0 bg-white shadow-lg ring-1 ring-slate-200 dark:bg-[#0B192C]/50 dark:ring-slate-800">
                                 <CardContent className="p-6">
-                                    <div className="flex items-center justify-between gap-2 mb-6">
+                                    <div className="mb-6 flex items-center justify-between gap-2">
                                         <h4 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white">Disciplinary History</h4>
-                                        <Badge variant={isMajor ? 'destructive' : 'secondary'} className="rounded text-[9px] font-black px-1.5 py-0 tracking-wide uppercase">
+                                        <Badge variant={isMajor ? 'destructive' : 'secondary'} className="rounded px-1.5 py-0 text-[9px] font-black uppercase tracking-wide">
                                             {studentDisciplinaryStats?.total_actions ?? 0}
                                         </Badge>
                                     </div>
 
                                     {processedDisciplinaryHistory.length > 0 ? (
-                                        <div className="relative pl-6 border-l-2 border-slate-100 dark:border-slate-800 space-y-6">
+                                        <div className="relative space-y-6 border-l-2 border-slate-100 pl-6 dark:border-slate-800">
                                             {processedDisciplinaryHistory.map((historyItem: DisciplinaryHistoryItem & { displayLabel?: string }) => (
                                                 <div key={historyItem.id} className="relative">
-                                                    <span className={`absolute -left-[31px] top-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full ring-4 ring-white dark:ring-[#0F213A] ${
+                                                    <span className={`absolute -left-[31px] top-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full ring-4 ring-white dark:ring-[#0B192C] ${
                                                         historyItem.is_current 
-                                                        ? 'bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400' 
-                                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                                                        ? 'bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400' 
+                                                        : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
                                                     }`}>
                                                         <AlertTriangle className="h-2.5 w-2.5" />
                                                     </span>
@@ -430,11 +432,11 @@ export default function DisciplinaryCaseDetailPage({
                                                             {historyItem.date}
                                                         </span>
                                                     </div>
-                                                    <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 leading-relaxed mt-1">
+                                                    <p className="mt-1 text-[10px] font-medium leading-relaxed text-slate-500 dark:text-slate-400">
                                                         {historyItem.description}
                                                     </p>
                                                     {historyItem.case_ref && !historyItem.is_current && (
-                                                        <div className="bg-slate-50 dark:bg-slate-800/40 p-1.5 px-2 rounded-lg border border-slate-100 dark:border-slate-800 mt-2 text-[9px] font-bold text-slate-400 uppercase">
+                                                        <div className="mt-2 rounded-lg border border-slate-100 bg-slate-50 p-1.5 px-2 text-[9px] font-bold uppercase text-slate-400 dark:border-slate-800 dark:bg-slate-800/40">
                                                             CASE_REF: #{historyItem.case_ref}
                                                         </div>
                                                     )}
@@ -442,7 +444,7 @@ export default function DisciplinaryCaseDetailPage({
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className="text-xs font-medium text-slate-500 text-center py-6">
+                                        <div className="py-6 text-center text-xs font-medium text-slate-500 dark:text-slate-400">
                                             No prior disciplinary history.
                                         </div>
                                     )}
@@ -450,20 +452,20 @@ export default function DisciplinaryCaseDetailPage({
                             </Card>
 
                             {/* Card 3: Counseling Status */}
-                            <Card className="bg-amber-50/50 dark:bg-amber-950/10 border-amber-200 dark:border-amber-900/30 text-slate-800 dark:text-amber-200 shadow-sm">
+                            <Card className="rounded-2xl border border-amber-200 bg-amber-50/50 shadow-sm text-slate-800 dark:border-amber-900/30 dark:bg-amber-950/10 dark:text-amber-200">
                                 <CardContent className="p-6">
-                                    <h4 className="text-xs font-black uppercase tracking-wider text-amber-900 dark:text-amber-400 mb-4">Counseling Status</h4>
+                                    <h4 className="mb-4 text-xs font-black uppercase tracking-wider text-amber-900 dark:text-amber-400">Counseling Status</h4>
                                     
-                                    <div className="flex items-center justify-between text-xs font-extrabold mb-2">
+                                    <div className="mb-2 flex items-center justify-between text-xs font-extrabold">
                                         <span>Program Progress</span>
                                         <span>40%</span>
                                     </div>
-                                    <div className="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden mb-4">
-                                        <div className="bg-[#E6A15C] h-full rounded-full" style={{ width: '40%' }} />
+                                    <div className="mb-4 h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                                        <div className="h-full rounded-full bg-[#E6A15C]" style={{ width: '40%' }} />
                                     </div>
 
-                                    <p className="text-[10px] font-bold text-amber-800/80 dark:text-amber-400 flex items-center gap-1.5 leading-relaxed">
-                                        <HeartHandshake className="h-4 w-4 text-[#E6A15C] shrink-0" />
+                                    <p className="flex items-center gap-1.5 text-[10px] font-bold leading-relaxed text-amber-800/80 dark:text-amber-400">
+                                        <HeartHandshake className="h-4 w-4 shrink-0 text-[#E6A15C]" />
                                         <span>Mandatory 10 sessions. 4 completed with Dr. S. Thorne</span>
                                     </p>
                                 </CardContent>

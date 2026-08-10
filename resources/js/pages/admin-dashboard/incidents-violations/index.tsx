@@ -277,6 +277,42 @@ export default function AdminIncidentsViolationsPage() {
         router.get(adminIncidentsViolationsShow(incident.id));
     };
 
+    const handleStatusChange = (row: IncidentRow, newStatus: IncidentRow['status']) => {
+        if (row.status === newStatus) return;
+
+        Swal.fire({
+            title: 'Change Status?',
+            text: `Are you sure you want to change the status of Case #${row.caseId} to "${newStatus}"?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#1e40af',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, update status',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.post(
+                    adminIncidentsViolationsUpdate(row.id),
+                    { status: newStatus },
+                    {
+                        preserveScroll: true,
+                        onSuccess: () => {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Status Updated',
+                                text: `Case #${row.caseId} status updated to ${newStatus}.`,
+                                timer: 2000,
+                                showConfirmButton: false,
+                            });
+                        },
+                        onError: (err) => {
+                            console.error('Failed to update status:', err);
+                        },
+                    }
+                );
+            }
+        });
+    };
+
     const kpiData: KpiCard[] = [
         {
             title: 'Total Cases',
@@ -330,6 +366,7 @@ export default function AdminIncidentsViolationsPage() {
                         onViewDetail={handleViewDisciplinaryDetail}
                         onEdit={handleEditIncident}
                         onArchive={handleArchive}
+                        onStatusChange={handleStatusChange}
                         onTypeFilterChange={(value) => {
                             setTypeFilter(value);
                             setPageIndex(1);

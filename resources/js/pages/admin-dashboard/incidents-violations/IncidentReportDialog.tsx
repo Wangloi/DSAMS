@@ -30,7 +30,7 @@ type FormState = IncidentReportPayload;
 const emptyForm: FormState = {
     violationId: null,
     incidentType: '',
-    classification: 'Minor',
+    classification: 'Warning',
     date: '',
     time: '',
     location: '',

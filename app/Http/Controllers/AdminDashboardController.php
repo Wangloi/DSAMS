@@ -26,7 +26,7 @@ class AdminDashboardController extends Controller
             'violationBreakdown' => $this->getViolationBreakdown(),
             'evaluationRatings' => $this->getEvaluationRatings(),
             'lostFoundStatus' => $this->getLostFoundStatus(),
-            'recentEvents' => $this->getRecentEvents(),
+            'incomingEvents' => $this->getIncomingEvents(),
         ]);
     }
 
@@ -233,18 +233,22 @@ class AdminDashboardController extends Controller
         ];
     }
 
-    private function getRecentEvents()
+    private function getIncomingEvents()
     {
         if (!Schema::hasTable('events')) {
             return [];
         }
 
+        $today = Carbon::today();
+
         return Event::query()
             ->whereNull('archived_at')
-            ->orderByDesc('event_date')
-            ->limit(5)
+            ->whereDate('event_date', '>=', $today)
+            ->orderBy('event_date', 'asc')
+            ->orderBy('event_time', 'asc')
+            ->limit(6)
             ->get()
-            ->map(function ($event) {
+            ->map(function ($event) use ($today) {
                 $totalAttendees = 0;
                 $presentCount = 0;
                 
@@ -256,15 +260,32 @@ class AdminDashboardController extends Controller
                     $totalAttendees = $event->expected_attendees ?? 0;
                 }
 
+                $eventDateStr = $event->event_date ? $event->event_date->format('Y-m-d') : null;
+                $status = 'upcoming';
+                if ($eventDateStr === $today->format('Y-m-d')) {
+                    $status = 'ongoing';
+                } elseif ($eventDateStr && $eventDateStr < $today->format('Y-m-d')) {
+                    $status = 'completed';
+                }
+
+                $formattedTime = '';
+                if ($event->event_time) {
+                    try {
+                        $formattedTime = ' at ' . Carbon::parse($event->event_time)->format('g:i A');
+                    } catch (\Exception $e) {
+                        $formattedTime = ' at ' . $event->event_time;
+                    }
+                }
+
                 return [
                     'id' => (string) $event->id,
                     'event' => $event->event_name,
-                    'dateTime' => $event->event_date ? $event->event_date->format('M j, Y') : '',
+                    'dateTime' => ($event->event_date ? $event->event_date->format('M j, Y') : '') . $formattedTime,
                     'organizer' => $event->organizer,
                     'location' => $event->location,
                     'totalAttendees' => $totalAttendees,
                     'presentCount' => $presentCount,
-                    'status' => $event->status ?? 'upcoming',
+                    'status' => $event->status ?? $status,
                 ];
             });
     }

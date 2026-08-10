@@ -24,34 +24,40 @@ export default function AttendanceStatsCards({
     avgAttendanceRate,
     totalLate 
 }: Props) {
-    const themeMap: Record<string, { bg: string, text: string, iconBg: string, iconText: string, border: string }> = {
-        'Total Events': { 
-            bg: "bg-indigo-50/50 dark:bg-indigo-500/10", 
-            text: "text-indigo-700 dark:text-indigo-300",
-            iconBg: "bg-indigo-500/10 dark:bg-indigo-500/20",
-            iconText: "text-indigo-600 dark:text-indigo-400",
-            border: "border-indigo-100 dark:border-indigo-500/20"
+    const themeMap: Record<string, {
+        glow: string;
+        subtext: string;
+        subtextColor: string;
+        iconBg: string;
+        barGradient: string;
+    }> = {
+        'Total Events': {
+            glow: 'bg-blue-500/5',
+            subtext: 'Scheduled Events',
+            subtextColor: 'text-blue-600 dark:text-blue-400',
+            iconBg: 'bg-blue-500/10 text-blue-600 ring-1 ring-blue-200/50 dark:bg-blue-500/20 dark:text-blue-400 dark:ring-blue-900/30',
+            barGradient: 'from-blue-400 to-blue-600',
         },
-        'Total check-ins': { 
-            bg: "bg-emerald-50/50 dark:bg-emerald-500/10", 
-            text: "text-emerald-700 dark:text-emerald-300",
-            iconBg: "bg-emerald-500/10 dark:bg-emerald-500/20",
-            iconText: "text-emerald-600 dark:text-emerald-400",
-            border: "border-emerald-100 dark:border-emerald-500/20"
+        'Total check-ins': {
+            glow: 'bg-emerald-500/5',
+            subtext: 'Scanned Records',
+            subtextColor: 'text-emerald-600 dark:text-emerald-400',
+            iconBg: 'bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-200/50 dark:bg-emerald-500/20 dark:text-emerald-400 dark:ring-emerald-900/30',
+            barGradient: 'from-emerald-400 to-emerald-600',
         },
-        'Total Late': { 
-            bg: "bg-rose-50/50 dark:bg-rose-500/10", 
-            text: "text-rose-700 dark:text-rose-300",
-            iconBg: "bg-rose-500/10 dark:bg-rose-500/20",
-            iconText: "text-rose-600 dark:text-rose-400",
-            border: "border-rose-100 dark:border-rose-500/20"
+        'Total Late': {
+            glow: 'bg-rose-500/5',
+            subtext: 'Tardy Scans',
+            subtextColor: 'text-rose-600 dark:text-rose-400',
+            iconBg: 'bg-rose-500/10 text-rose-600 ring-1 ring-rose-200/50 dark:bg-rose-500/20 dark:text-rose-400 dark:ring-rose-900/30',
+            barGradient: 'from-rose-400 to-rose-600',
         },
-        'Avg Attendance Rate': { 
-            bg: "bg-amber-50/50 dark:bg-amber-500/10", 
-            text: "text-amber-700 dark:text-amber-300",
-            iconBg: "bg-amber-500/10 dark:bg-amber-500/20",
-            iconText: "text-amber-600 dark:text-amber-400",
-            border: "border-amber-100 dark:border-amber-500/20"
+        'Avg Attendance Rate': {
+            glow: 'bg-amber-500/5',
+            subtext: 'Turnout Percentage',
+            subtextColor: 'text-amber-600 dark:text-amber-400',
+            iconBg: 'bg-amber-500/10 text-amber-600 ring-1 ring-amber-200/50 dark:bg-amber-500/20 dark:text-amber-400 dark:ring-amber-900/30',
+            barGradient: 'from-amber-400 to-amber-600',
         },
     };
 
@@ -63,33 +69,35 @@ export default function AttendanceStatsCards({
     ];
 
     return (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4 mb-6">
             {kpis.map((kpi, index) => {
-                const theme = themeMap[kpi.title];
+                const theme = themeMap[kpi.title] || themeMap['Total Events'];
                 return (
-                    <Card key={index} className={cn(
-                        "overflow-hidden border shadow-sm group",
-                        theme.border,
-                        theme.bg
-                    )}>
-                        <CardContent className="p-5">
-                            <div className="flex items-start justify-between gap-3">
-                                <div>
-                                    <div className={`text-[10px] font-bold uppercase tracking-wider opacity-70 ${theme.text}`}>
-                                        {kpi.title}
-                                    </div>
-                                    <div className="mt-2 flex items-baseline gap-2">
-                                        <div className="text-3xl font-black text-slate-900 dark:text-white">
-                                            {kpi.title === 'Avg Attendance Rate' ? `${kpi.value}%` : kpi.value.toLocaleString()}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className={`grid h-12 w-12 place-items-center rounded-2xl ${theme.iconBg} ${theme.iconText} shadow-inner group-hover:scale-110 transition-transform duration-300`}>
-                                    <kpi.icon className="h-6 w-6" />
-                                </div>
+                    <div
+                        key={index}
+                        className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800"
+                    >
+                        <div className={`pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full ${theme.glow}`} />
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                                    {kpi.title}
+                                </p>
+                                <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
+                                    {kpi.title === 'Avg Attendance Rate' ? `${kpi.value}%` : kpi.value.toLocaleString()}
+                                </p>
+                                <p className={`mt-1 text-xs font-semibold ${theme.subtextColor}`}>
+                                    {theme.subtext}
+                                </p>
                             </div>
-                        </CardContent>
-                    </Card>
+                            <div className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${theme.iconBg} transition-transform duration-300 group-hover:scale-110`}>
+                                <kpi.icon className="h-5 w-5" />
+                            </div>
+                        </div>
+                        <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                            <div className={`h-full w-full bg-gradient-to-r ${theme.barGradient} rounded-full`} />
+                        </div>
+                    </div>
                 );
             })}
         </div>

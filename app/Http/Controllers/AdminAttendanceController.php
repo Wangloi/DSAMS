@@ -573,10 +573,16 @@ class AdminAttendanceController extends Controller
     {
         \Log::info('STORE method called with: '.$request->method());
 
+        // Pre-normalize empty string values to null
+        $input = array_map(function ($val) {
+            return is_string($val) && trim($val) === '' ? null : $val;
+        }, $request->all());
+        $request->merge($input);
+
         $validated = $request->validate([
             'eventName' => 'required|string|max:255',
             'organizer' => 'required|string|max:255',
-            'location' => 'required|string|max:255',
+            'location' => 'nullable|string|max:255',
             'eventDate' => 'required|date',
             'eventTime' => 'required|string',
             'registrationEndTime' => 'nullable|date_format:H:i',
@@ -659,6 +665,12 @@ class AdminAttendanceController extends Controller
     public function update(Request $request, $id)
     {
         \Log::info('UPDATE method called with: '.$request->method().' for ID: '.$id);
+
+        // Pre-normalize empty string values to null
+        $input = array_map(function ($val) {
+            return is_string($val) && trim($val) === '' ? null : $val;
+        }, $request->all());
+        $request->merge($input);
 
         $validated = $request->validate([
             'eventName' => 'required|string|max:255',

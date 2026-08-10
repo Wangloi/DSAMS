@@ -12,8 +12,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Endroid\QrCode\Builder\Builder;
-use Endroid\QrCode\Writer\PngWriter;
-use Inertia\Inertia;
+use App\Services\StudentNotificationDispatcher;
 
 class AdminEventsController extends Controller
 {
@@ -96,6 +95,13 @@ class AdminEventsController extends Controller
 
     public function store(Request $request)
     {
+        if (!$request->boolean('geofence_enabled')) {
+            $request->merge([
+                'geofence_latitude' => null,
+                'geofence_longitude' => null,
+            ]);
+        }
+
         $validated = $request->validate([
             'event_name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -103,7 +109,7 @@ class AdminEventsController extends Controller
             'courses.*' => 'string',
             'year_levels' => 'nullable|array',
             'year_levels.*' => 'string',
-            'location' => 'required|string|max:255',
+            'location' => 'nullable|string|max:255',
             'event_date' => 'required|date',
             'event_time' => 'required',
             'registration_end_time' => 'nullable',
@@ -113,14 +119,21 @@ class AdminEventsController extends Controller
             'geofence_longitude' => 'nullable|numeric|required_if:geofence_enabled,1',
             'geofence_radius_m' => 'nullable|integer|required_if:geofence_enabled,1',
             'attendance_type' => 'nullable|string|in:qr_scanner,dynamic_qr',
+            'scanner_student_ids' => 'nullable|array',
+            'scanner_student_ids.*' => 'string',
         ]);
+
+        $scannerStudentIdsRaw = $validated['scanner_student_ids'] ?? [];
+        $scannerStudentIds = array_values(array_unique(array_filter(array_map('strval', $scannerStudentIdsRaw), function ($v) {
+            return trim($v) !== '';
+        })));
 
         $event = Event::create([
             'event_name' => $validated['event_name'],
             'description' => $validated['description'] ?? null,
             'courses' => $validated['courses'] ?? [],
             'year_levels' => $validated['year_levels'] ?? [],
-            'location' => $validated['location'],
+            'location' => $validated['location'] ?? 'Campus / Unspecified',
             'event_date' => $validated['event_date'],
             'event_time' => $validated['event_time'],
             'registration_end_time' => $validated['registration_end_time'] ?? null,
@@ -130,6 +143,8 @@ class AdminEventsController extends Controller
             'geofence_longitude' => $validated['geofence_longitude'] ?? null,
             'geofence_radius_m' => $validated['geofence_radius_m'] ?? 50,
             'attendance_type' => $validated['attendance_type'] ?? 'qr_scanner',
+            'scanner_student_id' => $scannerStudentIds[0] ?? null,
+            'scanner_student_ids' => $scannerStudentIds,
         ]);
 
         // Generate QR code
@@ -146,6 +161,13 @@ class AdminEventsController extends Controller
         Storage::disk('public')->put($qrCodePath, $qrCode);
 
         $event->update(['qr_code' => $qrCodePath]);
+
+        // Dispatch notifications to assigned scanner students
+        $dispatcher = app(StudentNotificationDispatcher::class);
+        $dispatcher->eventCreated($event);
+        if (! empty($scannerStudentIds)) {
+            $dispatcher->scannerAccessGranted($event, $scannerStudentIds);
+        }
 
         return redirect()->route('admin.events')->with('success', 'Event created successfully!');
     }
@@ -181,11 +203,11 @@ class AdminEventsController extends Controller
         $validated = $request->validate([
             'event_name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'courses' => 'required|array',
+            'courses' => 'nullable|array',
             'courses.*' => 'string',
-            'year_levels' => 'required|array',
+            'year_levels' => 'nullable|array',
             'year_levels.*' => 'string',
-            'location' => 'required|string|max:255',
+            'location' => 'nullable|string|max:255',
             'event_date' => 'required|date',
             'event_time' => 'required',
             'registration_end_time' => 'nullable',
@@ -196,25 +218,30 @@ class AdminEventsController extends Controller
             'geofence_longitude' => 'nullable|numeric|required_if:geofence_enabled,1',
             'geofence_radius_m' => 'nullable|integer|required_if:geofence_enabled,1',
             'attendance_type' => 'nullable|string|in:qr_scanner,dynamic_qr',
+            'scanner_student_ids' => 'nullable|array',
+            'scanner_student_ids.*' => 'string',
         ]);
 
-        // Normalize registration_end_time coming from frontend pickers.
-        // We must store only the TIME part (HH:MM or HH:MM:SS) to match MySQL `registration_end_time` column type.
-        // Example bad input seen in logs: 2026-06-18T22:30
         if (array_key_exists('registration_end_time', $validated) && $validated['registration_end_time'] !== null) {
             $validated['registration_end_time'] = preg_replace('/^\d{4}-\d{2}-\d{2}T(\d{2}:\d{2})(?::\d{2})?$/', '$1:00', (string) $validated['registration_end_time']);
             $validated['registration_end_time'] = preg_replace('/^(\d{2}:\d{2})$/', '$1:00', (string) $validated['registration_end_time']);
         }
 
-
         $geofenceEnabled = (bool) ($validated['geofence_enabled'] ?? false);
+
+        $previousScannerStudentIds = is_array($event->scanner_student_ids) ? $event->scanner_student_ids : [];
+
+        $scannerStudentIdsRaw = $validated['scanner_student_ids'] ?? [];
+        $scannerStudentIds = array_values(array_unique(array_filter(array_map('strval', $scannerStudentIdsRaw), function ($v) {
+            return trim($v) !== '';
+        })));
 
         $event->update([
             'event_name' => $validated['event_name'],
             'description' => $validated['description'] ?? null,
-            'courses' => $validated['courses'],
-            'year_levels' => $validated['year_levels'],
-            'location' => $validated['location'],
+            'courses' => $validated['courses'] ?? [],
+            'year_levels' => $validated['year_levels'] ?? [],
+            'location' => $validated['location'] ?? 'Campus / Unspecified',
             'event_date' => $validated['event_date'],
             'event_time' => $validated['event_time'],
             'registration_end_time' => $validated['registration_end_time'] ?? null,
@@ -225,7 +252,16 @@ class AdminEventsController extends Controller
             'geofence_longitude' => $geofenceEnabled ? ($validated['geofence_longitude'] ?? null) : null,
             'geofence_radius_m' => $geofenceEnabled ? ($validated['geofence_radius_m'] ?? 50) : ($event->geofence_radius_m ?? 50),
             'attendance_type' => $validated['attendance_type'] ?? $event->attendance_type ?? 'qr_scanner',
+            'scanner_student_id' => $scannerStudentIds[0] ?? null,
+            'scanner_student_ids' => $scannerStudentIds,
         ]);
+
+        // Dispatch notification for newly granted scanner students
+        $newlyGrantedScannerIds = array_values(array_diff($scannerStudentIds, $previousScannerStudentIds));
+        if (! empty($newlyGrantedScannerIds)) {
+            $dispatcher = app(StudentNotificationDispatcher::class);
+            $dispatcher->scannerAccessGranted($event, $newlyGrantedScannerIds);
+        }
 
         return redirect()->route('admin.events')->with('success', 'Event updated successfully!');
     }

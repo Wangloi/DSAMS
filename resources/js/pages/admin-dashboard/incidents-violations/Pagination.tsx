@@ -55,7 +55,7 @@ export default function Pagination({
                                 type="button"
                                 onClick={() => onPageChange(num)}
                                 className={
-                                    'rounded-md px-2 py-1 ' + (currentPage === num ? 'bg-[#23509A] text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700')
+                                    'rounded-md px-2 py-1 ' + (currentPage === num ? 'bg-blue-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700')
                                 }
                             >
                                 {num}

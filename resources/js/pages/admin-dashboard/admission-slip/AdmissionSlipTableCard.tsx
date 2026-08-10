@@ -72,7 +72,7 @@ export default function AdmissionSlipTableCard({
     const totalPages = Math.max(1, Math.ceil(filteredCount / pageSize));
 
     return (
-        <Card className="border-0 bg-white shadow-lg dark:bg-[#0B192C]/50">
+        <Card className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-[#0B192C]/60 dark:ring-slate-800 border-0">
             {/* VIEW DIALOG */}
             <Dialog
                 open={viewOpen}
@@ -90,11 +90,11 @@ export default function AdmissionSlipTableCard({
                     </DialogHeader>
 
                     {viewingSlip ? (
-                        <div className="space-y-3">
-                            <div>Name: {viewingSlip.studentName}</div>
-                            <div>Program: {viewingSlip.programYear}</div>
-                            <div>Date: {viewingSlip.dateIssued}</div>
-                            <div>Valid Until: {viewingSlip.validUntil}</div>
+                        <div className="space-y-3 text-sm">
+                            <div><span className="font-bold">Name:</span> {viewingSlip.studentName}</div>
+                            <div><span className="font-bold">Program:</span> {viewingSlip.programYear}</div>
+                            <div><span className="font-bold">Date Issued:</span> {viewingSlip.dateIssued}</div>
+                            <div><span className="font-bold">Valid Until:</span> {viewingSlip.validUntil}</div>
                         </div>
                     ) : (
                         <div>No slip selected</div>
@@ -118,61 +118,55 @@ export default function AdmissionSlipTableCard({
                 </DialogContent>
             </Dialog>
 
-            {/* HEADER */}
-            <CardHeader className="pb-3">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <CardTitle className="text-lg font-semibold text-slate-800 dark:text-white">
-                            Admission Slip List
-                        </CardTitle>
-                        <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-                            Total: {filteredCount} slips found
-                        </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2 sm:items-center">
-                        <Select
-                            value={activeTab ?? 'all'}
-                            onValueChange={(v) => {
-                                if (setActiveTab)
-                                    setActiveTab(
-                                        v as
-                                            | 'all'
-                                            | 'pending'
-                                            | 'approved'
-                                            | 'rejected',
-                                    );
+            {/* UNIFIED HEADER */}
+            <CardHeader className="flex flex-col gap-4 border-b border-slate-100 px-6 py-5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between bg-slate-50/50 dark:bg-slate-800/30">
+                <div>
+                    <CardTitle className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+                        Admission Slip List
+                    </CardTitle>
+                    <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                        Total: {filteredCount} slips found
+                    </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                    <div className="relative">
+                        <Search className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+                        <Input
+                            placeholder="Search admission slips..."
+                            className="h-9 w-48 rounded-xl border-slate-200 bg-slate-50 pl-8 text-xs font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-white focus-visible:ring-blue-500"
+                            value={searchQuery ?? ''}
+                            onChange={(e) => {
+                                if (!setSearchQuery) return;
+                                setSearchQuery(e.target.value);
                                 setPageIndex(1);
                             }}
-                        >
-                            <SelectTrigger className="h-9 w-full border-slate-200 bg-white text-xs font-bold sm:w-32 dark:border-slate-700 dark:bg-slate-800">
-                                <SelectValue placeholder="All Status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Status</SelectItem>
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="approved">
-                                    Approved
-                                </SelectItem>
-                                <SelectItem value="rejected">
-                                    Rejected
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-
-                        <div className="relative w-full sm:w-64">
-                            <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                            <Input
-                                placeholder="Search admission slips..."
-                                className="h-9 border-slate-200 bg-white pl-9 text-xs font-medium dark:border-slate-700 dark:bg-slate-800"
-                                value={searchQuery ?? ''}
-                                onChange={(e) => {
-                                    if (!setSearchQuery) return;
-                                    setSearchQuery(e.target.value);
-                                    setPageIndex(1);
-                                }}
-                            />
-                        </div>
+                        />
                     </div>
+                    <Select
+                        value={activeTab ?? 'all'}
+                        onValueChange={(v) => {
+                            if (setActiveTab)
+                                setActiveTab(
+                                    v as
+                                        | 'all'
+                                        | 'pending'
+                                        | 'approved'
+                                        | 'rejected',
+                                );
+                            setPageIndex(1);
+                        }}
+                    >
+                        <SelectTrigger className="h-9 w-32 rounded-xl border-slate-200 bg-slate-50 text-xs font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                            <SelectValue placeholder="All Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Status</SelectItem>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="approved">Approved</SelectItem>
+                            <SelectItem value="rejected">Rejected</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
             </CardHeader>
 
@@ -207,28 +201,16 @@ export default function AdmissionSlipTableCard({
 
             {/* TABLE */}
             <CardContent className="p-0">
-                <div className="overflow-x-auto rounded-xl border border-slate-100 shadow-sm dark:border-slate-800">
-                    <table className="min-w-full border-collapse text-left text-sm">
-                        <thead className="border-b border-slate-100 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm border-collapse">
+                        <thead className="bg-slate-50/50 dark:bg-slate-900/30 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-850">
                             <tr>
-                                <th className="w-12 px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
-                                    #
-                                </th>
-                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
-                                    Student
-                                </th>
-                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
-                                    Date Issued
-                                </th>
-                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
-                                    Valid Until
-                                </th>
-                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
-                                    Status
-                                </th>
-                                <th className="px-6 py-4 text-right text-[10px] font-bold tracking-wider uppercase">
-                                    Action
-                                </th>
+                                <th className="w-12 px-6 py-3.5 font-bold">#</th>
+                                <th className="px-6 py-3.5 font-bold">Student</th>
+                                <th className="px-6 py-3.5 font-bold">Date Issued</th>
+                                <th className="px-6 py-3.5 font-bold">Valid Until</th>
+                                <th className="px-6 py-3.5 font-bold">Status</th>
+                                <th className="px-6 py-3.5 text-right font-bold">Actions</th>
                             </tr>
                         </thead>
 

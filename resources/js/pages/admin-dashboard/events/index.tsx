@@ -401,7 +401,9 @@ export default function AdminEventsIndex() {
                 event.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 event.organizer.toLowerCase().includes(searchTerm.toLowerCase());
 
-            const matchesStatus = !statusFilter || event.status === statusFilter;
+            const matchesStatus = !statusFilter
+                ? event.status !== 'completed'
+                : event.status === statusFilter;
             const matchesCourse = !courseFilter || event.courses.includes(courseFilter);
             const matchesYearLevel = !yearLevelFilter || event.year_levels.includes(yearLevelFilter);
 
@@ -410,35 +412,68 @@ export default function AdminEventsIndex() {
     }, [events, searchTerm, statusFilter, courseFilter, yearLevelFilter]);
 
     // Server-side pagination handling
-    const goToPage = (page: number) => {
+    const goToPage = (page: number, updatedFilters?: Record<string, any>) => {
         setPageIndex(page);
-        router.get(adminEvents(), { ...filters, page, per_page: pageSize }, { preserveState: true, preserveScroll: true });
+        router.get(adminEvents(), {
+            search: searchTerm,
+            status: statusFilter,
+            course: courseFilter,
+            year_level: yearLevelFilter,
+            page,
+            per_page: pageSize,
+            ...updatedFilters,
+        }, { preserveState: true, preserveScroll: true });
     };
 
     // When page size changes, request first page with new size and update state
     const changePageSize = (size: number) => {
         setPageSize(size);
         setPageIndex(1);
-        router.get(adminEvents(), { ...filters, page: 1, per_page: size }, { preserveState: true, preserveScroll: true });
+        goToPage(1, { per_page: size });
     };
 
-    // Update URL parameters when filters or pagination change
-    useEffect(() => {
-        const params = new URLSearchParams();
-        if (searchTerm) params.set('search', searchTerm);
-        if (statusFilter) params.set('status', statusFilter);
-        if (courseFilter) params.set('course', courseFilter);
-        if (yearLevelFilter) params.set('year_level', yearLevelFilter);
-        params.set('page', pageIndex.toString());
-        params.set('per_page', pageSize.toString());
-        const newUrl = `${window.location.pathname}?${params.toString()}`;
-        window.history.replaceState({}, '', newUrl);
-    }, [searchTerm, statusFilter, courseFilter, yearLevelFilter, pageIndex, pageSize]);
+    // Sync filters with router when select filters change
+    const handleStatusFilterChange = (val: string) => {
+        const newStatus = val === 'all' ? '' : val;
+        setStatusFilter(newStatus);
+        setPageIndex(1);
+        router.get(adminEvents(), {
+            search: searchTerm,
+            status: newStatus,
+            course: courseFilter,
+            year_level: yearLevelFilter,
+            page: 1,
+            per_page: pageSize,
+        }, { preserveState: true, preserveScroll: true });
+    };
 
-    // Reset to first page when filters change
-    useEffect(() => {
-        goToPage(1);
-    }, [searchTerm, statusFilter, courseFilter, yearLevelFilter]);
+    const handleCourseFilterChange = (val: string) => {
+        const newCourse = val === 'all' ? '' : val;
+        setCourseFilter(newCourse);
+        setPageIndex(1);
+        router.get(adminEvents(), {
+            search: searchTerm,
+            status: statusFilter,
+            course: newCourse,
+            year_level: yearLevelFilter,
+            page: 1,
+            per_page: pageSize,
+        }, { preserveState: true, preserveScroll: true });
+    };
+
+    const handleYearLevelFilterChange = (val: string) => {
+        const newYear = val === 'all' ? '' : val;
+        setYearLevelFilter(newYear);
+        setPageIndex(1);
+        router.get(adminEvents(), {
+            search: searchTerm,
+            status: statusFilter,
+            course: courseFilter,
+            year_level: newYear,
+            page: 1,
+            per_page: pageSize,
+        }, { preserveState: true, preserveScroll: true });
+    };
 
     // Use server-provided events directly (no client-side slicing)
     const displayedEvents = filteredEvents;
@@ -746,8 +781,8 @@ export default function AdminEventsIndex() {
                                         ))}
                                     </div>
                                 </div>
-                                <div className="p-6">
-                                    <div className="h-[620px] rounded-xl border border-slate-100 bg-slate-50/50 p-2 dark:border-slate-800 dark:bg-[#020617]/50">
+                                <div className="p-4">
+                                    <div className="h-[640px] rounded-2xl border border-slate-200/80 bg-white/70 p-2 dark:border-slate-800 dark:bg-[#0B192C]/40 backdrop-blur-sm shadow-sm">
                                         <FullCalendarWrapper
                                             events={allEvents.map((e) => ({
                                                 id: String(e.id),
@@ -781,7 +816,7 @@ export default function AdminEventsIndex() {
                                                 onChange={(e) => setSearchTerm(e.target.value)}
                                             />
                                         </div>
-                                        <Select value={statusFilter || 'all'} onValueChange={(value) => setStatusFilter(value === 'all' ? '' : value)}>
+                                        <Select value={statusFilter || 'all'} onValueChange={handleStatusFilterChange}>
                                             <SelectTrigger className="h-9 w-32 rounded-xl border-slate-200 bg-slate-50 text-xs font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-white">
                                                 <SelectValue placeholder="All Status" />
                                             </SelectTrigger>
@@ -792,7 +827,7 @@ export default function AdminEventsIndex() {
                                                 <SelectItem value="completed">Completed</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                        <Select value={courseFilter || 'all'} onValueChange={(value) => setCourseFilter(value === 'all' ? '' : value)}>
+                                        <Select value={courseFilter || 'all'} onValueChange={handleCourseFilterChange}>
                                             <SelectTrigger className="h-9 w-36 rounded-xl border-slate-200 bg-slate-50 text-xs font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-white">
                                                 <SelectValue placeholder="All Courses" />
                                             </SelectTrigger>
@@ -803,7 +838,7 @@ export default function AdminEventsIndex() {
                                                 ))}
                                             </SelectContent>
                                         </Select>
-                                        <Select value={yearLevelFilter || 'all'} onValueChange={(value) => setYearLevelFilter(value === 'all' ? '' : value)}>
+                                        <Select value={yearLevelFilter || 'all'} onValueChange={handleYearLevelFilterChange}>
                                             <SelectTrigger className="h-9 w-36 rounded-xl border-slate-200 bg-slate-50 text-xs font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-white">
                                                 <SelectValue placeholder="All Year Levels" />
                                             </SelectTrigger>
@@ -992,28 +1027,38 @@ export default function AdminEventsIndex() {
                             confirmButtonText: 'Yes, create',
                         }).then((result) => {
                             if (result.isConfirmed) {
-                                router.post(adminEvents(), {
-                                    event_name: payload.eventName,
-                                    description: payload.description,
-                                    courses: payload.courses,
-                                    year_levels: payload.yearLevels,
-                                    location: payload.location,
+                                const isGeofence = payload.attendanceType === 'dynamic_qr' || Boolean(payload.geofenceEnabled);
+                                const sanitizedPayload = {
+                                    event_name: payload.eventName.trim(),
+                                    organizer: payload.organizer.trim(),
+                                    location: payload.location.trim(),
                                     event_date: payload.eventDate,
                                     event_time: payload.eventTime,
-                                    registration_end_time: payload.registrationEndTime,
-                                    organizer: payload.organizer,
-                                    geofence_enabled: payload.geofenceEnabled,
-                                    geofence_latitude: payload.geofenceLatitude,
-                                    geofence_longitude: payload.geofenceLongitude,
-                                    geofence_radius_m: payload.geofenceRadiusM,
-                                    attendance_type: payload.attendanceType,
+                                    registration_end_time: payload.registrationEndTime?.trim() || null,
+                                    description: payload.description?.trim() || null,
+                                    courses: payload.courses || [],
+                                    year_levels: payload.yearLevels || [],
+                                    geofence_enabled: isGeofence,
+                                    geofence_latitude: isGeofence && payload.geofenceLatitude ? Number(payload.geofenceLatitude) : null,
+                                    geofence_longitude: isGeofence && payload.geofenceLongitude ? Number(payload.geofenceLongitude) : null,
+                                    geofence_radius_m: isGeofence && payload.geofenceRadiusM ? Number(payload.geofenceRadiusM) : 50,
+                                    attendance_type: payload.attendanceType || 'qr_scanner',
+                                    scanner_student_ids: payload.scannerStudentIds || [],
                                     scanner_portal_active: true,
-                                }, {
+                                };
+
+                                router.post(adminEvents(), sanitizedPayload, {
                                     onSuccess: () => {
                                         setIsEventModalOpen(false);
                                         Swal.fire({ icon: 'success', title: 'Created!', text: 'Event created successfully.', timer: 2000, showConfirmButton: false });
                                     },
-                                    onError: () => Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to create event. Please check the form.' }),
+                                    onError: (errs) => {
+                                        console.error('Event creation errors:', errs);
+                                        const msg = errs && typeof errs === 'object' && Object.keys(errs).length > 0
+                                            ? Object.values(errs).flat().join('<br/>')
+                                            : 'Failed to create event. Please check the form fields.';
+                                        Swal.fire({ icon: 'error', title: 'Validation Error', html: msg });
+                                    },
                                 });
                             }
                         });
@@ -1028,28 +1073,38 @@ export default function AdminEventsIndex() {
                             confirmButtonText: 'Yes, update',
                         }).then((result) => {
                             if (result.isConfirmed) {
-                                router.put(`/admin/events/${modalData.id}`, {
-                                    event_name: payload.eventName,
-                                    description: payload.description,
-                                    courses: payload.courses,
-                                    year_levels: payload.yearLevels,
-                                    location: payload.location,
+                                const isGeofence = payload.attendanceType === 'dynamic_qr' || Boolean(payload.geofenceEnabled);
+                                const sanitizedPayload = {
+                                    event_name: payload.eventName.trim(),
+                                    organizer: payload.organizer.trim(),
+                                    location: payload.location.trim(),
                                     event_date: payload.eventDate,
                                     event_time: payload.eventTime,
-                                    registration_end_time: payload.registrationEndTime,
-                                    organizer: payload.organizer,
-                                    geofence_enabled: payload.geofenceEnabled,
-                                    geofence_latitude: payload.geofenceLatitude,
-                                    geofence_longitude: payload.geofenceLongitude,
-                                    geofence_radius_m: payload.geofenceRadiusM,
-                                    attendance_type: payload.attendanceType,
+                                    registration_end_time: payload.registrationEndTime?.trim() || null,
+                                    description: payload.description?.trim() || null,
+                                    courses: payload.courses || [],
+                                    year_levels: payload.yearLevels || [],
+                                    geofence_enabled: isGeofence,
+                                    geofence_latitude: isGeofence && payload.geofenceLatitude ? Number(payload.geofenceLatitude) : null,
+                                    geofence_longitude: isGeofence && payload.geofenceLongitude ? Number(payload.geofenceLongitude) : null,
+                                    geofence_radius_m: isGeofence && payload.geofenceRadiusM ? Number(payload.geofenceRadiusM) : 50,
+                                    attendance_type: payload.attendanceType || 'qr_scanner',
+                                    scanner_student_ids: payload.scannerStudentIds || [],
                                     scanner_portal_active: modalData.scanner_portal_active ?? true,
-                                }, {
+                                };
+
+                                router.put(`/admin/events/${modalData.id}`, sanitizedPayload, {
                                     onSuccess: () => {
                                         setIsEventModalOpen(false);
                                         Swal.fire({ icon: 'success', title: 'Updated!', text: 'Event updated successfully.', timer: 2000, showConfirmButton: false });
                                     },
-                                    onError: () => Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to update event. Please check the form.' }),
+                                    onError: (errs) => {
+                                        console.error('Event update errors:', errs);
+                                        const msg = errs && typeof errs === 'object' && Object.keys(errs).length > 0
+                                            ? Object.values(errs).flat().join('<br/>')
+                                            : 'Failed to update event. Please check the form fields.';
+                                        Swal.fire({ icon: 'error', title: 'Validation Error', html: msg });
+                                    },
                                 });
                             }
                         });

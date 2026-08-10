@@ -180,14 +180,6 @@ class Event extends Model
      */
     public function scopeActive($query)
     {
-        try {
-            self::whereNull('archived_at')
-                ->whereDate('event_date', '<', Carbon::now()->toDateString())
-                ->update(['archived_at' => Carbon::now()]);
-        } catch (\Throwable $e) {
-            // Prevent query failure if DB is not ready during migration/seeding
-        }
-
         return $query->whereNull('archived_at');
     }
 

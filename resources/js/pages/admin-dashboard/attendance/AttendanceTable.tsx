@@ -11,6 +11,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { adminQrScanner } from '@/routes';
 
@@ -30,17 +37,12 @@ type AttendanceRow = {
     location: string;
 };
 
-type DateRange = {
-    start: string;
-    end: string;
-};
-
 type Props = {
     attendanceEvents: AttendanceRow[];
-    dateRange: DateRange;
-    setDateRange: (range: DateRange) => void;
     searchQuery: string;
     setSearchQuery: (query: string) => void;
+    statusFilter?: string;
+    setStatusFilter?: (status: string) => void;
     onEdit?: (event: AttendanceRow) => void;
     onDelete?: (eventId: string) => void;
     onOpenRealTimeMonitoring?: (eventId: string, tab?: 'dashboard' | 'scanner' | 'dynamic-qr') => void;
@@ -58,10 +60,10 @@ type Props = {
 
 export default function AttendanceTable({
     attendanceEvents,
-    dateRange,
-    setDateRange,
     searchQuery,
     setSearchQuery,
+    statusFilter,
+    setStatusFilter,
     onEdit,
     onDelete,
     onOpenRealTimeMonitoring,
@@ -136,88 +138,75 @@ export default function AttendanceTable({
     };
 
     return (
-        <Card className="border-0 bg-white shadow-lg dark:bg-[#0B192C]/50">
-            <CardHeader className="pb-3">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <CardTitle className="text-lg font-semibold text-slate-800 dark:text-white">
-                            Event List
-                        </CardTitle>
-                        {onSelectEventRow && (
-                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                Click a row to show its statistics above; click
-                                the same row again to clear.
-                            </p>
-                        )}
+        <Card className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-[#0B192C]/60 dark:ring-slate-800 border-0">
+            <CardHeader className="flex flex-col gap-4 border-b border-slate-100 px-6 py-5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between bg-slate-50/50 dark:bg-slate-800/30">
+                <div>
+                    <CardTitle className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+                        Events Attendance List
+                    </CardTitle>
+                    {onSelectEventRow ? (
+                        <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                            Click a row to inspect event attendance statistics
+                        </p>
+                    ) : (
+                        <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                            Manage event check-in logs and generate attendance reports
+                        </p>
+                    )}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                    <div className="relative">
+                        <Search className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+                        <Input
+                            placeholder="Search events..."
+                            className="h-9 w-48 rounded-xl border-slate-200 bg-slate-50 pl-8 text-xs font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-white focus-visible:ring-blue-500"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
                     </div>
-                    <div className="flex flex-wrap items-center gap-3">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                            <span>Date:</span>
-                            <Input
-                                type="date"
-                                value={dateRange.start}
-                                onChange={(e) =>
-                                    setDateRange({
-                                        ...dateRange,
-                                        start: e.target.value,
-                                    })
-                                }
-                                className="h-9 w-[140px] border border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-                            />
-                        </div>
-                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                            <span>To:</span>
-                            <Input
-                                type="date"
-                                value={dateRange.end}
-                                onChange={(e) =>
-                                    setDateRange({
-                                        ...dateRange,
-                                        end: e.target.value,
-                                    })
-                                }
-                                className="h-9 w-[140px] border border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-                            />
-                        </div>
-                        <div className="relative">
-                            <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-                            <Input
-                                placeholder="Search"
-                                className="h-9 w-[200px] border border-slate-200 bg-white pl-9 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-                    </div>
+                    {setStatusFilter && (
+                        <Select value={statusFilter || 'all'} onValueChange={(val) => setStatusFilter(val === 'all' ? '' : val)}>
+                            <SelectTrigger className="h-9 w-32 rounded-xl border-slate-200 bg-slate-50 text-xs font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                                <SelectValue placeholder="All Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Status</SelectItem>
+                                <SelectItem value="upcoming">Upcoming</SelectItem>
+                                <SelectItem value="ongoing">Ongoing</SelectItem>
+                                <SelectItem value="completed">Completed</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    )}
                 </div>
             </CardHeader>
 
-            <CardContent>
-                <div className="overflow-x-auto rounded-xl border border-slate-100 shadow-sm dark:border-slate-800">
-                    <table className="min-w-full border-collapse">
-                        <thead className="border-b border-slate-100 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
+            <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm border-collapse">
+                        <thead className="bg-slate-50/50 dark:bg-slate-900/30 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-850">
                             <tr>
                                 <th
                                     scope="col"
-                                    className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase"
+                                    className="px-6 py-3.5 font-bold"
                                 >
-                                    Event Name
+                                    Event Details
                                 </th>
                                 <th
                                     scope="col"
-                                    className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase"
+                                    className="px-6 py-3.5 font-bold"
                                 >
                                     Date & Status
                                 </th>
                                 <th
                                     scope="col"
-                                    className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase"
+                                    className="px-6 py-3.5 font-bold"
                                 >
                                     Attendance Rate
                                 </th>
                                 <th
                                     scope="col"
-                                    className="px-6 py-4 text-right text-[10px] font-bold tracking-wider uppercase"
+                                    className="px-6 py-3.5 text-right font-bold"
                                 >
                                     Actions
                                 </th>

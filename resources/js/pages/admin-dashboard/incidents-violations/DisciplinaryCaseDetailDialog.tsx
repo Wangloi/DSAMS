@@ -40,7 +40,7 @@ export default function DisciplinaryCaseDetailDialog({
 }: DisciplinaryCaseDetailDialogProps) {
     if (!incident) return null;
 
-    const isMajor = incident.classification === 'Major';
+    const isMajor = incident.classification !== 'Warning';
     const severityText = isMajor ? 'Critical Severity' : 'Moderate Severity';
     const severityColor = isMajor 
         ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50' 

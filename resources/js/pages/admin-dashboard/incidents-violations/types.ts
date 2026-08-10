@@ -55,6 +55,7 @@ export type KpiCard = {
     change: string;
     accent: string;
     iconWrap: string;
+    subtitle?: string;
 };
 
 export type DisciplinaryActionType = 'Warning' | 'Suspension' | 'Exclusion' | 'Expulsion';

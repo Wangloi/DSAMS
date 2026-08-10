@@ -291,29 +291,50 @@ export default function AdminAnalyticsPage(props: Props) {
                         </Card>
                     )}
 
-                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
+                    {/* Analytics Main Cards Grid */}
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                         {/* Attendance Trends */}
-                        <Card className="bg-white dark:bg-[#0B192C]/50 border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden group">
-                            <CardHeader className="pb-4 border-b border-slate-50 dark:border-slate-800/50">
-                                <CardTitle className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Attendance Trends</CardTitle>
+                        <Card className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all duration-300 hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900/60 dark:backdrop-blur-xl">
+                            <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-500" />
+                            <CardHeader className="flex flex-row items-center justify-between pb-2 pt-6">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <CardTitle className="text-base font-bold text-slate-900 dark:text-white">
+                                            Attendance Trends
+                                        </CardTitle>
+                                        <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">
+                                            {reportRange.toUpperCase()}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                        Overview of student check-in frequency and turnouts
+                                    </p>
+                                </div>
                             </CardHeader>
-                            <CardContent className="p-6">
-                                <div className="h-56">
+                            <CardContent className="p-6 pt-4">
+                                <div className="h-64 w-full">
                                     <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart data={attendanceData} margin={{ top: 10, right: 16, left: -8, bottom: 0 }}>
+                                        <AreaChart data={attendanceData} margin={{ top: 10, right: 16, left: -16, bottom: 0 }}>
                                             <defs>
                                                 <linearGradient id="attendanceFill" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.2} />
-                                                    <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.01} />
+                                                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.35} />
+                                                    <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.0} />
                                                 </linearGradient>
                                             </defs>
-                                            <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 600, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                                            <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                                            <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 500, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                            <YAxis tick={{ fontSize: 11, fontWeight: 500, fill: '#64748b' }} axisLine={false} tickLine={false} />
                                             <Tooltip
-                                                contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '11px', fontWeight: 'bold' }}
-                                                itemStyle={{ color: '#fff' }}
+                                                contentStyle={{
+                                                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                    borderRadius: '12px',
+                                                    color: '#fff',
+                                                    fontSize: '12px',
+                                                    fontWeight: '600',
+                                                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)'
+                                                }}
                                             />
-                                            <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} fill="url(#attendanceFill)" />
+                                            <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} fill="url(#attendanceFill)" activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2, fill: '#ffffff' }} />
                                         </AreaChart>
                                     </ResponsiveContainer>
                                 </div>
@@ -321,42 +342,76 @@ export default function AdminAnalyticsPage(props: Props) {
                         </Card>
 
                         {/* Violation Trends */}
-                        <Card className="bg-white dark:bg-[#0B192C]/50 border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden group">
-                            <CardHeader className="pb-4 border-b border-slate-50 dark:border-slate-800/50">
-                                <CardTitle className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Violation Trends</CardTitle>
+                        <Card className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all duration-300 hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900/60 dark:backdrop-blur-xl">
+                            <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-amber-500 via-violet-500 to-rose-500" />
+                            <CardHeader className="flex flex-row items-center justify-between pb-2 pt-6">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <CardTitle className="text-base font-bold text-slate-900 dark:text-white">
+                                            Violation Breakdown
+                                        </CardTitle>
+                                        <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
+                                            DISCIPLINE
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                        Distribution of disciplinary cases by severity levels
+                                    </p>
+                                </div>
                             </CardHeader>
-                            <CardContent className="p-6">
-                                <div className="relative h-56">
+                            <CardContent className="p-6 pt-4">
+                                <div className="h-56 w-full">
                                     <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={violationData} margin={{ top: 10, right: 16, left: -8, bottom: 0 }}>
-                                            <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 600, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                                            <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                                        <BarChart data={violationData} margin={{ top: 10, right: 16, left: -16, bottom: 0 }}>
+                                            <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 500, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                            <YAxis tick={{ fontSize: 11, fontWeight: 500, fill: '#64748b' }} axisLine={false} tickLine={false} />
                                             <Tooltip
-                                                contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '11px', fontWeight: 'bold' }}
+                                                contentStyle={{
+                                                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                    borderRadius: '12px',
+                                                    color: '#fff',
+                                                    fontSize: '12px',
+                                                    fontWeight: '600',
+                                                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)'
+                                                }}
                                             />
                                             <Bar dataKey="warning" stackId="a" fill="#f59e0b" radius={[0, 0, 0, 0]} />
                                             <Bar dataKey="suspension" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} />
                                             <Bar dataKey="exclusion" stackId="a" fill="#8b5cf6" radius={[0, 0, 0, 0]} />
-                                            <Bar dataKey="expulsion" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                                            <Bar dataKey="expulsion" stackId="a" fill="#ef4444" radius={[6, 6, 0, 0]} />
                                         </BarChart>
                                     </ResponsiveContainer>
-                                    <div className="pointer-events-none absolute bottom-0 left-0 flex flex-wrap items-center gap-4 text-[10px] font-bold uppercase tracking-tight">
-                                        <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-amber-500" />Warning</div>
-                                        <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-blue-500" />Suspension</div>
-                                        <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-violet-500" />Exclusion</div>
-                                        <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-rose-500" />Expulsion</div>
-                                    </div>
+                                </div>
+                                <div className="mt-3 flex flex-wrap items-center justify-center gap-4 rounded-xl bg-slate-50/80 p-2.5 text-xs font-semibold dark:bg-slate-800/40">
+                                    <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-amber-500" /><span className="text-slate-600 dark:text-slate-300">Warning</span></div>
+                                    <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-blue-500" /><span className="text-slate-600 dark:text-slate-300">Suspension</span></div>
+                                    <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-violet-500" /><span className="text-slate-600 dark:text-slate-300">Exclusion</span></div>
+                                    <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-rose-500" /><span className="text-slate-600 dark:text-slate-300">Expulsion</span></div>
                                 </div>
                             </CardContent>
                         </Card>
 
                         {/* Evaluation Sentiment */}
-                        <Card className="bg-white dark:bg-[#0B192C]/50 border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden group">
-                            <CardHeader className="pb-4 border-b border-slate-50 dark:border-slate-800/50">
-                                <CardTitle className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Evaluation Sentiment</CardTitle>
+                        <Card className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all duration-300 hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900/60 dark:backdrop-blur-xl">
+                            <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
+                            <CardHeader className="flex flex-row items-center justify-between pb-2 pt-6">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <CardTitle className="text-base font-bold text-slate-900 dark:text-white">
+                                            Evaluation Sentiment
+                                        </CardTitle>
+                                        <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                                            FEEDBACK
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                        Overall sentiment composition from evaluations
+                                    </p>
+                                </div>
                             </CardHeader>
-                            <CardContent className="p-6">
-                                <div className="h-56">
+                            <CardContent className="p-6 pt-2">
+                                <div className="h-52 w-full">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <PieChart>
                                             <Pie
@@ -365,47 +420,77 @@ export default function AdminAnalyticsPage(props: Props) {
                                                 nameKey="name"
                                                 innerRadius={60}
                                                 outerRadius={80}
-                                                paddingAngle={5}
+                                                paddingAngle={4}
+                                                stroke="none"
                                             >
                                                 {analyticsData.evaluationSummary.sentiment.map((entry, index) => (
                                                     <Cell key={`cell-${index}`} fill={entry.color} />
                                                 ))}
                                             </Pie>
                                             <Tooltip
-                                                contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '11px', fontWeight: 'bold' }}
+                                                contentStyle={{
+                                                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                    borderRadius: '12px',
+                                                    color: '#fff',
+                                                    fontSize: '12px',
+                                                    fontWeight: '600',
+                                                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)'
+                                                }}
                                             />
                                         </PieChart>
                                     </ResponsiveContainer>
                                 </div>
-                                <div className="mt-4 grid grid-cols-2 gap-4">
-                                    <div className="rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3 text-center">
-                                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Respondents</div>
-                                        <div className="text-lg font-black text-slate-900 dark:text-white">{analyticsData.evaluationSummary.respondents}</div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 text-center dark:border-slate-800 dark:bg-slate-800/40">
+                                        <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">Respondents</div>
+                                        <div className="mt-0.5 text-xl font-black text-slate-900 dark:text-white">{analyticsData.evaluationSummary.respondents}</div>
                                     </div>
-                                    <div className="rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3 text-center">
-                                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Avg. Rating</div>
-                                        <div className="text-lg font-black text-slate-900 dark:text-white">{analyticsData.evaluationSummary.average || '0.0'}</div>
+                                    <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 text-center dark:border-slate-800 dark:bg-slate-800/40">
+                                        <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">Avg Rating</div>
+                                        <div className="mt-0.5 text-xl font-black text-slate-900 dark:text-white">{analyticsData.evaluationSummary.average || '0.0'}</div>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
                         {/* Evaluation Ratings Distribution */}
-                        <Card className="bg-white dark:bg-[#0B192C]/50 border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden group">
-                            <CardHeader className="pb-4 border-b border-slate-50 dark:border-slate-800/50">
-                                <CardTitle className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Evaluation Rating Distribution</CardTitle>
+                        <Card className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all duration-300 hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900/60 dark:backdrop-blur-xl">
+                            <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500" />
+                            <CardHeader className="flex flex-row items-center justify-between pb-2 pt-6">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <CardTitle className="text-base font-bold text-slate-900 dark:text-white">
+                                            Rating Distribution
+                                        </CardTitle>
+                                        <span className="inline-flex items-center rounded-full bg-purple-50 px-2.5 py-0.5 text-xs font-semibold text-purple-700 dark:bg-purple-500/10 dark:text-purple-400">
+                                            SCORES
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                        Detailed breakdown of ratings given across forms
+                                    </p>
+                                </div>
                             </CardHeader>
-                            <CardContent className="p-6">
-                                <div className="h-56">
+                            <CardContent className="p-6 pt-4">
+                                <div className="h-64 w-full">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <BarChart data={analyticsData.evaluationCounts} margin={{ top: 10, right: 16, left: -20, bottom: 0 }}>
-                                            <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 600, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                                            <YAxis tick={{ fontSize: 10, fontWeight: 600, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                                            <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 500, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                                            <YAxis tick={{ fontSize: 11, fontWeight: 500, fill: '#64748b' }} axisLine={false} tickLine={false} />
                                             <Tooltip
-                                                cursor={{ fill: 'rgba(59, 130, 246, 0.1)' }}
-                                                contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '11px', fontWeight: 'bold' }}
+                                                cursor={{ fill: 'rgba(147, 51, 234, 0.06)' }}
+                                                contentStyle={{
+                                                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                    borderRadius: '12px',
+                                                    color: '#fff',
+                                                    fontSize: '12px',
+                                                    fontWeight: '600',
+                                                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)'
+                                                }}
                                             />
-                                            <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                                            <Bar dataKey="value" fill="#a855f7" radius={[6, 6, 0, 0]} />
                                         </BarChart>
                                     </ResponsiveContainer>
                                 </div>
