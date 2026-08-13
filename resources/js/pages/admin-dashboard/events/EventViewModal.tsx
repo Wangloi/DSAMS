@@ -27,6 +27,7 @@ export type EventViewRecord = {
     geofence_latitude?: number | null;
     geofence_longitude?: number | null;
     scanner_portal_active: boolean;
+    scanner_student_ids?: (string | number)[] | null;
     archived_at: string | null;
     attendances: Array<{
         id: number;
@@ -266,20 +267,19 @@ export default function EventViewModal({
                                         </Label>
                                         <Input
                                             id="eventDate"
-                                            value={new Date(event.event_date)
-                                                .toISOString()
-                                                .slice(0, 10)}
+                                            value={typeof event.event_date === 'string'
+                                                ? event.event_date.split('T')[0]
+                                                : ''}
                                             readOnly
                                             className="h-9 bg-slate-50/50 dark:border-slate-600 dark:bg-slate-800"
                                         />
                                     </div>
-
                                     <div className="grid gap-2">
                                         <Label
                                             htmlFor="eventTime"
                                             className="text-sm font-medium text-slate-700 dark:text-slate-300"
                                         >
-                                            Time
+                                            Time-In
                                         </Label>
                                         <Input
                                             id="eventTime"
@@ -287,14 +287,31 @@ export default function EventViewModal({
                                             readOnly
                                             className="h-9 bg-slate-50/50 dark:border-slate-600 dark:bg-slate-800"
                                         />
+                                        {event.event_time && (
+                                            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
+                                                Time-In Ends:{' '}
+                                                {(() => {
+                                                    const [hours, minutes] = event.event_time.split(':').map(Number);
+                                                    const date = new Date();
+                                                    date.setHours(hours);
+                                                    date.setMinutes(minutes + 90);
+                                                    
+                                                    let h = date.getHours();
+                                                    const m = String(date.getMinutes()).padStart(2, '0');
+                                                    const ampm = h >= 12 ? 'pm' : 'am';
+                                                    h = h % 12;
+                                                    h = h ? h : 12;
+                                                    return `${h}:${m} ${ampm}`;
+                                                })()}
+                                            </span>
+                                        )}
                                     </div>
-
                                     <div className="grid gap-2">
                                         <Label
                                             htmlFor="registrationEndTime"
                                             className="text-sm font-medium text-slate-700 dark:text-slate-300"
                                         >
-                                            Registration End Time
+                                            Time-End
                                         </Label>
                                         <Input
                                             id="registrationEndTime"
@@ -302,6 +319,24 @@ export default function EventViewModal({
                                             readOnly
                                             className="h-9 bg-slate-50/50 dark:border-slate-600 dark:bg-slate-800"
                                         />
+                                        {event.registration_end_time && (
+                                            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
+                                                Time-End Ends:{' '}
+                                                {(() => {
+                                                    const [hours, minutes] = event.registration_end_time.split(':').map(Number);
+                                                    const date = new Date();
+                                                    date.setHours(hours);
+                                                    date.setMinutes(minutes + 90);
+                                                    
+                                                    let h = date.getHours();
+                                                    const m = String(date.getMinutes()).padStart(2, '0');
+                                                    const ampm = h >= 12 ? 'pm' : 'am';
+                                                    h = h % 12;
+                                                    h = h ? h : 12;
+                                                    return `${h}:${m} ${ampm}`;
+                                                })()}
+                                            </span>
+                                        )}
                                     </div>
 
                                     <div className="grid gap-2 sm:col-span-2">
@@ -537,7 +572,7 @@ export default function EventViewModal({
                                             {(!event.scanner_student_ids || event.scanner_student_ids.length === 0) ? (
                                                 <span className="text-xs text-slate-500 italic">No individual scanner in-charge assigned.</span>
                                             ) : (
-                                                event.scanner_student_ids.map((id) => (
+                                                event.scanner_student_ids.map((id: string | number) => (
                                                     <span
                                                         key={id}
                                                         className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:border-indigo-800/50 dark:bg-indigo-950/40 dark:text-indigo-300"

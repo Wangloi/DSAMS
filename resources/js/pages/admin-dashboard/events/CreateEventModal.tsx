@@ -347,7 +347,12 @@ export default function CreateEventModal({
                 errors.eventDate = 'Event Date is required';
             }
             if (!formData.eventTime) {
-                errors.eventTime = 'Event Time is required';
+                errors.eventTime = 'Time-In is required';
+            }
+            if (!formData.registrationEndTime) {
+                errors.registrationEndTime = 'Time-End is required';
+            } else if (formData.eventTime && formData.registrationEndTime <= formData.eventTime) {
+                errors.registrationEndTime = 'Time-End must be after Time-In';
             }
         } else if (step === 2) {
             if (formData.attendanceType === 'dynamic_qr') {
@@ -714,48 +719,155 @@ export default function CreateEventModal({
                                         )}
                                     </div>
 
-                                    {/* Event Start Time */}
-                                    <div className="space-y-1.5">
-                                        <Label htmlFor="eventTime" className="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                                            Start Time <span className="text-rose-500">*</span>
-                                        </Label>
-                                        <Input
-                                            id="eventTime"
-                                            type="time"
-                                            value={formData.eventTime}
-                                            onChange={(e) => {
-                                                setFormData((prev) => ({ ...prev, eventTime: e.target.value }));
-                                                if (validationErrors.eventTime) {
-                                                    setValidationErrors((prev) => {
-                                                        const copy = { ...prev };
-                                                        delete copy.eventTime;
-                                                        return copy;
-                                                    });
-                                                }
-                                            }}
-                                            className={`h-10 dark:border-slate-700 dark:bg-slate-800/80 ${
-                                                validationErrors.eventTime ? 'border-rose-500 focus-visible:ring-rose-500' : ''
-                                            }`}
-                                            required
-                                        />
-                                        {validationErrors.eventTime && (
-                                            <p className="text-xs text-rose-500 font-medium">{validationErrors.eventTime}</p>
-                                        )}
-                                    </div>
+                                    {/* Time-In / Time-Out paired block */}
+                                    <div className="space-y-1.5 sm:col-span-2">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-600/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400">
+                                                <Clock className="h-3.5 w-3.5" />
+                                            </div>
+                                            <Label className="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                                                Event Schedule
+                                            </Label>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-0 rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm dark:border-slate-700 dark:bg-slate-800/60">
+                                            {/* Time-In */}
+                                            <div className="p-3.5 border-r border-slate-200 dark:border-slate-700">
+                                                <div className="flex items-center gap-1.5 mb-2">
+                                                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">
+                                                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                                                    </span>
+                                                    <Label htmlFor="eventTime" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                                                        Time-In <span className="text-rose-500">*</span>
+                                                    </Label>
+                                                </div>
+                                                <Input
+                                                    id="eventTime"
+                                                    type="time"
+                                                    value={formData.eventTime}
+                                                    onChange={(e) => {
+                                                        const timeInVal = e.target.value;
+                                                         let calculatedTimeOut = formData.registrationEndTime;
+                                                         if (timeInVal) {
+                                                             const [hours, minutes] = timeInVal.split(':').map(Number);
+                                                             const tempDate = new Date();
+                                                             tempDate.setHours(hours);
+                                                             tempDate.setMinutes(minutes + 180);
+                                                             const pad = (n: number) => n.toString().padStart(2, '0');
+                                                             calculatedTimeOut = `${pad(tempDate.getHours())}:${pad(tempDate.getMinutes())}`;
+                                                         }
 
-                                    {/* Registration Cut-Off Time */}
-                                    <div className="space-y-1.5">
-                                        <Label htmlFor="registrationEndTime" className="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center justify-between">
-                                            <span>Registration Cut-off Time</span>
-                                            <span className="text-[11px] normal-case text-slate-400 font-normal">(Optional)</span>
-                                        </Label>
-                                        <Input
-                                            id="registrationEndTime"
-                                            type="time"
-                                            value={formData.registrationEndTime}
-                                            onChange={(e) => setFormData((prev) => ({ ...prev, registrationEndTime: e.target.value }))}
-                                            className="h-10 dark:border-slate-700 dark:bg-slate-800/80"
-                                        />
+                                                         setFormData((prev) => ({
+                                                            ...prev,
+                                                            eventTime: timeInVal,
+                                                            registrationEndTime: calculatedTimeOut,
+                                                        }));
+
+                                                        setValidationErrors((prev) => {
+                                                            const copy = { ...prev };
+                                                            if (timeInVal) {
+                                                                delete copy.eventTime;
+                                                            }
+                                                            if (calculatedTimeOut) {
+                                                                delete copy.registrationEndTime;
+                                                            }
+                                                            return copy;
+                                                        });
+                                                    }}
+                                                    className={`h-10 border-0 bg-transparent focus-visible:ring-1 dark:bg-transparent ${
+                                                        validationErrors.eventTime ? 'ring-1 ring-rose-500' : ''
+                                                    }`}
+                                                    required
+                                                />
+                                                {validationErrors.eventTime && (
+                                                    <p className="text-[11px] text-rose-500 font-medium mt-1">{validationErrors.eventTime}</p>
+                                                )}
+                                                {formData.eventTime && (
+                                                    <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
+                                                        Time-In Ends:{' '}
+                                                        {(() => {
+                                                            const [hours, minutes] = formData.eventTime.split(':').map(Number);
+                                                            const date = new Date();
+                                                            date.setHours(hours);
+                                                            date.setMinutes(minutes + 90);
+                                                            
+                                                            let h = date.getHours();
+                                                            const m = String(date.getMinutes()).padStart(2, '0');
+                                                            const ampm = h >= 12 ? 'pm' : 'am';
+                                                            h = h % 12;
+                                                            h = h ? h : 12;
+                                                            return `${h}:${m} ${ampm}`;
+                                                        })()}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            {/* Time-Out */}
+                                            <div className="p-3.5">
+                                                <div className="flex items-center gap-1.5 mb-2">
+                                                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-900/40">
+                                                        <span className="h-2 w-2 rounded-full bg-rose-500" />
+                                                    </span>
+                                                    <Label htmlFor="registrationEndTime" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                                                        Time-End <span className="text-rose-500">*</span>
+                                                    </Label>
+                                                </div>
+                                                <Input
+                                                    id="registrationEndTime"
+                                                    type="time"
+                                                    value={formData.registrationEndTime}
+                                                    onChange={(e) => {
+                                                        setFormData((prev) => ({ ...prev, registrationEndTime: e.target.value }));
+                                                        if (validationErrors.registrationEndTime) {
+                                                            setValidationErrors((prev) => {
+                                                                const copy = { ...prev };
+                                                                delete copy.registrationEndTime;
+                                                                return copy;
+                                                            });
+                                                        }
+                                                    }}
+                                                    className={`h-10 border-0 bg-transparent focus-visible:ring-1 dark:bg-transparent ${
+                                                        validationErrors.registrationEndTime ? 'ring-1 ring-rose-500' : ''
+                                                    }`}
+                                                    required
+                                                />
+                                                {validationErrors.registrationEndTime && (
+                                                    <p className="text-[11px] text-rose-500 font-medium mt-1">{validationErrors.registrationEndTime}</p>
+                                                )}
+                                                {formData.registrationEndTime && (
+                                                    <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
+                                                        Time-End Ends:{' '}
+                                                        {(() => {
+                                                            const [hours, minutes] = formData.registrationEndTime.split(':').map(Number);
+                                                            const date = new Date();
+                                                            date.setHours(hours);
+                                                            date.setMinutes(minutes + 90);
+                                                            
+                                                            let h = date.getHours();
+                                                            const m = String(date.getMinutes()).padStart(2, '0');
+                                                            const ampm = h >= 12 ? 'pm' : 'am';
+                                                            h = h % 12;
+                                                            h = h ? h : 12;
+                                                            return `${h}:${m} ${ampm}`;
+                                                        })()}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {/* Duration hint */}
+                                        {formData.eventTime && formData.registrationEndTime && formData.registrationEndTime > formData.eventTime && (
+                                            <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                                <Clock className="h-3 w-3" />
+                                                Duration:{' '}
+                                                {(() => {
+                                                    const [ih, im] = formData.eventTime.split(':').map(Number);
+                                                    const [oh, om] = formData.registrationEndTime.split(':').map(Number);
+                                                    const diff = (oh * 60 + om) - (ih * 60 + im);
+                                                    const h = Math.floor(diff / 60);
+                                                    const m = diff % 60;
+                                                    return h > 0 ? `${h}h ${m > 0 ? `${m}m` : ''}`.trim() : `${m}m`;
+                                                })()}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             </div>

@@ -14,7 +14,9 @@ import {
     Scale, 
     ShieldAlert, 
     UserCheck, 
-    ArrowLeft
+    ArrowLeft,
+    Paperclip,
+    ExternalLink
 } from 'lucide-react';
 import AdminLayout from '../admin-layout';
 import { adminIncidentsViolations, adminDashboard } from '@/routes';
@@ -278,6 +280,59 @@ export default function DisciplinaryCaseDetailPage({
                                     </div>
                                 </CardContent>
                             </Card>
+
+                            {/* Card 3.5: Evidence Attachments */}
+                            {(() => {
+                                const evidencePaths = (incident.raw as any)?.evidencePaths || [];
+                                if (evidencePaths.length === 0) return null;
+                                return (
+                                    <Card className="rounded-2xl border-0 bg-white shadow-lg ring-1 ring-slate-200 dark:bg-[#0B192C]/50 dark:ring-slate-800">
+                                        <CardContent className="p-6">
+                                            <div className="mb-4 flex items-center gap-2">
+                                                <Paperclip className="h-5 w-5 text-slate-700 dark:text-slate-300" />
+                                                <h4 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white">Evidence Attachments</h4>
+                                            </div>
+                                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                                {evidencePaths.map((path: string, i: number) => {
+                                                    const url = `/storage/${path}`;
+                                                    const name = path.split('/').pop() || `evidence-${i + 1}`;
+                                                    const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(path);
+                                                    return (
+                                                        <div key={path} className="group relative flex flex-col rounded-xl border border-slate-100 bg-slate-50 overflow-hidden dark:border-slate-800 dark:bg-slate-950/20">
+                                                            {isImage ? (
+                                                                <div className="relative aspect-video w-full overflow-hidden bg-slate-200 dark:bg-slate-900">
+                                                                    <img 
+                                                                        src={url} 
+                                                                        alt={name} 
+                                                                        className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105" 
+                                                                    />
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex aspect-video w-full items-center justify-center bg-slate-150 text-slate-400 dark:bg-slate-900 dark:text-slate-650">
+                                                                    <FileText className="h-10 w-10" />
+                                                                </div>
+                                                            )}
+                                                            <div className="flex items-center justify-between p-3">
+                                                                <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 truncate max-w-[150px]">
+                                                                    {name}
+                                                                </span>
+                                                                <a 
+                                                                    href={url} 
+                                                                    target="_blank" 
+                                                                    rel="noopener noreferrer"
+                                                                    className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-white text-slate-500 hover:text-blue-600 shadow-sm transition-colors dark:bg-slate-800 dark:text-slate-400"
+                                                                >
+                                                                    <ExternalLink className="h-3.5 w-3.5" />
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                );
+                            })()}
 
                             {/* Card 4: Notes & Compliance Tracking */}
                             <Card className="rounded-2xl border-0 bg-white shadow-lg ring-1 ring-slate-200 dark:bg-[#0B192C]/50 dark:ring-slate-800">

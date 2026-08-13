@@ -78,6 +78,8 @@ class AdminAttendanceController extends Controller
                     'attendanceDenominator' => $attendanceDenominator,
                     'status' => $event->status,
                     'location' => $event->location,
+                    'event_time' => $event->event_time,
+                    'registration_end_time' => $event->registration_end_time,
                     'registrationEndTime' => $event->registration_end_time,
                     'scannerStudentIds' => $event->scanner_student_ids ?? [],
                     'scannerPortalActive' => $scannerPortalActive,
@@ -288,7 +290,9 @@ class AdminAttendanceController extends Controller
                     'name' => (string) ($student?->name ?? ''),
                     'program' => (string) (($student?->course ?? $student?->program ?? '') ?: '—'),
                     'checked_in_at' => optional($timeCarbon)->toDateTimeString(),
+                    'checked_out_at' => $attendance->checked_out_at ? optional($attendance->checked_out_at)->toDateTimeString() : null,
                     'time' => optional($timeCarbon)->format('h:i A') ?: '—',
+                    'time_out' => $attendance->checked_out_at ? optional($attendance->checked_out_at)->format('h:i A') : '—',
                     'status' => (string) ($attendance->status ?? ''),
                 ];
             })
@@ -804,11 +808,16 @@ class AdminAttendanceController extends Controller
                         ? Carbon::parse($a->checked_in_at)->format('g:i A')
                         : ($a->scanned_at ? Carbon::parse($a->scanned_at)->format('g:i A') : '');
 
+                    $timeOut = $a->checked_out_at
+                        ? Carbon::parse($a->checked_out_at)->format('g:i A')
+                        : '';
+
                     return [
                         'name' => (string) ($a->student->name ?? ''),
                         'major' => (string) ($a->student->course ?? ''),
                         'year_level' => (string) ($a->student->year_level ?? ''),
                         'checked_in_at' => $checkedInAt,
+                        'time_out' => $timeOut,
                         'status' => ucfirst((string) ($a->status ?? 'present')),
                     ];
                 })

@@ -209,7 +209,13 @@ export default function AdminEventsIndex() {
     };
 
     const renderDateTime = (dateStr: string, timeStr: string) => {
-        const d = new Date(dateStr);
+        let d: Date;
+        if (dateStr && dateStr.includes('-')) {
+            const parts = dateStr.split('T')[0].split('-');
+            d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        } else {
+            d = new Date(dateStr);
+        }
         const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
         const formattedDate = d.toLocaleDateString('en-US', options);
 

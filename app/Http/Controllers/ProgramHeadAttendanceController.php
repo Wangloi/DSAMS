@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Student;
 use App\Models\Attendance;
 use App\Models\Event;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
@@ -50,7 +51,7 @@ class ProgramHeadAttendanceController extends Controller
             }
 
             $events = $eventModels
-                ->map(function ($event) use ($program, $lateByEventId) {
+                ->map(function (Event $event) use ($program, $lateByEventId) {
                     if ($event->total_attendees !== $event->attendances_count) {
                         $event->updateAttendanceCounts();
                     }
@@ -74,6 +75,9 @@ class ProgramHeadAttendanceController extends Controller
                         'attendanceDenominator' => $attendanceDenominator,
                         'status' => $event->status,
                         'location' => $event->location,
+                        'event_time' => $event->event_time,
+                        'registration_end_time' => $event->registration_end_time,
+                        'registrationEndTime' => $event->registration_end_time,
                         'scannerPortalActive' => Schema::hasColumn('events', 'scanner_portal_active') ? (bool) $event->scanner_portal_active : true,
                     ];
                 });
@@ -196,7 +200,9 @@ class ProgramHeadAttendanceController extends Controller
                     'name' => (string) ($student?->name ?? ''),
                     'program' => (string) (($student?->course ?? $student?->program ?? '') ?: '—'),
                     'checked_in_at' => optional($attendance->checked_in_at)->toDateTimeString(),
+                    'checked_out_at' => $attendance->checked_out_at ? optional($attendance->checked_out_at)->toDateTimeString() : null,
                     'time' => optional($attendance->checked_in_at)->format('h:i A') ?: '—',
+                    'time_out' => $attendance->checked_out_at ? optional($attendance->checked_out_at)->format('h:i A') : '—',
                     'status' => (string) ($attendance->status ?? ''),
                 ];
             })
@@ -252,14 +258,19 @@ class ProgramHeadAttendanceController extends Controller
             ->filter(fn ($a) => $a->student !== null)
             ->map(function ($a) {
                 $checkedInAt = $a->checked_in_at
-                    ? $a->checked_in_at->format('g:i A')
-                    : ($a->scanned_at ? $a->scanned_at->format('g:i A') : '');
+                    ? Carbon::parse($a->checked_in_at)->format('g:i A')
+                    : ($a->scanned_at ? Carbon::parse($a->scanned_at)->format('g:i A') : '');
+
+                $timeOut = $a->checked_out_at
+                    ? Carbon::parse($a->checked_out_at)->format('g:i A')
+                    : '';
 
                 return [
                     'name' => (string) ($a->student->name ?? ''),
                     'major' => (string) ($a->student->course ?? ''),
                     'year_level' => (string) ($a->student->year_level ?? ''),
                     'checked_in_at' => $checkedInAt,
+                    'time_out' => $timeOut,
                     'status' => ucfirst((string) ($a->status ?? 'present')),
                 ];
             })
@@ -267,7 +278,7 @@ class ProgramHeadAttendanceController extends Controller
             ->values()
             ->toArray();
 
-        $dateLabel = $event->event_date ? $event->event_date->format('F d, Y') : '';
+        $dateLabel = $event->event_date ? Carbon::parse($event->event_date)->format('F d, Y') : '';
         $timeLabel = (string) ($event->event_time ?? '');
         $locationLabel = (string) ($event->location ?? '');
         $eventDateTimeLabel = trim($dateLabel.($timeLabel ? ' | '.$timeLabel : '').($locationLabel ? ' | '.$locationLabel : ''));

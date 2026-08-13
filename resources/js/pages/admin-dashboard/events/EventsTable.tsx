@@ -130,7 +130,14 @@ export default function EventsTable({ events, onEdit, onArchive, onUnarchive, on
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
-                                            {new Date(event.event_date).toLocaleDateString()} at {event.event_time}
+                                            {(() => {
+                                                const dateStr = event.event_date;
+                                                if (dateStr && dateStr.includes('-')) {
+                                                    const parts = dateStr.split('T')[0].split('-');
+                                                    return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).toLocaleDateString();
+                                                }
+                                                return new Date(dateStr).toLocaleDateString();
+                                            })()} at {event.event_time}
                                         </td>
                                         <td className="px-6 py-4">
                                             <Badge className={getStatusColor(event.status)}>

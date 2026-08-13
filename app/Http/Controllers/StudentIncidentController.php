@@ -58,8 +58,9 @@ class StudentIncidentController extends Controller
                 }
             }
 
-            // Students are already an array of objects, let's just use them as is for storage
-            $incident = Incident::create([
+            // Use DisciplinaryService to create incident and evaluate rules
+            $disciplinaryService = app(\App\Services\DisciplinaryService::class);
+            $incident = $disciplinaryService->createIncident([
                 'violation_id' => $validated['violation_id'] ?? null,
                 'incident_type' => $validated['incident_type'],
                 'incident_date' => $validated['incident_date'],

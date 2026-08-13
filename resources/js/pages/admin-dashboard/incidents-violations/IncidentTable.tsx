@@ -142,8 +142,16 @@ export default function IncidentTable({
                         <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-transparent">
                             {incidents.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
-                                        No incidents found.
+                                    <td colSpan={7} className="px-6 py-16 text-center">
+                                        <div className="mx-auto flex max-w-sm flex-col items-center justify-center text-center">
+                                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 mb-4 border border-slate-100 dark:border-slate-700/50 shadow-inner">
+                                                <Gavel className="h-6 w-6" />
+                                            </div>
+                                            <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-200">No Incident Records Logged</h3>
+                                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-normal max-w-[280px]">
+                                                All students are currently in good standing. New incidents reported will appear in this registry.
+                                            </p>
+                                        </div>
                                     </td>
                                 </tr>
                             ) : (

@@ -21,13 +21,15 @@ import {
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { adminAttendanceLogs } from '@/routes';
-
 type Attendee = {
     id: string;
     student_id: string;
     name: string;
     program: string;
     checked_in_at: string;
+    checked_out_at?: string | null;
+    time?: string;
+    time_out?: string;
     status: string;
 };
 
@@ -64,6 +66,9 @@ export default function EventAttendeesModal({ open, onOpenChange, eventId, event
                     name: String(r.name ?? ''),
                     program: String(r.program ?? ''),
                     checked_in_at: String(r.checked_in_at ?? ''),
+                    checked_out_at: r.checked_out_at ? String(r.checked_out_at) : null,
+                    time: String(r.time ?? '—'),
+                    time_out: String(r.time_out ?? '—'),
                     status: String(r.status ?? '').toLowerCase(),
                 }));
                 setAttendees(rows);
@@ -162,7 +167,8 @@ export default function EventAttendeesModal({ open, onOpenChange, eventId, event
                                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Student ID</th>
                                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Name</th>
                                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Program</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Checked In</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Time In</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Time Out</th>
                                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Status</th>
                                 </tr>
                             </thead>
@@ -172,7 +178,8 @@ export default function EventAttendeesModal({ open, onOpenChange, eventId, event
                                         <td className="px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{attendee.student_id}</td>
                                         <td className="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">{attendee.name}</td>
                                         <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{attendee.program}</td>
-                                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{attendee.checked_in_at}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{attendee.time}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{attendee.time_out}</td>
                                         <td className="px-6 py-4 text-right">{getStatusBadge(attendee.status)}</td>
                                     </tr>
                                 ))}

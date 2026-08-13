@@ -7,6 +7,7 @@ use App\Models\Evaluation;
 use App\Models\EvaluationResponse;
 use App\Models\Event;
 use App\Models\Incident;
+use App\Models\Program;
 use App\Models\Student;
 use App\Services\EvaluationEligibilityService;
 use App\Services\StudentNotificationPresenter;
@@ -52,8 +53,23 @@ class StudentDashboardController extends Controller
             'notifications_raw_first_type' => is_array($notifications) && count($notifications) > 0 ? ($notifications[0]['type'] ?? null) : null,
         ]);
 
+        \App\Models\Violation::ensureDefaultViolations();
         $violations = \App\Models\Violation::all();
         
+        // Fetch active programs for admission slip form (grouped by department)
+        $programs = Schema::hasTable('programs')
+            ? Program::where('is_active', true)
+                ->orderBy('department')
+                ->orderBy('name')
+                ->get(['id', 'name', 'code', 'department'])
+                ->map(fn ($p) => [
+                    'id'         => $p->id,
+                    'name'       => $p->name,
+                    'code'       => $p->code,
+                    'department' => $p->department ?? 'General',
+                ])
+            : collect();
+
         return Inertia::render('student/Dashboard', [
             'user' => $user,
             'stats' => $stats,
@@ -63,6 +79,7 @@ class StudentDashboardController extends Controller
             'events' => $events,
             'incidents' => $incidents,
             'violations' => $violations,
+            'programs' => $programs,
         ]);
     }
 

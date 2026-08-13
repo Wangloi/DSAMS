@@ -330,38 +330,71 @@ export default function EventEditModal({
                                             className={`h-9 dark:border-slate-600 dark:bg-slate-800 ${errors.event_date ? 'border-rose-500 focus-visible:ring-rose-500' : ''}`}
                                         />
                                     </div>
-
                                     <div className="grid gap-2">
                                         <Label
                                             htmlFor="eventTime"
                                             className="text-sm font-medium text-slate-700 dark:text-slate-300"
                                         >
-                                            Time *
+                                            Time-In *
                                         </Label>
                                         <Input
                                             id="eventTime"
                                             type="time"
                                             value={data.event_time}
-                                            onChange={(e) =>
-                                                setData(
-                                                    'event_time',
-                                                    e.target.value,
-                                                )
-                                            }
+                                            onChange={(e) => {
+                                                const timeInVal = e.target.value;
+                                                let calculatedTimeOut = data.registration_end_time;
+                                                if (timeInVal) {
+                                                    const [hours, minutes] = timeInVal.split(':').map(Number);
+                                                    const tempDate = new Date();
+                                                    tempDate.setHours(hours);
+                                                    tempDate.setMinutes(minutes + 180);
+                                                    const pad = (n: number) => n.toString().padStart(2, '0');
+                                                    calculatedTimeOut = `${pad(tempDate.getHours())}:${pad(tempDate.getMinutes())}`;
+                                                }
+
+                                                setData((prev) => ({
+                                                    ...prev,
+                                                    event_time: timeInVal,
+                                                    registration_end_time: calculatedTimeOut,
+                                                }));
+                                            }}
                                             className={`h-9 dark:border-slate-600 dark:bg-slate-800 ${errors.event_time ? 'border-rose-500 focus-visible:ring-rose-500' : ''}`}
                                         />
+                                        {errors.event_time && (
+                                            <span className="text-xs font-medium text-rose-500">
+                                                {String(errors.event_time)}
+                                            </span>
+                                        )}
+                                        {data.event_time && (
+                                            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
+                                                Time-In Ends:{' '}
+                                                {(() => {
+                                                    const [hours, minutes] = data.event_time.split(':').map(Number);
+                                                    const date = new Date();
+                                                    date.setHours(hours);
+                                                    date.setMinutes(minutes + 90);
+                                                    
+                                                    let h = date.getHours();
+                                                    const m = String(date.getMinutes()).padStart(2, '0');
+                                                    const ampm = h >= 12 ? 'pm' : 'am';
+                                                    h = h % 12;
+                                                    h = h ? h : 12;
+                                                    return `${h}:${m} ${ampm}`;
+                                                })()}
+                                            </span>
+                                        )}
                                     </div>
-
                                     <div className="grid gap-2">
                                         <Label
                                             htmlFor="registrationEndTime"
                                             className="text-sm font-medium text-slate-700 dark:text-slate-300"
                                         >
-                                            Registration End Time
+                                            Time-End *
                                         </Label>
                                         <Input
                                             id="registrationEndTime"
-                                            type="datetime-local"
+                                            type="time"
                                             value={data.registration_end_time}
                                             onChange={(e) =>
                                                 setData(
@@ -369,11 +402,32 @@ export default function EventEditModal({
                                                     e.target.value,
                                                 )
                                             }
-                                            className="h-9 dark:border-slate-600 dark:bg-slate-800"
+                                            className={`h-9 dark:border-slate-600 dark:bg-slate-800 ${errors.registration_end_time ? 'border-rose-500 focus-visible:ring-rose-500' : ''}`}
                                         />
+                                        {errors.registration_end_time && (
+                                            <span className="text-xs font-medium text-rose-500">
+                                                {String(errors.registration_end_time)}
+                                            </span>
+                                        )}
+                                        {data.registration_end_time && (
+                                            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
+                                                Time-End Ends:{' '}
+                                                {(() => {
+                                                    const [hours, minutes] = data.registration_end_time.split(':').map(Number);
+                                                    const date = new Date();
+                                                    date.setHours(hours);
+                                                    date.setMinutes(minutes + 90);
+                                                    
+                                                    let h = date.getHours();
+                                                    const m = String(date.getMinutes()).padStart(2, '0');
+                                                    const ampm = h >= 12 ? 'pm' : 'am';
+                                                    h = h % 12;
+                                                    h = h ? h : 12;
+                                                    return `${h}:${m} ${ampm}`;
+                                                })()}
+                                            </span>
+                                        )}
                                     </div>
-
-
 
                                 <div className="grid gap-2 border-t border-slate-100 pt-4 sm:col-span-2 dark:border-slate-800">
                                     <div className="flex items-center gap-2">

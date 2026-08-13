@@ -209,7 +209,7 @@ export default function ProgramHeadLogin({
                                                     </div>
 
                                                     {canResetPassword && (
-                                                        <TextLink href={request()} className="text-sm text-blue-700" tabIndex={5}>
+                                                        <TextLink href={forgotPassword()} className="text-sm text-blue-700" tabIndex={5}>
                                                             Forgot password?
                                                         </TextLink>
                                                     )}

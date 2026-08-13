@@ -19,12 +19,12 @@ import Swal from 'sweetalert2';
 import {
     Select,
     SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
     SelectGroup,
+    SelectItem,
     SelectLabel,
     SelectSeparator,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
@@ -96,6 +96,13 @@ type EventRecord = {
     scanner_portal_active?: boolean;
 };
 
+type ProgramOption = {
+    id: number;
+    name: string;
+    code: string;
+    department: string;
+};
+
 type Props = {
     user?: User;
     stats?: {
@@ -110,6 +117,7 @@ type Props = {
         name: string;
         section: string;
     }>;
+    programs?: ProgramOption[];
 };
 
 export default function StudentDashboard({
@@ -118,6 +126,7 @@ export default function StudentDashboard({
     evaluations: serverEvaluations,
     events = [],
     violations = [],
+    programs: serverPrograms = [],
 }: Props) {
     const page = usePage();
     const getInitials = useInitials();
@@ -174,6 +183,24 @@ export default function StudentDashboard({
             : recentNotifications;
 
     const activeEvents = events.filter((e) => e.scanner_portal_active);
+
+    // Resolve the student's course code to the full program name from the programs table
+    const studentCourse = ((authUser as any)?.course ?? '').trim();
+    const resolvedProgram = useMemo(() => {
+        if (!studentCourse || serverPrograms.length === 0) return null;
+        const courseKey = studentCourse.toLowerCase();
+        return serverPrograms.find(
+            (p) =>
+                p.code.toLowerCase() === courseKey ||
+                p.name.toLowerCase() === courseKey,
+        ) ?? null;
+    }, [studentCourse, serverPrograms]);
+
+    const autoFilledProgram = resolvedProgram
+        ? `${resolvedProgram.code} — ${resolvedProgram.name}`
+        : studentCourse || 'N/A';
+
+    const autoFilledDepartment = resolvedProgram?.department ?? '';
 
     const [academicYear, setAcademicYear] = useState('2024 - 2025');
     const [reportIncidentOpen, setReportIncidentOpen] = useState(false);
@@ -492,8 +519,9 @@ export default function StudentDashboard({
     const onSubmitAdmissionSlip = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Combine program + year_level into program_year_level for submission
-        const combined = [admissionSlipData.program, admissionSlipData.year_level]
+        // Combine resolved program name + year_level into program_year_level for submission
+        const programName = resolvedProgram?.name ?? admissionSlipData.program;
+        const combined = [programName, admissionSlipData.year_level]
             .filter(Boolean)
             .join(' ');
 
@@ -911,23 +939,19 @@ export default function StudentDashboard({
                                         htmlFor="program"
                                         className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
                                     >
-                                        Program
+                                        Department / Program
                                     </Label>
-                                    <Select
-                                        value={admissionSlipData.program}
-                                        onValueChange={(val) => setAdmissionSlipData('program', val)}
-                                    >
-                                        <SelectTrigger id="program" className="h-12 rounded-2xl border-slate-200 bg-slate-50 px-4 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50">
-                                            <SelectValue placeholder="Select program" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Information Technology Program">Information Technology Program</SelectItem>
-                                            <SelectItem value="Business Administration Program">Business Administration Program</SelectItem>
-                                            <SelectItem value="Hospitality Management Program">Hospitality Management Program</SelectItem>
-                                            <SelectItem value="Teacher Education Program">Teacher Education Program</SelectItem>
-                                            <SelectItem value="Criminal Justice Education Program">Criminal Justice Education Program</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                    <div className="flex h-12 items-center rounded-2xl border border-slate-200 bg-slate-100 px-4 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                        {autoFilledProgram}
+                                    </div>
+                                    {autoFilledDepartment && (
+                                        <p className="ml-1 text-[10px] text-slate-400">
+                                            Department: <span className="font-semibold text-slate-500 dark:text-slate-300">{autoFilledDepartment}</span>
+                                        </p>
+                                    )}
+                                    {!autoFilledDepartment && (
+                                        <p className="ml-1 text-[10px] text-slate-400">Auto-filled from your account</p>
+                                    )}
                                     {admissionSlipErrors.program_year_level && (
                                         <div className="ml-1 text-[11px] font-bold text-rose-500">
                                             {admissionSlipErrors.program_year_level}

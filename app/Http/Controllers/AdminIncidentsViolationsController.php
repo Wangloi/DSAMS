@@ -17,6 +17,7 @@ class AdminIncidentsViolationsController extends Controller
 {
     public function index(): Response
     {
+        \App\Models\Violation::ensureDefaultViolations();
         $violations = \App\Models\Violation::all();
 
         $incidents = Incident::where('is_archived', false)->orderByDesc('id')
@@ -93,6 +94,7 @@ class AdminIncidentsViolationsController extends Controller
                         'classification' => $incident->classification,
                         'status' => $incident->status,
                         'receivedBy' => $incident->received_by,
+                        'evidencePaths' => $incident->evidence_paths ?? [],
                     ],
                 ];
             });
@@ -222,114 +224,8 @@ class AdminIncidentsViolationsController extends Controller
         $incident = Incident::find($id);
 
         if (! $incident) {
-            // Reconstruct seed data in DB format so page works for seed rows
-            $seedMocks = [
-                1 => [
-                    'id' => 1,
-                    'incident_date' => '2026-03-14',
-                    'incident_time' => '20:24:00',
-                    'students_involved' => ['Dionne S. De Grano', '2024-0001'],
-                    'incident_type' => 'Minor Offense',
-                    'classification' => 'Warning',
-                    'status' => 'Resolved',
-                    'location' => 'Main Campus',
-                    'reported_by' => 'Dean Marcus Aurelius',
-                    'description' => 'Incident reported involving Dionne S. De Grano. Investigation resolved.',
-                    'immediate_action' => 'Verbal warning issued.',
-                    'received_by' => 'Dean Marcus Aurelius',
-                ],
-                2 => [
-                    'id' => 2,
-                    'incident_date' => '2026-03-15',
-                    'incident_time' => '10:15:00',
-                    'students_involved' => ['Vinn S. Dela Torre', '2024-0002'],
-                    'incident_type' => 'Smoking inside campus',
-                    'classification' => 'Suspension',
-                    'status' => 'Pending',
-                    'location' => 'Main Lobby',
-                    'reported_by' => 'Guard Santos',
-                    'description' => 'Caught smoking on campus premises behind the gymnasium.',
-                    'immediate_action' => 'Confiscated items, referred to guidance.',
-                    'received_by' => 'Dean Marcus Aurelius',
-                ],
-                3 => [
-                    'id' => 3,
-                    'incident_date' => '2026-03-16',
-                    'incident_time' => '09:00:00',
-                    'students_involved' => ['Melannie C. Delatado', '2024-0003'],
-                    'incident_type' => 'Dress Code Violation',
-                    'classification' => 'Warning',
-                    'status' => 'Ongoing',
-                    'location' => 'University Gate',
-                    'reported_by' => 'Guard Valenzuela',
-                    'description' => 'Not wearing proper school uniform/dress code policy.',
-                    'immediate_action' => 'Noted in student record.',
-                    'received_by' => 'Dean Marcus Aurelius',
-                ],
-                4 => [
-                    'id' => 4,
-                    'incident_date' => '2026-03-17',
-                    'incident_time' => '11:30:00',
-                    'students_involved' => ['Micaela D. Diamat', '2024-0005'],
-                    'incident_type' => 'Dress Code Violation',
-                    'classification' => 'Minor',
-                    'status' => 'Pending',
-                    'location' => 'University Gate',
-                    'reported_by' => 'Guard Valenzuela',
-                    'description' => 'Wearing unauthorized footwear on campus.',
-                    'immediate_action' => 'Warning issued.',
-                    'received_by' => 'Dean Marcus Aurelius',
-                ],
-                5 => [
-                    'id' => 5,
-                    'incident_date' => '2026-03-18',
-                    'incident_time' => '14:00:00',
-                    'students_involved' => ['Jian R. Diaz', '2024-0008'],
-                    'incident_type' => 'Public Display of Affection',
-                    'classification' => 'Minor',
-                    'status' => 'Resolved',
-                    'location' => 'Student Lounge',
-                    'reported_by' => 'Prof. Tech',
-                    'description' => 'Report of inappropriate public display of affection.',
-                    'immediate_action' => 'Verbal warning issued.',
-                    'received_by' => 'Dean Marcus Aurelius',
-                ],
-                6 => [
-                    'id' => 6,
-                    'incident_date' => '2026-03-19',
-                    'incident_time' => '13:00:00',
-                    'students_involved' => ['Julian Valerius', '20-4492-BSCS'],
-                    'incident_type' => 'Unauthorized System Access & Data Breach',
-                    'classification' => 'Suspension',
-                    'status' => 'Ongoing',
-                    'location' => 'Computer Lab 3',
-                    'reported_by' => 'Lab Instructor',
-                    'description' => 'Incident occurred involving unauthorized entry into the academic records server via exploited administrative credentials. Breach resulted in the alteration of three transcript records.',
-                    'immediate_action' => 'Immediate suspension pending investigation.',
-                    'received_by' => 'Dean Marcus Aurelius',
-                ],
-            ];
-
-            $seedId = (int) $id;
-            if (isset($seedMocks[$seedId])) {
-                $mockData = $seedMocks[$seedId];
-                $incident = new Incident();
-                $incident->id = $mockData['id'];
-                $incident->incident_date = $mockData['incident_date'];
-                $incident->incident_time = $mockData['incident_time'];
-                $incident->students_involved = $mockData['students_involved'];
-                $incident->incident_type = $mockData['incident_type'];
-                $incident->classification = $mockData['classification'];
-                $incident->status = $mockData['status'];
-                $incident->location = $mockData['location'];
-                $incident->reported_by = $mockData['reported_by'];
-                $incident->description = $mockData['description'];
-                $incident->immediate_action = $mockData['immediate_action'];
-                $incident->received_by = $mockData['received_by'];
-            } else {
-                return redirect()->route('admin.incidents-violations')
-                    ->with('error', 'Incident record not found.');
-            }
+            return redirect()->route('admin.incidents-violations')
+                ->with('error', 'Incident record not found.');
         }
 
         $date = $incident->incident_date ? Carbon::parse($incident->incident_date) : null;
@@ -402,6 +298,7 @@ class AdminIncidentsViolationsController extends Controller
                 'classification' => $incident->classification,
                 'status' => $incident->status,
                 'receivedBy' => $incident->received_by,
+                'evidencePaths' => $incident->evidence_paths ?? [],
             ],
         ];
 
@@ -447,6 +344,7 @@ class AdminIncidentsViolationsController extends Controller
         }
 
         // Load all violations for the category dropdown
+        \App\Models\Violation::ensureDefaultViolations();
         $violations = \App\Models\Violation::all()->map(function ($v) {
             return [
                 'id' => $v->id,

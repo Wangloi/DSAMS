@@ -270,7 +270,14 @@ export default function ShowEventPage() {
                                             <div className="flex items-center gap-2 mt-1">
                                                 <Calendar className="h-4 w-4 text-slate-400" />
                                                 <span className="text-sm text-slate-900 dark:text-white">
-                                                    {new Date(event.event_date).toLocaleDateString()} at {event.event_time}
+                                                    {(() => {
+                                                        const dateStr = event.event_date;
+                                                        if (dateStr && dateStr.includes('-')) {
+                                                            const parts = dateStr.split('T')[0].split('-');
+                                                            return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).toLocaleDateString();
+                                                        }
+                                                        return new Date(dateStr).toLocaleDateString();
+                                                    })()} at {event.event_time}
                                                 </span>
                                             </div>
                                         </div>
