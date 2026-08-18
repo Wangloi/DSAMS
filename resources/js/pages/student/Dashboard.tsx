@@ -57,6 +57,9 @@ import {
     TrendingUp,
     UserRoundCog,
     X,
+    Check,
+    Users,
+    FileText,
 } from 'lucide-react';
 import React, { useMemo, useState, useRef } from 'react';
 
@@ -102,6 +105,35 @@ type ProgramOption = {
     code: string;
     department: string;
 };
+
+const placeOptions = [
+    'Main Gate',
+    'Gate 1',
+    'Back Gate',
+    'Cafeteria',
+    'Canteen',
+    'Gymnasium',
+    'Back of Gym',
+    'Outer Ground',
+    'Inner Ground',
+    'Parents Lounge',
+    'Chapel',
+    'College Library',
+    'Dean of Students Affairs',
+    'Registrar',
+    'Finance - Cashier',
+    'School Clinic',
+    'Guidance Office',
+    'IT Laboratory',
+    'Computer Laboratory',
+    'Speech Laboratory',
+    'Audio Visual Room',
+    'Lecture Room 101',
+    'Room 101',
+    'Room 205',
+    'Room 302',
+    'CR Room 302',
+];
 
 type Props = {
     user?: User;
@@ -220,7 +252,7 @@ export default function StudentDashboard({
         year_level: (authUser as any)?.year_level ?? '',
         case_text: '',
         reason_text: '',
-        valid_until: '',
+        valid_until: new Date().toLocaleDateString('en-CA'),
     });
 
     const [reportProcessing, setReportProcessing] = useState(false);
@@ -239,6 +271,10 @@ export default function StudentDashboard({
         description: '',
         evidences: [] as File[],
     });
+
+    const hasCustomPlace = useMemo(() => {
+        return Boolean(reportForm.location) && !placeOptions.includes(reportForm.location);
+    }, [reportForm.location]);
 
     const [studentDraft, setStudentDraft] = useState('');
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -584,32 +620,70 @@ export default function StudentDashboard({
                     }
                 }}
             >
-                <DialogContent className="sm:max-w-3xl overflow-hidden p-0 bg-white dark:bg-slate-800">
-                    <div className="bg-gradient-to-r from-[#0b2d66] to-[#1e40af] px-6 py-5 text-white">
-                        <DialogHeader className="space-y-1">
-                            <DialogTitle className="text-white">
-                                Report Incident (Step {reportStep} of 3)
-                            </DialogTitle>
-                            <DialogDescription className="text-white/80">
-                                Provide details about the incident to create a new report.
-                            </DialogDescription>
-                        </DialogHeader>
-                    </div>
+                <DialogContent className="sm:max-w-3xl overflow-hidden p-0 bg-white dark:bg-[#0B192C] border-0 rounded-2xl shadow-2xl [&>button]:hidden">
+                    {/* Hero Gradient Header */}
+                    <div className="relative overflow-hidden bg-gradient-to-r from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] px-6 py-6 text-white shadow-md">
+                        <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-blue-400/10 blur-2xl" />
+                        <div className="relative z-10 flex flex-col gap-5">
+                            <div className="flex items-center gap-3.5">
+                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/10 backdrop-blur-md ring-1 ring-white/20 shadow-inner">
+                                    <AlertTriangle className="h-6 w-6 text-white" />
+                                </div>
+                                <DialogHeader className="p-0 text-left">
+                                    <DialogTitle className="text-xl font-black tracking-tight text-white">
+                                        Report Incident
+                                    </DialogTitle>
+                                    <DialogDescription className="mt-0.5 text-xs font-medium text-blue-100/80">
+                                        Provide details about the incident to create a new report.
+                                    </DialogDescription>
+                                </DialogHeader>
+                            </div>
 
-                    <div className="px-6 pt-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3 bg-slate-50/50 dark:bg-slate-800/50">
-                        <div className="flex items-center gap-2">
-                            <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold ${reportStep === 1 ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>1</span>
-                            <span className="text-xs font-medium text-slate-700 dark:text-slate-300">General Info</span>
-                        </div>
-                        <div className="h-0.5 w-12 bg-slate-200 dark:bg-slate-700 flex-1 mx-4" />
-                        <div className="flex items-center gap-2">
-                            <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold ${reportStep === 2 ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>2</span>
-                            <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Details</span>
-                        </div>
-                        <div className="h-0.5 w-12 bg-slate-200 dark:bg-slate-700 flex-1 mx-4" />
-                        <div className="flex items-center gap-2">
-                            <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold ${reportStep === 3 ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>3</span>
-                            <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Narrative & Evidence</span>
+                            {/* Step Indicators */}
+                            <div className="grid grid-cols-3 gap-2.5 pt-3 border-t border-white/10">
+                                {[
+                                    { label: 'General Info', icon: ClipboardList },
+                                    { label: 'Details', icon: Users },
+                                    { label: 'Narrative & Evidence', icon: FileText },
+                                ].map((s, i) => {
+                                    const num = i + 1;
+                                    const isDone = num < reportStep;
+                                    const isActive = num === reportStep;
+
+                                    return (
+                                        <div
+                                            key={s.label}
+                                            className={`flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all ${
+                                                isActive
+                                                    ? 'bg-white text-[#1e3a8a] shadow-md font-bold'
+                                                    : isDone
+                                                    ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-400/30'
+                                                    : 'bg-white/10 text-blue-100/60'
+                                            }`}
+                                        >
+                                            <div
+                                                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-black ${
+                                                    isActive
+                                                        ? 'bg-[#1e3a8a] text-white'
+                                                        : isDone
+                                                        ? 'bg-emerald-500 text-white'
+                                                        : 'bg-white/20 text-white'
+                                                }`}
+                                            >
+                                                {isDone ? <Check className="h-3.5 w-3.5 stroke-[3]" /> : num}
+                                            </div>
+                                            <div className="hidden sm:block min-w-0">
+                                                <p className="text-[11px] font-bold truncate">
+                                                    {s.label}
+                                                </p>
+                                            </div>
+                                            <span className="sm:hidden text-[10px] font-semibold truncate">
+                                                {s.label}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
 
@@ -691,14 +765,28 @@ export default function StudentDashboard({
                                         <Label htmlFor="location" className="text-slate-700 dark:text-slate-300">
                                             Location <span className="text-red-500">*</span>
                                         </Label>
-                                        <Input
-                                            id="location"
+                                        <Select
                                             value={reportForm.location}
-                                            onChange={(e) => setReportForm(prev => ({ ...prev, location: e.target.value }))}
-                                            placeholder="Where did it occur?"
-                                            className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white"
+                                            onValueChange={(v) => setReportForm(prev => ({ ...prev, location: v }))}
                                             required
-                                        />
+                                        >
+                                            <SelectTrigger
+                                                id="location"
+                                                className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-xl h-11"
+                                            >
+                                                <SelectValue placeholder="Select place" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {hasCustomPlace && (
+                                                    <SelectItem value={reportForm.location}>{reportForm.location}</SelectItem>
+                                                )}
+                                                {placeOptions.map((place) => (
+                                                    <SelectItem key={place} value={place}>
+                                                        {place}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
 
                                     <div className="grid gap-2 md:col-span-2">
@@ -860,27 +948,27 @@ export default function StudentDashboard({
                         )}
                     </div>
 
-                    <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-6 py-4">
+                    <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-900/40 px-6 py-4">
                         <div className="flex items-center gap-2">
                             {reportStep > 1 && (
-                                <Button type="button" variant="outline" className="h-10 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700" onClick={() => setReportStep(prev => prev - 1)}>
+                                <Button type="button" variant="outline" className="h-10 px-4 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700" onClick={() => setReportStep(prev => prev - 1)}>
                                     Back
                                 </Button>
                             )}
-                            <Button type="button" variant="outline" className="h-10 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700" onClick={() => setReportIncidentOpen(false)}>
+                            <Button type="button" variant="outline" className="h-10 px-4 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700" onClick={() => setReportIncidentOpen(false)}>
                                 Cancel
                             </Button>
                         </div>
 
                         <div className="flex items-center gap-2">
                             {reportStep < 3 ? (
-                                <Button type="button" className="h-10 bg-blue-600 hover:bg-blue-700 text-white" onClick={() => setReportStep(prev => prev + 1)}>
+                                <Button type="button" className="h-10 px-5 rounded-xl bg-gradient-to-r from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] text-white hover:opacity-90 shadow-md font-bold" onClick={() => setReportStep(prev => prev + 1)}>
                                     Next
                                 </Button>
                             ) : (
                                 <Button
                                     type="button"
-                                    className="h-10 bg-red-600 hover:bg-red-700 text-white"
+                                    className="h-10 px-5 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 text-white hover:opacity-90 shadow-md font-bold"
                                     disabled={reportProcessing}
                                     onClick={submitReportIncident}
                                 >
@@ -1041,17 +1129,17 @@ export default function StudentDashboard({
                                     >
                                         Valid Until
                                     </Label>
-                                    <Input
+                                    <div className="flex h-12 items-center rounded-2xl border border-slate-200 bg-slate-100 px-4 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                        {new Date().toLocaleDateString('en-US', {
+                                            month: 'long',
+                                            day: 'numeric',
+                                            year: 'numeric',
+                                        })}
+                                    </div>
+                                    <input
+                                        type="hidden"
                                         id="valid_until"
-                                        type="date"
                                         value={admissionSlipData.valid_until}
-                                        onChange={(e) =>
-                                            setAdmissionSlipData(
-                                                'valid_until',
-                                                e.target.value,
-                                            )
-                                        }
-                                        className="h-12 rounded-2xl border-slate-200 bg-slate-50 px-4 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50"
                                     />
                                     {admissionSlipErrors.valid_until && (
                                         <div className="ml-1 text-[11px] font-bold text-rose-500">

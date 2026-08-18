@@ -216,19 +216,6 @@ export default function IncidentTable({
                                             </td>
                                             <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
                                                 <div className="ml-auto flex w-fit items-center justify-end gap-1 rounded-lg border border-slate-100/50 bg-slate-50/50 p-1 shadow-sm dark:border-slate-800 dark:bg-slate-800/40">
-                                                    {onView && (
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-blue-50 hover:text-blue-600 dark:text-slate-400 dark:hover:bg-blue-950/30 dark:hover:text-blue-300"
-                                                            onClick={() => onView(row)}
-                                                            aria-label="View Incident"
-                                                            title="View Incident"
-                                                        >
-                                                            <Eye className="h-4 w-4" />
-                                                        </Button>
-                                                    )}
                                                     {onViewDetail && (
                                                         <Button
                                                             type="button"
@@ -240,19 +227,6 @@ export default function IncidentTable({
                                                             title="Disciplinary Case Detail"
                                                         >
                                                             <Gavel className="h-4 w-4" />
-                                                        </Button>
-                                                    )}
-                                                    {onEdit && (
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-violet-50 hover:text-violet-600 dark:text-slate-400 dark:hover:bg-violet-950/30 dark:hover:text-violet-300"
-                                                            onClick={() => onEdit(row)}
-                                                            aria-label="Edit Incident"
-                                                            title="Edit Incident"
-                                                        >
-                                                            <Pencil className="h-4 w-4" />
                                                         </Button>
                                                     )}
                                                     {onArchive && (

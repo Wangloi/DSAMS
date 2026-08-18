@@ -1,5 +1,6 @@
 import { Archive, Eye, FileText, Pencil, Search, X } from 'lucide-react';
 import { useState, type Dispatch, type SetStateAction } from 'react';
+import { router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -81,37 +82,98 @@ export default function AdmissionSlipTableCard({
                     if (!open) setViewingSlip(null);
                 }}
             >
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Admission Slip</DialogTitle>
-                        <DialogDescription>
-                            Review details before printing
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    {viewingSlip ? (
-                        <div className="space-y-3 text-sm">
-                            <div><span className="font-bold">Name:</span> {viewingSlip.studentName}</div>
-                            <div><span className="font-bold">Program:</span> {viewingSlip.programYear}</div>
-                            <div><span className="font-bold">Date Issued:</span> {viewingSlip.dateIssued}</div>
-                            <div><span className="font-bold">Valid Until:</span> {viewingSlip.validUntil}</div>
+                <DialogContent className="flex max-h-[90vh] w-[96vw] max-w-2xl flex-col overflow-hidden rounded-3xl border-0 bg-white p-0 shadow-2xl dark:bg-slate-900">
+                    <div className="relative bg-gradient-to-br from-[#0b2d66] to-[#1e40af] px-8 py-8 text-white">
+                        <div className="absolute top-0 right-0 h-64 w-64 translate-x-1/2 -translate-y-1/2 rounded-full bg-white/5 blur-3xl" />
+                        <div className="relative flex items-center gap-6">
+                            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/20 bg-white/10 shadow-inner backdrop-blur-xl">
+                                <FileText className="h-8 w-8 text-blue-300" />
+                            </div>
+                            <div>
+                                <DialogTitle className="text-2xl font-black tracking-tight text-white">
+                                    Admission Slip Details
+                                </DialogTitle>
+                                <DialogDescription className="mt-1 text-xs font-medium text-blue-100/70">
+                                    Review admission slip details before printing.
+                                </DialogDescription>
+                            </div>
                         </div>
-                    ) : (
-                        <div>No slip selected</div>
-                    )}
+                    </div>
 
-                    <DialogFooter>
-                        <Button onClick={() => setViewOpen(false)}>
+                    <div className="min-h-0 flex-1 overflow-y-auto p-8">
+                        {viewingSlip ? (
+                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                <div className="space-y-2">
+                                    <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">Student Name</span>
+                                    <div className="flex h-12 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-850 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-200">
+                                        {viewingSlip.studentName}
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">Program / Year</span>
+                                    <div className="flex h-12 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-850 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-200">
+                                        {viewingSlip.programYear}
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">Date Issued</span>
+                                    <div className="flex h-12 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-850 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-200">
+                                        {viewingSlip.dateIssued}
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">Valid Until</span>
+                                    <div className="flex h-12 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-850 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-200">
+                                        {viewingSlip.validUntil}
+                                    </div>
+                                </div>
+                                {viewingSlip.caseText && (
+                                    <div className="space-y-2 md:col-span-2">
+                                        <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">Case / Reason</span>
+                                        <div className="flex min-h-[48px] items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-850 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-200">
+                                            {viewingSlip.caseText}
+                                        </div>
+                                    </div>
+                                )}
+                                {viewingSlip.reasonText && (
+                                    <div className="space-y-2 md:col-span-2">
+                                        <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">Details</span>
+                                        <div className="flex min-h-[48px] items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-850 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-200">
+                                            {viewingSlip.reasonText}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 text-slate-500">No slip selected</div>
+                        )}
+                    </div>
+
+                    <DialogFooter className="gap-3 border-t border-slate-100 bg-slate-50/50 px-8 py-6 dark:border-slate-800 dark:bg-slate-900/50">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => setViewOpen(false)}
+                            className="rounded-xl px-6 text-[10px] font-black tracking-widest text-slate-500 uppercase transition-all hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                        >
                             Close
                         </Button>
-
                         <Button
                             disabled={!viewingSlip}
                             onClick={() => {
-                                if (viewingSlip) printSlip(viewingSlip);
+                                if (viewingSlip) {
+                                    router.put(`/admin/admission-slip/${viewingSlip.id}/approve`, {}, {
+                                        preserveScroll: true,
+                                        onSuccess: () => {
+                                            printSlip(viewingSlip);
+                                            setViewOpen(false);
+                                        }
+                                    });
+                                }
                             }}
+                            className="rounded-xl bg-blue-600 px-8 text-[10px] font-black tracking-widest text-white uppercase shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-700 active:scale-95"
                         >
-                            <Eye className="mr-1 h-4 w-4" />
+                            <Eye className="mr-1.5 h-4 w-4" />
                             Print
                         </Button>
                     </DialogFooter>
@@ -291,20 +353,6 @@ export default function AdmissionSlipTableCard({
                                                 >
                                                     <Eye className="h-4 w-4" />
                                                 </Button>
-                                                {onEdit && (
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-violet-50 hover:text-violet-600 dark:text-slate-400 dark:hover:bg-violet-950/30 dark:hover:text-violet-300"
-                                                        onClick={() =>
-                                                            onEdit(slip)
-                                                        }
-                                                        title="Edit slip"
-                                                    >
-                                                        <Pencil className="h-4 w-4" />
-                                                    </Button>
-                                                )}
                                                 {onArchive && (
                                                     <Button
                                                         type="button"

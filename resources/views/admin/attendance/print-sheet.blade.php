@@ -79,12 +79,11 @@
         height: 22px;
     }
     .col-no { width: 5%; text-align: center; }
-    .col-name { width: 33%; }
-    .col-major { width: 15%; }
+    .col-name { width: 40%; }
+    .col-major { width: 21%; }
     .col-time { width: 12%; text-align: center; }
     .col-time-out { width: 12%; text-align: center; }
     .col-status { width: 10%; text-align: center; }
-    .col-signature { width: 13%; }
 
     .page {
         page-break-after: always;
@@ -205,7 +204,6 @@
                 <th class="col-time">Time In</th>
                 <th class="col-time-out">Time Out</th>
                 <th class="col-status">Status</th>
-                <th class="col-signature">Signature</th>
             </tr>
         </thead>
         <tbody>
@@ -217,11 +215,10 @@
                 <td style="text-align: center;">{{ $row['checked_in_at'] ?? '' }}</td>
                 <td style="text-align: center;">{{ $row['time_out'] ?? '' }}</td>
                 <td style="text-align: center;">{{ $row['status'] ?? '' }}</td>
-                <td></td>
             </tr>
             @empty
             <tr>
-                <td colspan="7" class="no-attendees">No attendees for this program.</td>
+                <td colspan="6" class="no-attendees">No attendees for this program.</td>
             </tr>
             @endforelse
         </tbody>

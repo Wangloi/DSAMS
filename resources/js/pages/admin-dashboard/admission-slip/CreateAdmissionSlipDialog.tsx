@@ -1,5 +1,6 @@
 import { router } from '@inertiajs/react';
 import { useMemo, useState, useEffect } from 'react';
+import { PlusCircle } from 'lucide-react';
 import Swal from 'sweetalert2';
 import type { SweetAlertResult } from 'sweetalert2';
 import InputError from '@/components/input-error';
@@ -185,18 +186,28 @@ export default function CreateAdmissionSlipDialog({ open, setOpen, errors }: Pro
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogContent className="w-full !max-w-2xl overflow-hidden p-0">
-                <div className="bg-gradient-to-r from-[#23509A] via-[#000D6A] to-[#23509A] px-6 py-5 text-white">
-                    <DialogHeader>
-                        <DialogTitle className="text-white">Create New Slip</DialogTitle>
-                        <DialogDescription className="text-white/80">Fill out the details to generate an admission slip.</DialogDescription>
-                    </DialogHeader>
+            <DialogContent className="flex max-h-[90vh] w-[96vw] max-w-2xl flex-col overflow-hidden rounded-3xl border-0 bg-white p-0 shadow-2xl dark:bg-slate-900">
+                <div className="relative bg-gradient-to-br from-[#0b2d66] to-[#1e40af] px-8 py-8 text-white">
+                    <div className="absolute top-0 right-0 h-64 w-64 translate-x-1/2 -translate-y-1/2 rounded-full bg-white/5 blur-3xl" />
+                    <div className="relative flex items-center gap-6">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/20 bg-white/10 shadow-inner backdrop-blur-xl">
+                            <PlusCircle className="h-8 w-8 text-blue-300" />
+                        </div>
+                        <div>
+                            <DialogTitle className="text-2xl font-black tracking-tight text-white">
+                                Create Walk-in Slip
+                            </DialogTitle>
+                            <DialogDescription className="mt-1 text-xs font-medium text-blue-100/70">
+                                Fill out details below to generate a new walk-in admission slip.
+                            </DialogDescription>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="space-y-4 px-6 py-6">
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div className="grid gap-2 relative">
-                            <Label htmlFor="userId">User ID</Label>
+                <div className="min-h-0 flex-1 overflow-y-auto p-8 space-y-6">
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        <div className="grid gap-2.5 relative">
+                            <Label htmlFor="userId" className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400">User ID</Label>
                             <Input
                                 id="userId"
                                 value={form.userId}
@@ -214,62 +225,66 @@ export default function CreateAdmissionSlipDialog({ open, setOpen, errors }: Pro
                                 }}
                                 placeholder="Enter student ID"
                                 autoComplete="off"
+                                className="h-11 rounded-xl border-slate-200 bg-slate-50 px-4 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50"
                             />
 
                             {isDropdownOpen && searchResults.length > 0 && (
-                                <div className="absolute top-[70px] left-0 z-[100] mt-1 w-full rounded-md border border-slate-200 bg-white py-1 shadow-lg max-h-60 overflow-auto">
+                                <div className="absolute top-[75px] left-0 z-[100] mt-1 w-full rounded-2xl border border-slate-200 bg-white py-2 shadow-2xl max-h-60 overflow-auto dark:border-slate-700 dark:bg-slate-800">
                                     {searchResults.map((student) => (
                                         <button
                                             key={student.id}
                                             type="button"
-                                            className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 flex flex-col transition-colors"
+                                            className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 flex flex-col transition-colors"
                                             onClick={() => {
                                                 setForm(p => ({ ...p, userId: student.id }));
                                                 setIsDropdownOpen(false);
                                                 lookupStudent(student.id);
                                             }}
                                         >
-                                            <span className="font-semibold text-slate-800">{student.id}</span>
-                                            <span className="text-xs text-slate-500">{student.name}</span>
+                                            <span className="font-bold text-slate-800 dark:text-slate-200">{student.id}</span>
+                                            <span className="text-xs text-slate-500 dark:text-slate-400">{student.name}</span>
                                         </button>
                                     ))}
                                 </div>
                             )}
 
-                            <div className="text-xs text-slate-500">
+                            <div className="ml-1 text-[10px] font-bold text-slate-400">
                                 {lookupStatus === 'loading'
                                     ? 'Looking up...'
                                     : lookupStatus === 'found'
-                                        ? 'Student found'
+                                        ? '✓ Student found'
                                         : lookupStatus === 'not_found'
-                                            ? 'Student not found'
+                                            ? '✗ Student not found'
                                             : ''}
                             </div>
                         </div>
 
-                        <div className="grid gap-2">
-                            <Label htmlFor="studentName">Name</Label>
+                        <div className="grid gap-2.5">
+                            <Label htmlFor="studentName" className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400">Name</Label>
                             <Input
                                 id="studentName"
                                 value={form.studentName}
                                 readOnly
                                 placeholder="Student name will appear here"
+                                className="h-11 rounded-xl border-slate-200 bg-slate-100 px-4 text-slate-750 dark:border-slate-800 dark:bg-slate-800/80 cursor-not-allowed"
                             />
                             <InputError message={errors.student_name} />
                         </div>
 
-                        <div className="grid gap-2">
-                            <Label htmlFor="programYear">Program/Year Level</Label>
+                        <div className="grid gap-2.5">
+                            <Label htmlFor="programYear" className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400">Program/Year Level</Label>
                             <Input
                                 id="programYear"
                                 value={form.programYear}
                                 readOnly
                                 placeholder="Program and year level will appear here"
+                                className="h-11 rounded-xl border-slate-200 bg-slate-100 px-4 text-slate-750 dark:border-slate-800 dark:bg-slate-800/80 cursor-not-allowed"
                             />
                             <InputError message={errors.program_year_level} />
                         </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="dateIssued">Date Issued</Label>
+
+                        <div className="grid gap-2.5">
+                            <Label htmlFor="dateIssued" className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400">Date Issued</Label>
                             <Input
                                 id="dateIssued"
                                 type="date"
@@ -282,52 +297,61 @@ export default function CreateAdmissionSlipDialog({ open, setOpen, errors }: Pro
                                         validUntil: v ? addDaysIso(v, 7) : '',
                                     }));
                                 }}
+                                className="h-11 rounded-xl border-slate-200 bg-slate-50 px-4 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50"
                             />
                             <InputError message={errors.date_issued} />
                         </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="validUntil">Valid Until</Label>
+
+                        <div className="grid gap-2.5">
+                            <Label htmlFor="validUntil" className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400">Valid Until</Label>
                             <Input
                                 id="validUntil"
                                 type="date"
                                 value={form.validUntil}
                                 readOnly
+                                className="h-11 rounded-xl border-slate-200 bg-slate-100 px-4 text-slate-750 dark:border-slate-800 dark:bg-slate-800/80 cursor-not-allowed"
                             />
                             <InputError message={errors.valid_until} />
                         </div>
                     </div>
 
-                    <div className="grid gap-2">
-                        <Label htmlFor="caseText">Case</Label>
+                    <div className="grid gap-2.5">
+                        <Label htmlFor="caseText" className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400">Case / Reason Title</Label>
                         <Input
                             id="caseText"
                             value={form.caseText}
                             onChange={(e) => setForm((p) => ({ ...p, caseText: e.target.value }))}
                             placeholder="Enter case"
+                            className="h-11 rounded-xl border-slate-200 bg-slate-50 px-4 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50"
                         />
                         <InputError message={errors.case_text} />
                     </div>
 
-                    <div className="grid gap-2">
-                        <Label htmlFor="reasonText">Reason</Label>
+                    <div className="grid gap-2.5">
+                        <Label htmlFor="reasonText" className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400">Reason / Details</Label>
                         <textarea
                             id="reasonText"
                             value={form.reasonText}
                             onChange={(e) => setForm((p) => ({ ...p, reasonText: e.target.value }))}
-                            placeholder="Enter reason"
-                            className="min-h-24 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#23509A]"
+                            placeholder="Enter reason details"
+                            className="min-h-24 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 dark:border-slate-850 dark:bg-slate-800/50 dark:text-white"
                         />
                         <InputError message={errors.reason_text} />
                     </div>
                 </div>
 
-                <DialogFooter className="border-t border-slate-200 bg-slate-50 px-6 py-4">
-                    <Button variant="secondary" type="button" onClick={closeCreate}>
+                <DialogFooter className="gap-3 border-t border-slate-100 bg-slate-50/50 px-8 py-6 dark:border-slate-800 dark:bg-slate-900/50">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={closeCreate}
+                        className="rounded-xl px-6 text-[10px] font-black tracking-widest text-slate-500 uppercase transition-all hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                    >
                         Cancel
                     </Button>
                     <Button
                         type="button"
-                        className="bg-[#23509A] hover:bg-[#1e4a8a] transition-colors"
+                        className="rounded-xl bg-blue-600 px-8 text-[10px] font-black tracking-widest text-white uppercase shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-700 active:scale-95 disabled:opacity-50"
                         onClick={createSlip}
                         disabled={
                             !form.studentName.trim() ||

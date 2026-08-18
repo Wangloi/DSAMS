@@ -85,14 +85,16 @@ export default function AttendanceSheetPrint({ event }: Props) {
                 <table className="w-full border-collapse border border-black text-sm">
                     <thead>
                         <tr className="bg-gray-100">
-                            <th className="border border-black px-4 py-2 text-left font-bold">Student's Name</th>
-                            <th className="border border-black px-4 py-2 text-left font-bold">Course/Program</th>
-                            <th className="border border-black px-4 py-2 text-left font-bold">Signature</th>
+                            <th className="border border-black px-4 py-2 text-left font-bold w-[45%]">Student's Name</th>
+                            <th className="border border-black px-4 py-2 text-left font-bold w-[25%]">Course/Program</th>
+                            <th className="border border-black px-4 py-2 text-left font-bold w-[15%]">Time-In</th>
+                            <th className="border border-black px-4 py-2 text-left font-bold w-[15%]">Time-Out</th>
                         </tr>
                     </thead>
                     <tbody>
                         {emptyRows.map((_, index) => (
                             <tr key={index} className="h-12">
+                                <td className="border border-black px-4 py-2"></td>
                                 <td className="border border-black px-4 py-2"></td>
                                 <td className="border border-black px-4 py-2"></td>
                                 <td className="border border-black px-4 py-2"></td>

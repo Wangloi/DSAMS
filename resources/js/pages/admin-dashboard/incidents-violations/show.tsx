@@ -102,7 +102,7 @@ export default function DisciplinaryCaseDetailPage({
         <AdminLayout breadcrumbs={breadcrumbs}>
             <Head title={`Disciplinary Case Detail - #${caseId}`} />
             
-            <div className="min-h-[calc(100vh-4rem)] bg-slate-100 dark:bg-[#020617] pb-12">
+            <div className="min-h-[calc(100vh-4rem)] bg-slate-100 dark:bg-[#020617] pb-12 print:hidden">
                 
                 <div className="flex w-full flex-col gap-6 px-6 py-6">
                     {/* ── Hero Header ── */}
@@ -530,7 +530,137 @@ export default function DisciplinaryCaseDetailPage({
 
                     </div>
                 </div>
+            </div>
 
+            {/* ── Print Summary Layout (PDF Export) ── */}
+            <div className="hidden print:block w-full max-w-[800px] mx-auto bg-white text-slate-900 p-8 font-sans">
+                {/* Header */}
+                <div className="text-center border-b-2 border-slate-950 pb-4 mb-6">
+                    <h1 className="text-xl font-extrabold uppercase tracking-wide text-slate-900">Office of Student Affairs</h1>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mt-1">Disciplinary Case Incident Summary Report</p>
+                </div>
+
+                {/* Case Metadata Grid */}
+                <div className="grid grid-cols-2 gap-4 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Case ID</p>
+                        <p className="text-sm font-extrabold text-slate-900">Case #{caseId}</p>
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Investigation Status</p>
+                        <p className="text-sm font-extrabold text-slate-900">{investigationStatus}</p>
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Incident Type / Offense</p>
+                        <p className="text-sm font-extrabold text-slate-900">{incidentTitle}</p>
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Classification</p>
+                        <p className="text-sm font-extrabold text-slate-900">{incident.classification}</p>
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Date & Time</p>
+                        <p className="text-xs font-semibold text-slate-700">{dateTime}</p>
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Location</p>
+                        <p className="text-xs font-semibold text-slate-700">{location}</p>
+                    </div>
+                </div>
+
+                {/* Student Details */}
+                <div className="mb-6">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1.5 mb-3">Student Involved</h3>
+                    <div className="grid grid-cols-4 gap-4">
+                        <div>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase">Name</p>
+                            <p className="text-xs font-bold text-slate-900">{studentName}</p>
+                        </div>
+                        <div>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase">Student ID</p>
+                            <p className="text-xs font-bold text-slate-900">{studentId}</p>
+                        </div>
+                        <div>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase">Program</p>
+                            <p className="text-xs font-semibold text-slate-800">{courseMock}</p>
+                        </div>
+                        <div>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase">Year Level</p>
+                            <p className="text-xs font-semibold text-slate-800">{yearLevelMock}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Narrative Case Summary */}
+                <div className="mb-6">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1.5 mb-3">Incident Narrative Summary</h3>
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/60">
+                        <p className="text-xs leading-relaxed text-slate-700 whitespace-pre-line">{incidentDescription}</p>
+                    </div>
+                </div>
+
+                {/* Immediate Action Taken */}
+                {incident.raw?.immediateAction && (
+                    <div className="mb-6">
+                        <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1.5 mb-3">Immediate Action Taken</h3>
+                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/60">
+                            <p className="text-xs leading-relaxed text-slate-700 whitespace-pre-line">{incident.raw.immediateAction}</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Actions Taken / Sanctions Log */}
+                <div className="mb-8">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1.5 mb-3">Disciplinary Action & Status Log</h3>
+                    {disciplinaryActions.length > 0 ? (
+                        <div className="overflow-hidden border border-slate-200 rounded-xl">
+                            <table className="w-full text-left text-xs border-collapse">
+                                <thead className="bg-slate-50 border-b border-slate-200">
+                                    <tr>
+                                        <th className="p-3 font-bold uppercase text-slate-500">Action Type</th>
+                                        <th className="p-3 font-bold uppercase text-slate-500">Details / Description</th>
+                                        <th className="p-3 font-bold uppercase text-slate-500">Execution Date</th>
+                                        <th className="p-3 font-bold uppercase text-slate-500 text-right">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-200">
+                                    {disciplinaryActions.map((action, idx) => (
+                                        <tr key={action.id || idx}>
+                                            <td className="p-3 font-bold text-slate-900">
+                                                {action.final_action || action.recommended_action}
+                                            </td>
+                                            <td className="p-3 text-slate-700">
+                                                {action.final_action_reason || action.recommendation_reason || action.remarks || '—'}
+                                            </td>
+                                            <td className="p-3 text-slate-600">
+                                                {action.reviewed_at || action.created_at || '—'}
+                                            </td>
+                                            <td className="p-3 text-right font-bold uppercase text-slate-700">{action.status}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : (
+                        <p className="text-xs italic text-slate-500">No disciplinary actions registered yet.</p>
+                    )}
+                </div>
+
+                {/* Signatures */}
+                <div className="grid grid-cols-2 gap-12 mt-12 pt-8 border-t border-slate-200">
+                    <div className="text-center">
+                        <div className="border-b border-slate-950 pb-1 mb-1 font-semibold text-xs text-slate-900">
+                            {incident.raw?.reportedBy || 'Reporter Signature'}
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Reported By</p>
+                    </div>
+                    <div className="text-center">
+                        <div className="border-b border-slate-950 pb-1 mb-1 font-semibold text-xs text-slate-900">
+                            {incident.raw?.receivedBy || 'Dean / OSA Officer'}
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Received & Attested By (OSA)</p>
+                    </div>
+                </div>
             </div>
         </AdminLayout>
     );

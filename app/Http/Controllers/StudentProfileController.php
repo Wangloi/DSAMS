@@ -27,28 +27,28 @@ class StudentProfileController extends Controller
             // Personal Information
             'home_address'    => 'required|string|max:500',
             'birthday'        => 'required|date|before:today',
-            'place_of_birth'  => 'required|string|max:255',
-            'religion'        => 'required|string|max:255',
+            'place_of_birth'  => 'nullable|string|max:255',
+            'religion'        => 'nullable|string|max:255',
             'gender'          => 'required|in:Male,Female',
             'contact_no'      => 'required|string|max:20',
-            'nationality'     => 'required|string|max:255',
+            'nationality'     => 'nullable|string|max:255',
 
-            // Academic Background
-            'elementary_school'              => 'required|string|max:255',
-            'elementary_year_graduated'      => 'required|integer|digits:4|min:1900|max:' . date('Y'),
-            'junior_high_school'             => 'required|string|max:255',
-            'junior_high_year_graduated'     => 'required|integer|digits:4|min:1900|max:' . date('Y'),
-            'senior_high_school'             => 'required|string|max:255',
-            'senior_high_year_graduated'     => 'required|integer|digits:4|min:1900|max:' . date('Y'),
+            // Academic Background (All optional)
+            'elementary_school'              => 'nullable|string|max:255',
+            'elementary_year_graduated'      => 'nullable|integer|digits:4|min:1900|max:' . date('Y'),
+            'junior_high_school'             => 'nullable|string|max:255',
+            'junior_high_year_graduated'     => 'nullable|integer|digits:4|min:1900|max:' . date('Y'),
+            'senior_high_school'             => 'nullable|string|max:255',
+            'senior_high_year_graduated'     => 'nullable|integer|digits:4|min:1900|max:' . date('Y'),
 
-            // Family Background
-            'mother_name'      => 'required|string|max:255',
-            'mother_contact'   => 'required|string|max:20',
-            'father_name'      => 'required|string|max:255',
-            'father_contact'   => 'required|string|max:20',
-            'guardian_name'    => 'nullable|string|max:255',
-            'guardian_relation' => 'nullable|string|max:255',
-            'guardian_contact' => 'nullable|string|max:20',
+            // Family / Emergency Contact
+            'mother_name'      => 'nullable|string|max:255',
+            'mother_contact'   => 'nullable|string|max:20',
+            'father_name'      => 'nullable|string|max:255',
+            'father_contact'   => 'nullable|string|max:20',
+            'guardian_name'    => 'required|string|max:255',
+            'guardian_relation' => 'required|string|max:255',
+            'guardian_contact' => 'required|string|max:20',
         ]);
 
         if ($validator->fails()) {

@@ -29,44 +29,7 @@ class AdminIncidentsViolationsController extends Controller
                 $dateTime = trim(($date ? $date->format('M d, Y') : '').' '.($time ? $time->format('h:i A') : ''));
 
                 // Normalize students_involved: support all formats
-                $studentsRaw = is_array($incident->students_involved) ? $incident->students_involved : [];
-                $studentsNormalized = [];
-                
-                // Check if it's a legacy [name, id] pair (two strings)
-                if (count($studentsRaw) === 2 && is_string($studentsRaw[0]) && is_string($studentsRaw[1])) {
-                    $studentsNormalized[] = [
-                        'id' => $studentsRaw[1],
-                        'name' => $studentsRaw[0]
-                    ];
-                } else {
-                    foreach ($studentsRaw as $s) {
-                        if (is_array($s) && isset($s['name'])) {
-                            $studentsNormalized[] = ['id' => $s['id'] ?? '', 'name' => $s['name']];
-                        } else {
-                            // Plain string: could be ID or name
-                            $studentIdOrName = (string) $s;
-                            // Try to find student by student_id first
-                            $student = \App\Models\Student::where('student_id', $studentIdOrName)->first();
-                            if ($student) {
-                                $studentsNormalized[] = [
-                                    'id' => $student->student_id,
-                                    'name' => $student->name
-                                ];
-                            } else {
-                                // Try to find by name
-                                $studentByName = \App\Models\Student::where('name', $studentIdOrName)->first();
-                                if ($studentByName) {
-                                    $studentsNormalized[] = [
-                                        'id' => $studentByName->student_id,
-                                        'name' => $studentByName->name
-                                    ];
-                                } else {
-                                    $studentsNormalized[] = ['id' => $studentIdOrName, 'name' => $studentIdOrName];
-                                }
-                            }
-                        }
-                    }
-                }
+                $studentsNormalized = $this->normalizeStudentsInvolved($incident->students_involved);
 
                 $firstStudentName = count($studentsNormalized) > 0 ? $studentsNormalized[0]['name'] : '—';
                 $firstStudentId   = count($studentsNormalized) > 0 ? $studentsNormalized[0]['id'] : '';
@@ -228,79 +191,7 @@ class AdminIncidentsViolationsController extends Controller
                 ->with('error', 'Incident record not found.');
         }
 
-        $date = $incident->incident_date ? Carbon::parse($incident->incident_date) : null;
-        $time = $incident->incident_time ? Carbon::parse($incident->incident_time) : null;
-        $dateTime = trim(($date ? $date->format('M d, Y') : '').' '.($time ? $time->format('h:i A') : ''));
-
-        // Normalize students_involved: support all formats
-        $studentsRaw = is_array($incident->students_involved) ? $incident->students_involved : [];
-        $studentsNormalized = [];
-        
-        // Check if it's a legacy [name, id] pair (two strings)
-        if (count($studentsRaw) === 2 && is_string($studentsRaw[0]) && is_string($studentsRaw[1])) {
-            $studentsNormalized[] = [
-                'id' => $studentsRaw[1],
-                'name' => $studentsRaw[0]
-            ];
-        } else {
-            foreach ($studentsRaw as $s) {
-                if (is_array($s) && isset($s['name'])) {
-                    $studentsNormalized[] = ['id' => $s['id'] ?? '', 'name' => $s['name']];
-                } else {
-                    // Plain string: could be ID or name
-                    $studentIdOrName = (string) $s;
-                    // Try to find student by student_id first
-                    $student = \App\Models\Student::where('student_id', $studentIdOrName)->first();
-                    if ($student) {
-                        $studentsNormalized[] = [
-                            'id' => $student->student_id,
-                            'name' => $student->name
-                        ];
-                    } else {
-                        // Try to find by name
-                        $studentByName = \App\Models\Student::where('name', $studentIdOrName)->first();
-                        if ($studentByName) {
-                            $studentsNormalized[] = [
-                                'id' => $studentByName->student_id,
-                                'name' => $studentByName->name
-                            ];
-                        } else {
-                            $studentsNormalized[] = ['id' => $studentIdOrName, 'name' => $studentIdOrName];
-                        }
-                    }
-                }
-            }
-        }
-
-        $firstStudentName = count($studentsNormalized) > 0 ? $studentsNormalized[0]['name'] : '—';
-        $firstStudentId   = count($studentsNormalized) > 0 ? $studentsNormalized[0]['id'] : '';
-
-        $formatted = [
-            'id' => $incident->id,
-            'caseId' => $date ? ($date->format('Y').'-'.str_pad((string) $incident->id, 3, '0', STR_PAD_LEFT)) : (string) $incident->id,
-            'student'   => $firstStudentName,
-            'studentId' => $firstStudentId,
-            'type' => $incident->incident_type,
-            'classification' => $incident->classification,
-            'dateTime' => $dateTime,
-            'status' => $incident->status,
-            'violation_id' => $incident->violation_id,
-            'raw' => [
-                'violationId' => $incident->violation_id,
-                'incidentType' => $incident->incident_type,
-                'date' => $date ? $date->format('Y-m-d') : null,
-                'time' => $time ? $time->format('H:i') : null,
-                'location' => $incident->location,
-                'reportedBy' => $incident->reported_by,
-                'studentsInvolved' => $studentsNormalized,
-                'description' => $incident->description,
-                'immediateAction' => $incident->immediate_action,
-                'classification' => $incident->classification,
-                'status' => $incident->status,
-                'receivedBy' => $incident->received_by,
-                'evidencePaths' => $incident->evidence_paths ?? [],
-            ],
-        ];
+        $formatted = $this->formatIncidentData($incident);
 
         // Retrieve actual student details if student exists in the database
         $studentName = $formatted['student'];
@@ -317,31 +208,7 @@ class AdminIncidentsViolationsController extends Controller
             ];
         }
 
-        // Load disciplinary actions for this incident
-        $disciplinaryActions = [];
-        if ($incident->exists) {
-            $disciplinaryActions = $incident->disciplinaryActions()
-                ->with(['student', 'reviewer'])
-                ->get()
-                ->map(function (DisciplinaryAction $action) {
-                    return [
-                        'id' => $action->id,
-                        'student_id' => $action->student_id,
-                        'student_name' => $action->student?->name ?? '—',
-                        'recommended_action' => $action->recommended_action,
-                        'recommendation_reason' => $action->recommendation_reason,
-                        'final_action' => $action->final_action,
-                        'final_action_reason' => $action->final_action_reason,
-                        'remarks' => $action->remarks,
-                        'reviewed_by' => $action->reviewer?->name ?? null,
-                        'reviewed_at' => $action->reviewed_at?->toISOString(),
-                        'status' => $action->status,
-                        'decision_history' => $action->decision_history ?? [],
-                        'created_at' => $action->created_at?->toISOString(),
-                    ];
-                })
-                ->toArray();
-        }
+        $disciplinaryActions = $this->getDisciplinaryActions($incident);
 
         // Load all violations for the category dropdown
         \App\Models\Violation::ensureDefaultViolations();
@@ -355,96 +222,15 @@ class AdminIncidentsViolationsController extends Controller
             ];
         })->toArray();
 
-        // Compute student warning/suspension counts for "next sanction" logic
-        $studentDisciplinaryHistory = [];
-        $studentDisciplinaryStats = null;
-        
-        // First, add the current incident itself to the history even if no formal disciplinary action exists
         $actionType = $incident->classification;
-        if ($actionType === 'Minor') $actionType = 'Warning';
-        if (in_array($actionType, ['Major'])) $actionType = 'Suspension';
-        $currentIncidentAsHistory = [
-            'id' => 0,
-            'incident_id' => $incident->id,
-            'action_type' => $actionType,
-            'date' => $incident->incident_date ? Carbon::parse($incident->incident_date)->format('M Y') : '—',
-            'description' => $incident->incident_type,
-            'case_ref' => $incident->incident_date ? (Carbon::parse($incident->incident_date)->format('Y') . '-' . str_pad((string)$incident->id, 4, '0', STR_PAD_LEFT)) : null,
-            'is_current' => true,
-        ];
-
-        if ($student) {
-            $warningCount = $student->disciplinaryActions()
-                ->whereIn('status', ['Approved', 'Modified', 'Overridden'])
-                ->where(function ($q) {
-                    $q->where('final_action', 'Warning')
-                      ->orWhere(function ($q2) {
-                          $q2->whereNull('final_action')->where('recommended_action', 'Warning');
-                      });
-                })
-                ->count();
-
-            $suspensionCount = $student->disciplinaryActions()
-                ->whereIn('status', ['Approved', 'Modified', 'Overridden'])
-                ->where(function ($q) {
-                    $q->where('final_action', 'Suspension')
-                      ->orWhere(function ($q2) {
-                          $q2->whereNull('final_action')->where('recommended_action', 'Suspension');
-                      });
-                })
-                ->count();
-
-            $totalActions = $student->disciplinaryActions()->count() + 1; // +1 for current incident
-
-            $studentDisciplinaryStats = [
-                'warning_count' => $warningCount + (in_array($actionType, ['Warning']) ? 1 : 0),
-                'suspension_count' => $suspensionCount + (in_array($actionType, ['Suspension']) ? 1 : 0),
-                'total_actions' => $totalActions,
-                'next_sanction' => $this->computeNextSanction($warningCount + (in_array($actionType, ['Warning']) ? 1 : 0), $suspensionCount + (in_array($actionType, ['Suspension']) ? 1 : 0)),
-            ];
-            
-            // Get full disciplinary history for the student (excluding current incident if needed?)
-            $studentDisciplinaryHistory = $student->disciplinaryActions()
-                ->whereIn('status', ['Approved', 'Modified', 'Overridden'])
-                ->where('incident_id', '!=', $incident->id) // exclude current incident to avoid duplication
-                ->with(['incident'])
-                ->orderBy('created_at', 'desc')
-                ->get()
-                ->map(function ($action) use ($incident) {
-                    return [
-                        'id' => $action->id,
-                        'incident_id' => $action->incident_id,
-                        'action_type' => $action->final_action ?? $action->recommended_action,
-                        'date' => $action->created_at?->format('M Y'),
-                        'description' => $action->incident?->incident_type ?? 'Disciplinary action recorded',
-                        'case_ref' => $action->incident?->exists ? ($action->incident->created_at?->format('Y') . '-' . str_pad((string)$action->incident->id, 4, '0', STR_PAD_LEFT)) : null,
-                        'is_current' => $action->incident_id === $incident->id,
-                    ];
-                })
-                ->toArray();
-        } else {
-            // For seed data when there's no student in DB, create some mock history
-            $studentDisciplinaryHistory = [
-                [
-                    'id' => 1,
-                    'incident_id' => $incident->id - 1,
-                    'action_type' => 'Warning',
-                    'date' => 'Jan 2026',
-                    'description' => 'Dress Code Violation',
-                    'case_ref' => '2026-000' . ($incident->id - 1),
-                    'is_current' => false,
-                ]
-            ];
-            $studentDisciplinaryStats = [
-                'warning_count' => 1,
-                'suspension_count' => 0,
-                'total_actions' => 1,
-                'next_sanction' => 'Warning',
-            ];
+        if ($actionType === 'Minor') {
+            $actionType = 'Warning';
+        }
+        if (in_array($actionType, ['Major'])) {
+            $actionType = 'Suspension';
         }
 
-        // Prepend current incident to history
-        array_unshift($studentDisciplinaryHistory, $currentIncidentAsHistory);
+        [$studentDisciplinaryStats, $studentDisciplinaryHistory] = $this->getStudentDisciplinaryData($incident, $student, $actionType);
 
         return Inertia::render('admin-dashboard/incidents-violations/show', [
             'incident' => $formatted,
@@ -554,6 +340,13 @@ class AdminIncidentsViolationsController extends Controller
             'decision_history' => $history,
         ]);
 
+        if (in_array($validated['status'], ['Approved', 'Modified', 'Overridden'])) {
+            $incident = $action->incident;
+            if ($incident) {
+                $incident->update(['status' => 'Resolved']);
+            }
+        }
+
         if (Schema::hasTable('activity_logs')) {
             ActivityLog::logForUser($admin, 'Incidents', 'Reviewed', 'Reviewed disciplinary action #'.(string) $action->id);
         }
@@ -579,5 +372,213 @@ class AdminIncidentsViolationsController extends Controller
             return '2nd warning recorded';
         }
         return '1st warning';
+    }
+
+    /**
+     * Normalize students_involved to a consistent array of objects with id and name keys.
+     */
+    protected function normalizeStudentsInvolved(mixed $studentsRaw): array
+    {
+        $raw = is_array($studentsRaw) ? $studentsRaw : [];
+        $studentsNormalized = [];
+
+        // Check if it's a legacy [name, id] pair (two strings)
+        if (count($raw) === 2 && is_string($raw[0]) && is_string($raw[1])) {
+            $studentsNormalized[] = [
+                'id' => $raw[1],
+                'name' => $raw[0],
+            ];
+        } else {
+            foreach ($raw as $s) {
+                if (is_array($s) && isset($s['name'])) {
+                    $studentsNormalized[] = ['id' => $s['id'] ?? '', 'name' => $s['name']];
+                } else {
+                    // Plain string: could be ID or name
+                    $studentIdOrName = (string) $s;
+                    // Try to find student by student_id first
+                    $student = \App\Models\Student::where('student_id', $studentIdOrName)->first();
+                    if ($student) {
+                        $studentsNormalized[] = [
+                            'id' => $student->student_id,
+                            'name' => $student->name,
+                        ];
+                    } else {
+                        // Try to find by name
+                        $studentByName = \App\Models\Student::where('name', $studentIdOrName)->first();
+                        if ($studentByName) {
+                            $studentsNormalized[] = [
+                                'id' => $studentByName->student_id,
+                                'name' => $studentByName->name,
+                            ];
+                        } else {
+                            $studentsNormalized[] = ['id' => $studentIdOrName, 'name' => $studentIdOrName];
+                        }
+                    }
+                }
+            }
+        }
+
+        return $studentsNormalized;
+    }
+
+    /**
+     * Format incident data payload for Inertia response.
+     */
+    protected function formatIncidentData(Incident $incident): array
+    {
+        $date = $incident->incident_date ? Carbon::parse($incident->incident_date) : null;
+        $time = $incident->incident_time ? Carbon::parse($incident->incident_time) : null;
+        $dateTime = trim(($date ? $date->format('M d, Y') : '').' '.($time ? $time->format('h:i A') : ''));
+
+        $studentsNormalized = $this->normalizeStudentsInvolved($incident->students_involved);
+        $firstStudentName = count($studentsNormalized) > 0 ? $studentsNormalized[0]['name'] : '—';
+        $firstStudentId = count($studentsNormalized) > 0 ? $studentsNormalized[0]['id'] : '';
+
+        return [
+            'id' => $incident->id,
+            'caseId' => $date ? ($date->format('Y').'-'.str_pad((string) $incident->id, 3, '0', STR_PAD_LEFT)) : (string) $incident->id,
+            'student' => $firstStudentName,
+            'studentId' => $firstStudentId,
+            'type' => $incident->incident_type,
+            'classification' => $incident->classification,
+            'dateTime' => $dateTime,
+            'status' => $incident->status,
+            'violation_id' => $incident->violation_id,
+            'raw' => [
+                'violationId' => $incident->violation_id,
+                'incidentType' => $incident->incident_type,
+                'date' => $date ? $date->format('Y-m-d') : null,
+                'time' => $time ? $time->format('H:i') : null,
+                'location' => $incident->location,
+                'reportedBy' => $incident->reported_by,
+                'studentsInvolved' => $studentsNormalized,
+                'description' => $incident->description,
+                'immediateAction' => $incident->immediate_action,
+                'classification' => $incident->classification,
+                'status' => $incident->status,
+                'receivedBy' => $incident->received_by,
+                'evidencePaths' => $incident->evidence_paths ?? [],
+            ],
+        ];
+    }
+
+    /**
+     * Load formatted disciplinary actions for an incident.
+     */
+    protected function getDisciplinaryActions(Incident $incident): array
+    {
+        if (! $incident->exists) {
+            return [];
+        }
+
+        return $incident->disciplinaryActions()
+            ->with(['student', 'reviewer'])
+            ->get()
+            ->map(function (DisciplinaryAction $action) {
+                return [
+                    'id' => $action->id,
+                    'student_id' => $action->student_id,
+                    'student_name' => $action->student?->name ?? '—',
+                    'recommended_action' => $action->recommended_action,
+                    'recommendation_reason' => $action->recommendation_reason,
+                    'final_action' => $action->final_action,
+                    'final_action_reason' => $action->final_action_reason,
+                    'remarks' => $action->remarks,
+                    'reviewed_by' => $action->reviewer?->name ?? null,
+                    'reviewed_at' => $action->reviewed_at?->toISOString(),
+                    'status' => $action->status,
+                    'decision_history' => $action->decision_history ?? [],
+                    'created_at' => $action->created_at?->toISOString(),
+                ];
+            })
+            ->toArray();
+    }
+
+    /**
+     * Compute stats and disciplinary history for a student.
+     */
+    protected function getStudentDisciplinaryData(Incident $incident, ?\App\Models\Student $student, string $actionType): array
+    {
+        $currentIncidentAsHistory = [
+            'id' => 0,
+            'incident_id' => $incident->id,
+            'action_type' => $actionType,
+            'date' => $incident->incident_date ? Carbon::parse($incident->incident_date)->format('M Y') : '—',
+            'description' => $incident->incident_type,
+            'case_ref' => $incident->incident_date ? (Carbon::parse($incident->incident_date)->format('Y').'-'.str_pad((string) $incident->id, 4, '0', STR_PAD_LEFT)) : null,
+            'is_current' => true,
+        ];
+
+        if ($student) {
+            $warningCount = $student->disciplinaryActions()
+                ->whereIn('status', ['Approved', 'Modified', 'Overridden'])
+                ->where(function ($q) {
+                    $q->where('final_action', 'Warning')
+                        ->orWhere(function ($q2) {
+                            $q2->whereNull('final_action')->where('recommended_action', 'Warning');
+                        });
+                })
+                ->count();
+
+            $suspensionCount = $student->disciplinaryActions()
+                ->whereIn('status', ['Approved', 'Modified', 'Overridden'])
+                ->where(function ($q) {
+                    $q->where('final_action', 'Suspension')
+                        ->orWhere(function ($q2) {
+                            $q2->whereNull('final_action')->where('recommended_action', 'Suspension');
+                        });
+                })
+                ->count();
+
+            $totalActions = $student->disciplinaryActions()->count() + 1; // +1 for current incident
+
+            $studentDisciplinaryStats = [
+                'warning_count' => $warningCount + (in_array($actionType, ['Warning']) ? 1 : 0),
+                'suspension_count' => $suspensionCount + (in_array($actionType, ['Suspension']) ? 1 : 0),
+                'total_actions' => $totalActions,
+                'next_sanction' => $this->computeNextSanction($warningCount + (in_array($actionType, ['Warning']) ? 1 : 0), $suspensionCount + (in_array($actionType, ['Suspension']) ? 1 : 0)),
+            ];
+
+            $studentDisciplinaryHistory = $student->disciplinaryActions()
+                ->whereIn('status', ['Approved', 'Modified', 'Overridden'])
+                ->where('incident_id', '!=', $incident->id)
+                ->with(['incident'])
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($action) use ($incident) {
+                    return [
+                        'id' => $action->id,
+                        'incident_id' => $action->incident_id,
+                        'action_type' => $action->final_action ?? $action->recommended_action,
+                        'date' => $action->created_at?->format('M Y'),
+                        'description' => $action->incident?->incident_type ?? 'Disciplinary action recorded',
+                        'case_ref' => $action->incident?->exists ? ($action->incident->created_at?->format('Y').'-'.str_pad((string) $action->incident->id, 4, '0', STR_PAD_LEFT)) : null,
+                        'is_current' => $action->incident_id === $incident->id,
+                    ];
+                })
+                ->toArray();
+        } else {
+            $studentDisciplinaryHistory = [
+                [
+                    'id' => 1,
+                    'incident_id' => $incident->id - 1,
+                    'action_type' => 'Warning',
+                    'date' => 'Jan 2026',
+                    'description' => 'Dress Code Violation',
+                    'case_ref' => '2026-000'.($incident->id - 1),
+                    'is_current' => false,
+                ],
+            ];
+            $studentDisciplinaryStats = [
+                'warning_count' => 1,
+                'suspension_count' => 0,
+                'total_actions' => 1,
+                'next_sanction' => 'Warning',
+            ];
+        }
+
+        array_unshift($studentDisciplinaryHistory, $currentIncidentAsHistory);
+
+        return [$studentDisciplinaryStats, $studentDisciplinaryHistory];
     }
 }

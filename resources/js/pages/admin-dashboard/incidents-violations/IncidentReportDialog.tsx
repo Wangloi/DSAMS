@@ -3,10 +3,20 @@ import { useEffect, useMemo, useState, useRef } from 'react';
 import {
     Dialog,
     DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import {
+    Check,
+    ClipboardList,
+    Users,
+    FileText,
+    AlertTriangle,
+} from 'lucide-react';
 import IncidentReportDialogActions from './IncidentReportDialogActions';
 import IncidentReportDialogDetails from './IncidentReportDialogDetails';
 import IncidentReportDialogHeader from './IncidentReportDialogHeader';
@@ -320,28 +330,76 @@ export default function IncidentReportDialog(props: Props) {
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent className="sm:max-w-3xl overflow-hidden p-0 bg-white dark:bg-slate-800">
-                <IncidentReportDialogHeader title={`${title} (Step ${currentStep} of 3)`} isViewMode={isViewMode} />
+            <DialogContent className="sm:max-w-3xl overflow-hidden p-0 bg-white dark:bg-[#0B192C] border-0 rounded-2xl shadow-2xl [&>button]:hidden">
+                {/* Hero Gradient Header */}
+                <div className="relative overflow-hidden bg-gradient-to-r from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] px-6 py-6 text-white shadow-md">
+                    <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-blue-400/10 blur-2xl" />
+                    <div className="relative z-10 flex flex-col gap-5">
+                        <div className="flex items-center gap-3.5">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/10 backdrop-blur-md ring-1 ring-white/20 shadow-inner">
+                                <AlertTriangle className="h-6 w-6 text-white" />
+                            </div>
+                            <DialogHeader className="p-0 text-left">
+                                <DialogTitle className="text-xl font-black tracking-tight text-white">
+                                    {title}
+                                </DialogTitle>
+                                <DialogDescription className="mt-0.5 text-xs font-medium text-blue-100/80">
+                                    {isViewMode
+                                        ? 'View the incident report details below.'
+                                        : 'Provide details about the incident to create a new report.'}
+                                </DialogDescription>
+                            </DialogHeader>
+                        </div>
 
-                {/* Step Indicators */}
-                <div className="px-6 pt-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3 bg-slate-50/50 dark:bg-slate-800/50">
-                    <div className="flex items-center gap-2">
-                        <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === 1 ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>1</span>
-                        <span className="text-xs font-medium text-slate-700 dark:text-slate-300">General Info</span>
-                    </div>
-                    <div className="h-0.5 w-12 bg-slate-200 dark:bg-slate-700 flex-1 mx-4" />
-                    <div className="flex items-center gap-2">
-                        <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === 2 ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>2</span>
-                        <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Persons Involved</span>
-                    </div>
-                    <div className="h-0.5 w-12 bg-slate-200 dark:bg-slate-700 flex-1 mx-4" />
-                    <div className="flex items-center gap-2">
-                        <span className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold ${currentStep === 3 ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}>3</span>
-                        <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Narrative & Action</span>
+                        {/* Step Indicators */}
+                        <div className="grid grid-cols-3 gap-2.5 pt-3 border-t border-white/10">
+                            {[
+                                { label: 'General Info', icon: ClipboardList },
+                                { label: 'Persons Involved', icon: Users },
+                                { label: 'Narrative & Action', icon: FileText },
+                            ].map((s, i) => {
+                                const num = i + 1;
+                                const isDone = num < currentStep;
+                                const isActive = num === currentStep;
+
+                                return (
+                                    <div
+                                        key={s.label}
+                                        className={`flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all ${
+                                            isActive
+                                                ? 'bg-white text-[#1e3a8a] shadow-md font-bold'
+                                                : isDone
+                                                ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-400/30'
+                                                : 'bg-white/10 text-blue-100/60'
+                                        }`}
+                                    >
+                                        <div
+                                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-black ${
+                                                isActive
+                                                    ? 'bg-[#1e3a8a] text-white'
+                                                    : isDone
+                                                    ? 'bg-emerald-500 text-white'
+                                                    : 'bg-white/20 text-white'
+                                            }`}
+                                        >
+                                            {isDone ? <Check className="h-3.5 w-3.5 stroke-[3]" /> : num}
+                                        </div>
+                                        <div className="hidden sm:block min-w-0">
+                                            <p className="text-[11px] font-bold truncate">
+                                                {s.label}
+                                            </p>
+                                        </div>
+                                        <span className="sm:hidden text-[10px] font-semibold truncate">
+                                            {s.label}
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
 
-                <div className="max-h-[60vh] min-h-[300px] space-y-5 overflow-y-auto px-6 py-6">
+                <div className="max-h-[60vh] min-h-[300px] space-y-5 overflow-y-auto px-6 py-6 dark:bg-[#0B192C]">
                     {currentStep === 1 && (
                         <div className="space-y-4">
                             <IncidentReportDialogDetails
@@ -351,14 +409,14 @@ export default function IncidentReportDialog(props: Props) {
                                 violations={violations}
                             />
                             <div className="grid gap-2">
-                                <Label htmlFor="reportedBy">Reported by (Name / Position)</Label>
+                                <Label htmlFor="reportedBy" className="text-slate-800 dark:text-slate-200 font-semibold text-xs uppercase tracking-wider">Reported by (Name / Position)</Label>
                                 <Input
                                     id="reportedBy"
                                     value={form.reportedBy}
                                     onChange={(e) => setForm((p) => ({ ...p, reportedBy: e.target.value }))}
                                     disabled={isViewMode}
                                     placeholder="Name / Position of Reporter"
-                                    className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white"
+                                    className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl h-11 focus-visible:ring-blue-500"
                                 />
                             </div>
                         </div>
@@ -388,7 +446,7 @@ export default function IncidentReportDialog(props: Props) {
                     {currentStep === 3 && (
                         <div className="space-y-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="description" className="uppercase font-semibold tracking-wider text-slate-800 dark:text-slate-200">
+                                <Label htmlFor="description" className="uppercase font-semibold tracking-wider text-slate-850 dark:text-slate-200 text-xs">
                                     Narrative of the Incident <span className="text-red-500">*</span>
                                 </Label>
                                 <textarea
@@ -397,14 +455,14 @@ export default function IncidentReportDialog(props: Props) {
                                     onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
                                     rows={4}
                                     placeholder="Please provide a detailed narrative of the incident..."
-                                    className="flex w-full rounded-md border border-slate-200 dark:border-slate-600 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-slate-300"
+                                    className="flex w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm shadow-sm placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 dark:text-white"
                                     disabled={isViewMode}
                                     required
                                 />
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="immediateAction" className="uppercase font-semibold tracking-wider text-slate-800 dark:text-slate-200">
+                                <Label htmlFor="immediateAction" className="uppercase font-semibold tracking-wider text-slate-850 dark:text-slate-200 text-xs">
                                     Immediate Action Taken (Optional)
                                 </Label>
                                 <textarea
@@ -413,41 +471,41 @@ export default function IncidentReportDialog(props: Props) {
                                     onChange={(e) => setForm((p) => ({ ...p, immediateAction: e.target.value }))}
                                     rows={3}
                                     placeholder="What actions were immediately taken?"
-                                    className="flex w-full rounded-md border border-slate-200 dark:border-slate-600 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-slate-300"
+                                    className="flex w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm shadow-sm placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 dark:text-white"
                                     disabled={isViewMode}
                                 />
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-                                <div className="flex flex-col gap-1 items-center pt-6 border-t border-slate-200 dark:border-slate-700">
-                                    <span className="font-medium text-slate-900 dark:text-white">
+                                <div className="flex flex-col gap-1 items-center pt-6 border-t border-slate-200 dark:border-slate-850">
+                                    <span className="font-medium text-slate-900 dark:text-white text-sm">
                                         {form.reportedBy || '[Name of Reporter]'}
                                     </span>
-                                    <span className="text-sm text-slate-500">Reported by</span>
+                                    <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Reported by</span>
                                 </div>
-                                <div className="flex flex-col gap-1 items-center pt-6 border-t border-slate-200 dark:border-slate-700">
+                                <div className="flex flex-col gap-1 items-center pt-6 border-t border-slate-200 dark:border-slate-850">
                                     <Input
                                         value={form.receivedBy}
                                         onChange={(e) => setForm((p) => ({ ...p, receivedBy: e.target.value }))}
                                         disabled={isViewMode}
                                         placeholder="[OSA Personnel]"
-                                        className="w-full max-w-[200px] text-center bg-white dark:bg-slate-700 border-none border-b-2 border-slate-200 dark:border-slate-600 focus-visible:ring-0 rounded-none shadow-none"
+                                        className="w-full max-w-[200px] text-center bg-white dark:bg-slate-850 border-none border-b-2 border-slate-200 dark:border-slate-700 focus-visible:ring-0 rounded-none shadow-none text-slate-900 dark:text-white h-9"
                                     />
-                                    <span className="text-sm text-slate-500">Received by — OSA</span>
+                                    <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-1">Received by — OSA</span>
                                 </div>
                             </div>
                         </div>
                     )}
                 </div>
 
-                <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-6 py-4">
+                <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-850 bg-slate-50/50 dark:bg-slate-900/40 px-6 py-4">
                     <div className="flex items-center gap-2">
                         {currentStep > 1 && (
-                            <Button type="button" variant="outline" className="h-10 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700" onClick={prevStep}>
+                            <Button type="button" variant="outline" className="h-10 px-4 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700" onClick={prevStep}>
                                 Back
                             </Button>
                         )}
-                        <Button type="button" variant="outline" className="h-10 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700" onClick={close}>
+                        <Button type="button" variant="outline" className="h-10 px-4 rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700" onClick={close}>
                             {isViewMode ? 'Close' : 'Cancel'}
                         </Button>
                     </div>
@@ -457,7 +515,7 @@ export default function IncidentReportDialog(props: Props) {
                             <Button
                                 type="button"
                                 variant="default"
-                                className="h-10 bg-blue-600 hover:bg-blue-700"
+                                className="h-10 px-5 rounded-xl bg-gradient-to-r from-[#0b1c5c] to-[#1e3a8a] text-white hover:opacity-90 shadow-md font-bold"
                                 onClick={toggleEditMode}
                             >
                                 Edit
@@ -465,14 +523,14 @@ export default function IncidentReportDialog(props: Props) {
                         )}
 
                         {currentStep < 3 ? (
-                            <Button type="button" className="h-10 bg-blue-600 hover:bg-blue-700 text-white" onClick={nextStep}>
+                            <Button type="button" className="h-10 px-5 rounded-xl bg-gradient-to-r from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] text-white hover:opacity-90 shadow-md font-bold" onClick={nextStep}>
                                 Next
                             </Button>
                         ) : (
                             !isViewMode && (
                                 <Button
                                     type="button"
-                                    className="h-10 bg-red-600 hover:bg-red-700 text-white"
+                                    className="h-10 px-5 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 text-white hover:opacity-90 shadow-md font-bold"
                                     disabled={!canSubmit}
                                     onClick={submit}
                                 >

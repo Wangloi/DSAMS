@@ -19,6 +19,13 @@ import {
     DialogDescription
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { adminAttendanceLogs } from '@/routes';
 type Attendee = {
@@ -43,7 +50,7 @@ type Props = {
 export default function EventAttendeesModal({ open, onOpenChange, eventId, eventName }: Props) {
     const [attendees, setAttendees] = useState<Attendee[]>([]);
     const [loading, setLoading] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedProgram, setSelectedProgram] = useState<string>('all');
 
     useEffect(() => {
         if (open && eventId) {
@@ -80,11 +87,11 @@ export default function EventAttendeesModal({ open, onOpenChange, eventId, event
         }
     };
 
-    const filteredAttendees = attendees.filter(a =>
-        a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.student_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.program.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const uniquePrograms = Array.from(new Set(attendees.map(a => a.program).filter(Boolean))).sort();
+
+    const filteredAttendees = attendees.filter(a => {
+        return selectedProgram === 'all' || a.program === selectedProgram;
+    });
 
     const getStatusBadge = (status: string) => {
         switch (status.toLowerCase()) {
@@ -111,6 +118,16 @@ export default function EventAttendeesModal({ open, onOpenChange, eventId, event
                 );
         }
     };
+
+    // Group attendees by program
+    const groupedAttendees = filteredAttendees.reduce<Record<string, Attendee[]>>((acc, curr) => {
+        const prog = curr.program || 'Unassigned';
+        if (!acc[prog]) {
+            acc[prog] = [];
+        }
+        acc[prog].push(curr);
+        return acc;
+    }, {});
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -143,48 +160,72 @@ export default function EventAttendeesModal({ open, onOpenChange, eventId, event
                         </div>
                     </div>
 
-                    <div className="mt-6 relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                        <Input
-                            placeholder="Search by name, student ID, or program..."
-                            className="pl-10 h-11 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500/20"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
+                    <div className="mt-6 relative max-w-xs">
+                        <Select value={selectedProgram} onValueChange={setSelectedProgram}>
+                            <SelectTrigger className="h-11 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl">
+                                <SelectValue placeholder="All Programs" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Programs</SelectItem>
+                                {uniquePrograms.map((p) => (
+                                    <SelectItem key={p} value={p}>
+                                        {p}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-y-auto p-0">
+                <div className="flex-1 overflow-y-auto p-0 bg-slate-50/30 dark:bg-slate-950/20">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-4">
                             <div className="h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                             <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Loading attendees...</p>
                         </div>
-                    ) : filteredAttendees.length > 0 ? (
-                        <table className="w-full text-left border-collapse">
-                            <thead className="sticky top-0 bg-white dark:bg-slate-900 z-10 border-b border-slate-100 dark:border-slate-800">
-                                <tr>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Student ID</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Name</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Program</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Time In</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Time Out</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                {filteredAttendees.map((attendee) => (
-                                    <tr key={attendee.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
-                                        <td className="px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{attendee.student_id}</td>
-                                        <td className="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">{attendee.name}</td>
-                                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{attendee.program}</td>
-                                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{attendee.time}</td>
-                                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{attendee.time_out}</td>
-                                        <td className="px-6 py-4 text-right">{getStatusBadge(attendee.status)}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                    ) : Object.keys(groupedAttendees).length > 0 ? (
+                        <div className="divide-y divide-slate-100 dark:divide-slate-850">
+                            {Object.keys(groupedAttendees).sort().map((prog) => {
+                                const list = groupedAttendees[prog];
+                                return (
+                                    <div key={prog} className="p-6">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h4 className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider flex items-center gap-2">
+                                                <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+                                                {prog}
+                                            </h4>
+                                            <Badge variant="secondary" className="font-semibold text-xs">
+                                                {list.length} {list.length === 1 ? 'Attendee' : 'Attendees'}
+                                            </Badge>
+                                        </div>
+                                        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+                                            <table className="w-full text-left border-collapse">
+                                                <thead className="bg-slate-50 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800">
+                                                    <tr>
+                                                        <th className="px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[20%]">Student ID</th>
+                                                        <th className="px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[45%]">Name</th>
+                                                        <th className="px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[12%]">Time In</th>
+                                                        <th className="px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[13%]">Time Out</th>
+                                                        <th className="px-4 py-3 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right w-[10%]">Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-transparent">
+                                                    {list.map((attendee) => (
+                                                        <tr key={attendee.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-850/40 transition-colors">
+                                                            <td className="px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300">{attendee.student_id}</td>
+                                                            <td className="px-4 py-3 text-sm font-medium text-slate-900 dark:text-white">{attendee.name}</td>
+                                                            <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">{attendee.time}</td>
+                                                            <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">{attendee.time_out}</td>
+                                                            <td className="px-4 py-3 text-right">{getStatusBadge(attendee.status)}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
                             <div className="h-16 w-16 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center mb-4">
@@ -192,15 +233,15 @@ export default function EventAttendeesModal({ open, onOpenChange, eventId, event
                             </div>
                             <h3 className="text-lg font-semibold text-slate-900 dark:text-white">No attendees found</h3>
                             <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs mt-1">
-                                {searchQuery ? "No participants match your search criteria." : "No students have checked into this event yet."}
+                                {selectedProgram !== 'all' ? "No participants match the selected program." : "No students have checked into this event yet."}
                             </p>
-                            {searchQuery && (
+                            {selectedProgram !== 'all' && (
                                 <Button
                                     variant="link"
-                                    className="mt-2 text-blue-600 dark:text-blue-400"
-                                    onClick={() => setSearchQuery('')}
+                                    className="mt-2 text-blue-600 dark:text-blue-400 font-semibold"
+                                    onClick={() => setSelectedProgram('all')}
                                 >
-                                    Clear search
+                                    Reset Program Filter
                                 </Button>
                             )}
                         </div>

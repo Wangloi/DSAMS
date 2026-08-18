@@ -40,7 +40,7 @@ export default function AdmissionSlipHeader({ onCreateNew }: Props) {
                         onClick={onCreateNew}
                     >
                         <PlusCircle className="h-5 w-5" />
-                        Create Admission Slip
+                        Walk-in Slip
                     </Button>
                 </div>
             </div>
