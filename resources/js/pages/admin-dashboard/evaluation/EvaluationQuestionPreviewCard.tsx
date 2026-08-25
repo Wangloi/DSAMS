@@ -10,9 +10,12 @@ export default function EvaluationQuestionPreviewCard({
     idx: number;
 }) {
     return (
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
             <div className="text-sm font-semibold text-slate-900 dark:text-white">
-                {idx + 1}. {q.label || 'Untitled question'} {q.required ? <span className="text-rose-600 dark:text-rose-400">*</span> : null}
+                {idx + 1}. {q.label || 'Untitled question'}{' '}
+                {q.required ? (
+                    <span className="text-rose-600 dark:text-rose-400">*</span>
+                ) : null}
             </div>
             <div className="mt-3">
                 {q.type === 'rating' && (
@@ -22,7 +25,7 @@ export default function EvaluationQuestionPreviewCard({
                                 key={n}
                                 type="button"
                                 disabled
-                                className="h-10 w-10 rounded-md border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-sm font-semibold text-slate-500 dark:text-slate-400"
+                                className="h-10 w-10 rounded-md border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-400"
                             >
                                 {n}
                             </button>
@@ -32,7 +35,10 @@ export default function EvaluationQuestionPreviewCard({
                 {q.type === 'multiple_choice' && (
                     <div className="space-y-2">
                         {(q.options ?? []).map((opt, i) => (
-                            <label key={i} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                            <label
+                                key={i}
+                                className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300"
+                            >
                                 <input type="radio" disabled />
                                 <span>{opt || `Option ${i + 1}`}</span>
                             </label>
@@ -42,7 +48,10 @@ export default function EvaluationQuestionPreviewCard({
                 {q.type === 'checkbox' && (
                     <div className="space-y-2">
                         {(q.options ?? []).map((opt, i) => (
-                            <label key={i} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                            <label
+                                key={i}
+                                className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300"
+                            >
                                 <input type="checkbox" disabled />
                                 <span>{opt || `Option ${i + 1}`}</span>
                             </label>
@@ -50,10 +59,19 @@ export default function EvaluationQuestionPreviewCard({
                     </div>
                 )}
                 {q.type === 'short_text' && (
-                    <Input disabled placeholder="Short answer text" className="dark:bg-slate-700 dark:text-slate-300" />
+                    <Input
+                        disabled
+                        placeholder="Short answer text"
+                        className="dark:bg-slate-700 dark:text-slate-300"
+                    />
                 )}
                 {q.type === 'long_text' && (
-                    <Textarea disabled rows={4} className="resize-none placeholder:text-slate-500 dark:placeholder:text-slate-400" placeholder="Long answer text" />
+                    <Textarea
+                        disabled
+                        rows={4}
+                        className="resize-none placeholder:text-slate-500 dark:placeholder:text-slate-400"
+                        placeholder="Long answer text"
+                    />
                 )}
             </div>
         </div>

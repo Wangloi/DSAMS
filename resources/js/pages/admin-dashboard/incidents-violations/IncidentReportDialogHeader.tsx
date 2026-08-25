@@ -1,11 +1,18 @@
-import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 
 type Props = {
     title: string;
     isViewMode: boolean;
 };
 
-export default function IncidentReportDialogHeader({ title, isViewMode }: Props) {
+export default function IncidentReportDialogHeader({
+    title,
+    isViewMode,
+}: Props) {
     return (
         <div className="bg-gradient-to-r from-[#0b2d66] to-[#1e40af] px-6 py-5 text-white">
             <DialogHeader className="space-y-1">

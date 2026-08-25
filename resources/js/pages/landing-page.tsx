@@ -6,25 +6,25 @@ import LandingHero from '@/components/landing/landing-hero';
 import LandingNavbar from '@/components/landing/landing-navbar';
 
 interface Props {
-  isAuthed: boolean;
-  canRegister: boolean;
-  stats?: {
-    totalStudents: number;
-    totalEvents: number;
-    totalAdmissionSlips: number;
-    totalPrograms: number;
-  };
+    isAuthed: boolean;
+    canRegister: boolean;
+    stats?: {
+        totalStudents: number;
+        totalEvents: number;
+        totalAdmissionSlips: number;
+        totalPrograms: number;
+    };
 }
 
 export default function LandingPage({ isAuthed, canRegister, stats }: Props) {
-  return (
-    <div>
-      <LandingNavbar isAuthed={isAuthed} />
-      <LandingHero canRegister={canRegister} />
-      <LandingAbout />
-      <LandingFeaturesCarousel />
-      <LandingCta canRegister={canRegister} stats={stats} />
-      <LandingFooter />
-    </div>
-  );
+    return (
+        <div>
+            <LandingNavbar isAuthed={isAuthed} />
+            <LandingHero canRegister={canRegister} />
+            <LandingAbout />
+            <LandingFeaturesCarousel />
+            <LandingCta canRegister={canRegister} stats={stats} />
+            <LandingFooter />
+        </div>
+    );
 }

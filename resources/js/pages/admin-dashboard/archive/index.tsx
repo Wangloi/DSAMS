@@ -1,19 +1,3 @@
-import { Head, router, usePage } from '@inertiajs/react';
-import {
-    Archive as ArchiveIcon,
-    CalendarDays,
-    ChevronLeft,
-    ChevronRight,
-    Download,
-    FileText,
-    MoreHorizontal,
-    RotateCcw,
-    Search,
-    Trash2,
-} from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import Swal from 'sweetalert2';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -25,13 +9,25 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import {
-    adminArchive,
     adminAdmissionSlipUnarchive,
+    adminArchive,
+    adminAttendanceUnarchive,
     adminEvaluationUnarchive,
     adminIncidentsViolationsUnarchive,
-    adminAttendanceUnarchive,
 } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
+import { Head, router, usePage } from '@inertiajs/react';
+import {
+    Archive as ArchiveIcon,
+    CalendarDays,
+    ChevronLeft,
+    ChevronRight,
+    FileText,
+    RotateCcw,
+    Search,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import Swal from 'sweetalert2';
 import AdminLayout from '../admin-layout';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -63,7 +59,9 @@ type PageProps = {
 export default function AdminArchivePage() {
     const { props } = usePage<PageProps>();
     const archivedItems = props.archivedItems ?? [];
-    const flash = (props as any)?.flash as { success?: string; error?: string } | undefined;
+    const flash = (props as any)?.flash as
+        | { success?: string; error?: string }
+        | undefined;
 
     useEffect(() => {
         const message = String(flash?.success ?? '').trim();
@@ -90,7 +88,9 @@ export default function AdminArchivePage() {
     }, [flash?.error]);
 
     const [typeFilter, setTypeFilter] = useState<'all' | 'reports'>('all');
-    const [dateFilter, setDateFilter] = useState<'all' | 'last_7' | 'last_30'>('all');
+    const [dateFilter, setDateFilter] = useState<'all' | 'last_7' | 'last_30'>(
+        'all',
+    );
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
@@ -102,7 +102,9 @@ export default function AdminArchivePage() {
 
     const stats = useMemo(() => {
         const archivedRecords = archivedItems.length;
-        const archivedReports = archivedItems.filter((r) => r.type.toLowerCase().includes('report')).length;
+        const archivedReports = archivedItems.filter((r) =>
+            r.type.toLowerCase().includes('report'),
+        ).length;
 
         return {
             archivedRecords,
@@ -127,14 +129,22 @@ export default function AdminArchivePage() {
 
         const matchesSearch = (r: ArchiveRow) => {
             if (!q) return true;
-            const haystack = [r.id, r.type, r.description, r.dateArchived, r.lastModified]
+            const haystack = [
+                r.id,
+                r.type,
+                r.description,
+                r.dateArchived,
+                r.lastModified,
+            ]
                 .filter(Boolean)
                 .join(' ')
                 .toLowerCase();
             return haystack.includes(q);
         };
 
-        return archivedItems.filter((r) => matchesType(r) && matchesDate(r) && matchesSearch(r));
+        return archivedItems.filter(
+            (r) => matchesType(r) && matchesDate(r) && matchesSearch(r),
+        );
     }, [archivedItems, dateFilter, searchQuery, typeFilter]);
 
     const paginatedRows = useMemo(() => {
@@ -179,121 +189,141 @@ export default function AdminArchivePage() {
                 if (item.table === 'incidents') {
                     const url = adminIncidentsViolationsUnarchive(recordId);
                     if (!url) return;
-                    router.put(url, {}, {
-                        preserveScroll: true,
-                        onSuccess: () => {
-                            void Swal.fire({
-                                icon: 'success',
-                                title: 'Unarchived',
-                                text: 'Incident has been restored successfully.',
-                                timer: 2000,
-                                showConfirmButton: false,
-                            }).then(() => {
-                                router.reload({ only: ['archivedItems'] });
-                            });
+                    router.put(
+                        url,
+                        {},
+                        {
+                            preserveScroll: true,
+                            onSuccess: () => {
+                                void Swal.fire({
+                                    icon: 'success',
+                                    title: 'Unarchived',
+                                    text: 'Incident has been restored successfully.',
+                                    timer: 2000,
+                                    showConfirmButton: false,
+                                }).then(() => {
+                                    router.reload({ only: ['archivedItems'] });
+                                });
+                            },
+                            onError: () => {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Restore failed',
+                                    text: 'Unable to restore this incident. Please try again.',
+                                });
+                            },
                         },
-                        onError: () => {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Restore failed',
-                                text: 'Unable to restore this incident. Please try again.',
-                            });
-                        },
-                    });
+                    );
                 } else if (item.table === 'evaluations') {
                     const url = adminEvaluationUnarchive(recordId);
                     if (!url) return;
-                    router.put(url, {}, {
-                        preserveScroll: true,
-                        onSuccess: () => {
-                            void Swal.fire({
-                                icon: 'success',
-                                title: 'Unarchived',
-                                text: 'Evaluation form has been restored successfully.',
-                                timer: 2000,
-                                showConfirmButton: false,
-                            }).then(() => {
-                                router.reload({ only: ['archivedItems'] });
-                            });
+                    router.put(
+                        url,
+                        {},
+                        {
+                            preserveScroll: true,
+                            onSuccess: () => {
+                                void Swal.fire({
+                                    icon: 'success',
+                                    title: 'Unarchived',
+                                    text: 'Evaluation form has been restored successfully.',
+                                    timer: 2000,
+                                    showConfirmButton: false,
+                                }).then(() => {
+                                    router.reload({ only: ['archivedItems'] });
+                                });
+                            },
+                            onError: () => {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Restore failed',
+                                    text: 'Unable to restore this evaluation form. Please try again.',
+                                });
+                            },
                         },
-                        onError: () => {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Restore failed',
-                                text: 'Unable to restore this evaluation form. Please try again.',
-                            });
-                        },
-                    });
+                    );
                 } else if (item.table === 'admission_slips') {
                     const url = adminAdmissionSlipUnarchive(recordId);
                     if (!url) return;
-                    router.put(url, {}, {
-                        preserveScroll: true,
-                        onSuccess: () => {
-                            void Swal.fire({
-                                icon: 'success',
-                                title: 'Unarchived',
-                                text: 'Admission slip has been restored successfully.',
-                                timer: 2000,
-                                showConfirmButton: false,
-                            }).then(() => {
-                                router.reload({ only: ['archivedItems'] });
-                            });
+                    router.put(
+                        url,
+                        {},
+                        {
+                            preserveScroll: true,
+                            onSuccess: () => {
+                                void Swal.fire({
+                                    icon: 'success',
+                                    title: 'Unarchived',
+                                    text: 'Admission slip has been restored successfully.',
+                                    timer: 2000,
+                                    showConfirmButton: false,
+                                }).then(() => {
+                                    router.reload({ only: ['archivedItems'] });
+                                });
+                            },
+                            onError: () => {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Restore failed',
+                                    text: 'Unable to restore this admission slip. Please try again.',
+                                });
+                            },
                         },
-                        onError: () => {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Restore failed',
-                                text: 'Unable to restore this admission slip. Please try again.',
-                            });
-                        },
-                    });
+                    );
                 } else if (item.table === 'students') {
-                    router.post(`/admin/manage-users/${recordId}/unarchive`, {}, {
-                        preserveScroll: true,
-                        onSuccess: () => {
-                            void Swal.fire({
-                                icon: 'success',
-                                title: 'Unarchived',
-                                text: 'Student account has been restored successfully.',
-                                timer: 2000,
-                                showConfirmButton: false,
-                            }).then(() => {
-                                router.reload({ only: ['archivedItems'] });
-                            });
+                    router.post(
+                        `/admin/manage-users/${recordId}/unarchive`,
+                        {},
+                        {
+                            preserveScroll: true,
+                            onSuccess: () => {
+                                void Swal.fire({
+                                    icon: 'success',
+                                    title: 'Unarchived',
+                                    text: 'Student account has been restored successfully.',
+                                    timer: 2000,
+                                    showConfirmButton: false,
+                                }).then(() => {
+                                    router.reload({ only: ['archivedItems'] });
+                                });
+                            },
+                            onError: () => {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Restore failed',
+                                    text: 'Unable to restore this student account. Please try again.',
+                                });
+                            },
                         },
-                        onError: () => {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Restore failed',
-                                text: 'Unable to restore this student account. Please try again.',
-                            });
-                        },
-                    });
+                    );
                 } else if (item.table === 'events') {
                     const url = adminAttendanceUnarchive(recordId);
                     if (!url) return;
-                    router.put(url, {}, {
-                        preserveScroll: true,
-                        onSuccess: () => {
-                            void Swal.fire({
-                                icon: 'success',
-                                title: 'Unarchived',
-                                text: 'Event has been restored successfully.',
-                                timer: 2000,
-                                showConfirmButton: false,
-                            }).then(() => {
-                                router.reload({ only: ['archivedItems'] });
-                            });
+                    router.put(
+                        url,
+                        {},
+                        {
+                            preserveScroll: true,
+                            onSuccess: () => {
+                                void Swal.fire({
+                                    icon: 'success',
+                                    title: 'Unarchived',
+                                    text: 'Event has been restored successfully.',
+                                    timer: 2000,
+                                    showConfirmButton: false,
+                                }).then(() => {
+                                    router.reload({ only: ['archivedItems'] });
+                                });
+                            },
+                            onError: () => {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Restore failed',
+                                    text: 'Unable to restore this event. Please try again.',
+                                });
+                            },
                         },
-                        onError: () => {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Restore failed',
-                                text: 'Unable to restore this event. Please try again.',
-                            });
-                        },
-                    });
+                    );
                 } else {
                     Swal.fire({
                         icon: 'error',
@@ -336,12 +366,12 @@ export default function AdminArchivePage() {
                 <div className="flex w-full flex-col gap-6 px-6 py-6">
                     {/* Hero Header Banner */}
                     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] p-6 shadow-xl shadow-blue-900/20">
-                        <div className="pointer-events-none absolute -right-12 -top-12 h-56 w-56 rounded-full bg-white/5" />
-                        <div className="pointer-events-none absolute -right-4 -top-4 h-32 w-32 rounded-full bg-white/5" />
+                        <div className="pointer-events-none absolute -top-12 -right-12 h-56 w-56 rounded-full bg-white/5" />
+                        <div className="pointer-events-none absolute -top-4 -right-4 h-32 w-32 rounded-full bg-white/5" />
                         <div className="pointer-events-none absolute bottom-0 left-1/3 h-48 w-48 -translate-y-1/4 rounded-full bg-blue-400/10 blur-2xl" />
                         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-center gap-4">
-                                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/10 text-white shadow-inner backdrop-blur-sm ring-1 ring-white/20">
+                                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/10 text-white shadow-inner ring-1 ring-white/20 backdrop-blur-sm">
                                     <ArchiveIcon className="h-7 w-7" />
                                 </div>
                                 <div>
@@ -349,14 +379,20 @@ export default function AdminArchivePage() {
                                         System Archive
                                     </h1>
                                     <p className="mt-0.5 text-sm font-medium text-blue-200/80">
-                                        Manage and restore archived records and system data
+                                        Manage and restore archived records and
+                                        system data
                                     </p>
                                 </div>
                             </div>
-                            <div className="hidden sm:flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/10 ring-1 ring-white/20 text-white">
+                            <div className="hidden items-center gap-3 rounded-xl border border-white/10 bg-white/10 px-4 py-2.5 text-white ring-1 ring-white/20 backdrop-blur-md sm:flex">
                                 <CalendarDays className="h-4 w-4 text-blue-200" />
-                                <div className="text-xs font-semibold tracking-wide uppercase text-white/90">
-                                    {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                                <div className="text-xs font-semibold tracking-wide text-white/90 uppercase">
+                                    {new Date().toLocaleDateString('en-US', {
+                                        weekday: 'short',
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric',
+                                    })}
                                 </div>
                             </div>
                         </div>
@@ -365,36 +401,48 @@ export default function AdminArchivePage() {
                     {/* KPI Cards Grid */}
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
-                            <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-blue-500/5" />
+                            <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-blue-500/5" />
                             <div className="flex items-start justify-between gap-3">
                                 <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Archived Records</p>
-                                    <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">{stats.archivedRecords}</p>
-                                    <p className="mt-1 text-xs font-semibold text-blue-600 dark:text-blue-400">Total System Records</p>
+                                    <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
+                                        Archived Records
+                                    </p>
+                                    <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
+                                        {stats.archivedRecords}
+                                    </p>
+                                    <p className="mt-1 text-xs font-semibold text-blue-600 dark:text-blue-400">
+                                        Total System Records
+                                    </p>
                                 </div>
-                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-500/10 text-blue-600 ring-1 ring-blue-200/50 dark:bg-blue-500/20 dark:text-blue-400 dark:ring-blue-900/30 transition-transform duration-300 group-hover:scale-110">
+                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-500/10 text-blue-600 ring-1 ring-blue-200/50 transition-transform duration-300 group-hover:scale-110 dark:bg-blue-500/20 dark:text-blue-400 dark:ring-blue-900/30">
                                     <FileText className="h-5 w-5" />
                                 </div>
                             </div>
                             <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                <div className="h-full w-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full" />
+                                <div className="h-full w-full rounded-full bg-gradient-to-r from-blue-400 to-blue-600" />
                             </div>
                         </div>
 
                         <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
-                            <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-amber-500/5" />
+                            <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-amber-500/5" />
                             <div className="flex items-start justify-between gap-3">
                                 <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Archived Reports</p>
-                                    <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">{stats.archivedReports}</p>
-                                    <p className="mt-1 text-xs font-semibold text-amber-600 dark:text-amber-400">PDF/CSV Exports</p>
+                                    <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
+                                        Archived Reports
+                                    </p>
+                                    <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
+                                        {stats.archivedReports}
+                                    </p>
+                                    <p className="mt-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                                        PDF/CSV Exports
+                                    </p>
                                 </div>
-                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-500/10 text-amber-600 ring-1 ring-amber-200/50 dark:bg-amber-500/20 dark:text-amber-400 dark:ring-amber-900/30 transition-transform duration-300 group-hover:scale-110">
+                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-500/10 text-amber-600 ring-1 ring-amber-200/50 transition-transform duration-300 group-hover:scale-110 dark:bg-amber-500/20 dark:text-amber-400 dark:ring-amber-900/30">
                                     <ArchiveIcon className="h-5 w-5" />
                                 </div>
                             </div>
                             <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                <div className="h-full w-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full" />
+                                <div className="h-full w-full rounded-full bg-gradient-to-r from-amber-400 to-amber-600" />
                             </div>
                         </div>
                     </div>
@@ -403,44 +451,65 @@ export default function AdminArchivePage() {
                         <CardHeader className="pb-3">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
-                                    <CardTitle className="text-lg font-semibold text-slate-800 dark:text-white">Archived Items</CardTitle>
-                                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Manage system storage and restore history</p>
+                                    <CardTitle className="text-lg font-semibold text-slate-800 dark:text-white">
+                                        Archived Items
+                                    </CardTitle>
+                                    <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                                        Manage system storage and restore
+                                        history
+                                    </p>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2">
                                     <Select
                                         value={typeFilter}
-                                        onValueChange={(v: any) => setTypeFilter(v)}
+                                        onValueChange={(v: any) =>
+                                            setTypeFilter(v)
+                                        }
                                     >
-                                        <SelectTrigger className="h-9 w-full sm:w-32 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-bold">
+                                        <SelectTrigger className="h-9 w-full border-slate-200 bg-white text-xs font-bold sm:w-32 dark:border-slate-700 dark:bg-slate-800">
                                             <SelectValue placeholder="All Types" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="all">All Types</SelectItem>
-                                            <SelectItem value="reports">Reports</SelectItem>
+                                            <SelectItem value="all">
+                                                All Types
+                                            </SelectItem>
+                                            <SelectItem value="reports">
+                                                Reports
+                                            </SelectItem>
                                         </SelectContent>
                                     </Select>
 
                                     <Select
                                         value={dateFilter}
-                                        onValueChange={(v: any) => setDateFilter(v)}
+                                        onValueChange={(v: any) =>
+                                            setDateFilter(v)
+                                        }
                                     >
-                                        <SelectTrigger className="h-9 w-full sm:w-32 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-bold">
+                                        <SelectTrigger className="h-9 w-full border-slate-200 bg-white text-xs font-bold sm:w-32 dark:border-slate-700 dark:bg-slate-800">
                                             <SelectValue placeholder="Any Date" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="all">Any Date</SelectItem>
-                                            <SelectItem value="last_7">Last 7 Days</SelectItem>
-                                            <SelectItem value="last_30">Last 30 Days</SelectItem>
+                                            <SelectItem value="all">
+                                                Any Date
+                                            </SelectItem>
+                                            <SelectItem value="last_7">
+                                                Last 7 Days
+                                            </SelectItem>
+                                            <SelectItem value="last_30">
+                                                Last 30 Days
+                                            </SelectItem>
                                         </SelectContent>
                                     </Select>
 
                                     <div className="relative w-full sm:w-64">
-                                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                        <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                                         <Input
                                             value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            onChange={(e) =>
+                                                setSearchQuery(e.target.value)
+                                            }
                                             placeholder="Search archive..."
-                                            className="h-9 pl-9 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-medium"
+                                            className="h-9 border-slate-200 bg-white pl-9 text-xs font-medium dark:border-slate-700 dark:bg-slate-800"
                                         />
                                     </div>
                                 </div>
@@ -452,10 +521,18 @@ export default function AdminArchivePage() {
                                 <table className="min-w-full border-collapse">
                                     <thead className="border-b border-slate-100 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
                                         <tr>
-                                            <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider">Item Details</th>
-                                            <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider">Storage Data</th>
-                                            <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider">Archived On</th>
-                                            <th className="px-6 py-4 text-right text-[10px] font-bold uppercase tracking-wider">Action</th>
+                                            <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
+                                                Item Details
+                                            </th>
+                                            <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
+                                                Storage Data
+                                            </th>
+                                            <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
+                                                Archived On
+                                            </th>
+                                            <th className="px-6 py-4 text-right text-[10px] font-bold tracking-wider uppercase">
+                                                Action
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-transparent">
@@ -470,9 +547,11 @@ export default function AdminArchivePage() {
                                             </tr>
                                         ) : (
                                             paginatedRows.map((row) => {
-                                                const initials = (row.type || 'ARCH')
+                                                const initials = (
+                                                    row.type || 'ARCH'
+                                                )
                                                     .split(' ')
-                                                    .map(n => n[0])
+                                                    .map((n) => n[0])
                                                     .join('')
                                                     .slice(0, 2)
                                                     .toUpperCase();
@@ -488,21 +567,39 @@ export default function AdminArchivePage() {
                                                                     <FileText className="h-5 w-5" />
                                                                 </div>
                                                                 <div>
-                                                                    <div className="font-bold text-slate-900 dark:text-white">{row.description}</div>
-                                                                    <div className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-tight mt-0.5">{row.type}</div>
+                                                                    <div className="font-bold text-slate-900 dark:text-white">
+                                                                        {
+                                                                            row.description
+                                                                        }
+                                                                    </div>
+                                                                    <div className="mt-0.5 text-[10px] font-bold tracking-tight text-blue-600 uppercase dark:text-blue-400">
+                                                                        {
+                                                                            row.type
+                                                                        }
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </td>
                                                         <td className="px-6 py-4">
                                                             <div className="flex flex-col">
-                                                                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">System Table</span>
-                                                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{row.table}</span>
+                                                                <span className="text-[11px] font-bold tracking-tight text-slate-500 uppercase dark:text-slate-400">
+                                                                    System Table
+                                                                </span>
+                                                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                                                    {row.table}
+                                                                </span>
                                                             </div>
                                                         </td>
                                                         <td className="px-6 py-4">
                                                             <div className="flex flex-col">
-                                                                <span className="text-sm font-bold text-slate-900 dark:text-white">{row.dateArchived}</span>
-                                                                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">ID: {row.id}</span>
+                                                                <span className="text-sm font-bold text-slate-900 dark:text-white">
+                                                                    {
+                                                                        row.dateArchived
+                                                                    }
+                                                                </span>
+                                                                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                                                                    ID: {row.id}
+                                                                </span>
                                                             </div>
                                                         </td>
                                                         <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
@@ -511,7 +608,11 @@ export default function AdminArchivePage() {
                                                                     variant="ghost"
                                                                     size="icon"
                                                                     className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-emerald-50 hover:text-emerald-600 dark:text-slate-400 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-300"
-                                                                    onClick={() => handleUnarchive(row)}
+                                                                    onClick={() =>
+                                                                        handleUnarchive(
+                                                                            row,
+                                                                        )
+                                                                    }
                                                                 >
                                                                     <RotateCcw className="h-4 w-4" />
                                                                 </Button>
@@ -528,14 +629,18 @@ export default function AdminArchivePage() {
                     </Card>
 
                     {/* Pagination */}
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-6 py-4">
+                    <div className="flex flex-col gap-4 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Rows per page:</span>
+                            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                                Rows per page:
+                            </span>
                             <Select
                                 value={String(pageSize)}
-                                onValueChange={(v) => handlePageSizeChange(Number(v))}
+                                onValueChange={(v) =>
+                                    handlePageSizeChange(Number(v))
+                                }
                             >
-                                <SelectTrigger className="h-8 w-16 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-800 text-xs font-bold">
+                                <SelectTrigger className="h-8 w-16 border-slate-200 bg-white text-xs font-bold dark:border-slate-800 dark:bg-slate-800">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -548,14 +653,23 @@ export default function AdminArchivePage() {
 
                         <div className="flex items-center gap-2">
                             <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                                Page <span className="font-bold text-slate-900 dark:text-white">{currentPage}</span> of <span className="font-bold text-slate-900 dark:text-white">{totalPages}</span>
+                                Page{' '}
+                                <span className="font-bold text-slate-900 dark:text-white">
+                                    {currentPage}
+                                </span>{' '}
+                                of{' '}
+                                <span className="font-bold text-slate-900 dark:text-white">
+                                    {totalPages}
+                                </span>
                             </span>
                             <div className="flex items-center gap-1">
                                 <Button
                                     variant="outline"
                                     size="icon"
                                     className="h-8 w-8 rounded-lg border-slate-200 dark:border-slate-800"
-                                    onClick={() => handlePageChange(currentPage - 1)}
+                                    onClick={() =>
+                                        handlePageChange(currentPage - 1)
+                                    }
                                     disabled={currentPage === 1}
                                 >
                                     <ChevronLeft className="h-4 w-4" />
@@ -564,7 +678,9 @@ export default function AdminArchivePage() {
                                     variant="outline"
                                     size="icon"
                                     className="h-8 w-8 rounded-lg border-slate-200 dark:border-slate-800"
-                                    onClick={() => handlePageChange(currentPage + 1)}
+                                    onClick={() =>
+                                        handlePageChange(currentPage + 1)
+                                    }
                                     disabled={currentPage === totalPages}
                                 >
                                     <ChevronRight className="h-4 w-4" />

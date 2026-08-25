@@ -1,33 +1,25 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Archive, CheckCircle2, Download, Eye, LayoutGrid, PlusCircle, QrCode, Send, Star, ThumbsDown, ThumbsUp, UserRoundCog, Pencil, XCircle, Sparkles } from 'lucide-react';
-import QRCode from 'qrcode';
-import { useEffect, useMemo, useState } from 'react';
-import Swal from 'sweetalert2';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import {
     adminDashboard,
     adminEvaluation,
     adminEvaluationApproveProgram,
     adminEvaluationDestroy,
-    adminEvaluationMetrics,
     adminEvaluationPublish,
     adminEvaluationShow,
-    adminEvaluationStore,
     adminEvaluationUnpublish,
-    adminEvaluationUpdate,
     studentEvaluationShow,
 } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
+import { Head, router, usePage } from '@inertiajs/react';
+import { PlusCircle, ThumbsDown, ThumbsUp, UserRoundCog } from 'lucide-react';
+import QRCode from 'qrcode';
+import { useMemo, useState } from 'react';
+import Swal from 'sweetalert2';
 import AdminLayout from '../admin-layout';
-import AutoEvaluationUploadDialog from './AutoEvaluationUploadDialog';
 import EvaluationFormDialog from './EvaluationFormDialog';
-import EvaluationPreviewDialog from './EvaluationPreviewDialog';
-import KpiCards from './components/KpiCards';
-import EvaluationTable from './components/EvaluationTable';
 import EvaluationDialogs from './components/EvaluationDialogs';
+import EvaluationTable from './components/EvaluationTable';
+import KpiCards from './components/KpiCards';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -40,7 +32,12 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-import { CommentRow, EvaluationForm, ProgramStatRow, EventOption, EvaluationStats } from './components/types';
+import {
+    EvaluationForm,
+    EvaluationStats,
+    EventOption,
+    ProgramStatRow,
+} from './components/types';
 
 type PageProps = {
     evaluations: EvaluationForm[];
@@ -53,7 +50,7 @@ type PageProps = {
 };
 
 export default function AdminEvaluationPage() {
-    const { props } = (usePage() as { props: PageProps });
+    const { props } = usePage() as { props: PageProps };
     const evaluations = props.evaluations ?? [];
     const events = props.events ?? [];
     const selectedEventId = props.selectedEventId ?? null;
@@ -62,13 +59,13 @@ export default function AdminEvaluationPage() {
     const completionThreshold = props.completionThreshold ?? 85;
 
     const [evaluationDialogOpen, setEvaluationDialogOpen] = useState(false);
-    const [editingEvaluation, setEditingEvaluation] = useState<EvaluationForm | null>(null);
+    const [editingEvaluation, setEditingEvaluation] =
+        useState<EvaluationForm | null>(null);
     const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
-    const [previewEvaluation, setPreviewEvaluation] = useState<EvaluationForm | null>(null);
+    const [previewEvaluation, setPreviewEvaluation] =
+        useState<EvaluationForm | null>(null);
     const [autoUploadOpen, setAutoUploadOpen] = useState(false);
     const [initialFormState, setInitialFormState] = useState<any>(null);
-
-
 
     const kpis = useMemo(() => {
         const totalResponses = evaluationStats?.totalResponses ?? 0;
@@ -78,23 +75,47 @@ export default function AdminEvaluationPage() {
         const negativeFeedback = evaluationStats?.sentiments?.negative ?? 0;
 
         return [
-            { title: 'Total Responses', value: totalResponses, change: '', accent: 'bg-blue-600', icon: UserRoundCog },
+            {
+                title: 'Total Responses',
+                value: totalResponses,
+                change: '',
+                accent: 'bg-blue-600',
+                icon: UserRoundCog,
+            },
             {
                 title: 'Response Rate',
-                value: responseRate === null || responseRate === undefined ? 'N/A' : `${responseRate}%`,
+                value:
+                    responseRate === null || responseRate === undefined
+                        ? 'N/A'
+                        : `${responseRate}%`,
                 change: '',
                 accent: 'bg-emerald-600',
                 icon: ThumbsUp,
             },
             {
                 title: 'Average Rating',
-                value: averageRating === null || averageRating === undefined ? 'N/A' : String(averageRating),
+                value:
+                    averageRating === null || averageRating === undefined
+                        ? 'N/A'
+                        : String(averageRating),
                 change: '',
                 accent: 'bg-amber-500',
                 icon: UserRoundCog,
             },
-            { title: 'Positive Feedback', value: positiveFeedback, change: '', accent: 'bg-emerald-600', icon: ThumbsUp },
-            { title: 'Negative Feedback', value: negativeFeedback, change: '', accent: 'bg-rose-500', icon: ThumbsDown },
+            {
+                title: 'Positive Feedback',
+                value: positiveFeedback,
+                change: '',
+                accent: 'bg-emerald-600',
+                icon: ThumbsUp,
+            },
+            {
+                title: 'Negative Feedback',
+                value: negativeFeedback,
+                change: '',
+                accent: 'bg-rose-500',
+                icon: ThumbsDown,
+            },
         ];
     }, [evaluationStats]);
 
@@ -110,9 +131,13 @@ export default function AdminEvaluationPage() {
             cancelButtonText: 'Cancel',
         }).then((result) => {
             if (result.isConfirmed) {
-                router.post(adminEvaluationDestroy(evaluation.id), {}, {
-                    preserveScroll: true,
-                });
+                router.post(
+                    adminEvaluationDestroy(evaluation.id),
+                    {},
+                    {
+                        preserveScroll: true,
+                    },
+                );
             }
         });
     };
@@ -140,16 +165,27 @@ export default function AdminEvaluationPage() {
             confirmButtonText: 'Publish',
         }).then((result) => {
             if (result.isConfirmed) {
-                router.post(adminEvaluationPublish(evaluation.id), {}, { preserveScroll: true });
+                router.post(
+                    adminEvaluationPublish(evaluation.id),
+                    {},
+                    { preserveScroll: true },
+                );
             }
         });
     };
 
     const handleUnpublish = (evaluation: EvaluationForm) => {
-        router.post(adminEvaluationUnpublish(evaluation.id), {}, { preserveScroll: true });
+        router.post(
+            adminEvaluationUnpublish(evaluation.id),
+            {},
+            { preserveScroll: true },
+        );
     };
 
-    const handleApproveProgram = (evaluation: EvaluationForm, program: string) => {
+    const handleApproveProgram = (
+        evaluation: EvaluationForm,
+        program: string,
+    ) => {
         Swal.fire({
             title: 'Approve next activity?',
             html: `Confirm that at least <strong>${completionThreshold}%</strong> of eligible students in <strong>${program}</strong> have completed the evaluation.`,
@@ -161,10 +197,13 @@ export default function AdminEvaluationPage() {
                 router.post(
                     adminEvaluationApproveProgram(evaluation.id),
                     { program },
-                    { preserveScroll: true, onSuccess: () => {
-                        // After approval, refresh metrics if the dialog is open
-                        router.reload({ only: ['programStats'] });
-                    } },
+                    {
+                        preserveScroll: true,
+                        onSuccess: () => {
+                            // After approval, refresh metrics if the dialog is open
+                            router.reload({ only: ['programStats'] });
+                        },
+                    },
                 );
             }
         });
@@ -172,7 +211,11 @@ export default function AdminEvaluationPage() {
 
     const primaryEvaluation = useMemo(() => {
         if (!selectedEventId) return null;
-        return evaluations.find((e) => e.event_id === selectedEventId) ?? evaluations[0] ?? null;
+        return (
+            evaluations.find((e) => e.event_id === selectedEventId) ??
+            evaluations[0] ??
+            null
+        );
     }, [evaluations, selectedEventId]);
 
     const handleDownloadQR = async (evaluation: EvaluationForm) => {
@@ -184,8 +227,8 @@ export default function AdminEvaluationPage() {
                 margin: 2,
                 color: {
                     dark: '#000000',
-                    light: '#FFFFFF'
-                }
+                    light: '#FFFFFF',
+                },
             });
 
             const link = document.createElement('a');
@@ -212,8 +255,6 @@ export default function AdminEvaluationPage() {
         }
     };
 
-
-
     return (
         <AdminLayout breadcrumbs={breadcrumbs}>
             <Head title="Evaluation" />
@@ -235,24 +276,27 @@ export default function AdminEvaluationPage() {
                         <>
                             {/* ── Hero Header ── */}
                             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] p-6 shadow-xl shadow-blue-900/20">
-                                <div className="pointer-events-none absolute -right-12 -top-12 h-56 w-56 rounded-full bg-white/5" />
-                                <div className="pointer-events-none absolute -right-4 -top-4 h-32 w-32 rounded-full bg-white/5" />
+                                <div className="pointer-events-none absolute -top-12 -right-12 h-56 w-56 rounded-full bg-white/5" />
+                                <div className="pointer-events-none absolute -top-4 -right-4 h-32 w-32 rounded-full bg-white/5" />
                                 <div className="pointer-events-none absolute bottom-0 left-1/3 h-48 w-48 -translate-y-1/4 rounded-full bg-blue-400/10 blur-2xl" />
                                 <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                     <div className="flex items-center gap-4">
-                                        <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/10 text-white shadow-inner backdrop-blur-sm ring-1 ring-white/20">
+                                        <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/10 text-white shadow-inner ring-1 ring-white/20 backdrop-blur-sm">
                                             <UserRoundCog className="h-7 w-7" />
                                         </div>
                                         <div>
-                                            <h1 className="text-2xl font-black tracking-tight text-white">Evaluation System</h1>
+                                            <h1 className="text-2xl font-black tracking-tight text-white">
+                                                Evaluation System
+                                            </h1>
                                             <p className="mt-0.5 text-sm font-medium text-blue-200/80">
-                                                Track evaluation forms, survey responses, and student feedback
+                                                Track evaluation forms, survey
+                                                responses, and student feedback
                                             </p>
                                         </div>
                                     </div>
                                     <Button
                                         type="button"
-                                        className="h-11 gap-2 rounded-xl bg-white px-5 font-bold text-[#1e3a8a] shadow-md transition-all duration-200 hover:bg-blue-50 hover:shadow-lg self-start sm:self-auto"
+                                        className="h-11 gap-2 self-start rounded-xl bg-white px-5 font-bold text-[#1e3a8a] shadow-md transition-all duration-200 hover:bg-blue-50 hover:shadow-lg sm:self-auto"
                                         onClick={handleCreateEvaluation}
                                     >
                                         <PlusCircle className="h-5 w-5" />
@@ -263,15 +307,19 @@ export default function AdminEvaluationPage() {
 
                             <KpiCards kpis={kpis} />
 
-                            <EvaluationTable 
+                            <EvaluationTable
                                 evaluations={evaluations}
                                 events={events}
                                 handlePublish={handlePublish}
                                 handleUnpublish={handleUnpublish}
                                 handleDownloadQR={handleDownloadQR}
-                                handlePreviewEvaluation={handlePreviewEvaluation}
+                                handlePreviewEvaluation={
+                                    handlePreviewEvaluation
+                                }
                                 handleEditEvaluation={handleEditEvaluation}
-                                handleArchiveEvaluation={handleArchiveEvaluation}
+                                handleArchiveEvaluation={
+                                    handleArchiveEvaluation
+                                }
                             />
                         </>
                     )}
@@ -292,8 +340,8 @@ export default function AdminEvaluationPage() {
                         eventId: eventId,
                         is_active: false,
                         form_data: {
-                            questions: data.questions
-                        }
+                            questions: data.questions,
+                        },
                     });
                     setEditingEvaluation(null);
                     setEvaluationDialogOpen(true);

@@ -1,13 +1,19 @@
+import InputError from '@/components/input-error';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import SettingsPageLayout from '@/layouts/settings/settings-page-layout';
 import { Transition } from '@headlessui/react';
 import { Form } from '@inertiajs/react';
 import { CheckCircle2, Eye, EyeOff, Lock } from 'lucide-react';
 import { useRef, useState } from 'react';
-import InputError from '@/components/input-error';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import SettingsPageLayout from '@/layouts/settings/settings-page-layout';
 
 const inputClassName =
     'h-11 border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-900 dark:text-white focus-visible:border-[#23509A] focus-visible:ring-[#23509A]/20';
@@ -34,7 +40,8 @@ export default function Password() {
                                 Update password
                             </CardTitle>
                             <CardDescription className="mt-1 text-sm">
-                                Use a strong, unique password. You will stay signed in after updating.
+                                Use a strong, unique password. You will stay
+                                signed in after updating.
                             </CardDescription>
                         </div>
                     </div>
@@ -44,18 +51,26 @@ export default function Password() {
                         action="/settings/password"
                         method="put"
                         options={{ preserveScroll: true }}
-                        resetOnError={['password', 'password_confirmation', 'current_password']}
+                        resetOnError={[
+                            'password',
+                            'password_confirmation',
+                            'current_password',
+                        ]}
                         resetOnSuccess
                         onError={(errors) => {
                             if (errors.password) passwordInput.current?.focus();
-                            if (errors.current_password) currentPasswordInput.current?.focus();
+                            if (errors.current_password)
+                                currentPasswordInput.current?.focus();
                         }}
                         className="space-y-5"
                     >
                         {({ errors, processing, recentlySuccessful }) => (
                             <>
                                 <div className="space-y-2">
-                                    <Label htmlFor="current_password" className="text-slate-700 dark:text-slate-300">
+                                    <Label
+                                        htmlFor="current_password"
+                                        className="text-slate-700 dark:text-slate-300"
+                                    >
                                         Current password
                                     </Label>
                                     <div className="relative">
@@ -63,27 +78,48 @@ export default function Password() {
                                             id="current_password"
                                             ref={currentPasswordInput}
                                             name="current_password"
-                                            type={showCurrent ? 'text' : 'password'}
-                                            className={inputClassName + ' pr-10'}
+                                            type={
+                                                showCurrent
+                                                    ? 'text'
+                                                    : 'password'
+                                            }
+                                            className={
+                                                inputClassName + ' pr-10'
+                                            }
                                             autoComplete="current-password"
                                             placeholder="Enter current password"
                                         />
                                         <button
                                             type="button"
-                                            onClick={() => setShowCurrent((v) => !v)}
+                                            onClick={() =>
+                                                setShowCurrent((v) => !v)
+                                            }
                                             className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                                             tabIndex={-1}
-                                            aria-label={showCurrent ? 'Hide password' : 'Show password'}
+                                            aria-label={
+                                                showCurrent
+                                                    ? 'Hide password'
+                                                    : 'Show password'
+                                            }
                                         >
-                                            {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            {showCurrent ? (
+                                                <EyeOff className="h-4 w-4" />
+                                            ) : (
+                                                <Eye className="h-4 w-4" />
+                                            )}
                                         </button>
                                     </div>
-                                    <InputError message={errors.current_password} />
+                                    <InputError
+                                        message={errors.current_password}
+                                    />
                                 </div>
 
                                 <div className="grid gap-5 sm:grid-cols-2">
                                     <div className="space-y-2">
-                                        <Label htmlFor="password" className="text-slate-700 dark:text-slate-300">
+                                        <Label
+                                            htmlFor="password"
+                                            className="text-slate-700 dark:text-slate-300"
+                                        >
                                             New password
                                         </Label>
                                         <div className="relative">
@@ -91,47 +127,86 @@ export default function Password() {
                                                 id="password"
                                                 ref={passwordInput}
                                                 name="password"
-                                                type={showNew ? 'text' : 'password'}
-                                                className={inputClassName + ' pr-10'}
+                                                type={
+                                                    showNew
+                                                        ? 'text'
+                                                        : 'password'
+                                                }
+                                                className={
+                                                    inputClassName + ' pr-10'
+                                                }
                                                 autoComplete="new-password"
                                                 placeholder="New password"
                                             />
                                             <button
                                                 type="button"
-                                                onClick={() => setShowNew((v) => !v)}
+                                                onClick={() =>
+                                                    setShowNew((v) => !v)
+                                                }
                                                 className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                                                 tabIndex={-1}
-                                                aria-label={showNew ? 'Hide password' : 'Show password'}
+                                                aria-label={
+                                                    showNew
+                                                        ? 'Hide password'
+                                                        : 'Show password'
+                                                }
                                             >
-                                                {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                                {showNew ? (
+                                                    <EyeOff className="h-4 w-4" />
+                                                ) : (
+                                                    <Eye className="h-4 w-4" />
+                                                )}
                                             </button>
                                         </div>
                                         <InputError message={errors.password} />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="password_confirmation" className="text-slate-700 dark:text-slate-300">
+                                        <Label
+                                            htmlFor="password_confirmation"
+                                            className="text-slate-700 dark:text-slate-300"
+                                        >
                                             Confirm new password
                                         </Label>
                                         <div className="relative">
                                             <Input
                                                 id="password_confirmation"
                                                 name="password_confirmation"
-                                                type={showConfirm ? 'text' : 'password'}
-                                                className={inputClassName + ' pr-10'}
+                                                type={
+                                                    showConfirm
+                                                        ? 'text'
+                                                        : 'password'
+                                                }
+                                                className={
+                                                    inputClassName + ' pr-10'
+                                                }
                                                 autoComplete="new-password"
                                                 placeholder="Repeat new password"
                                             />
                                             <button
                                                 type="button"
-                                                onClick={() => setShowConfirm((v) => !v)}
+                                                onClick={() =>
+                                                    setShowConfirm((v) => !v)
+                                                }
                                                 className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                                                 tabIndex={-1}
-                                                aria-label={showConfirm ? 'Hide password' : 'Show password'}
+                                                aria-label={
+                                                    showConfirm
+                                                        ? 'Hide password'
+                                                        : 'Show password'
+                                                }
                                             >
-                                                {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                                {showConfirm ? (
+                                                    <EyeOff className="h-4 w-4" />
+                                                ) : (
+                                                    <Eye className="h-4 w-4" />
+                                                )}
                                             </button>
                                         </div>
-                                        <InputError message={errors.password_confirmation} />
+                                        <InputError
+                                            message={
+                                                errors.password_confirmation
+                                            }
+                                        />
                                     </div>
                                 </div>
 
@@ -143,7 +218,9 @@ export default function Password() {
                                             data-test="update-password-button"
                                             className="h-10 min-w-[140px] bg-gradient-to-r from-[#23509A] to-[#000D6A] text-white shadow-sm hover:from-[#1e4a8a] hover:to-[#000a5a]"
                                         >
-                                            {processing ? 'Saving…' : 'Save password'}
+                                            {processing
+                                                ? 'Saving…'
+                                                : 'Save password'}
                                         </Button>
                                         <Transition
                                             show={recentlySuccessful}
@@ -153,7 +230,10 @@ export default function Password() {
                                             leaveTo="opacity-0"
                                         >
                                             <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                                                <CheckCircle2 className="h-4 w-4" aria-hidden />
+                                                <CheckCircle2
+                                                    className="h-4 w-4"
+                                                    aria-hidden
+                                                />
                                                 Saved
                                             </span>
                                         </Transition>

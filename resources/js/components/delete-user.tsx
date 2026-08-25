@@ -1,9 +1,12 @@
-import { Form } from '@inertiajs/react';
-import { AlertTriangle } from 'lucide-react';
-import { useRef } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import {
     Dialog,
     DialogClose,
@@ -16,6 +19,9 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Form } from '@inertiajs/react';
+import { AlertTriangle } from 'lucide-react';
+import { useRef } from 'react';
 
 export default function DeleteUser() {
     const passwordInput = useRef<HTMLInputElement>(null);
@@ -29,9 +35,12 @@ export default function DeleteUser() {
                         <AlertTriangle className="h-5 w-5" aria-hidden />
                     </div>
                     <div>
-                        <CardTitle className="text-base font-semibold text-slate-900 dark:text-white">Danger zone</CardTitle>
+                        <CardTitle className="text-base font-semibold text-slate-900 dark:text-white">
+                            Danger zone
+                        </CardTitle>
                         <CardDescription className="mt-1 text-sm">
-                            Permanently delete your account and all associated data. This action cannot be undone.
+                            Permanently delete your account and all associated
+                            data. This action cannot be undone.
                         </CardDescription>
                     </div>
                 </div>
@@ -40,21 +49,29 @@ export default function DeleteUser() {
                 <div className="rounded-lg border border-red-200 bg-red-50/80 px-4 py-3 text-sm text-red-900 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-100">
                     <p className="font-medium">Before you continue</p>
                     <p className="mt-1 text-red-800/90 dark:text-red-200/80">
-                        You will lose access to attendance records, evaluations, and other data tied to this account.
+                        You will lose access to attendance records, evaluations,
+                        and other data tied to this account.
                     </p>
                 </div>
 
                 <Dialog>
                     <DialogTrigger asChild>
-                        <Button variant="destructive" data-test="delete-user-button" className="h-10">
+                        <Button
+                            variant="destructive"
+                            data-test="delete-user-button"
+                            className="h-10"
+                        >
                             Delete account
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="border-slate-200 dark:border-slate-700 dark:bg-slate-900 sm:max-w-md">
+                    <DialogContent className="border-slate-200 sm:max-w-md dark:border-slate-700 dark:bg-slate-900">
                         <DialogHeader>
-                            <DialogTitle className="text-slate-900 dark:text-white">Delete your account?</DialogTitle>
+                            <DialogTitle className="text-slate-900 dark:text-white">
+                                Delete your account?
+                            </DialogTitle>
                             <DialogDescription className="text-slate-600 dark:text-slate-400">
-                                This permanently removes your account and all related data. Enter your password to confirm.
+                                This permanently removes your account and all
+                                related data. Enter your password to confirm.
                             </DialogDescription>
                         </DialogHeader>
 
@@ -71,7 +88,10 @@ export default function DeleteUser() {
                             {({ resetAndClearErrors, processing, errors }) => (
                                 <>
                                     <div className="space-y-2">
-                                        <Label htmlFor="password" className="text-slate-700 dark:text-slate-300">
+                                        <Label
+                                            htmlFor="password"
+                                            className="text-slate-700 dark:text-slate-300"
+                                        >
                                             Password
                                         </Label>
                                         <Input
@@ -92,15 +112,26 @@ export default function DeleteUser() {
                                                 type="button"
                                                 variant="outline"
                                                 className="border-slate-300 dark:border-slate-600"
-                                                onClick={() => resetAndClearErrors()}
+                                                onClick={() =>
+                                                    resetAndClearErrors()
+                                                }
                                             >
                                                 Cancel
                                             </Button>
                                         </DialogClose>
 
-                                        <Button variant="destructive" disabled={processing} asChild>
-                                            <button type="submit" data-test="confirm-delete-user-button">
-                                                {processing ? 'Deleting…' : 'Confirm delete'}
+                                        <Button
+                                            variant="destructive"
+                                            disabled={processing}
+                                            asChild
+                                        >
+                                            <button
+                                                type="submit"
+                                                data-test="confirm-delete-user-button"
+                                            >
+                                                {processing
+                                                    ? 'Deleting…'
+                                                    : 'Confirm delete'}
                                             </button>
                                         </Button>
                                     </DialogFooter>

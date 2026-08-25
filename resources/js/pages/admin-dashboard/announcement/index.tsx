@@ -1,8 +1,3 @@
-import { Head, router, usePage } from '@inertiajs/react';
-import { Archive, ChevronLeft, ChevronRight, Eye, Megaphone, Pencil, Plus, Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
-import Swal from 'sweetalert2';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -14,22 +9,34 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { 
-    Tooltip, 
-    TooltipContent, 
-    TooltipProvider, 
-    TooltipTrigger 
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { getPhilippinesHolidayEvents } from '@/lib/philippines-holidays';
-import { 
-    adminAnnouncement, 
-    adminAnnouncementStore, 
-    adminAnnouncementShow, 
-    adminAnnouncementUpdate, 
-    adminAnnouncementArchive, 
-    adminDashboard 
+import {
+    adminAnnouncement,
+    adminAnnouncementArchive,
+    adminAnnouncementShow,
+    adminAnnouncementStore,
+    adminAnnouncementUpdate,
+    adminDashboard,
 } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
+import { Head, router, usePage } from '@inertiajs/react';
+import {
+    Archive,
+    ChevronLeft,
+    ChevronRight,
+    Eye,
+    Megaphone,
+    Pencil,
+    Plus,
+    Search,
+} from 'lucide-react';
+import { useMemo, useState } from 'react';
+import Swal from 'sweetalert2';
 import AdminLayout from '../admin-layout';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -76,7 +83,10 @@ type PageProps = {
 function formatBytes(bytes: number) {
     if (!bytes || bytes <= 0) return '0 B';
     const units = ['B', 'KB', 'MB', 'GB'];
-    const idx = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+    const idx = Math.min(
+        units.length - 1,
+        Math.floor(Math.log(bytes) / Math.log(1024)),
+    );
     const value = bytes / Math.pow(1024, idx);
     const rounded = idx === 0 ? Math.round(value) : Math.round(value * 10) / 10;
     return `${rounded} ${units[idx]}`;
@@ -168,7 +178,13 @@ function getMonthGrid(month: Date) {
 
     const days: Date[] = [];
     for (let i = 0; i < 42; i++) {
-        days.push(new Date(start.getFullYear(), start.getMonth(), start.getDate() + i));
+        days.push(
+            new Date(
+                start.getFullYear(),
+                start.getMonth(),
+                start.getDate() + i,
+            ),
+        );
     }
     return days;
 }
@@ -177,8 +193,12 @@ export default function AdminAnnouncementPage() {
     const page = usePage<PageProps>();
     const announcementsFromServer = page.props.announcements ?? [];
     const statsFromServer = page.props.stats;
-    const [activeCategory, setActiveCategory] = useState<'all' | AnnouncementRow['category']>('all');
-    const [statusFilter, setStatusFilter] = useState<'all' | 'Published' | 'Draft' | 'Scheduled' | 'Archived'>('Published');
+    const [activeCategory, setActiveCategory] = useState<
+        'all' | AnnouncementRow['category']
+    >('all');
+    const [statusFilter, setStatusFilter] = useState<
+        'all' | 'Published' | 'Draft' | 'Scheduled' | 'Archived'
+    >('Published');
     const [searchQuery, setSearchQuery] = useState('');
     const [pageIndex, setPageIndex] = useState(1);
     const [createOpen, setCreateOpen] = useState(false);
@@ -203,7 +223,9 @@ export default function AdminAnnouncementPage() {
         eventTime: '',
     });
     const [eventCreateOpen, setEventCreateOpen] = useState(false);
-    const [eventForm, setEventForm] = useState<CalendarEvent & { date: string }>({
+    const [eventForm, setEventForm] = useState<
+        CalendarEvent & { date: string }
+    >({
         id: '',
         title: '',
         date: '',
@@ -211,7 +233,9 @@ export default function AdminAnnouncementPage() {
         organizer: 'DSA',
         duration: '1 day',
     });
-    const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+    const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(
+        null,
+    );
     const [dayEventsOpen, setDayEventsOpen] = useState(false);
     const [selectedDate, setSelectedDate] = useState<string>('');
     const activeYear = activeMonth.getFullYear();
@@ -248,16 +272,20 @@ export default function AdminAnnouncementPage() {
         return map;
     }, [activeYear, events]);
 
-    const announcements = useMemo(() => 
-        announcementsFromServer.length > 0 ? announcementsFromServer : announcementsSeed, 
-    [announcementsFromServer]);
+    const announcements = useMemo(
+        () =>
+            announcementsFromServer.length > 0
+                ? announcementsFromServer
+                : announcementsSeed,
+        [announcementsFromServer],
+    );
     const recentActivity = useMemo(() => recentActivitySeed, []);
 
     const handleViewAnnouncement = async (id: string) => {
         try {
             const response = await fetch(adminAnnouncementShow(id));
             const data = await response.json();
-            
+
             Swal.fire({
                 title: data.title,
                 html: `
@@ -269,20 +297,28 @@ export default function AdminAnnouncementPage() {
                         <div class="prose prose-sm max-w-none">
                             ${data.content || '<p class="text-slate-400 italic">No content provided.</p>'}
                         </div>
-                        ${data.event_date ? `
+                        ${
+                            data.event_date
+                                ? `
                         <div class="mt-4 pt-4 border-t border-slate-100 italic text-xs font-medium">
                             Scheduled Event: ${new Date(data.event_date).toLocaleDateString()} at ${data.event_time || 'N/A'}
-                        </div>` : ''}
+                        </div>`
+                                : ''
+                        }
                     </div>
                 `,
                 confirmButtonColor: '#23509A',
                 confirmButtonText: 'Close',
                 customClass: {
-                    container: 'font-sans'
-                }
+                    container: 'font-sans',
+                },
             });
         } catch (error) {
-            Swal.fire('Error', 'Could not fetch announcement details.', 'error');
+            Swal.fire(
+                'Error',
+                'Could not fetch announcement details.',
+                'error',
+            );
         }
     };
 
@@ -290,7 +326,7 @@ export default function AdminAnnouncementPage() {
         try {
             const response = await fetch(adminAnnouncementShow(id));
             const data = await response.json();
-            
+
             setCreateForm({
                 title: data.title,
                 category: data.category || 'General',
@@ -304,7 +340,11 @@ export default function AdminAnnouncementPage() {
             setCurrentEditId(id);
             setCreateOpen(true);
         } catch (error) {
-            Swal.fire('Error', 'Could not fetch announcement details.', 'error');
+            Swal.fire(
+                'Error',
+                'Could not fetch announcement details.',
+                'error',
+            );
         }
     };
 
@@ -317,16 +357,24 @@ export default function AdminAnnouncementPage() {
             confirmButtonColor: '#23509A',
             cancelButtonColor: '#d33',
             confirmButtonText: 'Yes, archive it!',
-            cancelButtonText: 'Cancel'
+            cancelButtonText: 'Cancel',
         }).then((result) => {
             if (result.isConfirmed) {
-                router.post(adminAnnouncementArchive(id), {
-                    _method: 'PUT'
-                }, {
-                    onSuccess: () => {
-                        Swal.fire('Archived!', 'Announcement has been archived.', 'success');
-                    }
-                });
+                router.post(
+                    adminAnnouncementArchive(id),
+                    {
+                        _method: 'PUT',
+                    },
+                    {
+                        onSuccess: () => {
+                            Swal.fire(
+                                'Archived!',
+                                'Announcement has been archived.',
+                                'success',
+                            );
+                        },
+                    },
+                );
             }
         });
     };
@@ -348,11 +396,18 @@ export default function AdminAnnouncementPage() {
 
         const matchesSearch = (row: AnnouncementRow) => {
             if (!q) return true;
-            const haystack = [row.title, row.category, row.status, row.date].join(' ').toLowerCase();
+            const haystack = [row.title, row.category, row.status, row.date]
+                .join(' ')
+                .toLowerCase();
             return haystack.includes(q);
         };
 
-        return announcements.filter((row) => matchesCategory(row) && matchesStatus(row) && matchesSearch(row));
+        return announcements.filter(
+            (row) =>
+                matchesCategory(row) &&
+                matchesStatus(row) &&
+                matchesSearch(row),
+        );
     }, [activeCategory, announcements, searchQuery, statusFilter]);
 
     const stats = useMemo(() => {
@@ -361,14 +416,23 @@ export default function AdminAnnouncementPage() {
         }
 
         const totalAnnouncements = announcements.length;
-        const active = announcements.filter((a) => a.status === 'Published').length;
-        const scheduled = announcements.filter((a) => a.status === 'Scheduled').length;
-        const archived = announcements.filter((a) => a.status === 'Archived').length;
+        const active = announcements.filter(
+            (a) => a.status === 'Published',
+        ).length;
+        const scheduled = announcements.filter(
+            (a) => a.status === 'Scheduled',
+        ).length;
+        const archived = announcements.filter(
+            (a) => a.status === 'Archived',
+        ).length;
         return { totalAnnouncements, active, scheduled, archived };
     }, [announcements, announcementsFromServer, statsFromServer]);
 
     const pageSize = 5;
-    const totalPages = Math.max(1, Math.ceil(filteredAnnouncements.length / pageSize));
+    const totalPages = Math.max(
+        1,
+        Math.ceil(filteredAnnouncements.length / pageSize),
+    );
     const pagedAnnouncements = useMemo(() => {
         const clamped = Math.min(Math.max(pageIndex, 1), totalPages);
         const start = (clamped - 1) * pageSize;
@@ -392,7 +456,14 @@ export default function AdminAnnouncementPage() {
 
     const closeEventDialog = () => {
         setEventCreateOpen(false);
-        setEventForm({ id: '', title: '', date: '', time: '9:00 AM', organizer: 'DSA', duration: '1 day' });
+        setEventForm({
+            id: '',
+            title: '',
+            date: '',
+            time: '9:00 AM',
+            organizer: 'DSA',
+            duration: '1 day',
+        });
     };
 
     const handleCreateEvent = () => {
@@ -400,7 +471,9 @@ export default function AdminAnnouncementPage() {
         if (!title || !eventForm.date) return;
 
         const now = new Date();
-        const dateLabel = now.toLocaleString(undefined, { month: 'short', day: '2-digit' }).replace(',', '');
+        const dateLabel = now
+            .toLocaleString(undefined, { month: 'short', day: '2-digit' })
+            .replace(',', '');
 
         const newRow: CalendarEvent = {
             id: String(Date.now()),
@@ -424,7 +497,11 @@ export default function AdminAnnouncementPage() {
 
     const handleSaveEvent = () => {
         if (editingEvent) {
-            setEvents((prev) => prev.map((e) => (e.id === editingEvent.id ? { ...eventForm } : e)));
+            setEvents((prev) =>
+                prev.map((e) =>
+                    e.id === editingEvent.id ? { ...eventForm } : e,
+                ),
+            );
         } else {
             handleCreateEvent();
         }
@@ -441,7 +518,7 @@ export default function AdminAnnouncementPage() {
         if (!title) return;
 
         const method = currentEditId ? 'PUT' : 'POST';
-        const url = currentEditId 
+        const url = currentEditId
             ? adminAnnouncementUpdate(currentEditId)
             : adminAnnouncementStore();
 
@@ -461,17 +538,23 @@ export default function AdminAnnouncementPage() {
                 preserveScroll: true,
                 preserveState: true,
                 onSuccess: () => {
-                    Swal.fire('Success', `Announcement ${currentEditId ? 'updated' : 'created'} successfully.`, 'success');
+                    Swal.fire(
+                        'Success',
+                        `Announcement ${currentEditId ? 'updated' : 'created'} successfully.`,
+                        'success',
+                    );
                     closeCreate();
                 },
                 onError: (errors) => {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
-                        text: (errors as any)?.message ?? 'Please check the form for errors.',
+                        text:
+                            (errors as any)?.message ??
+                            'Please check the form for errors.',
                     });
                 },
-            }
+            },
         );
     };
 
@@ -487,26 +570,41 @@ export default function AdminAnnouncementPage() {
                                     <Megaphone className="h-6 w-6 text-white" />
                                 </div>
                                 <div className="leading-tight">
-                                    <div className="text-lg font-semibold">Announcement Management</div>
-                                    <div className="text-sm text-white/80">Manage announcements and engagement</div>
+                                    <div className="text-lg font-semibold">
+                                        Announcement Management
+                                    </div>
+                                    <div className="text-sm text-white/80">
+                                        Manage announcements and engagement
+                                    </div>
                                 </div>
                             </div>
-                            <Dialog open={createOpen} onOpenChange={(next) => (next ? setCreateOpen(true) : closeCreate())}>
+                            <Dialog
+                                open={createOpen}
+                                onOpenChange={(next) =>
+                                    next ? setCreateOpen(true) : closeCreate()
+                                }
+                            >
                                 <Button
                                     type="button"
-                                    className="bg-white/15 text-white hover:bg-white/25 gap-2 transition-colors"
+                                    className="gap-2 bg-white/15 text-white transition-colors hover:bg-white/25"
                                     onClick={() => setCreateOpen(true)}
                                 >
                                     <Plus className="h-4 w-4" />
                                     Create Announcement
                                 </Button>
 
-                                <DialogContent className="sm:max-w-3xl overflow-hidden p-0">
+                                <DialogContent className="overflow-hidden p-0 sm:max-w-3xl">
                                     <div className="bg-gradient-to-r from-[#0b2d66] to-[#1e40af] px-6 py-5 text-white">
                                         <DialogHeader>
-                                            <DialogTitle className="text-white">{currentEditId ? 'Edit Announcement' : 'Create Announcement'}</DialogTitle>
+                                            <DialogTitle className="text-white">
+                                                {currentEditId
+                                                    ? 'Edit Announcement'
+                                                    : 'Create Announcement'}
+                                            </DialogTitle>
                                             <DialogDescription className="text-white/80">
-                                                {currentEditId ? 'Modify the details of this announcement.' : 'Compose and publish a new announcement.'}
+                                                {currentEditId
+                                                    ? 'Modify the details of this announcement.'
+                                                    : 'Compose and publish a new announcement.'}
                                             </DialogDescription>
                                         </DialogHeader>
                                     </div>
@@ -514,21 +612,42 @@ export default function AdminAnnouncementPage() {
                                     <div className="max-h-[70vh] space-y-5 overflow-y-auto bg-white px-6 py-6">
                                         <div className="grid gap-2">
                                             <Label htmlFor="announcementTitle">
-                                                Title <span className="text-red-600">*</span>
+                                                Title{' '}
+                                                <span className="text-red-600">
+                                                    *
+                                                </span>
                                             </Label>
                                             <Input
                                                 id="announcementTitle"
                                                 placeholder="Enter announcement title"
                                                 value={createForm.title}
-                                                onChange={(e) => setCreateForm((p) => ({ ...p, title: e.target.value }))}
+                                                onChange={(e) =>
+                                                    setCreateForm((p) => ({
+                                                        ...p,
+                                                        title: e.target.value,
+                                                    }))
+                                                }
                                             />
                                         </div>
 
                                         <div className="grid gap-2">
-                                            <Label htmlFor="announcementContent">Content</Label>
+                                            <Label htmlFor="announcementContent">
+                                                Content
+                                            </Label>
                                             <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
                                                 <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50 px-2 py-2 text-slate-600">
-                                                    {['B', 'I', 'U', '•', '1', '🔗', '🖼', '≡', '👤', '+'].map((t) => (
+                                                    {[
+                                                        'B',
+                                                        'I',
+                                                        'U',
+                                                        '•',
+                                                        '1',
+                                                        '🔗',
+                                                        '🖼',
+                                                        '≡',
+                                                        '👤',
+                                                        '+',
+                                                    ].map((t) => (
                                                         <button
                                                             key={t}
                                                             type="button"
@@ -542,51 +661,106 @@ export default function AdminAnnouncementPage() {
                                                 <textarea
                                                     id="announcementContent"
                                                     value={createForm.content}
-                                                    onChange={(e) => setCreateForm((p) => ({ ...p, content: e.target.value.slice(0, 2000) }))}
+                                                    onChange={(e) =>
+                                                        setCreateForm((p) => ({
+                                                            ...p,
+                                                            content:
+                                                                e.target.value.slice(
+                                                                    0,
+                                                                    2000,
+                                                                ),
+                                                        }))
+                                                    }
                                                     rows={7}
                                                     placeholder="Enter the announcement content..."
                                                     className="block w-full resize-none px-3 py-3 text-sm text-slate-800 outline-none"
                                                 />
                                                 <div className="flex justify-end border-t border-slate-200 bg-white px-3 py-2 text-xs text-slate-500">
-                                                    {String(createForm.content ?? '').length} / 2,000
+                                                    {
+                                                        String(
+                                                            createForm.content ??
+                                                                '',
+                                                        ).length
+                                                    }{' '}
+                                                    / 2,000
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div className="grid gap-2">
-                                            <Label>Attachments (optional)</Label>
+                                            <Label>
+                                                Attachments (optional)
+                                            </Label>
                                             <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-4 py-5">
                                                 <div className="text-center text-sm text-slate-600">
-                                                    <div className="font-medium">Drag &amp; drop files here, or{' '}
+                                                    <div className="font-medium">
+                                                        Drag &amp; drop files
+                                                        here, or{' '}
                                                         <label className="cursor-pointer font-semibold text-blue-600 hover:text-blue-700">
                                                             Browse
                                                             <input
                                                                 type="file"
                                                                 multiple
                                                                 className="hidden"
-                                                                onChange={(e) => {
-                                                                    const files = Array.from(e.target.files ?? []);
-                                                                    if (!files.length) return;
-                                                                    setCreateForm((p) => ({ ...p, attachments: [...p.attachments, ...files] }));
-                                                                    e.currentTarget.value = '';
+                                                                onChange={(
+                                                                    e,
+                                                                ) => {
+                                                                    const files =
+                                                                        Array.from(
+                                                                            e
+                                                                                .target
+                                                                                .files ??
+                                                                                [],
+                                                                        );
+                                                                    if (
+                                                                        !files.length
+                                                                    )
+                                                                        return;
+                                                                    setCreateForm(
+                                                                        (
+                                                                            p,
+                                                                        ) => ({
+                                                                            ...p,
+                                                                            attachments:
+                                                                                [
+                                                                                    ...p.attachments,
+                                                                                    ...files,
+                                                                                ],
+                                                                        }),
+                                                                    );
+                                                                    e.currentTarget.value =
+                                                                        '';
                                                                 }}
                                                             />
                                                         </label>
                                                     </div>
                                                     <div className="mt-2 text-xs text-slate-500">
-                                                        Supported file types: PDF, DOCX, PNG, JPG. Max size &le; 10MB
+                                                        Supported file types:
+                                                        PDF, DOCX, PNG, JPG. Max
+                                                        size &le; 10MB
                                                     </div>
                                                 </div>
                                             </div>
 
                                             {createForm.attachments.length ? (
                                                 <div className="space-y-2">
-                                                    {createForm.attachments.map((f, idx) => (
-                                                        <div key={`${f.name}-${idx}`} className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-sm">
-                                                            <div className="truncate font-medium text-slate-700">{f.name}</div>
-                                                            <div className="ml-4 shrink-0 text-xs text-slate-500">{formatBytes(f.size)}</div>
-                                                        </div>
-                                                    ))}
+                                                    {createForm.attachments.map(
+                                                        (f, idx) => (
+                                                            <div
+                                                                key={`${f.name}-${idx}`}
+                                                                className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
+                                                            >
+                                                                <div className="truncate font-medium text-slate-700">
+                                                                    {f.name}
+                                                                </div>
+                                                                <div className="ml-4 shrink-0 text-xs text-slate-500">
+                                                                    {formatBytes(
+                                                                        f.size,
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        ),
+                                                    )}
                                                 </div>
                                             ) : null}
                                         </div>
@@ -594,18 +768,37 @@ export default function AdminAnnouncementPage() {
                                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                             <div className="grid gap-2">
                                                 <Label>
-                                                    Category <span className="text-red-600">*</span>
+                                                    Category{' '}
+                                                    <span className="text-red-600">
+                                                        *
+                                                    </span>
                                                 </Label>
                                                 <select
                                                     value={createForm.category}
-                                                    onChange={(e) => setCreateForm((p) => ({ ...p, category: e.target.value as AnnouncementRow['category'] }))}
+                                                    onChange={(e) =>
+                                                        setCreateForm((p) => ({
+                                                            ...p,
+                                                            category: e.target
+                                                                .value as AnnouncementRow['category'],
+                                                        }))
+                                                    }
                                                     className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 sm:w-56"
                                                 >
-                                                    <option value="General">Select Category</option>
-                                                    <option value="Event">Event</option>
-                                                    <option value="Discipline">Discipline</option>
-                                                    <option value="Lost & Found">Lost &amp; Found</option>
-                                                    <option value="General">General</option>
+                                                    <option value="General">
+                                                        Select Category
+                                                    </option>
+                                                    <option value="Event">
+                                                        Event
+                                                    </option>
+                                                    <option value="Discipline">
+                                                        Discipline
+                                                    </option>
+                                                    <option value="Lost & Found">
+                                                        Lost &amp; Found
+                                                    </option>
+                                                    <option value="General">
+                                                        General
+                                                    </option>
                                                 </select>
                                             </div>
 
@@ -613,51 +806,93 @@ export default function AdminAnnouncementPage() {
                                                 <Label>Status</Label>
                                                 <select
                                                     value={createForm.status}
-                                                    onChange={(e) => setCreateForm((p) => ({ ...p, status: e.target.value as AnnouncementStatusOption }))}
+                                                    onChange={(e) =>
+                                                        setCreateForm((p) => ({
+                                                            ...p,
+                                                            status: e.target
+                                                                .value as AnnouncementStatusOption,
+                                                        }))
+                                                    }
                                                     className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 sm:w-52"
                                                 >
-                                                    <option value="Published">Published</option>
-                                                    <option value="Draft">Draft</option>
-                                                    <option value="Scheduled">Scheduled</option>
-                                                    <option value="Archived">Archived</option>
+                                                    <option value="Published">
+                                                        Published
+                                                    </option>
+                                                    <option value="Draft">
+                                                        Draft
+                                                    </option>
+                                                    <option value="Scheduled">
+                                                        Scheduled
+                                                    </option>
+                                                    <option value="Archived">
+                                                        Archived
+                                                    </option>
                                                 </select>
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mt-4">
+                                        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                                             <div className="grid gap-2">
-                                                <Label htmlFor="eventDate">Event Date</Label>
+                                                <Label htmlFor="eventDate">
+                                                    Event Date
+                                                </Label>
                                                 <Input
                                                     id="eventDate"
                                                     type="date"
-                                                    value={createForm.eventDate || ''}
-                                                    onChange={(e) => setCreateForm((p) => ({ ...p, eventDate: e.target.value }))}
+                                                    value={
+                                                        createForm.eventDate ||
+                                                        ''
+                                                    }
+                                                    onChange={(e) =>
+                                                        setCreateForm((p) => ({
+                                                            ...p,
+                                                            eventDate:
+                                                                e.target.value,
+                                                        }))
+                                                    }
                                                 />
                                             </div>
                                             <div className="grid gap-2">
-                                                <Label htmlFor="eventTime">Event Time</Label>
+                                                <Label htmlFor="eventTime">
+                                                    Event Time
+                                                </Label>
                                                 <Input
                                                     id="eventTime"
                                                     type="time"
-                                                    value={createForm.eventTime || ''}
-                                                    onChange={(e) => setCreateForm((p) => ({ ...p, eventTime: e.target.value }))}
+                                                    value={
+                                                        createForm.eventTime ||
+                                                        ''
+                                                    }
+                                                    onChange={(e) =>
+                                                        setCreateForm((p) => ({
+                                                            ...p,
+                                                            eventTime:
+                                                                e.target.value,
+                                                        }))
+                                                    }
                                                 />
                                             </div>
                                         </div>
-
                                     </div>
 
                                     <div className="flex flex-col-reverse gap-2 border-t border-slate-200 bg-slate-50 px-6 py-4 sm:flex-row sm:justify-end">
-                                        <Button type="button" variant="outline" className="h-10 px-8" onClick={closeCreate}>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="h-10 px-8"
+                                            onClick={closeCreate}
+                                        >
                                             Cancel
                                         </Button>
                                         <Button
                                             type="button"
-                                            className="h-10 bg-[#23509A] hover:bg-[#1e4a8a] text-white px-8 transition-colors"
+                                            className="h-10 bg-[#23509A] px-8 text-white transition-colors hover:bg-[#1e4a8a]"
                                             disabled={!createForm.title.trim()}
                                             onClick={handleCreateAnnouncement}
                                         >
-                                            {currentEditId ? 'Save Changes' : 'Create Announcement'}
+                                            {currentEditId
+                                                ? 'Save Changes'
+                                                : 'Create Announcement'}
                                         </Button>
                                     </div>
                                 </DialogContent>
@@ -693,14 +928,25 @@ export default function AdminAnnouncementPage() {
                                 accent: 'bg-rose-600',
                             },
                         ].map((kpi) => (
-                            <Card key={kpi.title} className="overflow-hidden border border-slate-200 bg-white shadow-sm">
+                            <Card
+                                key={kpi.title}
+                                className="overflow-hidden border border-slate-200 bg-white shadow-sm"
+                            >
                                 <CardContent className="relative py-4">
                                     <div className="flex items-start justify-between gap-3">
                                         <div>
-                                            <div className="text-xs font-medium text-slate-600">{kpi.title}</div>
+                                            <div className="text-xs font-medium text-slate-600">
+                                                {kpi.title}
+                                            </div>
                                             <div className="mt-1 flex items-end gap-2">
-                                                <div className="text-2xl font-semibold leading-none text-slate-900">{kpi.value}</div>
-                                                {kpi.change && <div className="text-[10px] font-semibold text-emerald-700">{kpi.change}</div>}
+                                                <div className="text-2xl leading-none font-semibold text-slate-900">
+                                                    {kpi.value}
+                                                </div>
+                                                {kpi.change && (
+                                                    <div className="text-[10px] font-semibold text-emerald-700">
+                                                        {kpi.change}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="grid h-8 w-8 place-items-center rounded-lg bg-slate-100 text-slate-700">
@@ -719,47 +965,77 @@ export default function AdminAnnouncementPage() {
                                 <CardHeader className="pb-3">
                                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                         <div>
-                                            <CardTitle className="text-base font-semibold text-slate-800">Announcements</CardTitle>
-                                            <div className="mt-1 text-xs text-slate-500">Showing {filteredAnnouncements.length} results</div>
+                                            <CardTitle className="text-base font-semibold text-slate-800">
+                                                Announcements
+                                            </CardTitle>
+                                            <div className="mt-1 text-xs text-slate-500">
+                                                Showing{' '}
+                                                {filteredAnnouncements.length}{' '}
+                                                results
+                                            </div>
                                         </div>
 
                                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                                             <select
                                                 value={activeCategory}
                                                 onChange={(e) => {
-                                                    setActiveCategory(e.target.value as typeof activeCategory);
+                                                    setActiveCategory(
+                                                        e.target
+                                                            .value as typeof activeCategory,
+                                                    );
                                                     setPageIndex(1);
                                                 }}
                                                 className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 sm:w-44"
                                             >
                                                 <option value="all">All</option>
-                                                <option value="Event">Event</option>
-                                                <option value="Discipline">Discipline</option>
-                                                <option value="Lost & Found">Lost &amp; Found</option>
-                                                <option value="General">General</option>
+                                                <option value="Event">
+                                                    Event
+                                                </option>
+                                                <option value="Discipline">
+                                                    Discipline
+                                                </option>
+                                                <option value="Lost & Found">
+                                                    Lost &amp; Found
+                                                </option>
+                                                <option value="General">
+                                                    General
+                                                </option>
                                             </select>
 
                                             <select
                                                 value={statusFilter}
                                                 onChange={(e) => {
-                                                    setStatusFilter(e.target.value as typeof statusFilter);
+                                                    setStatusFilter(
+                                                        e.target
+                                                            .value as typeof statusFilter,
+                                                    );
                                                     setPageIndex(1);
                                                 }}
                                                 className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 sm:w-40"
                                             >
                                                 <option value="all">All</option>
-                                                <option value="Published">Published</option>
-                                                <option value="Draft">Draft</option>
-                                                <option value="Scheduled">Scheduled</option>
-                                                <option value="Archived">Archived</option>
+                                                <option value="Published">
+                                                    Published
+                                                </option>
+                                                <option value="Draft">
+                                                    Draft
+                                                </option>
+                                                <option value="Scheduled">
+                                                    Scheduled
+                                                </option>
+                                                <option value="Archived">
+                                                    Archived
+                                                </option>
                                             </select>
 
                                             <div className="relative w-full sm:w-64">
-                                                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                                <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                                                 <Input
                                                     value={searchQuery}
                                                     onChange={(e) => {
-                                                        setSearchQuery(e.target.value);
+                                                        setSearchQuery(
+                                                            e.target.value,
+                                                        );
                                                         setPageIndex(1);
                                                     }}
                                                     placeholder="Search..."
@@ -775,77 +1051,124 @@ export default function AdminAnnouncementPage() {
                                             <table className="w-full text-left text-sm">
                                                 <thead className="bg-slate-100 text-slate-700">
                                                     <tr>
-                                                        <th className="px-4 py-3 font-medium">Title</th>
-                                                        <th className="px-4 py-3 font-medium">Category</th>
-                                                        <th className="px-4 py-3 font-medium">Status</th>
-                                                        <th className="px-4 py-3 font-medium">Date</th>
-                                                        <th className="px-4 py-3 font-medium">Actions</th>
+                                                        <th className="px-4 py-3 font-medium">
+                                                            Title
+                                                        </th>
+                                                        <th className="px-4 py-3 font-medium">
+                                                            Category
+                                                        </th>
+                                                        <th className="px-4 py-3 font-medium">
+                                                            Status
+                                                        </th>
+                                                        <th className="px-4 py-3 font-medium">
+                                                            Date
+                                                        </th>
+                                                        <th className="px-4 py-3 font-medium">
+                                                            Actions
+                                                        </th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-200">
-                                                    {pagedAnnouncements.length === 0 ? (
+                                                    {pagedAnnouncements.length ===
+                                                    0 ? (
                                                         <tr>
-                                                            <td colSpan={5} className="px-4 py-8 text-center text-sm text-slate-500">
-                                                                No announcements found.
+                                                            <td
+                                                                colSpan={5}
+                                                                className="px-4 py-8 text-center text-sm text-slate-500"
+                                                            >
+                                                                No announcements
+                                                                found.
                                                             </td>
                                                         </tr>
                                                     ) : (
-                                                        pagedAnnouncements.map((a) => (
-                                                            <tr key={a.id} className="hover:bg-slate-50 transition-colors">
-                                                                <td className="px-4 py-3 font-medium text-slate-900">{a.title}</td>
-                                                                <td className="px-4 py-3 text-slate-700">{a.category}</td>
-                                                                <td className="px-4 py-3">
-                                                                    <span
-                                                                        className={
-                                                                            a.status === 'Published'
-                                                                                ? 'rounded-md bg-emerald-600 px-3 py-1 text-xs font-semibold text-white'
-                                                                                : a.status === 'Draft'
-                                                                                    ? 'rounded-md bg-blue-600 px-3 py-1 text-xs font-semibold text-white'
-                                                                                    : a.status === 'Scheduled'
+                                                        pagedAnnouncements.map(
+                                                            (a) => (
+                                                                <tr
+                                                                    key={a.id}
+                                                                    className="transition-colors hover:bg-slate-50"
+                                                                >
+                                                                    <td className="px-4 py-3 font-medium text-slate-900">
+                                                                        {
+                                                                            a.title
+                                                                        }
+                                                                    </td>
+                                                                    <td className="px-4 py-3 text-slate-700">
+                                                                        {
+                                                                            a.category
+                                                                        }
+                                                                    </td>
+                                                                    <td className="px-4 py-3">
+                                                                        <span
+                                                                            className={
+                                                                                a.status ===
+                                                                                'Published'
+                                                                                    ? 'rounded-md bg-emerald-600 px-3 py-1 text-xs font-semibold text-white'
+                                                                                    : a.status ===
+                                                                                        'Draft'
+                                                                                      ? 'rounded-md bg-blue-600 px-3 py-1 text-xs font-semibold text-white'
+                                                                                      : a.status ===
+                                                                                          'Scheduled'
                                                                                         ? 'rounded-md bg-amber-500 px-3 py-1 text-xs font-semibold text-white'
                                                                                         : 'rounded-md bg-slate-600 px-3 py-1 text-xs font-semibold text-white'
-                                                                        }
-                                                                    >
-                                                                        {a.status}
-                                                                    </span>
-                                                                </td>
-                                                                <td className="px-4 py-3 text-slate-700">{a.date}</td>
-                                                                 <td className="px-4 py-3">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <Button
-                                                                            type="button"
-                                                                            variant="outline"
-                                                                            size="icon"
-                                                                            className="h-8 w-8 hover:bg-slate-100 transition-colors text-black border-slate-200"
-                                                                            aria-label="View"
-                                                                            onClick={() => handleViewAnnouncement(a.id)}
+                                                                            }
                                                                         >
-                                                                            <Eye className="h-4 w-4" />
-                                                                        </Button>
-                                                                        <Button
-                                                                            type="button"
-                                                                            variant="outline"
-                                                                            size="icon"
-                                                                            className="h-8 w-8 hover:bg-slate-100 transition-colors text-black border-slate-200"
-                                                                            aria-label="Edit"
-                                                                            onClick={() => handleEditAnnouncement(a.id)}
-                                                                        >
-                                                                            <Pencil className="h-4 w-4" />
-                                                                        </Button>
-                                                                        <Button
-                                                                            type="button"
-                                                                            variant="outline"
-                                                                            size="icon"
-                                                                            className="h-8 w-8 hover:bg-slate-100 transition-colors text-black border-slate-200"
-                                                                            aria-label="Archive"
-                                                                            onClick={() => handleArchiveAnnouncement(a.id)}
-                                                                        >
-                                                                            <Archive className="h-4 w-4" />
-                                                                        </Button>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        ))
+                                                                            {
+                                                                                a.status
+                                                                            }
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="px-4 py-3 text-slate-700">
+                                                                        {a.date}
+                                                                    </td>
+                                                                    <td className="px-4 py-3">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="outline"
+                                                                                size="icon"
+                                                                                className="h-8 w-8 border-slate-200 text-black transition-colors hover:bg-slate-100"
+                                                                                aria-label="View"
+                                                                                onClick={() =>
+                                                                                    handleViewAnnouncement(
+                                                                                        a.id,
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                <Eye className="h-4 w-4" />
+                                                                            </Button>
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="outline"
+                                                                                size="icon"
+                                                                                className="h-8 w-8 border-slate-200 text-black transition-colors hover:bg-slate-100"
+                                                                                aria-label="Edit"
+                                                                                onClick={() =>
+                                                                                    handleEditAnnouncement(
+                                                                                        a.id,
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                <Pencil className="h-4 w-4" />
+                                                                            </Button>
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="outline"
+                                                                                size="icon"
+                                                                                className="h-8 w-8 border-slate-200 text-black transition-colors hover:bg-slate-100"
+                                                                                aria-label="Archive"
+                                                                                onClick={() =>
+                                                                                    handleArchiveAnnouncement(
+                                                                                        a.id,
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                <Archive className="h-4 w-4" />
+                                                                            </Button>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            ),
+                                                        )
                                                     )}
                                                 </tbody>
                                             </table>
@@ -854,39 +1177,79 @@ export default function AdminAnnouncementPage() {
 
                                     <div className="mt-4 flex flex-col gap-2 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between">
                                         <div>
-                                            Showing {filteredAnnouncements.length === 0 ? 0 : (Math.min(Math.max(pageIndex, 1), totalPages) - 1) * pageSize + 1} to{' '}
-                                            {Math.min(Math.min(Math.max(pageIndex, 1), totalPages) * pageSize, filteredAnnouncements.length)} of {filteredAnnouncements.length} entries
+                                            Showing{' '}
+                                            {filteredAnnouncements.length === 0
+                                                ? 0
+                                                : (Math.min(
+                                                      Math.max(pageIndex, 1),
+                                                      totalPages,
+                                                  ) -
+                                                      1) *
+                                                      pageSize +
+                                                  1}{' '}
+                                            to{' '}
+                                            {Math.min(
+                                                Math.min(
+                                                    Math.max(pageIndex, 1),
+                                                    totalPages,
+                                                ) * pageSize,
+                                                filteredAnnouncements.length,
+                                            )}{' '}
+                                            of {filteredAnnouncements.length}{' '}
+                                            entries
                                         </div>
                                         <div className="flex items-center gap-1">
                                             <button
                                                 type="button"
                                                 className="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100 disabled:opacity-50"
-                                                onClick={() => setPageIndex((p) => Math.max(1, p - 1))}
+                                                onClick={() =>
+                                                    setPageIndex((p) =>
+                                                        Math.max(1, p - 1),
+                                                    )
+                                                }
                                                 disabled={pageIndex <= 1}
                                             >
                                                 Previous
                                             </button>
-                                            {Array.from({ length: totalPages }).slice(0, 5).map((_, idx) => {
-                                                const num = idx + 1;
-                                                return (
-                                                    <button
-                                                        key={num}
-                                                        type="button"
-                                                        onClick={() => setPageIndex(num)}
-                                                        className={
-                                                            'rounded-md px-2 py-1 ' +
-                                                            (pageIndex === num ? 'bg-[#23509A] text-white' : 'text-slate-600 hover:bg-slate-100')
-                                                        }
-                                                    >
-                                                        {num}
-                                                    </button>
-                                                );
-                                            })}
+                                            {Array.from({ length: totalPages })
+                                                .slice(0, 5)
+                                                .map((_, idx) => {
+                                                    const num = idx + 1;
+                                                    return (
+                                                        <button
+                                                            key={num}
+                                                            type="button"
+                                                            onClick={() =>
+                                                                setPageIndex(
+                                                                    num,
+                                                                )
+                                                            }
+                                                            className={
+                                                                'rounded-md px-2 py-1 ' +
+                                                                (pageIndex ===
+                                                                num
+                                                                    ? 'bg-[#23509A] text-white'
+                                                                    : 'text-slate-600 hover:bg-slate-100')
+                                                            }
+                                                        >
+                                                            {num}
+                                                        </button>
+                                                    );
+                                                })}
                                             <button
                                                 type="button"
                                                 className="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100 disabled:opacity-50"
-                                                onClick={() => setPageIndex((p) => Math.min(totalPages, p + 1))}
-                                                disabled={pageIndex >= totalPages}
+                                                onClick={() =>
+                                                    setPageIndex((p) =>
+                                                        Math.min(
+                                                            totalPages,
+                                                            p + 1,
+                                                        ),
+                                                    )
+                                                }
+                                                disabled={
+                                                    pageIndex >= totalPages
+                                                }
                                             >
                                                 Next
                                             </button>
@@ -898,22 +1261,46 @@ export default function AdminAnnouncementPage() {
                             <Card className="border-0 shadow-lg">
                                 <CardHeader className="pb-3">
                                     <div className="flex items-center justify-between">
-                                        <CardTitle className="text-base font-semibold text-slate-800">Announcement Calendar</CardTitle>
+                                        <CardTitle className="text-base font-semibold text-slate-800">
+                                            Announcement Calendar
+                                        </CardTitle>
                                         <div className="flex items-center gap-2 text-sm text-slate-700">
                                             <button
                                                 type="button"
                                                 className="grid h-9 w-9 place-items-center rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                                                 aria-label="Previous month"
-                                                onClick={() => setActiveMonth((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))}
+                                                onClick={() =>
+                                                    setActiveMonth(
+                                                        (d) =>
+                                                            new Date(
+                                                                d.getFullYear(),
+                                                                d.getMonth() -
+                                                                    1,
+                                                                1,
+                                                            ),
+                                                    )
+                                                }
                                             >
                                                 <ChevronLeft className="h-4 w-4" />
                                             </button>
-                                            <div className="min-w-[140px] text-center text-sm font-semibold">{formatMonthLabel(activeMonth)}</div>
+                                            <div className="min-w-[140px] text-center text-sm font-semibold">
+                                                {formatMonthLabel(activeMonth)}
+                                            </div>
                                             <button
                                                 type="button"
                                                 className="grid h-9 w-9 place-items-center rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                                                 aria-label="Next month"
-                                                onClick={() => setActiveMonth((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))}
+                                                onClick={() =>
+                                                    setActiveMonth(
+                                                        (d) =>
+                                                            new Date(
+                                                                d.getFullYear(),
+                                                                d.getMonth() +
+                                                                    1,
+                                                                1,
+                                                            ),
+                                                    )
+                                                }
                                             >
                                                 <ChevronRight className="h-4 w-4" />
                                             </button>
@@ -923,100 +1310,159 @@ export default function AdminAnnouncementPage() {
                                 <CardContent className="pt-0">
                                     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
                                         <div className="grid grid-cols-7 gap-px bg-slate-200">
-                                            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                                                <div key={i} className="bg-slate-100 px-2 py-2 text-center text-xs font-semibold text-slate-700">
+                                            {[
+                                                'S',
+                                                'M',
+                                                'T',
+                                                'W',
+                                                'T',
+                                                'F',
+                                                'S',
+                                            ].map((d, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="bg-slate-100 px-2 py-2 text-center text-xs font-semibold text-slate-700"
+                                                >
                                                     {d}
                                                 </div>
                                             ))}
 
                                             {monthDays.map((d) => {
-                                                const inMonth = d.getMonth() === activeMonth.getMonth();
+                                                const inMonth =
+                                                    d.getMonth() ===
+                                                    activeMonth.getMonth();
                                                 const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                                                const dayEvents = eventByDate.get(key) ?? [];
-                                                const isToday = key === todayKey;
+                                                const dayEvents =
+                                                    eventByDate.get(key) ?? [];
+                                                const isToday =
+                                                    key === todayKey;
 
-                                                 return (
-                                                     <div
-                                                         key={key}
-                                                         className={
-                                                             'group relative min-h-[54px] bg-white px-2 py-2 text-xs transition-colors duration-150 ' +
-                                                             (inMonth ? 'hover:bg-slate-100 cursor-pointer' : 'bg-slate-50/60 text-slate-400')
-                                                         }
-                                                         onClick={() => {
-                                                             setDayEventsOpen(true);
-                                                             setSelectedDate(key);
-                                                         }}
-                                                     >
-                                                         {dayEvents.length > 0 ? (
-                                                             <Tooltip>
-                                                                 <TooltipTrigger asChild>
-                                                                     <div className="flex h-full w-full flex-col">
-                                                                         <div
-                                                                             className={
-                                                                                 'inline-flex h-6 min-w-6 w-fit items-center justify-center rounded-full px-2 ' +
-                                                                                 (isToday ? 'bg-[#23509A] text-white' : 'text-slate-700')
-                                                                             }
-                                                                         >
-                                                                             {d.getDate()}
-                                                                         </div>
-                                                                         <div className="mt-1 h-1.5 w-6 rounded-full bg-[#23509A]/80 shadow-sm" />
-                                                                     </div>
-                                                                 </TooltipTrigger>
-                                                                 <TooltipContent side="top" className="max-w-[180px] border-slate-200 bg-slate-900 px-3 py-2 text-white shadow-xl">
-                                                                     <div className="space-y-1.5">
-                                                                         <div className="mb-1 border-b border-white/20 pb-1 text-[10px] font-bold uppercase tracking-wider opacity-60">Scheduled Events</div>
-                                                                         {dayEvents.map((ev) => (
-                                                                             <div key={ev.id} className="line-clamp-2 text-xs font-semibold leading-tight">
-                                                                                 • {ev.title}
-                                                                             </div>
-                                                                         ))}
-                                                                     </div>
-                                                                 </TooltipContent>
-                                                             </Tooltip>
-                                                         ) : (
-                                                             <div className="flex h-full w-full flex-col">
-                                                                 <div
-                                                                     className={
-                                                                         'inline-flex h-6 min-w-6 w-fit items-center justify-center rounded-full px-2 ' +
-                                                                         (isToday ? 'bg-[#23509A] text-white' : 'text-slate-700')
-                                                                     }
-                                                                 >
-                                                                     {d.getDate()}
-                                                                 </div>
-                                                             </div>
-                                                         )}
-                                                     </div>
-                                                 );
-                                             })}
-                                         </div>
-                                         <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-slate-100 px-3 pt-4">
-                                             <div className="flex items-center gap-2">
-                                                 <div className="flex h-6 min-w-6 items-center justify-center rounded-full bg-[#23509A] px-2 text-[10px] font-bold text-white uppercase">
-                                                     {new Date().getDate()}
-                                                 </div>
-                                                 <span className="text-xs font-medium text-slate-600 tracking-tight">Today</span>
-                                             </div>
-                                             <div className="flex items-center gap-2">
-                                                 <div className="h-1.5 w-6 rounded-full bg-[#23509A]" />
-                                                 <span className="text-xs font-medium text-slate-600 tracking-tight">Announcement / Event</span>
-                                             </div>
-                                         </div>
-                                     </div>
-                                 </CardContent>
-                             </Card>
+                                                return (
+                                                    <div
+                                                        key={key}
+                                                        className={
+                                                            'group relative min-h-[54px] bg-white px-2 py-2 text-xs transition-colors duration-150 ' +
+                                                            (inMonth
+                                                                ? 'cursor-pointer hover:bg-slate-100'
+                                                                : 'bg-slate-50/60 text-slate-400')
+                                                        }
+                                                        onClick={() => {
+                                                            setDayEventsOpen(
+                                                                true,
+                                                            );
+                                                            setSelectedDate(
+                                                                key,
+                                                            );
+                                                        }}
+                                                    >
+                                                        {dayEvents.length >
+                                                        0 ? (
+                                                            <Tooltip>
+                                                                <TooltipTrigger
+                                                                    asChild
+                                                                >
+                                                                    <div className="flex h-full w-full flex-col">
+                                                                        <div
+                                                                            className={
+                                                                                'inline-flex h-6 w-fit min-w-6 items-center justify-center rounded-full px-2 ' +
+                                                                                (isToday
+                                                                                    ? 'bg-[#23509A] text-white'
+                                                                                    : 'text-slate-700')
+                                                                            }
+                                                                        >
+                                                                            {d.getDate()}
+                                                                        </div>
+                                                                        <div className="mt-1 h-1.5 w-6 rounded-full bg-[#23509A]/80 shadow-sm" />
+                                                                    </div>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent
+                                                                    side="top"
+                                                                    className="max-w-[180px] border-slate-200 bg-slate-900 px-3 py-2 text-white shadow-xl"
+                                                                >
+                                                                    <div className="space-y-1.5">
+                                                                        <div className="mb-1 border-b border-white/20 pb-1 text-[10px] font-bold tracking-wider uppercase opacity-60">
+                                                                            Scheduled
+                                                                            Events
+                                                                        </div>
+                                                                        {dayEvents.map(
+                                                                            (
+                                                                                ev,
+                                                                            ) => (
+                                                                                <div
+                                                                                    key={
+                                                                                        ev.id
+                                                                                    }
+                                                                                    className="line-clamp-2 text-xs leading-tight font-semibold"
+                                                                                >
+                                                                                    •{' '}
+                                                                                    {
+                                                                                        ev.title
+                                                                                    }
+                                                                                </div>
+                                                                            ),
+                                                                        )}
+                                                                    </div>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        ) : (
+                                                            <div className="flex h-full w-full flex-col">
+                                                                <div
+                                                                    className={
+                                                                        'inline-flex h-6 w-fit min-w-6 items-center justify-center rounded-full px-2 ' +
+                                                                        (isToday
+                                                                            ? 'bg-[#23509A] text-white'
+                                                                            : 'text-slate-700')
+                                                                    }
+                                                                >
+                                                                    {d.getDate()}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-slate-100 px-3 pt-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex h-6 min-w-6 items-center justify-center rounded-full bg-[#23509A] px-2 text-[10px] font-bold text-white uppercase">
+                                                    {new Date().getDate()}
+                                                </div>
+                                                <span className="text-xs font-medium tracking-tight text-slate-600">
+                                                    Today
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="h-1.5 w-6 rounded-full bg-[#23509A]" />
+                                                <span className="text-xs font-medium tracking-tight text-slate-600">
+                                                    Announcement / Event
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
                         </div>
 
                         <div className="space-y-4 lg:col-span-4">
                             <Card className="border-0 shadow-lg">
                                 <CardHeader className="pb-3">
-                                    <CardTitle className="text-base font-semibold text-slate-800">Recent Announcement Activity</CardTitle>
+                                    <CardTitle className="text-base font-semibold text-slate-800">
+                                        Recent Announcement Activity
+                                    </CardTitle>
                                 </CardHeader>
                                 <CardContent className="pt-0">
                                     <div className="space-y-3">
                                         {recentActivity.map((row) => (
-                                            <div key={row.id} className="flex items-start justify-between gap-4 rounded-lg border border-slate-200 bg-white px-4 py-3">
-                                                <div className="text-sm text-slate-700">{row.title}</div>
-                                                <div className="whitespace-nowrap text-xs text-slate-500">{row.timeAgo}</div>
+                                            <div
+                                                key={row.id}
+                                                className="flex items-start justify-between gap-4 rounded-lg border border-slate-200 bg-white px-4 py-3"
+                                            >
+                                                <div className="text-sm text-slate-700">
+                                                    {row.title}
+                                                </div>
+                                                <div className="text-xs whitespace-nowrap text-slate-500">
+                                                    {row.timeAgo}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>

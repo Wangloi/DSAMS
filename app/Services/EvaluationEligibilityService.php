@@ -15,23 +15,23 @@ use Illuminate\Support\Facades\Schema;
 class EvaluationEligibilityService
 {
     /**
-     * Event date is before today (completed lifecycle).
+     * Event date is before or on today (completed/ongoing lifecycle).
      */
     public static function eventIsCompleted(Event $event): bool
     {
         $status = Event::deriveLifecycleStatusFromDate($event->event_date);
 
-        return $status === 'completed';
+        return $status === 'completed' || $status === 'ongoing';
     }
 
     /**
-     * Present attendees whose course/year match the event targets.
+     * Present/late attendees whose course/year match the event targets.
      */
     public static function eligibleAttendeesQuery(Event $event)
     {
         $presentIds = Attendance::query()
             ->where('event_id', $event->id)
-            ->where('status', 'present')
+            ->whereIn('status', ['present', 'late'])
             ->pluck('student_id');
 
         $query = Student::query()->whereIn('id', $presentIds);
@@ -67,7 +67,7 @@ class EvaluationEligibilityService
         $attended = Attendance::query()
             ->where('event_id', $event->id)
             ->where('student_id', $student->id)
-            ->where('status', 'present')
+            ->whereIn('status', ['present', 'late'])
             ->exists();
 
         if (! $attended) {

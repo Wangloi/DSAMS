@@ -1,3 +1,16 @@
+import {
+    adminActivityLog,
+    adminAdmissionSlip,
+    adminAnalytics,
+    adminArchive,
+    adminAttendance,
+    adminDashboard,
+    adminEvaluation,
+    adminIncidentsViolations,
+    adminManageUsers,
+    adminReports,
+} from '@/routes';
+import type { NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import {
     Activity,
@@ -10,19 +23,6 @@ import {
     UserRoundCog,
     Users,
 } from 'lucide-react';
-import {
-    adminDashboard,
-    adminManageUsers,
-    adminAdmissionSlip,
-    adminIncidentsViolations,
-    adminAttendance,
-    adminAnalytics,
-    adminReports,
-    adminEvaluation,
-    adminArchive,
-    adminActivityLog,
-} from '@/routes';
-import type { NavItem } from '@/types';
 
 const adminNavItems: NavItem[] = [
     {
@@ -81,7 +81,8 @@ export function MobileNavigation() {
     const { url } = usePage();
 
     const normalizePath = (href: NavItem['href']) => {
-        const hrefString = typeof href === 'string' ? href : (href as { url?: string })?.url;
+        const hrefString =
+            typeof href === 'string' ? href : (href as { url?: string })?.url;
         if (!hrefString) return '';
         try {
             return new URL(hrefString, window.location.origin).pathname;
@@ -104,12 +105,12 @@ export function MobileNavigation() {
     const bottomNavItems = adminNavItems.slice(8);
 
     return (
-        <div className="flex flex-col h-full bg-white dark:bg-[#0B192C]">
-            <div className="flex-1 overflow-y-auto py-8 px-4">
+        <div className="flex h-full flex-col bg-white dark:bg-[#0B192C]">
+            <div className="flex-1 overflow-y-auto px-4 py-8">
                 <div className="space-y-8">
                     {/* Top Navigation */}
                     <div className="space-y-1.5">
-                        <div className="px-4 mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        <div className="mb-2 px-4 text-[10px] font-bold tracking-wider text-slate-400 uppercase dark:text-slate-500">
                             General
                         </div>
                         {topNavItems.map((item) => {
@@ -120,12 +121,16 @@ export function MobileNavigation() {
                                     href={item.href}
                                     prefetch
                                     className={`${baseButtonClassName} ${
-                                        active 
-                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' 
-                                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                        active
+                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                                            : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
                                     }`}
                                 >
-                                    {item.icon && <item.icon className={`h-5 w-5 ${active ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />}
+                                    {item.icon && (
+                                        <item.icon
+                                            className={`h-5 w-5 ${active ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`}
+                                        />
+                                    )}
                                     <span>{item.title}</span>
                                 </Link>
                             );
@@ -134,7 +139,7 @@ export function MobileNavigation() {
 
                     {/* Middle Navigation */}
                     <div className="space-y-1.5">
-                        <div className="px-4 mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        <div className="mb-2 px-4 text-[10px] font-bold tracking-wider text-slate-400 uppercase dark:text-slate-500">
                             Services & Tools
                         </div>
                         {middleNavItems.map((item) => {
@@ -145,12 +150,16 @@ export function MobileNavigation() {
                                     href={item.href}
                                     prefetch
                                     className={`${baseButtonClassName} ${
-                                        active 
-                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' 
-                                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                        active
+                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                                            : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
                                     }`}
                                 >
-                                    {item.icon && <item.icon className={`h-5 w-5 ${active ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />}
+                                    {item.icon && (
+                                        <item.icon
+                                            className={`h-5 w-5 ${active ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`}
+                                        />
+                                    )}
                                     <span>{item.title}</span>
                                 </Link>
                             );
@@ -159,7 +168,7 @@ export function MobileNavigation() {
 
                     {/* Bottom Navigation */}
                     <div className="space-y-1.5 pb-8">
-                        <div className="px-4 mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        <div className="mb-2 px-4 text-[10px] font-bold tracking-wider text-slate-400 uppercase dark:text-slate-500">
                             Analytics & Logs
                         </div>
                         {bottomNavItems.map((item) => {
@@ -170,12 +179,16 @@ export function MobileNavigation() {
                                     href={item.href}
                                     prefetch
                                     className={`${baseButtonClassName} ${
-                                        active 
-                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' 
-                                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                        active
+                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                                            : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
                                     }`}
                                 >
-                                    {item.icon && <item.icon className={`h-5 w-5 ${active ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />}
+                                    {item.icon && (
+                                        <item.icon
+                                            className={`h-5 w-5 ${active ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`}
+                                        />
+                                    )}
                                     <span>{item.title}</span>
                                 </Link>
                             );

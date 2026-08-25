@@ -42,7 +42,25 @@ class ProgramHeadReportsController extends Controller
                     ->whereBetween('incident_date', [$start->toDateString(), $end->toDateString()])
                     ->get()
                     ->filter(function ($i) use ($studentIdsStr) {
-                        return !empty(array_intersect((array)$i->students_involved, $studentIdsStr));
+                        $involved = $i->students_involved;
+                        if (is_string($involved)) {
+                            $involved = json_decode($involved, true) ?? [];
+                        }
+                        $involved = (array)$involved;
+                        
+                        $involvedIds = [];
+                        foreach ($involved as $item) {
+                            if (is_array($item)) {
+                                $involvedIds[] = (string)($item['id'] ?? '');
+                            } else if (is_object($item)) {
+                                $involvedIds[] = (string)($item->id ?? '');
+                            } else {
+                                $involvedIds[] = (string)$item;
+                            }
+                        }
+                        $involvedIds = array_filter($involvedIds);
+
+                        return !empty(array_intersect($involvedIds, $studentIdsStr));
                     })
                     ->count();
             }
@@ -225,14 +243,49 @@ class ProgramHeadReportsController extends Controller
                     ->whereBetween('incident_date', [$start->toDateString(), $end->toDateString()])
                     ->get()
                     ->filter(function ($i) use ($studentIdsStr) {
-                        return !empty(array_intersect((array)$i->students_involved, $studentIdsStr));
+                        $involved = $i->students_involved;
+                        if (is_string($involved)) {
+                            $involved = json_decode($involved, true) ?? [];
+                        }
+                        $involved = (array)$involved;
+                        
+                        $involvedIds = [];
+                        foreach ($involved as $item) {
+                            if (is_array($item)) {
+                                $involvedIds[] = (string)($item['id'] ?? '');
+                            } else if (is_object($item)) {
+                                $involvedIds[] = (string)($item->id ?? '');
+                            } else {
+                                $involvedIds[] = (string)$item;
+                            }
+                        }
+                        $involvedIds = array_filter($involvedIds);
+
+                        return !empty(array_intersect($involvedIds, $studentIdsStr));
                     })
                     ->sortByDesc('incident_date');
 
                 foreach ($items as $i) {
                     $date = $i->incident_date ? Carbon::parse($i->incident_date) : null;
                     $caseId = $date ? ($date->format('Y') . '-' . str_pad((string) $i->id, 3, '0', STR_PAD_LEFT)) : (string) $i->id;
-                    $students = is_array($i->students_involved) ? implode(', ', $i->students_involved) : '';
+                    
+                    $involved = $i->students_involved;
+                    if (is_string($involved)) {
+                        $involved = json_decode($involved, true) ?? [];
+                    }
+                    $involved = (array)$involved;
+                    $names = [];
+                    foreach ($involved as $item) {
+                        if (is_array($item)) {
+                            $names[] = (string)($item['name'] ?? $item['id'] ?? '');
+                        } else if (is_object($item)) {
+                            $names[] = (string)($item->name ?? $item->id ?? '');
+                        } else {
+                            $names[] = (string)$item;
+                        }
+                    }
+                    $students = implode(', ', array_filter($names));
+
                     $rows[] = [
                         (string) $caseId,
                         (string) ($i->incident_type ?? ''),

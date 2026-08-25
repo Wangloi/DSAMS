@@ -160,6 +160,25 @@ class AdminIncidentsViolationsController extends Controller
         return redirect()->back()->with('success', 'Incident report updated successfully.');
     }
 
+    /**
+     * Quick-update only the status of an incident (used by the table dropdown).
+     */
+    public function updateStatus(Request $request, Incident $incident): RedirectResponse
+    {
+        $validated = $request->validate([
+            'status' => ['required', 'in:Ongoing,Pending,Resolved,Escalated'],
+        ]);
+
+        $incident->update(['status' => $validated['status']]);
+
+        if (Schema::hasTable('activity_logs')) {
+            $admin = auth()->guard('admin')->user();
+            ActivityLog::logForUser($admin, 'Incidents', 'Status Updated', 'Changed incident #'.(string) $incident->id.' status to '.$validated['status']);
+        }
+
+        return redirect()->back()->with('success', 'Status updated to '.$validated['status'].'.');
+    }
+
     public function updatePost(Request $request, Incident $incident): RedirectResponse
     {
         return $this->update($request, $incident);

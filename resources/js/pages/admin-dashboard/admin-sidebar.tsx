@@ -1,3 +1,15 @@
+import { Button } from '@/components/ui/button';
+import {
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+    useSidebar,
+} from '@/components/ui/sidebar';
+import { useAppearance } from '@/hooks/use-appearance';
 import { Link, usePage } from '@inertiajs/react';
 import {
     Activity,
@@ -15,19 +27,6 @@ import {
     UserRoundCog,
     Users,
 } from 'lucide-react';
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import {
-    Sidebar,
-    SidebarContent,
-    SidebarHeader,
-    SidebarFooter,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
-    useSidebar,
-} from '@/components/ui/sidebar';
-import { useAppearance } from '@/hooks/use-appearance';
 
 import {
     adminActivityLog,
@@ -171,8 +170,8 @@ function SidebarToggle() {
             variant="ghost"
             size="icon"
             onClick={toggleSidebar}
-            className="h-8 w-8 rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
-            title={open ? "Collapse Sidebar" : "Expand Sidebar"}
+            className="h-8 w-8 rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+            title={open ? 'Collapse Sidebar' : 'Expand Sidebar'}
         >
             {open ? (
                 <PanelLeftClose className="h-[18px] w-[18px]" />
@@ -225,21 +224,7 @@ export function AdminSidebar() {
         <Sidebar
             collapsible="icon"
             variant="sidebar"
-            className={`
-                [&_[data-sidebar=sidebar]]:mt-16
-                [&_[data-sidebar=sidebar]]:h-[calc(100svh-4rem)]
-                [&_[data-sidebar=sidebar]]:overflow-y-auto
-                [&_[data-sidebar=sidebar]]:border-r
-                [&_[data-sidebar=sidebar]]:border-slate-200
-                [&_[data-sidebar=sidebar]]:bg-white
-                [&_[data-sidebar=sidebar]]:text-slate-800
-                [&_[data-sidebar=sidebar]]:shadow-sm
-
-                dark:[&_[data-sidebar=sidebar]]:border-slate-800
-                dark:[&_[data-sidebar=sidebar]]:bg-[#0B192C]
-                dark:[&_[data-sidebar=sidebar]]:text-white
-                dark:[&_[data-sidebar=sidebar]]:shadow-lg
-            `}
+            className={`[&_[data-sidebar=sidebar]]:mt-16 [&_[data-sidebar=sidebar]]:h-[calc(100svh-4rem)] [&_[data-sidebar=sidebar]]:overflow-y-auto [&_[data-sidebar=sidebar]]:border-r [&_[data-sidebar=sidebar]]:border-slate-200 [&_[data-sidebar=sidebar]]:bg-white [&_[data-sidebar=sidebar]]:text-slate-800 [&_[data-sidebar=sidebar]]:shadow-sm dark:[&_[data-sidebar=sidebar]]:border-slate-800 dark:[&_[data-sidebar=sidebar]]:bg-[#0B192C] dark:[&_[data-sidebar=sidebar]]:text-white dark:[&_[data-sidebar=sidebar]]:shadow-lg`}
         >
             <SidebarHeader className="border-b-0 p-0 dark:border-0" />
 
@@ -267,12 +252,7 @@ export function AdminSidebar() {
                                                 ? isAttendanceActive
                                                 : isItemActive(item.href)
                                         }
-                                        className={`${baseButtonClassName}
-                                            text-slate-600
-                                            hover:bg-slate-100
-                                            hover:text-slate-900
-                                            dark:text-slate-400
-                                        `}
+                                        className={`${baseButtonClassName} text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400`}
                                     >
                                         <Link
                                             href={item.href}

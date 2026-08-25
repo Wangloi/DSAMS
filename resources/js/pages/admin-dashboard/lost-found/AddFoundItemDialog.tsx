@@ -1,7 +1,3 @@
-import { router } from '@inertiajs/react';
-import { PlusCircle } from 'lucide-react';
-import type React from 'react';
-import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -20,6 +16,10 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { adminLostFoundStore, adminLostFoundUpdate } from '@/routes';
+import { router } from '@inertiajs/react';
+import { PlusCircle } from 'lucide-react';
+import type React from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 type FormState = {
     dateFound: string;
@@ -63,7 +63,10 @@ type FoundItemRow = {
     imageUrl?: string;
 };
 
-export default function AddFoundItemDialog({ editingItem, setEditingItem }: Props) {
+export default function AddFoundItemDialog({
+    editingItem,
+    setEditingItem,
+}: Props) {
     const [open, setOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [form, setForm] = useState<FormState>(emptyForm);
@@ -169,7 +172,7 @@ export default function AddFoundItemDialog({ editingItem, setEditingItem }: Prop
                 },
                 onFinish: () => {
                     setIsProcessing(false);
-                }
+                },
             });
         } else {
             router.post(adminLostFoundStore(), formData, {
@@ -179,27 +182,32 @@ export default function AddFoundItemDialog({ editingItem, setEditingItem }: Prop
                 },
                 onFinish: () => {
                     setIsProcessing(false);
-                }
+                },
             });
         }
     };
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <Button type="button" className="gap-2 bg-white/15 text-white hover:bg-white/25 transition-colors" onClick={openForCreate}>
+            <Button
+                type="button"
+                className="gap-2 bg-white/15 text-white transition-colors hover:bg-white/25"
+                onClick={openForCreate}
+            >
                 <PlusCircle className="h-4 w-4" />
                 Add Found Item
             </Button>
 
-            <DialogContent className="sm:max-w-3xl overflow-hidden p-0">
+            <DialogContent className="overflow-hidden p-0 sm:max-w-3xl">
                 <div className="bg-gradient-to-r from-[#0b2d66] to-[#1e40af] px-6 py-5 text-white">
                     <DialogHeader className="space-y-1">
-                        <DialogTitle className="text-white">{editingItem ? 'Edit Found Item' : 'Add Found Item'}</DialogTitle>
+                        <DialogTitle className="text-white">
+                            {editingItem ? 'Edit Found Item' : 'Add Found Item'}
+                        </DialogTitle>
                         <DialogDescription className="text-white/80">
                             {editingItem
                                 ? 'Update the details for the found item.'
-                                : 'Record the details for the newly found item.'
-                            }
+                                : 'Record the details for the newly found item.'}
                         </DialogDescription>
                     </DialogHeader>
                 </div>
@@ -212,7 +220,12 @@ export default function AddFoundItemDialog({ editingItem, setEditingItem }: Prop
                                 id="dateFound"
                                 type="date"
                                 value={form.dateFound}
-                                onChange={(e) => setForm((p) => ({ ...p, dateFound: e.target.value }))}
+                                onChange={(e) =>
+                                    setForm((p) => ({
+                                        ...p,
+                                        dateFound: e.target.value,
+                                    }))
+                                }
                             />
                         </div>
                         <div className="grid gap-2">
@@ -221,20 +234,32 @@ export default function AddFoundItemDialog({ editingItem, setEditingItem }: Prop
                                 id="timeFound"
                                 type="time"
                                 value={form.timeFound}
-                                onChange={(e) => setForm((p) => ({ ...p, timeFound: e.target.value }))}
+                                onChange={(e) =>
+                                    setForm((p) => ({
+                                        ...p,
+                                        timeFound: e.target.value,
+                                    }))
+                                }
                             />
                         </div>
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="itemDescription">Item Description *</Label>
+                        <Label htmlFor="itemDescription">
+                            Item Description *
+                        </Label>
                         <textarea
                             id="itemDescription"
                             value={form.itemDescription}
-                            onChange={(e) => setForm((p) => ({ ...p, itemDescription: e.target.value }))}
+                            onChange={(e) =>
+                                setForm((p) => ({
+                                    ...p,
+                                    itemDescription: e.target.value,
+                                }))
+                            }
                             rows={4}
                             placeholder="Describe the found item in detail..."
-                            className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                            className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                         />
                     </div>
 
@@ -244,7 +269,12 @@ export default function AddFoundItemDialog({ editingItem, setEditingItem }: Prop
                             id="placeFound"
                             placeholder="e.g., Library - 2nd Floor, Cafeteria, Room 301"
                             value={form.placeFound}
-                            onChange={(e) => setForm((p) => ({ ...p, placeFound: e.target.value }))}
+                            onChange={(e) =>
+                                setForm((p) => ({
+                                    ...p,
+                                    placeFound: e.target.value,
+                                }))
+                            }
                         />
                     </div>
 
@@ -254,16 +284,28 @@ export default function AddFoundItemDialog({ editingItem, setEditingItem }: Prop
                             <Input
                                 id="finderName"
                                 value={form.finderName}
-                                onChange={(e) => setForm((p) => ({ ...p, finderName: e.target.value }))}
+                                onChange={(e) =>
+                                    setForm((p) => ({
+                                        ...p,
+                                        finderName: e.target.value,
+                                    }))
+                                }
                             />
                         </div>
                         <div className="grid gap-2">
-                            <Label htmlFor="contactInfo">Contact Information</Label>
+                            <Label htmlFor="contactInfo">
+                                Contact Information
+                            </Label>
                             <Input
                                 id="contactInfo"
                                 placeholder="Email or phone number"
                                 value={form.contactInfo}
-                                onChange={(e) => setForm((p) => ({ ...p, contactInfo: e.target.value }))}
+                                onChange={(e) =>
+                                    setForm((p) => ({
+                                        ...p,
+                                        contactInfo: e.target.value,
+                                    }))
+                                }
                             />
                         </div>
                     </div>
@@ -275,21 +317,41 @@ export default function AddFoundItemDialog({ editingItem, setEditingItem }: Prop
                                 id="program"
                                 placeholder="e.g., Computer Science"
                                 value={form.program}
-                                onChange={(e) => setForm((p) => ({ ...p, program: e.target.value }))}
+                                onChange={(e) =>
+                                    setForm((p) => ({
+                                        ...p,
+                                        program: e.target.value,
+                                    }))
+                                }
                             />
                         </div>
                         <div className="grid gap-2">
                             <Label>Year Level *</Label>
-                            <Select value={form.yearLevel} onValueChange={(v) => setForm((p) => ({ ...p, yearLevel: v }))}>
+                            <Select
+                                value={form.yearLevel}
+                                onValueChange={(v) =>
+                                    setForm((p) => ({ ...p, yearLevel: v }))
+                                }
+                            >
                                 <SelectTrigger className="h-10">
                                     <SelectValue placeholder="Select Year Level" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="1st Year">1st Year</SelectItem>
-                                    <SelectItem value="2nd Year">2nd Year</SelectItem>
-                                    <SelectItem value="3rd Year">3rd Year</SelectItem>
-                                    <SelectItem value="4th Year">4th Year</SelectItem>
-                                    <SelectItem value="5th Year">5th Year</SelectItem>
+                                    <SelectItem value="1st Year">
+                                        1st Year
+                                    </SelectItem>
+                                    <SelectItem value="2nd Year">
+                                        2nd Year
+                                    </SelectItem>
+                                    <SelectItem value="3rd Year">
+                                        3rd Year
+                                    </SelectItem>
+                                    <SelectItem value="4th Year">
+                                        4th Year
+                                    </SelectItem>
+                                    <SelectItem value="5th Year">
+                                        5th Year
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -298,15 +360,31 @@ export default function AddFoundItemDialog({ editingItem, setEditingItem }: Prop
                     {editingItem && (
                         <div className="grid gap-2">
                             <Label>Status</Label>
-                            <Select value={form.status} onValueChange={(v) => setForm((p) => ({ ...p, status: v as typeof form.status }))}>
+                            <Select
+                                value={form.status}
+                                onValueChange={(v) =>
+                                    setForm((p) => ({
+                                        ...p,
+                                        status: v as typeof form.status,
+                                    }))
+                                }
+                            >
                                 <SelectTrigger className="h-10">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="In Storage">In Storage</SelectItem>
-                                    <SelectItem value="Verification Pending">Verification Pending</SelectItem>
-                                    <SelectItem value="Claimed">Claimed</SelectItem>
-                                    <SelectItem value="Unclaimed">Unclaimed</SelectItem>
+                                    <SelectItem value="In Storage">
+                                        In Storage
+                                    </SelectItem>
+                                    <SelectItem value="Verification Pending">
+                                        Verification Pending
+                                    </SelectItem>
+                                    <SelectItem value="Claimed">
+                                        Claimed
+                                    </SelectItem>
+                                    <SelectItem value="Unclaimed">
+                                        Unclaimed
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -318,17 +396,37 @@ export default function AddFoundItemDialog({ editingItem, setEditingItem }: Prop
                             id="image"
                             type="file"
                             accept="image/*"
-                            onChange={(e) => setForm((p) => ({ ...p, image: e.target.files?.[0] || null }))}
-                            className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                            onChange={(e) =>
+                                setForm((p) => ({
+                                    ...p,
+                                    image: e.target.files?.[0] || null,
+                                }))
+                            }
+                            className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                         />
                     </div>
 
                     <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
-                        <Button type="button" variant="outline" className="h-10" onClick={close} disabled={isProcessing}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="h-10"
+                            onClick={close}
+                            disabled={isProcessing}
+                        >
                             Cancel
                         </Button>
-                        <Button type="button" className="h-10 bg-blue-600 hover:bg-blue-700" disabled={!canSubmit || isProcessing} onClick={onSubmit}>
-                            {isProcessing ? 'Saving...' : editingItem ? 'Update Found Item' : 'Add Found Item'}
+                        <Button
+                            type="button"
+                            className="h-10 bg-blue-600 hover:bg-blue-700"
+                            disabled={!canSubmit || isProcessing}
+                            onClick={onSubmit}
+                        >
+                            {isProcessing
+                                ? 'Saving...'
+                                : editingItem
+                                  ? 'Update Found Item'
+                                  : 'Add Found Item'}
                         </Button>
                     </div>
                 </div>

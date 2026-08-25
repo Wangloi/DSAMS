@@ -1,14 +1,3 @@
-import { Link } from '@inertiajs/react';
-import {
-    Activity,
-    Archive,
-    ClipboardList,
-    LayoutGrid,
-    NotepadText,
-    ShieldAlert,
-    UserRoundCog,
-    Users,
-} from 'lucide-react';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -22,6 +11,17 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
+import { Link } from '@inertiajs/react';
+import {
+    Activity,
+    Archive,
+    ClipboardList,
+    LayoutGrid,
+    NotepadText,
+    ShieldAlert,
+    UserRoundCog,
+    Users,
+} from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [

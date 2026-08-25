@@ -16,8 +16,8 @@ interface AuthLoadingOverlayProps {
 const LABELS: Record<AuthLoadingState, string> = {
     'signing-in': 'Signing in...',
     'signing-out': 'Signing out...',
-    'authenticating': 'Authenticating...',
-    'verifying': 'Verifying session...',
+    authenticating: 'Authenticating...',
+    verifying: 'Verifying session...',
 };
 
 export function AuthLoadingOverlay({
@@ -46,4 +46,3 @@ export function AuthLoadingOverlay({
 
     return null;
 }
-

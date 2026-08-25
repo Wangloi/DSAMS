@@ -1,13 +1,3 @@
-import { router } from '@inertiajs/react';
-import {
-    Activity,
-    Archive,
-    Eye,
-    MapPin,
-    Printer,
-    QrCode,
-    Search,
-} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,7 +9,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { adminQrScanner } from '@/routes';
+import { Activity, Archive, Eye, MapPin, Printer, Search } from 'lucide-react';
 
 type AttendanceRow = {
     id: string;
@@ -45,7 +35,10 @@ type Props = {
     setStatusFilter?: (status: string) => void;
     onEdit?: (event: AttendanceRow) => void;
     onDelete?: (eventId: string) => void;
-    onOpenRealTimeMonitoring?: (eventId: string, tab?: 'dashboard' | 'scanner' | 'dynamic-qr') => void;
+    onOpenRealTimeMonitoring?: (
+        eventId: string,
+        tab?: 'dashboard' | 'scanner' | 'dynamic-qr',
+    ) => void;
     onPrintSummary?: () => void;
     onViewStudents?: (eventId: string) => void;
     hideScanner?: boolean;
@@ -138,11 +131,11 @@ export default function AttendanceTable({
     };
 
     return (
-        <Card className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-[#0B192C]/60 dark:ring-slate-800 border-0">
-            <CardHeader className="flex flex-col gap-4 border-b border-slate-100 px-6 py-5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between bg-slate-50/50 dark:bg-slate-800/30">
+        <Card className="overflow-hidden rounded-2xl border-0 bg-white shadow-sm ring-1 ring-slate-200 dark:bg-[#0B192C]/60 dark:ring-slate-800">
+            <CardHeader className="flex flex-col gap-4 border-b border-slate-100 bg-slate-50/50 px-6 py-5 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-800/30">
                 <div>
-                    <CardTitle className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+                    <CardTitle className="flex items-center gap-2 text-sm font-black tracking-wider text-slate-900 uppercase dark:text-white">
+                        <span className="h-2 w-2 animate-pulse rounded-full bg-blue-600" />
                         Events Attendance List
                     </CardTitle>
                     {onSelectEventRow ? (
@@ -151,7 +144,8 @@ export default function AttendanceTable({
                         </p>
                     ) : (
                         <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-                            Manage event check-in logs and generate attendance reports
+                            Manage event check-in logs and generate attendance
+                            reports
                         </p>
                     )}
                 </div>
@@ -160,21 +154,30 @@ export default function AttendanceTable({
                         <Search className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                         <Input
                             placeholder="Search events..."
-                            className="h-9 w-48 rounded-xl border-slate-200 bg-slate-50 pl-8 text-xs font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-white focus-visible:ring-blue-500"
+                            className="h-9 w-48 rounded-xl border-slate-200 bg-slate-50 pl-8 text-xs font-medium focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
                     {setStatusFilter && (
-                        <Select value={statusFilter || 'all'} onValueChange={(val) => setStatusFilter(val === 'all' ? '' : val)}>
+                        <Select
+                            value={statusFilter || 'all'}
+                            onValueChange={(val) =>
+                                setStatusFilter(val === 'all' ? '' : val)
+                            }
+                        >
                             <SelectTrigger className="h-9 w-32 rounded-xl border-slate-200 bg-slate-50 text-xs font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-white">
                                 <SelectValue placeholder="All Status" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Status</SelectItem>
-                                <SelectItem value="upcoming">Upcoming</SelectItem>
+                                <SelectItem value="upcoming">
+                                    Upcoming
+                                </SelectItem>
                                 <SelectItem value="ongoing">Ongoing</SelectItem>
-                                <SelectItem value="completed">Completed</SelectItem>
+                                <SelectItem value="completed">
+                                    Completed
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                     )}
@@ -183,8 +186,8 @@ export default function AttendanceTable({
 
             <CardContent className="p-0">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm border-collapse">
-                        <thead className="bg-slate-50/50 dark:bg-slate-900/30 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-850">
+                    <table className="w-full border-collapse text-left text-sm">
+                        <thead className="dark:border-slate-850 border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-400 uppercase dark:bg-slate-900/30 dark:text-slate-500">
                             <tr>
                                 <th
                                     scope="col"
@@ -243,19 +246,22 @@ export default function AttendanceTable({
                                     <tr
                                         key={row.id}
                                         onClick={() => {
-                                            if (!onSelectEventRow) {
-                                                return;
+                                            if (onSelectEventRow) {
+                                                onSelectEventRow(
+                                                    isSelected ? null : rowId,
+                                                );
                                             }
-                                            onSelectEventRow(
-                                                isSelected ? null : rowId,
-                                            );
+                                            if (onViewStudents) {
+                                                onViewStudents(rowId);
+                                            }
                                         }}
                                         className={cn(
-                                            onSelectEventRow &&
+                                            (onSelectEventRow ||
+                                                onViewStudents) &&
                                                 'cursor-pointer',
                                             isSelected
                                                 ? 'bg-blue-50/70 ring-1 ring-blue-200 ring-inset dark:bg-blue-950/20 dark:ring-blue-800'
-                                                : 'transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40',
+                                                : 'transition-colors duration-150 hover:bg-blue-50/50 dark:hover:bg-blue-950/15',
                                         )}
                                     >
                                         <td className="px-6 py-4">
@@ -318,7 +324,10 @@ export default function AttendanceTable({
                                                 </div>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
+                                        <td
+                                            className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
                                             <div className="ml-auto flex w-fit items-center justify-end gap-1 rounded-lg border border-slate-100/50 bg-slate-50/50 p-1 shadow-sm dark:border-slate-800 dark:bg-slate-800/40">
                                                 {onViewStudents && (
                                                     <Button
@@ -347,7 +356,7 @@ export default function AttendanceTable({
                                                             e.stopPropagation();
                                                             onOpenRealTimeMonitoring(
                                                                 row.id,
-                                                                'dashboard'
+                                                                'dashboard',
                                                             );
                                                         }}
                                                         title="Real-Time Attendance Monitoring"
@@ -355,7 +364,6 @@ export default function AttendanceTable({
                                                         <Activity className="h-4 w-4" />
                                                     </Button>
                                                 )}
-
 
                                                 <Button
                                                     type="button"

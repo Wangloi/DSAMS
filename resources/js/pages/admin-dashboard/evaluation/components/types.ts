@@ -47,20 +47,20 @@ export type EvaluationStats = {
     averageRating: number | null;
     ratingSummary: Array<{ label: string; value: number }>;
     sentiments: { positive: number; neutral: number; negative: number };
-    latestComments: Array<{ 
-        student: string; 
-        rating: number | null; 
-        sentiment: 'positive' | 'neutral' | 'negative'; 
-        comment: string; 
-        submitted_at: string | null 
+    latestComments: Array<{
+        student: string;
+        rating: number | null;
+        sentiment: 'positive' | 'neutral' | 'negative';
+        comment: string;
+        submitted_at: string | null;
     }>;
     averageResponseTime?: string;
 };
 
-export type Kpi = { 
-    title: string; 
-    value: number | string; 
-    change?: string; 
-    accent: string; 
-    icon: React.ComponentType<any> 
+export type Kpi = {
+    title: string;
+    value: number | string;
+    change?: string;
+    accent: string;
+    icon: React.ComponentType<any>;
 };

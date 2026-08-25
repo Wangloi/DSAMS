@@ -1,5 +1,3 @@
-import { Link, usePage } from '@inertiajs/react';
-import { Bell, ChevronDown } from 'lucide-react';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -12,6 +10,8 @@ import { UserMenuContent } from '@/components/user-menu-content';
 import { useInitials } from '@/hooks/use-initials';
 import { dashboard } from '@/routes';
 import type { BreadcrumbItem, SharedData } from '@/types';
+import { Link, usePage } from '@inertiajs/react';
+import { Bell, ChevronDown } from 'lucide-react';
 
 type Props = {
     breadcrumbs?: BreadcrumbItem[];
@@ -91,48 +91,60 @@ export function AppHeader({
                                             {typeof page.props
                                                 .unreadNotifications ===
                                                 'number' && (
-                                                    <div className="text-xs text-neutral-500">
-                                                        {
-                                                            page.props
-                                                                .unreadNotifications
-                                                        }{' '}
-                                                        unread
-                                                    </div>
-                                                )}
+                                                <div className="text-xs text-neutral-500">
+                                                    {
+                                                        page.props
+                                                            .unreadNotifications
+                                                    }{' '}
+                                                    unread
+                                                </div>
+                                            )}
                                         </div>
 
                                         {Array.isArray(
                                             page.props.recentNotifications,
                                         ) &&
-                                            page.props.recentNotifications.length >
+                                        page.props.recentNotifications.length >
                                             0 ? (
                                             <div className="max-h-[320px] overflow-auto">
-                                                {page.props.recentNotifications.map((n: any) => {
-                                                    const Wrapper = n?.url ? Link : 'div';
-                                                    return (
-                                                        <Wrapper
-                                                            key={n?.id ?? Math.random()}
-                                                            href={n?.url}
-                                                            className={`block rounded-lg px-2 py-2 hover:bg-neutral-50 ${n?.url ? 'cursor-pointer' : 'cursor-default'}`}
-                                                        >
-                                                            <div className="min-w-0">
-                                                                <div className="truncate text-sm font-medium text-neutral-900">
-                                                                    {n?.title ?? 'Notification'}
+                                                {page.props.recentNotifications.map(
+                                                    (n: any) => {
+                                                        const Wrapper = n?.url
+                                                            ? Link
+                                                            : 'div';
+                                                        return (
+                                                            <Wrapper
+                                                                key={
+                                                                    n?.id ??
+                                                                    Math.random()
+                                                                }
+                                                                href={n?.url}
+                                                                className={`block rounded-lg px-2 py-2 hover:bg-neutral-50 ${n?.url ? 'cursor-pointer' : 'cursor-default'}`}
+                                                            >
+                                                                <div className="min-w-0">
+                                                                    <div className="truncate text-sm font-medium text-neutral-900">
+                                                                        {n?.title ??
+                                                                            'Notification'}
+                                                                    </div>
+                                                                    {n?.subtitle && (
+                                                                        <div className="truncate text-xs text-neutral-600">
+                                                                            {
+                                                                                n.subtitle
+                                                                            }
+                                                                        </div>
+                                                                    )}
+                                                                    {n?.timeAgo && (
+                                                                        <div className="mt-1 text-[11px] text-neutral-500">
+                                                                            {
+                                                                                n.timeAgo
+                                                                            }
+                                                                        </div>
+                                                                    )}
                                                                 </div>
-                                                                {n?.subtitle && (
-                                                                    <div className="truncate text-xs text-neutral-600">
-                                                                        {n.subtitle}
-                                                                    </div>
-                                                                )}
-                                                                {n?.timeAgo && (
-                                                                    <div className="mt-1 text-[11px] text-neutral-500">
-                                                                        {n.timeAgo}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </Wrapper>
-                                                    );
-                                                })}
+                                                            </Wrapper>
+                                                        );
+                                                    },
+                                                )}
                                             </div>
                                         ) : (
                                             <div className="px-2 py-3 text-sm text-neutral-600">
@@ -150,7 +162,10 @@ export function AppHeader({
                                         >
                                             <Avatar className="size-8 overflow-hidden rounded-full">
                                                 <AvatarImage
-                                                    src={auth?.user.avatar ?? undefined}
+                                                    src={
+                                                        auth?.user.avatar ??
+                                                        undefined
+                                                    }
                                                     alt={auth?.user.name}
                                                 />
                                                 <AvatarFallback className="rounded-lg bg-white/20 text-white">

@@ -66,7 +66,7 @@
 
     --animate-scan-line: scan-line 2s linear infinite;
     --animate-pulse-subtle: pulse-subtle 2s ease-in-out infinite;
-      --animate-spin-slow: spin 3s linear infinite;
+    --animate-spin-slow: spin 3s linear infinite;
 }
 
 :root {
@@ -103,10 +103,9 @@
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(0.922 0 0);
     --sidebar-ring: oklch(0.87 0 0);
-
 }
 
-    @keyframes scan-line {
+@keyframes scan-line {
     from {
         top: 0%;
     }
@@ -116,14 +115,14 @@
 }
 
 @keyframes pulse-subtle {
-    0%, 100% {
+    0%,
+    100% {
         opacity: 1;
     }
     50% {
-        opacity: .8;
+        opacity: 0.8;
     }
 }
-
 
 .dark {
     --background: oklch(0.145 0 0);
@@ -171,7 +170,7 @@
 }
 
 /* Light mode: blue gradient for active sidebar items */
-html:not(.dark) [data-active="true"][data-slot="sidebar-menu-button"] {
+html:not(.dark) [data-active='true'][data-slot='sidebar-menu-button'] {
     background: linear-gradient(135deg, #042e72 0%, #1f2f7a 50%, #313f8f 100%);
     color: white;
     box-shadow:
@@ -324,7 +323,8 @@ html:not(.dark) [data-slot='sidebar-menu-button'] {
     margin: 0.2rem;
 }
 
-.fc-theme-standard td, .fc-theme-standard th {
+.fc-theme-standard td,
+.fc-theme-standard th {
     border-color: var(--fc-border-color) !important;
 }
 
@@ -340,7 +340,9 @@ html:not(.dark) [data-slot='sidebar-menu-button'] {
     font-size: 0.725rem !important;
     font-weight: 700 !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
-    transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+    transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease !important;
 }
 
 .fc .fc-daygrid-event:hover {

@@ -48,7 +48,10 @@ const applyTheme = (appearance: Appearance): void => {
     }
 
     document.documentElement.setAttribute('data-appearance', appearance);
-    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    document.documentElement.setAttribute(
+        'data-theme',
+        isDark ? 'dark' : 'light',
+    );
 };
 
 const subscribe = (callback: () => void) => {

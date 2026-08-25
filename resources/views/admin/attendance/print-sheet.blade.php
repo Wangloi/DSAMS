@@ -12,7 +12,23 @@
         color: #000;
     }
 
-    .header {
+    .header-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        margin-bottom: 12px;
+    }
+
+    .logo {
+        width: 65px;
+        height: 65px;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+
+    .header-text {
+        flex: 1;
         text-align: center;
     }
 
@@ -121,21 +137,25 @@
 @if(count($sections) === 0)
 <div class="page">
     <!-- HEADER -->
-    <div class="header">
-        <div class="school-name">
-            ST. RITA'S COLLEGE OF BALINGASAG, INC.
-        </div>
+    <div class="header-container">
+        <img class="logo" src="/images/SRCB.png" alt="SRCB Logo" />
+        <div class="header-text">
+            <div class="school-name">
+                ST. RITA'S COLLEGE OF BALINGASAG, INC.
+            </div>
 
-        <div class="info">
-            Balingasag, Misamis Oriental <br>
-            Email: ritarian@srcb.edu.ph | Website: www.srcb.edu.ph <br>
-            Tel. (088)323-7159 / Mobile: +63-929-734-0012 (SMART); +63-975-637-9948 (Globe) <br>
-            PAASCU Level II Re-Accredited: Junior High School Department <br>
-            PAASCU Level I: Teacher Education Program & Business Administration Program <br>
-            PAASCU Level I: Grade School & Senior High School Department <br>
-            (Philippine Accrediting Association of Schools, Colleges, and Universities) <br>
-            <b>ACADEMIC YEAR {{ $academicYear ?? '2025 – 2026' }}</b>
+            <div class="info">
+                Balingasag, Misamis Oriental <br>
+                Email: ritarian@srcb.edu.ph | Website: www.srcb.edu.ph <br>
+                Tel. (088)323-7159 / Mobile: +63-929-734-0012 (SMART); +63-975-637-9948 (Globe) <br>
+                PAASCU Level II Re-Accredited: Junior High School Department <br>
+                PAASCU Level I: Teacher Education Program & Business Administration Program <br>
+                PAASCU Level I: Grade School & Senior High School Department <br>
+                (Philippine Accrediting Association of Schools, Colleges, and Universities) <br>
+                <b>ACADEMIC YEAR {{ $academicYear ?? '2025 – 2026' }}</b>
+            </div>
         </div>
+        <img class="logo" src="/images/DSA.png" alt="DSA Logo" />
     </div>
 
     <!-- TITLE -->
@@ -159,21 +179,25 @@
 <div class="page">
 
     <!-- HEADER -->
-    <div class="header">
-        <div class="school-name">
-            ST. RITA'S COLLEGE OF BALINGASAG, INC.
-        </div>
+    <div class="header-container">
+        <img class="logo" src="/images/SRCB.png" alt="SRCB Logo" />
+        <div class="header-text">
+            <div class="school-name">
+                ST. RITA'S COLLEGE OF BALINGASAG, INC.
+            </div>
 
-        <div class="info">
-            Balingasag, Misamis Oriental <br>
-            Email: ritarian@srcb.edu.ph | Website: www.srcb.edu.ph <br>
-            Tel. (088)323-7159 / Mobile: +63-929-734-0012 (SMART); +63-975-637-9948 (Globe) <br>
-            PAASCU Level II Re-Accredited: Junior High School Department <br>
-            PAASCU Level I: Teacher Education Program & Business Administration Program <br>
-            PAASCU Level I: Grade School & Senior High School Department <br>
-            (Philippine Accrediting Association of Schools, Colleges, and Universities) <br>
-            <b>ACADEMIC YEAR {{ $academicYear ?? '2025 – 2026' }}</b>
+            <div class="info">
+                Balingasag, Misamis Oriental <br>
+                Email: ritarian@srcb.edu.ph | Website: www.srcb.edu.ph <br>
+                Tel. (088)323-7159 / Mobile: +63-929-734-0012 (SMART); +63-975-637-9948 (Globe) <br>
+                PAASCU Level II Re-Accredited: Junior High School Department <br>
+                PAASCU Level I: Teacher Education Program & Business Administration Program <br>
+                PAASCU Level I: Grade School & Senior High School Department <br>
+                (Philippine Accrediting Association of Schools, Colleges, and Universities) <br>
+                <b>ACADEMIC YEAR {{ $academicYear ?? '2025 – 2026' }}</b>
+            </div>
         </div>
+        <img class="logo" src="/images/DSA.png" alt="DSA Logo" />
     </div>
 
     <!-- TITLE -->

@@ -1,6 +1,3 @@
-import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { BookOpen, Edit, Eye, Plus, Search, Trash2, Users } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +26,9 @@ import {
     adminProgramsUnarchive,
 } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { BookOpen, Edit, Eye, Plus, Search, Trash2, Users } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import AdminLayout from '../admin-layout';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -170,7 +170,7 @@ export default function AdminProgramsPage() {
             <Head title="Programs" />
             <div className="min-h-[calc(100vh-4rem)] bg-slate-100 dark:bg-slate-900">
                 <div className="flex w-full flex-col gap-6 px-6 py-6">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 dark:border-slate-800 pb-6">
+                    <div className="flex flex-col gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
                         <div className="flex items-center gap-4">
                             <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-600/10 text-blue-600 dark:bg-blue-600/20 dark:text-blue-400">
                                 <BookOpen className="h-6 w-6" />
@@ -180,7 +180,8 @@ export default function AdminProgramsPage() {
                                     Academic Programs
                                 </h1>
                                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                                    Manage curriculums, departments, and course offerings
+                                    Manage curriculums, departments, and course
+                                    offerings
                                 </p>
                             </div>
                         </div>
@@ -195,11 +196,11 @@ export default function AdminProgramsPage() {
 
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
                         {/* Total Programs */}
-                        <Card className="overflow-hidden border border-blue-100 bg-blue-50/50 shadow-sm dark:border-blue-500/20 dark:bg-blue-500/10 group">
+                        <Card className="group overflow-hidden border border-blue-100 bg-blue-50/50 shadow-sm dark:border-blue-500/20 dark:bg-blue-500/10">
                             <CardContent className="p-5">
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
-                                        <div className="text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 opacity-70">
+                                        <div className="text-[10px] font-bold tracking-wider text-blue-700 uppercase opacity-70 dark:text-blue-400">
                                             Total Programs
                                         </div>
                                         <div className="mt-2 flex items-baseline gap-2">
@@ -208,7 +209,7 @@ export default function AdminProgramsPage() {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 shadow-inner group-hover:scale-110 transition-transform duration-300">
+                                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-500/10 text-blue-600 shadow-inner transition-transform duration-300 group-hover:scale-110 dark:bg-blue-500/20 dark:text-blue-400">
                                         <BookOpen className="h-6 w-6" />
                                     </div>
                                 </div>
@@ -216,11 +217,11 @@ export default function AdminProgramsPage() {
                         </Card>
 
                         {/* Active Programs */}
-                        <Card className="overflow-hidden border border-emerald-100 bg-emerald-50/50 shadow-sm dark:border-emerald-500/20 dark:bg-emerald-500/10 group">
+                        <Card className="group overflow-hidden border border-emerald-100 bg-emerald-50/50 shadow-sm dark:border-emerald-500/20 dark:bg-emerald-500/10">
                             <CardContent className="p-5">
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
-                                        <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 opacity-70">
+                                        <div className="text-[10px] font-bold tracking-wider text-emerald-700 uppercase opacity-70 dark:text-emerald-400">
                                             Active
                                         </div>
                                         <div className="mt-2 flex items-baseline gap-2">
@@ -229,7 +230,7 @@ export default function AdminProgramsPage() {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 shadow-inner group-hover:scale-110 transition-transform duration-300">
+                                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-600 shadow-inner transition-transform duration-300 group-hover:scale-110 dark:bg-emerald-500/20 dark:text-emerald-400">
                                         <Users className="h-6 w-6" />
                                     </div>
                                 </div>
@@ -237,11 +238,11 @@ export default function AdminProgramsPage() {
                         </Card>
 
                         {/* Inactive Programs */}
-                        <Card className="overflow-hidden border border-amber-100 bg-amber-50/50 shadow-sm dark:border-amber-500/20 dark:bg-amber-500/10 group">
+                        <Card className="group overflow-hidden border border-amber-100 bg-amber-50/50 shadow-sm dark:border-amber-500/20 dark:bg-amber-500/10">
                             <CardContent className="p-5">
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
-                                        <div className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 opacity-70">
+                                        <div className="text-[10px] font-bold tracking-wider text-amber-700 uppercase opacity-70 dark:text-amber-400">
                                             Inactive
                                         </div>
                                         <div className="mt-2 flex items-baseline gap-2">
@@ -250,7 +251,7 @@ export default function AdminProgramsPage() {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 shadow-inner group-hover:scale-110 transition-transform duration-300">
+                                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-500/10 text-amber-600 shadow-inner transition-transform duration-300 group-hover:scale-110 dark:bg-amber-500/20 dark:text-amber-400">
                                         <BookOpen className="h-6 w-6" />
                                     </div>
                                 </div>
@@ -258,11 +259,11 @@ export default function AdminProgramsPage() {
                         </Card>
 
                         {/* Departments */}
-                        <Card className="overflow-hidden border border-purple-100 bg-purple-50/50 shadow-sm dark:border-purple-500/20 dark:bg-purple-500/10 group">
+                        <Card className="group overflow-hidden border border-purple-100 bg-purple-50/50 shadow-sm dark:border-purple-500/20 dark:bg-purple-500/10">
                             <CardContent className="p-5">
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
-                                        <div className="text-[10px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400 opacity-70">
+                                        <div className="text-[10px] font-bold tracking-wider text-purple-700 uppercase opacity-70 dark:text-purple-400">
                                             Departments
                                         </div>
                                         <div className="mt-2 flex items-baseline gap-2">
@@ -271,7 +272,7 @@ export default function AdminProgramsPage() {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400 shadow-inner group-hover:scale-110 transition-transform duration-300">
+                                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-purple-500/10 text-purple-600 shadow-inner transition-transform duration-300 group-hover:scale-110 dark:bg-purple-500/20 dark:text-purple-400">
                                         <Users className="h-6 w-6" />
                                     </div>
                                 </div>
@@ -359,7 +360,8 @@ export default function AdminProgramsPage() {
                                     {pagedRows.map((r) => (
                                         <Card
                                             key={r.id}
-                                            className="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white/80 shadow-sm backdrop-blur transition-all duration-200 hover:shadow-md supports-[backdrop-filter]:bg-white/60 dark:border-slate-700 dark:bg-[#0B192C]/50"
+                                            onClick={() => handleView(r.id)}
+                                            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200/70 bg-white/80 shadow-sm backdrop-blur transition-all duration-200 hover:shadow-md supports-[backdrop-filter]:bg-white/60 dark:border-slate-700 dark:bg-[#0B192C]/50"
                                         >
                                             {/* Card header */}
                                             <div className="relative rounded-t-2xl bg-gradient-to-r from-[#0b2d66] via-[#103875] to-[#1e40af] px-5 pt-5 pb-4">
@@ -437,7 +439,12 @@ export default function AdminProgramsPage() {
                                                 <div className="pointer-events-none mt-4 h-1 w-0 bg-gradient-to-r from-[#0b2d66] via-[#23509A] to-[#1e40af] transition-all duration-200 group-hover:w-full" />
 
                                                 {/* Actions (bottom-right, horizontal) */}
-                                                <div className="absolute right-4 bottom-4 flex items-center gap-2">
+                                                <div
+                                                    className="absolute right-4 bottom-4 flex items-center gap-2"
+                                                    onClick={(e) =>
+                                                        e.stopPropagation()
+                                                    }
+                                                >
                                                     <button
                                                         type="button"
                                                         onClick={() =>

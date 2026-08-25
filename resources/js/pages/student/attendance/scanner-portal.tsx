@@ -1,13 +1,13 @@
-import { Head, Link, usePage } from '@inertiajs/react';
-import { BrowserQRCodeReader } from '@zxing/browser';
-import { ArrowLeft, QrCode, ShieldAlert } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import Swal from 'sweetalert2';
 import { AppShell } from '@/components/app-shell';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { studentAttendanceScan, studentDashboard } from '@/routes';
 import type { SharedData } from '@/types';
+import { Head, Link, usePage } from '@inertiajs/react';
+import { BrowserQRCodeReader } from '@zxing/browser';
+import { ArrowLeft, ShieldAlert } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import Swal from 'sweetalert2';
 
 type SecurityAlert = {
     id: number;
@@ -91,8 +91,12 @@ export default function StudentAttendanceScannerPortalPage({
     const lastValueRef = useRef<{ value: string; at: number } | null>(null);
     const timerRef = useRef<number | null>(null);
 
-    const [securityAlerts, setSecurityAlerts] = useState<SecurityAlert[]>(initialSecurityAlerts);
-    const [scannerRemaining, setScannerRemaining] = useState<number | null>(null);
+    const [securityAlerts, setSecurityAlerts] = useState<SecurityAlert[]>(
+        initialSecurityAlerts,
+    );
+    const [scannerRemaining, setScannerRemaining] = useState<number | null>(
+        null,
+    );
 
     const isScannerBlocked = (scannerRemaining ?? 0) > 0;
 
@@ -104,7 +108,11 @@ export default function StudentAttendanceScannerPortalPage({
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    setScannerRemaining(data.scanner_blocked && data.remaining_seconds > 0 ? data.remaining_seconds : null);
+                    setScannerRemaining(
+                        data.scanner_blocked && data.remaining_seconds > 0
+                            ? data.remaining_seconds
+                            : null,
+                    );
                 }
             } catch {
                 // silent
@@ -133,12 +141,15 @@ export default function StudentAttendanceScannerPortalPage({
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    const freshAlerts = (data.alerts ?? []).filter((a: SecurityAlert) => {
-                        const alertTime = Date.parse(a.timestamp);
-                        if (!Number.isFinite(alertTime)) return false;
-                        const windowMs = (a.window_minutes ?? 15) * 60 * 1000;
-                        return Date.now() - alertTime < windowMs;
-                    });
+                    const freshAlerts = (data.alerts ?? []).filter(
+                        (a: SecurityAlert) => {
+                            const alertTime = Date.parse(a.timestamp);
+                            if (!Number.isFinite(alertTime)) return false;
+                            const windowMs =
+                                (a.window_minutes ?? 15) * 60 * 1000;
+                            return Date.now() - alertTime < windowMs;
+                        },
+                    );
                     setSecurityAlerts(freshAlerts);
                 }
             } catch {
@@ -178,7 +189,9 @@ export default function StudentAttendanceScannerPortalPage({
     }, []);
 
     const attendanceAlerts = securityAlerts.filter(
-        (a) => a.module === 'Attendance' && (a.action === 'Access Denied' || a.action === 'Denied'),
+        (a) =>
+            a.module === 'Attendance' &&
+            (a.action === 'Access Denied' || a.action === 'Denied'),
     );
 
     const scanBlocked = useMemo(() => {
@@ -245,10 +258,12 @@ export default function StudentAttendanceScannerPortalPage({
                     return decodeURIComponent(match[1]);
                 }
                 return (
-                    document.querySelector(
-                        'meta[name="csrf-token"]',
-                    ) as HTMLMetaElement | null
-                )?.content || '';
+                    (
+                        document.querySelector(
+                            'meta[name="csrf-token"]',
+                        ) as HTMLMetaElement | null
+                    )?.content || ''
+                );
             };
             const token = getCsrfToken();
 
@@ -278,7 +293,9 @@ export default function StudentAttendanceScannerPortalPage({
                     Accept: 'application/json',
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
-                    ...(token ? { 'X-CSRF-TOKEN': token, 'X-XSRF-TOKEN': token } : {}),
+                    ...(token
+                        ? { 'X-CSRF-TOKEN': token, 'X-XSRF-TOKEN': token }
+                        : {}),
                 },
                 body: JSON.stringify({ value, ...geo }),
             });
@@ -550,10 +567,10 @@ export default function StudentAttendanceScannerPortalPage({
                                 {isScannerBlocked
                                     ? `Blocked (${scannerRemaining}s)`
                                     : scanState.status === 'starting'
-                                        ? 'Starting...'
-                                        : scanState.status === 'running'
-                                            ? 'Running'
-                                            : 'Start'}
+                                      ? 'Starting...'
+                                      : scanState.status === 'running'
+                                        ? 'Running'
+                                        : 'Start'}
                             </Button>
                             <Button
                                 type="button"
@@ -584,7 +601,9 @@ export default function StudentAttendanceScannerPortalPage({
 
                     {isScannerBlocked ? (
                         <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm font-semibold text-amber-900">
-                            Scanner temporarily blocked due to repeated denials. Please wait {scannerRemaining}s before scanning again.
+                            Scanner temporarily blocked due to repeated denials.
+                            Please wait {scannerRemaining}s before scanning
+                            again.
                         </div>
                     ) : null}
 
@@ -600,16 +619,17 @@ export default function StudentAttendanceScannerPortalPage({
                                                 playsInline
                                                 muted
                                             />
-                                            <div className="absolute inset-0 pointer-events-none">
+                                            <div className="pointer-events-none absolute inset-0">
                                                 <div className="absolute inset-0 border-[40px] border-black/40" />
-                                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border-2 border-white/50 rounded-2xl shadow-[0_0_0_1000px_rgba(0,0,0,0.3)]">
-                                                    <div className="absolute inset-0 border-2 border-blue-500 rounded-2xl animate-pulse" />
-                                                    <div className="absolute -left-1 -top-1 w-8 h-8 border-t-4 border-l-4 border-blue-500 rounded-tl-lg" />
-                                                    <div className="absolute -right-1 -top-1 w-8 h-8 border-t-4 border-r-4 border-blue-500 rounded-tr-lg" />
-                                                    <div className="absolute -left-1 -bottom-1 w-8 h-8 border-b-4 border-l-4 border-blue-500 rounded-bl-lg" />
-                                                    <div className="absolute -right-1 -bottom-1 w-8 h-8 border-b-4 border-r-4 border-blue-500 rounded-br-lg" />
-                                                    {scanState.status === 'running' && (
-                                                        <div className="absolute left-0 top-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_15px_rgba(96,165,250,0.8)] animate-scan-line" />
+                                                <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-2xl border-2 border-white/50 shadow-[0_0_0_1000px_rgba(0,0,0,0.3)]">
+                                                    <div className="absolute inset-0 animate-pulse rounded-2xl border-2 border-blue-500" />
+                                                    <div className="absolute -top-1 -left-1 h-8 w-8 rounded-tl-lg border-t-4 border-l-4 border-blue-500" />
+                                                    <div className="absolute -top-1 -right-1 h-8 w-8 rounded-tr-lg border-t-4 border-r-4 border-blue-500" />
+                                                    <div className="absolute -bottom-1 -left-1 h-8 w-8 rounded-bl-lg border-b-4 border-l-4 border-blue-500" />
+                                                    <div className="absolute -right-1 -bottom-1 h-8 w-8 rounded-br-lg border-r-4 border-b-4 border-blue-500" />
+                                                    {scanState.status ===
+                                                        'running' && (
+                                                        <div className="absolute top-0 left-0 h-1 w-full animate-scan-line bg-gradient-to-r from-transparent via-blue-400 to-transparent shadow-[0_0_15px_rgba(96,165,250,0.8)]" />
                                                     )}
                                                 </div>
                                             </div>

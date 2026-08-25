@@ -1,3 +1,5 @@
+import { AppShell } from '@/components/app-shell';
+import { studentAttendanceDynamicQrScan, studentDashboard } from '@/routes';
 import { Head, Link } from '@inertiajs/react';
 import { BrowserQRCodeReader } from '@zxing/browser';
 import axios from 'axios';
@@ -13,8 +15,6 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Swal from 'sweetalert2';
-import { AppShell } from '@/components/app-shell';
-import { studentAttendanceDynamicQrScan, studentDashboard } from '@/routes';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -41,7 +41,11 @@ type ScanPhase =
     | 'success'
     | 'error';
 
-type GeoResult = { latitude: number; longitude: number; accuracy_m: number } | null;
+type GeoResult = {
+    latitude: number;
+    longitude: number;
+    accuracy_m: number;
+} | null;
 
 // ── GPS helper ────────────────────────────────────────────────────────────────
 
@@ -51,8 +55,8 @@ const getGeo = (): Promise<GeoResult> =>
         navigator.geolocation.getCurrentPosition(
             (pos) =>
                 resolve({
-                    latitude:   pos.coords.latitude,
-                    longitude:  pos.coords.longitude,
+                    latitude: pos.coords.latitude,
+                    longitude: pos.coords.longitude,
                     accuracy_m: pos.coords.accuracy,
                 }),
             () => resolve(null),
@@ -63,22 +67,31 @@ const getGeo = (): Promise<GeoResult> =>
 // ── CSRF helper ───────────────────────────────────────────────────────────────
 
 const csrfToken = () =>
-    (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null)?.content ?? '';
+    (
+        document.querySelector(
+            'meta[name="csrf-token"]',
+        ) as HTMLMetaElement | null
+    )?.content ?? '';
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function StudentDynamicQrScanPage({ event }: Props) {
-    const videoRef    = useRef<HTMLVideoElement | null>(null);
-    const streamRef   = useRef<MediaStream | null>(null);
-    const zxingRef    = useRef<{ stop: () => void } | null>(null);
+    const videoRef = useRef<HTMLVideoElement | null>(null);
+    const streamRef = useRef<MediaStream | null>(null);
+    const zxingRef = useRef<{ stop: () => void } | null>(null);
     const barcodeIntervalRef = useRef<number | null>(null);
     const lastTokenRef = useRef<{ value: string; at: number } | null>(null);
 
-    const [phase,       setPhase]       = useState<ScanPhase>('idle');
-    const [errorMsg,    setErrorMsg]    = useState<string>('');
-    const [geo,         setGeo]         = useState<GeoResult>(null);
-    const [geoStatus,   setGeoStatus]   = useState<'pending' | 'ok' | 'missing'>('pending');
-    const [successData, setSuccessData] = useState<{ name: string; status: string } | null>(null);
+    const [phase, setPhase] = useState<ScanPhase>('idle');
+    const [errorMsg, setErrorMsg] = useState<string>('');
+    const [geo, setGeo] = useState<GeoResult>(null);
+    const [geoStatus, setGeoStatus] = useState<'pending' | 'ok' | 'missing'>(
+        'pending',
+    );
+    const [successData, setSuccessData] = useState<{
+        name: string;
+        status: string;
+    } | null>(null);
 
     // ── Barcode Detector API support ───────────────────────────────────────────
     const barcodeApiSupported = useMemo(
@@ -128,8 +141,8 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
             try {
                 const parsed = JSON.parse(rawQrPayload);
                 if (parsed?.type === 'dsams-attendance-token') {
-                    token      = String(parsed.token ?? '');
-                    qrEventId  = Number(parsed.event_id ?? 0);
+                    token = String(parsed.token ?? '');
+                    qrEventId = Number(parsed.event_id ?? 0);
                 }
             } catch {
                 // not JSON — ignore
@@ -157,34 +170,45 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
             try {
                 const body: Record<string, unknown> = { token };
                 if (freshGeo) {
-                    body.latitude   = freshGeo.latitude;
-                    body.longitude  = freshGeo.longitude;
+                    body.latitude = freshGeo.latitude;
+                    body.longitude = freshGeo.longitude;
                     body.accuracy_m = freshGeo.accuracy_m;
                 }
 
-                const res = await axios.post(studentAttendanceDynamicQrScan(event.id), body, {
-                    headers: {
-                        Accept: 'application/json',
-                        'Content-Type': 'application/json',
-                    }
-                });
+                const res = await axios.post(
+                    studentAttendanceDynamicQrScan(event.id),
+                    body,
+                    {
+                        headers: {
+                            Accept: 'application/json',
+                            'Content-Type': 'application/json',
+                        },
+                    },
+                );
 
                 const data = res.data ?? {};
                 setSuccessData({
-                    name:   String(data?.student?.name ?? 'You'),
+                    name: String(data?.student?.name ?? 'You'),
                     status: String(data?.status ?? 'present'),
                 });
                 setPhase('success');
             } catch (e: any) {
                 const status = e?.response?.status;
                 const data = e?.response?.data ?? {};
-                
+
                 if (status === 409) {
                     // Already checked in — show as success (idempotent)
-                    setSuccessData({ name: 'You', status: 'already-checked-in' });
+                    setSuccessData({
+                        name: 'You',
+                        status: 'already-checked-in',
+                    });
                     setPhase('success');
                 } else {
-                    const message = String(data?.message ?? e?.message ?? 'Something went wrong. Please try again.');
+                    const message = String(
+                        data?.message ??
+                            e?.message ??
+                            'Something went wrong. Please try again.',
+                    );
                     setErrorMsg(message);
                     setPhase('error');
                 }
@@ -196,7 +220,9 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
     // ── Start camera ──────────────────────────────────────────────────────────
     const startCamera = useCallback(async () => {
         if (!event.scannerPortalActive) {
-            setErrorMsg('The attendance session is not active yet. Please wait for the admin to start it.');
+            setErrorMsg(
+                'The attendance session is not active yet. Please wait for the admin to start it.',
+            );
             setPhase('error');
             return;
         }
@@ -221,7 +247,11 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
             if (barcodeApiSupported) {
                 const Detector = (window as any).BarcodeDetector as new (o: {
                     formats: string[];
-                }) => { detect: (src: CanvasImageSource) => Promise<{ rawValue?: string }[]> };
+                }) => {
+                    detect: (
+                        src: CanvasImageSource,
+                    ) => Promise<{ rawValue?: string }[]>;
+                };
                 const detector = new Detector({ formats: ['qr_code'] });
 
                 barcodeIntervalRef.current = window.setInterval(async () => {
@@ -245,14 +275,30 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
                         if (value) void submitToken(value);
                     },
                 );
-                zxingRef.current = { stop: () => { try { controls.stop(); } catch { /**/ } } };
+                zxingRef.current = {
+                    stop: () => {
+                        try {
+                            controls.stop();
+                        } catch {
+                            /**/
+                        }
+                    },
+                };
             }
         } catch (e: any) {
             stopCamera();
-            setErrorMsg(e?.message ?? 'Unable to access camera. Please allow camera permissions.');
+            setErrorMsg(
+                e?.message ??
+                    'Unable to access camera. Please allow camera permissions.',
+            );
             setPhase('error');
         }
-    }, [event.scannerPortalActive, barcodeApiSupported, submitToken, stopCamera]);
+    }, [
+        event.scannerPortalActive,
+        barcodeApiSupported,
+        submitToken,
+        stopCamera,
+    ]);
 
     const reset = () => {
         stopCamera();
@@ -263,9 +309,9 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
     };
 
     // ── Derived UI state ──────────────────────────────────────────────────────
-    const isScanning  = phase === 'scanning';
+    const isScanning = phase === 'scanning';
     const isSubmitting = phase === 'submitting';
-    const isIdle       = phase === 'idle' || phase === 'camera-starting';
+    const isIdle = phase === 'idle' || phase === 'camera-starting';
 
     return (
         <AppShell>
@@ -288,36 +334,45 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
                             <ArrowLeft className="h-3.5 w-3.5" />
                             Dashboard
                         </Link>
-                        <h1 className="mt-3 text-lg font-bold">Scan Attendance QR</h1>
-                        <p className="mt-1 text-sm text-indigo-100/80">{event.name}</p>
+                        <h1 className="mt-3 text-lg font-bold">
+                            Scan Attendance QR
+                        </h1>
+                        <p className="mt-1 text-sm text-indigo-100/80">
+                            {event.name}
+                        </p>
                         {event.date && (
-                            <p className="mt-0.5 text-xs text-indigo-100/60">{event.date}</p>
+                            <p className="mt-0.5 text-xs text-indigo-100/60">
+                                {event.date}
+                            </p>
                         )}
                     </div>
 
                     {/* ── GPS status bar ─────────────────────────────────────── */}
-                    <div className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm ${
-                        geoStatus === 'ok'
-                            ? 'bg-emerald-500/10 text-emerald-300 ring-1 ring-emerald-500/20'
-                            : geoStatus === 'missing'
-                            ? 'bg-amber-500/10 text-amber-300 ring-1 ring-amber-500/20'
-                            : 'bg-white/5 text-white/40 ring-1 ring-white/10'
-                    }`}>
+                    <div
+                        className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm ${
+                            geoStatus === 'ok'
+                                ? 'bg-emerald-500/10 text-emerald-300 ring-1 ring-emerald-500/20'
+                                : geoStatus === 'missing'
+                                  ? 'bg-amber-500/10 text-amber-300 ring-1 ring-amber-500/20'
+                                  : 'bg-white/5 text-white/40 ring-1 ring-white/10'
+                        }`}
+                    >
                         <MapPin className="h-4 w-4 shrink-0" />
                         {geoStatus === 'ok'
                             ? `GPS acquired (±${Math.round(geo!.accuracy_m)}m)`
                             : geoStatus === 'missing'
-                            ? event.geofenceEnabled
-                                ? 'GPS unavailable — attendance requires location for this event'
-                                : 'GPS unavailable (not required for this event)'
-                            : 'Acquiring GPS…'}
+                              ? event.geofenceEnabled
+                                  ? 'GPS unavailable — attendance requires location for this event'
+                                  : 'GPS unavailable (not required for this event)'
+                              : 'Acquiring GPS…'}
                     </div>
 
                     {/* ── Session status ─────────────────────────────────────── */}
                     {!event.scannerPortalActive && (
                         <div className="flex items-center gap-3 rounded-xl bg-rose-500/10 px-4 py-3 text-sm text-rose-300 ring-1 ring-rose-500/20">
                             <ShieldAlert className="h-4 w-4 shrink-0" />
-                            The attendance session is not active yet. Wait for your admin to start it.
+                            The attendance session is not active yet. Wait for
+                            your admin to start it.
                         </div>
                     )}
 
@@ -338,12 +393,16 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
                                     {phase === 'camera-starting' ? (
                                         <div className="flex flex-col items-center gap-3 text-white">
                                             <Loader2 className="h-12 w-12 animate-spin text-indigo-400" />
-                                            <span className="text-sm font-medium">Starting camera…</span>
+                                            <span className="text-sm font-medium">
+                                                Starting camera…
+                                            </span>
                                         </div>
                                     ) : phase === 'submitting' ? (
                                         <div className="flex flex-col items-center gap-3 text-white">
                                             <Loader2 className="h-12 w-12 animate-spin text-indigo-400" />
-                                            <span className="text-sm font-medium">Recording attendance…</span>
+                                            <span className="text-sm font-medium">
+                                                Recording attendance…
+                                            </span>
                                         </div>
                                     ) : phase === 'success' ? (
                                         <div className="flex flex-col items-center gap-4 px-6 text-center">
@@ -352,13 +411,15 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
                                             </div>
                                             <div>
                                                 <div className="text-lg font-bold text-emerald-300">
-                                                    {successData?.status === 'already-checked-in'
+                                                    {successData?.status ===
+                                                    'already-checked-in'
                                                         ? 'Already Checked In'
                                                         : 'Attendance Recorded!'}
                                                 </div>
                                                 <div className="mt-1 text-sm text-white/60">
                                                     {successData?.name}
-                                                    {successData?.status === 'late' && (
+                                                    {successData?.status ===
+                                                        'late' && (
                                                         <span className="ml-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-xs text-amber-300">
                                                             Late
                                                         </span>
@@ -372,8 +433,12 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
                                                 <XCircle className="h-10 w-10 text-rose-400" />
                                             </div>
                                             <div>
-                                                <div className="text-base font-bold text-rose-300">Scan Failed</div>
-                                                <div className="mt-1 text-sm text-white/60">{errorMsg}</div>
+                                                <div className="text-base font-bold text-rose-300">
+                                                    Scan Failed
+                                                </div>
+                                                <div className="mt-1 text-sm text-white/60">
+                                                    {errorMsg}
+                                                </div>
                                             </div>
                                         </div>
                                     ) : (
@@ -383,7 +448,12 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
                                                 <QrCode className="h-10 w-10 text-white/60" />
                                             </div>
                                             <p className="text-sm text-white/50">
-                                                Tap <strong className="text-white/80">Start Scanning</strong> then point your camera at the QR code on the admin's screen.
+                                                Tap{' '}
+                                                <strong className="text-white/80">
+                                                    Start Scanning
+                                                </strong>{' '}
+                                                then point your camera at the QR
+                                                code on the admin's screen.
                                             </p>
                                         </div>
                                     )}
@@ -398,12 +468,12 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
                                             <div className="absolute top-0 left-0 h-8 w-8 rounded-tl-xl border-t-4 border-l-4 border-indigo-400" />
                                             <div className="absolute top-0 right-0 h-8 w-8 rounded-tr-xl border-t-4 border-r-4 border-indigo-400" />
                                             <div className="absolute bottom-0 left-0 h-8 w-8 rounded-bl-xl border-b-4 border-l-4 border-indigo-400" />
-                                            <div className="absolute right-0 bottom-0 h-8 w-8 rounded-br-xl border-b-4 border-r-4 border-indigo-400" />
+                                            <div className="absolute right-0 bottom-0 h-8 w-8 rounded-br-xl border-r-4 border-b-4 border-indigo-400" />
                                             {/* Scan line */}
                                             <div className="absolute top-0 left-0 h-0.5 w-full animate-[scan_2s_ease-in-out_infinite] bg-indigo-400/80" />
                                         </div>
                                     </div>
-                                    <div className="absolute bottom-3 left-0 right-0 text-center text-xs text-white/50">
+                                    <div className="absolute right-0 bottom-3 left-0 text-center text-xs text-white/50">
                                         Scanning…
                                     </div>
                                 </>
@@ -423,20 +493,28 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
                                 <>
                                     <button
                                         onClick={() => void startCamera()}
-                                        disabled={isScanning || isSubmitting || phase === 'camera-starting' || !event.scannerPortalActive}
+                                        disabled={
+                                            isScanning ||
+                                            isSubmitting ||
+                                            phase === 'camera-starting' ||
+                                            !event.scannerPortalActive
+                                        }
                                         className="flex-1 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
                                     >
                                         {phase === 'camera-starting'
                                             ? 'Starting…'
                                             : isScanning
-                                            ? 'Scanning…'
-                                            : isSubmitting
-                                            ? 'Recording…'
-                                            : 'Start Scanning'}
+                                              ? 'Scanning…'
+                                              : isSubmitting
+                                                ? 'Recording…'
+                                                : 'Start Scanning'}
                                     </button>
                                     {isScanning && (
                                         <button
-                                            onClick={() => { stopCamera(); setPhase('idle'); }}
+                                            onClick={() => {
+                                                stopCamera();
+                                                setPhase('idle');
+                                            }}
                                             className="rounded-xl bg-white/10 px-4 py-3 text-sm font-semibold text-white/70 transition hover:bg-white/20"
                                         >
                                             Stop
@@ -448,19 +526,35 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
                     </div>
 
                     {/* ── Instructions ───────────────────────────────────────── */}
-                    <div className="rounded-2xl bg-white/5 ring-1 ring-white/10 px-5 py-4">
+                    <div className="rounded-2xl bg-white/5 px-5 py-4 ring-1 ring-white/10">
                         <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-white/70">
                             <Clock className="h-4 w-4" />
                             How it works
                         </div>
                         <ol className="space-y-2 text-xs text-white/40">
-                            <li>1. The admin displays a QR code on their screen or projector.</li>
-                            <li>2. Tap <strong className="text-white/60">Start Scanning</strong> and point your camera at it.</li>
-                            <li>3. The system verifies your identity, location, and the token.</li>
-                            <li>4. Your attendance is saved automatically — no manual entry needed.</li>
+                            <li>
+                                1. The admin displays a QR code on their screen
+                                or projector.
+                            </li>
+                            <li>
+                                2. Tap{' '}
+                                <strong className="text-white/60">
+                                    Start Scanning
+                                </strong>{' '}
+                                and point your camera at it.
+                            </li>
+                            <li>
+                                3. The system verifies your identity, location,
+                                and the token.
+                            </li>
+                            <li>
+                                4. Your attendance is saved automatically — no
+                                manual entry needed.
+                            </li>
                         </ol>
                         <p className="mt-3 text-xs text-white/30">
-                            The QR code rotates every 30 seconds — always scan the latest one.
+                            The QR code rotates every 30 seconds — always scan
+                            the latest one.
                         </p>
                     </div>
                 </div>

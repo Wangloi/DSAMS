@@ -1,8 +1,3 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
-import { CheckCircle2, ChevronLeft, Eye, Send, XCircle } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import Swal from 'sweetalert2';
 import { Badge } from '@/components/ui/badge';
 import {
     Breadcrumb,
@@ -13,12 +8,30 @@ import {
 } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { adminDashboard, adminEvaluation, adminEvaluationApproveProgram, adminEvaluationPublish, adminEvaluationUnpublish } from '@/routes';
+import {
+    adminDashboard,
+    adminEvaluation,
+    adminEvaluationApproveProgram,
+    adminEvaluationPublish,
+    adminEvaluationUnpublish,
+} from '@/routes';
 import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { CheckCircle2, ChevronLeft, Eye, Send, XCircle } from 'lucide-react';
+import { useMemo } from 'react';
+import {
+    Bar,
+    BarChart,
+    CartesianGrid,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
+} from 'recharts';
+import Swal from 'sweetalert2';
 import AdminLayout from '../admin-layout';
 
 type Question = {
@@ -118,12 +131,18 @@ export default function AdminEvaluationShowPage() {
             }, 0);
 
             if (q.type === 'rating') {
-                const counts = [1, 2, 3, 4, 5].map((n) => ({ label: `${n}`, value: 0 }));
+                const counts = [1, 2, 3, 4, 5].map((n) => ({
+                    label: `${n}`,
+                    value: 0,
+                }));
                 const values: number[] = [];
 
                 for (const r of responses) {
                     const v = (r.answers ?? {})[q.id];
-                    const n = typeof v === 'number' ? v : parseInt(String(v ?? ''), 10);
+                    const n =
+                        typeof v === 'number'
+                            ? v
+                            : parseInt(String(v ?? ''), 10);
                     if (Number.isFinite(n) && n >= 1 && n <= 5) {
                         counts[n - 1].value += 1;
                         values.push(n);
@@ -133,7 +152,15 @@ export default function AdminEvaluationShowPage() {
                 summaries[q.id] = {
                     totalAnswers,
                     ratingCounts: counts,
-                    ratingAverage: values.length > 0 ? Number((values.reduce((a, b) => a + b, 0) / values.length).toFixed(2)) : null,
+                    ratingAverage:
+                        values.length > 0
+                            ? Number(
+                                  (
+                                      values.reduce((a, b) => a + b, 0) /
+                                      values.length
+                                  ).toFixed(2),
+                              )
+                            : null,
                 };
                 continue;
             }
@@ -152,7 +179,9 @@ export default function AdminEvaluationShowPage() {
 
                 summaries[q.id] = {
                     totalAnswers,
-                    optionCounts: Array.from(optionMap.entries()).map(([label, value]) => ({ label, value })),
+                    optionCounts: Array.from(optionMap.entries()).map(
+                        ([label, value]) => ({ label, value }),
+                    ),
                 };
                 continue;
             }
@@ -193,19 +222,27 @@ export default function AdminEvaluationShowPage() {
                                     <Eye className="h-6 w-6 text-white" />
                                 </div>
                                 <div className="leading-tight">
-                                    <div className="text-sm font-medium text-white/80">Evaluation</div>
+                                    <div className="text-sm font-medium text-white/80">
+                                        Evaluation
+                                    </div>
                                     <Breadcrumb>
                                         <BreadcrumbList className="text-white/80">
                                             <BreadcrumbItem>
-                                                <BreadcrumbPage className="text-white/80">Preview</BreadcrumbPage>
+                                                <BreadcrumbPage className="text-white/80">
+                                                    Preview
+                                                </BreadcrumbPage>
                                             </BreadcrumbItem>
                                             <BreadcrumbSeparator className="text-white/40" />
                                             <BreadcrumbItem>
-                                                <BreadcrumbPage className="text-white">{evaluation.name}</BreadcrumbPage>
+                                                <BreadcrumbPage className="text-white">
+                                                    {evaluation.name}
+                                                </BreadcrumbPage>
                                             </BreadcrumbItem>
                                         </BreadcrumbList>
                                     </Breadcrumb>
-                                    <div className="text-sm text-white/80">Read-only preview for admins</div>
+                                    <div className="text-sm text-white/80">
+                                        Read-only preview for admins
+                                    </div>
                                 </div>
                             </div>
 
@@ -223,7 +260,15 @@ export default function AdminEvaluationShowPage() {
                                                 confirmButtonText: 'Publish',
                                             }).then((r) => {
                                                 if (r.isConfirmed) {
-                                                    router.post(adminEvaluationPublish(evaluation.id), {}, { preserveScroll: true });
+                                                    router.post(
+                                                        adminEvaluationPublish(
+                                                            evaluation.id,
+                                                        ),
+                                                        {},
+                                                        {
+                                                            preserveScroll: true,
+                                                        },
+                                                    );
                                                 }
                                             });
                                         }}
@@ -236,13 +281,25 @@ export default function AdminEvaluationShowPage() {
                                         type="button"
                                         variant="outline"
                                         className="h-9 gap-2 border-white/30 bg-white/10 text-white hover:bg-white/20"
-                                        onClick={() => router.post(adminEvaluationUnpublish(evaluation.id), {}, { preserveScroll: true })}
+                                        onClick={() =>
+                                            router.post(
+                                                adminEvaluationUnpublish(
+                                                    evaluation.id,
+                                                ),
+                                                {},
+                                                { preserveScroll: true },
+                                            )
+                                        }
                                     >
                                         <XCircle className="h-4 w-4" />
                                         Unpublish
                                     </Button>
                                 )}
-                                <Button asChild type="button" className="h-9 justify-start gap-2 rounded-md bg-white/10 px-3 text-white hover:bg-white/20 hover:text-white">
+                                <Button
+                                    asChild
+                                    type="button"
+                                    className="h-9 justify-start gap-2 rounded-md bg-white/10 px-3 text-white hover:bg-white/20 hover:text-white"
+                                >
                                     <Link href={adminEvaluation()}>
                                         <ChevronLeft className="h-4 w-4" />
                                         Back
@@ -252,79 +309,132 @@ export default function AdminEvaluationShowPage() {
                         </div>
                     </div>
 
-                    <Card className="border-0 shadow-sm bg-white dark:bg-slate-800">
+                    <Card className="border-0 bg-white shadow-sm dark:bg-slate-800">
                         <CardHeader className="space-y-2">
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
-                                    <CardTitle className="text-base text-slate-800 dark:text-white">{evaluation.name}</CardTitle>
-                                    <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">{evaluation.event}</div>
+                                    <CardTitle className="text-base text-slate-800 dark:text-white">
+                                        {evaluation.name}
+                                    </CardTitle>
+                                    <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                                        {evaluation.event}
+                                    </div>
                                 </div>
 
                                 <div className="flex items-center gap-2">
-                                    <Badge variant={evaluation.is_active ? 'secondary' : 'outline'}>
-                                        {evaluation.is_active ? 'Active' : 'Inactive'}
+                                    <Badge
+                                        variant={
+                                            evaluation.is_active
+                                                ? 'secondary'
+                                                : 'outline'
+                                        }
+                                    >
+                                        {evaluation.is_active
+                                            ? 'Active'
+                                            : 'Inactive'}
                                     </Badge>
-                                    {evaluation.is_archived ? <Badge variant="destructive">Archived</Badge> : null}
+                                    {evaluation.is_archived ? (
+                                        <Badge variant="destructive">
+                                            Archived
+                                        </Badge>
+                                    ) : null}
                                 </div>
                             </div>
                         </CardHeader>
 
                         <CardContent className="space-y-6">
                             {questions.length === 0 ? (
-                                <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-slate-700 dark:text-slate-300 text-sm">
+                                <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                                     No questions configured for this evaluation.
                                 </div>
                             ) : (
                                 <div className="space-y-5">
                                     {questions.map((q, idx) => (
-                                        <div key={q.id} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+                                        <div
+                                            key={q.id}
+                                            className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800"
+                                        >
                                             <div className="text-sm font-semibold text-slate-900 dark:text-white">
                                                 {idx + 1}. {q.label}{' '}
-                                                {q.required ? <span className="text-rose-600 dark:text-rose-400">*</span> : null}
+                                                {q.required ? (
+                                                    <span className="text-rose-600 dark:text-rose-400">
+                                                        *
+                                                    </span>
+                                                ) : null}
                                             </div>
 
                                             <div className="mt-3">
                                                 {q.type === 'rating' ? (
                                                     <div className="flex items-center gap-2">
-                                                        {[1, 2, 3, 4, 5].map((n) => (
-                                                            <button
-                                                                key={n}
-                                                                type="button"
-                                                                disabled
-                                                                className="h-10 w-10 rounded-md border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-sm font-semibold text-slate-500 dark:text-slate-400"
-                                                            >
-                                                                {n}
-                                                            </button>
-                                                        ))}
+                                                        {[1, 2, 3, 4, 5].map(
+                                                            (n) => (
+                                                                <button
+                                                                    key={n}
+                                                                    type="button"
+                                                                    disabled
+                                                                    className="h-10 w-10 rounded-md border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-500 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-400"
+                                                                >
+                                                                    {n}
+                                                                </button>
+                                                            ),
+                                                        )}
                                                     </div>
                                                 ) : null}
 
-                                                {q.type === 'multiple_choice' ? (
+                                                {q.type ===
+                                                'multiple_choice' ? (
                                                     <div className="space-y-2">
-                                                        {(q.options ?? []).map((opt) => (
-                                                            <label key={opt} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                                                                <input type="radio" disabled />
-                                                                <span>{opt}</span>
-                                                            </label>
-                                                        ))}
+                                                        {(q.options ?? []).map(
+                                                            (opt) => (
+                                                                <label
+                                                                    key={opt}
+                                                                    className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300"
+                                                                >
+                                                                    <input
+                                                                        type="radio"
+                                                                        disabled
+                                                                    />
+                                                                    <span>
+                                                                        {opt}
+                                                                    </span>
+                                                                </label>
+                                                            ),
+                                                        )}
                                                     </div>
                                                 ) : null}
 
                                                 {q.type === 'short_text' ? (
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor={`q_${q.id}`} className="sr-only">
+                                                        <Label
+                                                            htmlFor={`q_${q.id}`}
+                                                            className="sr-only"
+                                                        >
                                                             {q.label}
                                                         </Label>
-                                                        <Input id={`q_${q.id}`} disabled className="h-11" placeholder="Short answer text" />
+                                                        <Input
+                                                            id={`q_${q.id}`}
+                                                            disabled
+                                                            className="h-11"
+                                                            placeholder="Short answer text"
+                                                        />
                                                     </div>
                                                 ) : null}
 
                                                 {q.type === 'long_text' ? (
                                                     <div className="grid gap-2">
-                                                        <Label htmlFor={`q_${q.id}`} className="sr-only">
+                                                        <Label
+                                                            htmlFor={`q_${q.id}`}
+                                                            className="sr-only"
+                                                        >
                                                             {q.label}
                                                         </Label>
-                                                        <Textarea id={`q_${q.id}`} disabled rows={4} className="resize-none" placeholder="Long answer text" />
+                                                        <Textarea
+                                                            id={`q_${q.id}`}
+                                                            disabled
+                                                            rows={4}
+                                                            className="resize-none"
+                                                            placeholder="Long answer text"
+                                                        />
                                                     </div>
                                                 ) : null}
                                             </div>
@@ -336,25 +446,34 @@ export default function AdminEvaluationShowPage() {
                     </Card>
 
                     {programStats.length > 0 ? (
-                        <Card className="border-0 shadow-sm bg-white dark:bg-slate-800">
+                        <Card className="border-0 bg-white shadow-sm dark:bg-slate-800">
                             <CardHeader>
                                 <CardTitle className="text-base text-slate-800 dark:text-white">
-                                    Program completion ({completionThreshold}% before next activity)
+                                    Program completion ({completionThreshold}%
+                                    before next activity)
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="grid gap-3 sm:grid-cols-2">
                                 {programStats.map((row) => (
-                                    <div key={row.program} className="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
+                                    <div
+                                        key={row.program}
+                                        className="rounded-lg border border-slate-200 p-4 dark:border-slate-700"
+                                    >
                                         <div className="flex items-center justify-between">
-                                            <span className="font-semibold text-slate-900 dark:text-white">{row.program}</span>
+                                            <span className="font-semibold text-slate-900 dark:text-white">
+                                                {row.program}
+                                            </span>
                                             <span className="text-sm text-slate-600 dark:text-slate-400">
-                                                {row.submitted}/{row.eligible} ({row.percent}%)
+                                                {row.submitted}/{row.eligible} (
+                                                {row.percent}%)
                                             </span>
                                         </div>
                                         <div className="mt-2 h-2 rounded-full bg-slate-200 dark:bg-slate-700">
                                             <div
                                                 className={`h-2 rounded-full ${row.meets_threshold ? 'bg-emerald-500' : 'bg-amber-500'}`}
-                                                style={{ width: `${Math.min(100, row.percent)}%` }}
+                                                style={{
+                                                    width: `${Math.min(100, row.percent)}%`,
+                                                }}
                                             />
                                         </div>
                                         <div className="mt-3">
@@ -375,9 +494,16 @@ export default function AdminEvaluationShowPage() {
                                                         }).then((r) => {
                                                             if (r.isConfirmed) {
                                                                 router.post(
-                                                                    adminEvaluationApproveProgram(evaluation.id),
-                                                                    { program: row.program },
-                                                                    { preserveScroll: true },
+                                                                    adminEvaluationApproveProgram(
+                                                                        evaluation.id,
+                                                                    ),
+                                                                    {
+                                                                        program:
+                                                                            row.program,
+                                                                    },
+                                                                    {
+                                                                        preserveScroll: true,
+                                                                    },
                                                                 );
                                                             }
                                                         });
@@ -386,7 +512,10 @@ export default function AdminEvaluationShowPage() {
                                                     Approve next activity
                                                 </Button>
                                             ) : (
-                                                <span className="text-xs text-slate-500">Below {completionThreshold}% threshold</span>
+                                                <span className="text-xs text-slate-500">
+                                                    Below {completionThreshold}%
+                                                    threshold
+                                                </span>
                                             )}
                                         </div>
                                     </div>
@@ -395,18 +524,22 @@ export default function AdminEvaluationShowPage() {
                         </Card>
                     ) : null}
 
-                    <Card className="border-0 shadow-sm bg-white dark:bg-slate-800">
+                    <Card className="border-0 bg-white shadow-sm dark:bg-slate-800">
                         <CardHeader className="space-y-1">
-                            <CardTitle className="text-base text-slate-800 dark:text-white">Summary</CardTitle>
-                            <div className="text-sm text-slate-600 dark:text-slate-400">{responses.length} response(s)</div>
+                            <CardTitle className="text-base text-slate-800 dark:text-white">
+                                Summary
+                            </CardTitle>
+                            <div className="text-sm text-slate-600 dark:text-slate-400">
+                                {responses.length} response(s)
+                            </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {questions.length === 0 ? (
-                                <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-slate-700 dark:text-slate-300 text-sm">
+                                <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                                     No questions configured for this evaluation.
                                 </div>
                             ) : responses.length === 0 ? (
-                                <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 text-slate-700 dark:text-slate-300 text-sm">
+                                <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                                     No responses yet.
                                 </div>
                             ) : (
@@ -414,59 +547,145 @@ export default function AdminEvaluationShowPage() {
                                     {questions.map((q, idx) => {
                                         const summary = summaryByQuestion[q.id];
                                         return (
-                                            <div key={q.id} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+                                            <div
+                                                key={q.id}
+                                                className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800"
+                                            >
                                                 <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
                                                     <div className="text-sm font-semibold text-slate-900 dark:text-white">
                                                         {idx + 1}. {q.label}
                                                     </div>
-                                                    <div className="text-xs text-slate-500 dark:text-slate-400">{summary?.totalAnswers ?? 0} answer(s)</div>
+                                                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                                                        {summary?.totalAnswers ??
+                                                            0}{' '}
+                                                        answer(s)
+                                                    </div>
                                                 </div>
 
-                                                {q.type === 'rating' && summary?.ratingCounts ? (
+                                                {q.type === 'rating' &&
+                                                summary?.ratingCounts ? (
                                                     <div className="mt-3 grid gap-3">
                                                         <div className="text-xs text-slate-600 dark:text-slate-400">
-                                                            Average: {summary.ratingAverage === null || summary.ratingAverage === undefined ? 'N/A' : summary.ratingAverage}
+                                                            Average:{' '}
+                                                            {summary.ratingAverage ===
+                                                                null ||
+                                                            summary.ratingAverage ===
+                                                                undefined
+                                                                ? 'N/A'
+                                                                : summary.ratingAverage}
                                                         </div>
                                                         <div className="h-40">
-                                                            <ResponsiveContainer width="100%" height="100%">
-                                                                <BarChart data={summary.ratingCounts} margin={{ top: 10, right: 16, left: 0, bottom: 10 }}>
+                                                            <ResponsiveContainer
+                                                                width="100%"
+                                                                height="100%"
+                                                            >
+                                                                <BarChart
+                                                                    data={
+                                                                        summary.ratingCounts
+                                                                    }
+                                                                    margin={{
+                                                                        top: 10,
+                                                                        right: 16,
+                                                                        left: 0,
+                                                                        bottom: 10,
+                                                                    }}
+                                                                >
                                                                     <CartesianGrid strokeDasharray="3 3" />
                                                                     <XAxis dataKey="label" />
-                                                                    <YAxis allowDecimals={false} />
+                                                                    <YAxis
+                                                                        allowDecimals={
+                                                                            false
+                                                                        }
+                                                                    />
                                                                     <Tooltip />
-                                                                    <Bar dataKey="value" fill="#2563eb" radius={[6, 6, 0, 0]} />
+                                                                    <Bar
+                                                                        dataKey="value"
+                                                                        fill="#2563eb"
+                                                                        radius={[
+                                                                            6,
+                                                                            6,
+                                                                            0,
+                                                                            0,
+                                                                        ]}
+                                                                    />
                                                                 </BarChart>
                                                             </ResponsiveContainer>
                                                         </div>
                                                     </div>
                                                 ) : null}
 
-                                                {q.type === 'multiple_choice' && summary?.optionCounts ? (
+                                                {q.type === 'multiple_choice' &&
+                                                summary?.optionCounts ? (
                                                     <div className="mt-3 h-40">
-                                                        <ResponsiveContainer width="100%" height="100%">
-                                                            <BarChart data={summary.optionCounts} layout="vertical" margin={{ top: 10, right: 16, left: 24, bottom: 10 }}>
+                                                        <ResponsiveContainer
+                                                            width="100%"
+                                                            height="100%"
+                                                        >
+                                                            <BarChart
+                                                                data={
+                                                                    summary.optionCounts
+                                                                }
+                                                                layout="vertical"
+                                                                margin={{
+                                                                    top: 10,
+                                                                    right: 16,
+                                                                    left: 24,
+                                                                    bottom: 10,
+                                                                }}
+                                                            >
                                                                 <CartesianGrid strokeDasharray="3 3" />
-                                                                <XAxis type="number" allowDecimals={false} />
-                                                                <YAxis type="category" dataKey="label" width={140} />
+                                                                <XAxis
+                                                                    type="number"
+                                                                    allowDecimals={
+                                                                        false
+                                                                    }
+                                                                />
+                                                                <YAxis
+                                                                    type="category"
+                                                                    dataKey="label"
+                                                                    width={140}
+                                                                />
                                                                 <Tooltip />
-                                                                <Bar dataKey="value" fill="#16a34a" radius={[0, 6, 6, 0]} />
+                                                                <Bar
+                                                                    dataKey="value"
+                                                                    fill="#16a34a"
+                                                                    radius={[
+                                                                        0, 6, 6,
+                                                                        0,
+                                                                    ]}
+                                                                />
                                                             </BarChart>
                                                         </ResponsiveContainer>
                                                     </div>
                                                 ) : null}
 
-                                                {(q.type === 'short_text' || q.type === 'long_text') && summary?.textAnswers ? (
+                                                {(q.type === 'short_text' ||
+                                                    q.type === 'long_text') &&
+                                                summary?.textAnswers ? (
                                                     <div className="mt-3 space-y-2">
-                                                        {summary.textAnswers.length === 0 ? (
-                                                            <div className="text-xs text-slate-600 dark:text-slate-400">No responses.</div>
+                                                        {summary.textAnswers
+                                                            .length === 0 ? (
+                                                            <div className="text-xs text-slate-600 dark:text-slate-400">
+                                                                No responses.
+                                                            </div>
                                                         ) : (
                                                             <div className="max-h-64 overflow-auto rounded-lg border border-slate-200 dark:border-slate-700">
                                                                 <ul className="divide-y divide-slate-200 dark:divide-slate-700">
-                                                                    {summary.textAnswers.map((t, i) => (
-                                                                        <li key={`${q.id}_${i}`} className="p-3 text-xs text-slate-700 dark:text-slate-300">
-                                                                            {t}
-                                                                        </li>
-                                                                    ))}
+                                                                    {summary.textAnswers.map(
+                                                                        (
+                                                                            t,
+                                                                            i,
+                                                                        ) => (
+                                                                            <li
+                                                                                key={`${q.id}_${i}`}
+                                                                                className="p-3 text-xs text-slate-700 dark:text-slate-300"
+                                                                            >
+                                                                                {
+                                                                                    t
+                                                                                }
+                                                                            </li>
+                                                                        ),
+                                                                    )}
                                                                 </ul>
                                                             </div>
                                                         )}
@@ -481,9 +700,6 @@ export default function AdminEvaluationShowPage() {
                     </Card>
 
                     {/* Responses table removed as per request */}
-
-
-
                 </div>
             </div>
         </AdminLayout>

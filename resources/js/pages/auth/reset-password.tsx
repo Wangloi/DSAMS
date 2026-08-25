@@ -1,5 +1,3 @@
-import { Form, Head, Link } from '@inertiajs/react';
-import { ArrowLeft } from 'lucide-react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +5,8 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/auth-layout';
 import { home } from '@/routes';
+import { Form, Head, Link } from '@inertiajs/react';
+import { ArrowLeft } from 'lucide-react';
 
 type Props = {
     token: string;

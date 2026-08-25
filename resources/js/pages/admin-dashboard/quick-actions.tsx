@@ -1,11 +1,11 @@
-import {
-    Activity,
-    ClipboardList,
-    ShieldAlert,
-    UserRound,
-} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import { Activity, ClipboardList, ShieldAlert, UserRound } from 'lucide-react';
 
 export function QuickActions() {
     return (
@@ -19,11 +19,16 @@ export function QuickActions() {
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                             <ShieldAlert className="h-5 w-5" />
-                            <Badge variant="secondary" className="bg-white/15 text-white">
+                            <Badge
+                                variant="secondary"
+                                className="bg-white/15 text-white"
+                            >
                                 Pending
                             </Badge>
                         </div>
-                        <CardTitle className="text-base">Manage Incidents</CardTitle>
+                        <CardTitle className="text-base">
+                            Manage Incidents
+                        </CardTitle>
                         <CardDescription className="text-white/85">
                             Review and respond to incident reports
                         </CardDescription>
@@ -34,11 +39,16 @@ export function QuickActions() {
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                             <ClipboardList className="h-5 w-5" />
-                            <Badge variant="secondary" className="bg-white/15 text-white">
+                            <Badge
+                                variant="secondary"
+                                className="bg-white/15 text-white"
+                            >
                                 Pending
                             </Badge>
                         </div>
-                        <CardTitle className="text-base">Admission Slip</CardTitle>
+                        <CardTitle className="text-base">
+                            Admission Slip
+                        </CardTitle>
                         <CardDescription className="text-white/85">
                             Process admission slip requests
                         </CardDescription>
@@ -49,11 +59,16 @@ export function QuickActions() {
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                             <UserRound className="h-5 w-5" />
-                            <Badge variant="secondary" className="bg-white/15 text-white">
+                            <Badge
+                                variant="secondary"
+                                className="bg-white/15 text-white"
+                            >
                                 Active
                             </Badge>
                         </div>
-                        <CardTitle className="text-base">Manage Students</CardTitle>
+                        <CardTitle className="text-base">
+                            Manage Students
+                        </CardTitle>
                         <CardDescription className="text-white/85">
                             View and manage student accounts
                         </CardDescription>
@@ -64,11 +79,16 @@ export function QuickActions() {
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                             <Activity className="h-5 w-5" />
-                            <Badge variant="secondary" className="bg-white/15 text-white">
+                            <Badge
+                                variant="secondary"
+                                className="bg-white/15 text-white"
+                            >
                                 Recent
                             </Badge>
                         </div>
-                        <CardTitle className="text-base">Activity Log</CardTitle>
+                        <CardTitle className="text-base">
+                            Activity Log
+                        </CardTitle>
                         <CardDescription className="text-white/85">
                             View system activity and logs
                         </CardDescription>

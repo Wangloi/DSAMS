@@ -1,7 +1,3 @@
-import { Head, router, usePage } from '@inertiajs/react';
-import { Activity, Search, Trash2, Users, ChevronLeft, ChevronRight, RefreshCw, Pause, Play, CalendarDays } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,6 +10,16 @@ import {
 } from '@/components/ui/select';
 import { adminActivityLog, adminDashboard } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
+import { Head, router, usePage } from '@inertiajs/react';
+import {
+    Activity,
+    CalendarDays,
+    ChevronLeft,
+    ChevronRight,
+    Search,
+    Users,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import AdminLayout from '../admin-layout';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -40,10 +46,16 @@ type LogRow = {
 export default function AdminActivityLogPage() {
     const page = usePage();
     const logs = ((page.props as any)?.logs || []) as LogRow[];
-    
-    const [actionFilter, setActionFilter] = useState<'all' | 'approved' | 'requested' | 'created' | 'updated' | 'deleted'>('all');
-    const [userFilter, setUserFilter] = useState<'all' | 'admin' | 'student' | 'program_head'>('all');
-    const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+
+    const [actionFilter, setActionFilter] = useState<
+        'all' | 'approved' | 'requested' | 'created' | 'updated' | 'deleted'
+    >('all');
+    const [userFilter, setUserFilter] = useState<
+        'all' | 'admin' | 'student' | 'program_head'
+    >('all');
+    const [timeFilter, setTimeFilter] = useState<
+        'all' | 'today' | 'week' | 'month'
+    >('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [pageIndex, setPageIndex] = useState(1);
     const [pageSize, setPageSize] = useState(10);
@@ -53,7 +65,7 @@ export default function AdminActivityLogPage() {
 
     useEffect(() => {
         if (!isAutoRefreshEnabled) return;
-        
+
         const id = window.setInterval(() => {
             router.reload({
                 only: ['logs'],
@@ -89,7 +101,8 @@ export default function AdminActivityLogPage() {
             if (userFilter === 'all') return true;
             const raw = r.user.toLowerCase();
             const userType = (r.userType || '').toLowerCase();
-            if (userFilter === 'program_head') return raw.includes('program') || userType.includes('program');
+            if (userFilter === 'program_head')
+                return raw.includes('program') || userType.includes('program');
             return raw.includes(userFilter) || userType.includes(userFilter);
         };
 
@@ -100,14 +113,26 @@ export default function AdminActivityLogPage() {
 
         const matchesSearch = (r: LogRow) => {
             if (!q) return true;
-            const haystack = [r.timestamp, r.user, r.module, r.action, r.details]
+            const haystack = [
+                r.timestamp,
+                r.user,
+                r.module,
+                r.action,
+                r.details,
+            ]
                 .filter(Boolean)
                 .join(' ')
                 .toLowerCase();
             return haystack.includes(q);
         };
 
-        return logs.filter((r) => matchesAction(r) && matchesUser(r) && matchesTime(r) && matchesSearch(r));
+        return logs.filter(
+            (r) =>
+                matchesAction(r) &&
+                matchesUser(r) &&
+                matchesTime(r) &&
+                matchesSearch(r),
+        );
     }, [actionFilter, searchQuery, timeFilter, userFilter, logs]);
 
     const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
@@ -129,8 +154,16 @@ export default function AdminActivityLogPage() {
 
     const stats = useMemo(() => {
         const total = logs.length;
-        const admin = logs.filter((r) => r.user.toLowerCase().includes('admin') || (r.userType || '').toLowerCase() === 'admin').length;
-        const student = logs.filter((r) => r.user.toLowerCase().includes('student') || (r.userType || '').toLowerCase() === 'student').length;
+        const admin = logs.filter(
+            (r) =>
+                r.user.toLowerCase().includes('admin') ||
+                (r.userType || '').toLowerCase() === 'admin',
+        ).length;
+        const student = logs.filter(
+            (r) =>
+                r.user.toLowerCase().includes('student') ||
+                (r.userType || '').toLowerCase() === 'student',
+        ).length;
         return { total, admin, student };
     }, [logs]);
 
@@ -141,12 +174,12 @@ export default function AdminActivityLogPage() {
                 <div className="flex w-full flex-col gap-6 px-6 py-6">
                     {/* Hero Header Banner */}
                     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] p-6 shadow-xl shadow-blue-900/20">
-                        <div className="pointer-events-none absolute -right-12 -top-12 h-56 w-56 rounded-full bg-white/5" />
-                        <div className="pointer-events-none absolute -right-4 -top-4 h-32 w-32 rounded-full bg-white/5" />
+                        <div className="pointer-events-none absolute -top-12 -right-12 h-56 w-56 rounded-full bg-white/5" />
+                        <div className="pointer-events-none absolute -top-4 -right-4 h-32 w-32 rounded-full bg-white/5" />
                         <div className="pointer-events-none absolute bottom-0 left-1/3 h-48 w-48 -translate-y-1/4 rounded-full bg-blue-400/10 blur-2xl" />
                         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-center gap-4">
-                                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/10 text-white shadow-inner backdrop-blur-sm ring-1 ring-white/20">
+                                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/10 text-white shadow-inner ring-1 ring-white/20 backdrop-blur-sm">
                                     <Activity className="h-7 w-7" />
                                 </div>
                                 <div>
@@ -154,14 +187,20 @@ export default function AdminActivityLogPage() {
                                         Activity Log
                                     </h1>
                                     <p className="mt-0.5 text-sm font-medium text-blue-200/80">
-                                        Monitor system-wide actions and security updates in real-time
+                                        Monitor system-wide actions and security
+                                        updates in real-time
                                     </p>
                                 </div>
                             </div>
-                            <div className="hidden sm:flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/10 ring-1 ring-white/20 text-white">
+                            <div className="hidden items-center gap-3 rounded-xl border border-white/10 bg-white/10 px-4 py-2.5 text-white ring-1 ring-white/20 backdrop-blur-md sm:flex">
                                 <CalendarDays className="h-4 w-4 text-blue-200" />
-                                <div className="text-xs font-semibold tracking-wide uppercase text-white/90">
-                                    {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                                <div className="text-xs font-semibold tracking-wide text-white/90 uppercase">
+                                    {new Date().toLocaleDateString('en-US', {
+                                        weekday: 'short',
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric',
+                                    })}
                                 </div>
                             </div>
                         </div>
@@ -170,110 +209,177 @@ export default function AdminActivityLogPage() {
                     {/* KPI Cards Grid */}
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                         <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
-                            <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-blue-500/5" />
+                            <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-blue-500/5" />
                             <div className="flex items-start justify-between gap-3">
                                 <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Total Activities</p>
-                                    <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">{stats.total}</p>
-                                    <p className="mt-1 text-xs font-semibold text-blue-600 dark:text-blue-400">System Logs</p>
+                                    <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
+                                        Total Activities
+                                    </p>
+                                    <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
+                                        {stats.total}
+                                    </p>
+                                    <p className="mt-1 text-xs font-semibold text-blue-600 dark:text-blue-400">
+                                        System Logs
+                                    </p>
                                 </div>
-                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-500/10 text-blue-600 ring-1 ring-blue-200/50 dark:bg-blue-500/20 dark:text-blue-400 dark:ring-blue-900/30 transition-transform duration-300 group-hover:scale-110">
+                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-500/10 text-blue-600 ring-1 ring-blue-200/50 transition-transform duration-300 group-hover:scale-110 dark:bg-blue-500/20 dark:text-blue-400 dark:ring-blue-900/30">
                                     <Activity className="h-5 w-5" />
                                 </div>
                             </div>
                             <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                <div className="h-full w-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full" />
+                                <div className="h-full w-full rounded-full bg-gradient-to-r from-blue-400 to-blue-600" />
                             </div>
                         </div>
 
                         <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
-                            <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-emerald-500/5" />
+                            <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-emerald-500/5" />
                             <div className="flex items-start justify-between gap-3">
                                 <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Admin Actions</p>
-                                    <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">{stats.admin}</p>
-                                    <p className="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">Administrative Logs</p>
+                                    <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
+                                        Admin Actions
+                                    </p>
+                                    <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
+                                        {stats.admin}
+                                    </p>
+                                    <p className="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                                        Administrative Logs
+                                    </p>
                                 </div>
-                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-200/50 dark:bg-emerald-500/20 dark:text-emerald-400 dark:ring-emerald-900/30 transition-transform duration-300 group-hover:scale-110">
+                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-200/50 transition-transform duration-300 group-hover:scale-110 dark:bg-emerald-500/20 dark:text-emerald-400 dark:ring-emerald-900/30">
                                     <Users className="h-5 w-5" />
                                 </div>
                             </div>
                             <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                <div className="h-full w-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full" />
+                                <div className="h-full w-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600" />
                             </div>
                         </div>
 
                         <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
-                            <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-amber-500/5" />
+                            <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-amber-500/5" />
                             <div className="flex items-start justify-between gap-3">
                                 <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Student Logs</p>
-                                    <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">{stats.student}</p>
-                                    <p className="mt-1 text-xs font-semibold text-amber-600 dark:text-amber-400">Student Activity</p>
+                                    <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
+                                        Student Logs
+                                    </p>
+                                    <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
+                                        {stats.student}
+                                    </p>
+                                    <p className="mt-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                                        Student Activity
+                                    </p>
                                 </div>
-                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-500/10 text-amber-600 ring-1 ring-amber-200/50 dark:bg-amber-500/20 dark:text-amber-400 dark:ring-amber-900/30 transition-transform duration-300 group-hover:scale-110">
+                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-500/10 text-amber-600 ring-1 ring-amber-200/50 transition-transform duration-300 group-hover:scale-110 dark:bg-amber-500/20 dark:text-amber-400 dark:ring-amber-900/30">
                                     <Users className="h-5 w-5" />
                                 </div>
                             </div>
                             <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                <div className="h-full w-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full" />
+                                <div className="h-full w-full rounded-full bg-gradient-to-r from-amber-400 to-amber-600" />
                             </div>
                         </div>
                     </div>
 
-                    <Card className="w-full border-0 bg-white shadow-lg ring-1 ring-slate-200 dark:bg-[#0B192C]/50 dark:ring-slate-800 rounded-2xl overflow-hidden">
-                        <CardHeader className="pb-6 border-b border-slate-100 dark:border-slate-800">
+                    <Card className="w-full overflow-hidden rounded-2xl border-0 bg-white shadow-lg ring-1 ring-slate-200 dark:bg-[#0B192C]/50 dark:ring-slate-800">
+                        <CardHeader className="border-b border-slate-100 pb-6 dark:border-slate-800">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
-                                    <CardTitle className="text-lg font-bold text-slate-900 dark:text-white">Activity Timeline</CardTitle>
-                                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Real-time system event monitoring</p>
+                                    <CardTitle className="text-lg font-bold text-slate-900 dark:text-white">
+                                        Activity Timeline
+                                    </CardTitle>
+                                    <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                                        Real-time system event monitoring
+                                    </p>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <Select value={actionFilter} onValueChange={(v) => setActionFilter(v as any)}>
-                                        <SelectTrigger className="h-9 w-full sm:w-32 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-bold">
+                                    <Select
+                                        value={actionFilter}
+                                        onValueChange={(v) =>
+                                            setActionFilter(v as any)
+                                        }
+                                    >
+                                        <SelectTrigger className="h-9 w-full border-slate-200 bg-slate-50 text-xs font-bold sm:w-32 dark:border-slate-700 dark:bg-slate-800">
                                             <SelectValue placeholder="All Actions" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="all">All Actions</SelectItem>
-                                            <SelectItem value="approved">Approved</SelectItem>
-                                            <SelectItem value="requested">Requested</SelectItem>
-                                            <SelectItem value="created">Created</SelectItem>
-                                            <SelectItem value="updated">Updated</SelectItem>
-                                            <SelectItem value="deleted">Deleted</SelectItem>
+                                            <SelectItem value="all">
+                                                All Actions
+                                            </SelectItem>
+                                            <SelectItem value="approved">
+                                                Approved
+                                            </SelectItem>
+                                            <SelectItem value="requested">
+                                                Requested
+                                            </SelectItem>
+                                            <SelectItem value="created">
+                                                Created
+                                            </SelectItem>
+                                            <SelectItem value="updated">
+                                                Updated
+                                            </SelectItem>
+                                            <SelectItem value="deleted">
+                                                Deleted
+                                            </SelectItem>
                                         </SelectContent>
                                     </Select>
 
-                                    <Select value={userFilter} onValueChange={(v) => setUserFilter(v as any)}>
-                                        <SelectTrigger className="h-9 w-full sm:w-32 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-bold">
+                                    <Select
+                                        value={userFilter}
+                                        onValueChange={(v) =>
+                                            setUserFilter(v as any)
+                                        }
+                                    >
+                                        <SelectTrigger className="h-9 w-full border-slate-200 bg-slate-50 text-xs font-bold sm:w-32 dark:border-slate-700 dark:bg-slate-800">
                                             <SelectValue placeholder="All Users" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="all">All Users</SelectItem>
-                                            <SelectItem value="admin">Admin</SelectItem>
-                                            <SelectItem value="student">Student</SelectItem>
-                                            <SelectItem value="program_head">Program Head</SelectItem>
+                                            <SelectItem value="all">
+                                                All Users
+                                            </SelectItem>
+                                            <SelectItem value="admin">
+                                                Admin
+                                            </SelectItem>
+                                            <SelectItem value="student">
+                                                Student
+                                            </SelectItem>
+                                            <SelectItem value="program_head">
+                                                Program Head
+                                            </SelectItem>
                                         </SelectContent>
                                     </Select>
 
-                                    <Select value={timeFilter} onValueChange={(v) => setTimeFilter(v as any)}>
-                                        <SelectTrigger className="h-9 w-full sm:w-32 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-bold">
+                                    <Select
+                                        value={timeFilter}
+                                        onValueChange={(v) =>
+                                            setTimeFilter(v as any)
+                                        }
+                                    >
+                                        <SelectTrigger className="h-9 w-full border-slate-200 bg-slate-50 text-xs font-bold sm:w-32 dark:border-slate-700 dark:bg-slate-800">
                                             <SelectValue placeholder="All Time" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="all">All Time</SelectItem>
-                                            <SelectItem value="today">Today</SelectItem>
-                                            <SelectItem value="week">This Week</SelectItem>
-                                            <SelectItem value="month">This Month</SelectItem>
+                                            <SelectItem value="all">
+                                                All Time
+                                            </SelectItem>
+                                            <SelectItem value="today">
+                                                Today
+                                            </SelectItem>
+                                            <SelectItem value="week">
+                                                This Week
+                                            </SelectItem>
+                                            <SelectItem value="month">
+                                                This Month
+                                            </SelectItem>
                                         </SelectContent>
                                     </Select>
 
                                     <div className="relative w-full sm:w-64">
-                                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                        <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                                         <Input
                                             value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            onChange={(e) =>
+                                                setSearchQuery(e.target.value)
+                                            }
                                             placeholder="Search log details..."
-                                            className="h-9 pl-9 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-medium"
+                                            className="h-9 border-slate-200 bg-slate-50 pl-9 text-xs font-medium dark:border-slate-700 dark:bg-slate-800"
                                         />
                                     </div>
                                 </div>
@@ -282,13 +388,21 @@ export default function AdminActivityLogPage() {
 
                         <CardContent className="p-0">
                             <div className="overflow-x-auto">
-                                <table className="w-full text-left text-sm border-collapse">
+                                <table className="w-full border-collapse text-left text-sm">
                                     <thead className="bg-slate-50 text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
                                         <tr>
-                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider">Timestamp</th>
-                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider">User</th>
-                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider">Action & Module</th>
-                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider">Details</th>
+                                            <th className="px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
+                                                Timestamp
+                                            </th>
+                                            <th className="px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
+                                                User
+                                            </th>
+                                            <th className="px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
+                                                Action & Module
+                                            </th>
+                                            <th className="px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
+                                                Details
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -309,31 +423,62 @@ export default function AdminActivityLogPage() {
                                                 >
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="flex flex-col">
-                                                            <span className="text-sm font-bold text-slate-900 dark:text-white">{row.timestamp.split(' ')[1]}</span>
-                                                            <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-tight">{row.timestamp.split(' ')[0]}</span>
+                                                            <span className="text-sm font-bold text-slate-900 dark:text-white">
+                                                                {
+                                                                    row.timestamp.split(
+                                                                        ' ',
+                                                                    )[1]
+                                                                }
+                                                            </span>
+                                                            <span className="text-[10px] font-medium tracking-tight text-slate-500 uppercase dark:text-slate-400">
+                                                                {
+                                                                    row.timestamp.split(
+                                                                        ' ',
+                                                                    )[0]
+                                                                }
+                                                            </span>
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-3">
-                                                            <div className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 dark:bg-slate-800 text-[11px] font-black text-slate-600 dark:text-slate-400 ring-1 ring-slate-200 dark:ring-slate-700">
-                                                                {row.user.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                                            <div className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-[11px] font-black text-slate-600 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700">
+                                                                {row.user
+                                                                    .split(' ')
+                                                                    .map(
+                                                                        (n) =>
+                                                                            n[0],
+                                                                    )
+                                                                    .join('')
+                                                                    .slice(0, 2)
+                                                                    .toUpperCase()}
                                                             </div>
                                                             <div>
-                                                                <div className="font-bold text-slate-900 dark:text-white">{row.user}</div>
-                                                                <div className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-tight">{row.userType || 'System'}</div>
+                                                                <div className="font-bold text-slate-900 dark:text-white">
+                                                                    {row.user}
+                                                                </div>
+                                                                <div className="text-[10px] font-bold tracking-tight text-blue-600 uppercase dark:text-blue-400">
+                                                                    {row.userType ||
+                                                                        'System'}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <div className="flex flex-col gap-1.5">
-                                                            <span className={`inline-flex items-center w-fit rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-tight ${row.action.toLowerCase().includes('delete') ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' : row.action.toLowerCase().includes('create') ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}`}>
+                                                            <span
+                                                                className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-[10px] font-bold tracking-tight uppercase ${row.action.toLowerCase().includes('delete') ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' : row.action.toLowerCase().includes('create') ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}`}
+                                                            >
                                                                 {row.action}
                                                             </span>
-                                                            <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">in {row.module}</span>
+                                                            <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                                                                in {row.module}
+                                                            </span>
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4">
-                                                        <p className="text-sm font-medium text-slate-600 dark:text-slate-300 max-w-md line-clamp-2">{row.details}</p>
+                                                        <p className="line-clamp-2 max-w-md text-sm font-medium text-slate-600 dark:text-slate-300">
+                                                            {row.details}
+                                                        </p>
                                                     </td>
                                                 </tr>
                                             ))
@@ -345,14 +490,16 @@ export default function AdminActivityLogPage() {
                     </Card>
 
                     {/* Pagination */}
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between px-6 py-4">
+                    <div className="flex flex-col gap-4 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Rows per page:</span>
+                            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                                Rows per page:
+                            </span>
                             <Select
                                 value={String(pageSize)}
                                 onValueChange={(v) => setPageSize(Number(v))}
                             >
-                                <SelectTrigger className="h-8 w-16 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-800 text-xs font-bold">
+                                <SelectTrigger className="h-8 w-16 border-slate-200 bg-white text-xs font-bold dark:border-slate-800 dark:bg-slate-800">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -365,7 +512,14 @@ export default function AdminActivityLogPage() {
 
                         <div className="flex items-center gap-2">
                             <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                                Page <span className="font-bold text-slate-900 dark:text-white">{pageIndex}</span> of <span className="font-bold text-slate-900 dark:text-white">{totalPages}</span>
+                                Page{' '}
+                                <span className="font-bold text-slate-900 dark:text-white">
+                                    {pageIndex}
+                                </span>{' '}
+                                of{' '}
+                                <span className="font-bold text-slate-900 dark:text-white">
+                                    {totalPages}
+                                </span>
                             </span>
                             <div className="flex items-center gap-1">
                                 <Button

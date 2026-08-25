@@ -1,9 +1,8 @@
-import { Form, Head, router } from '@inertiajs/react';
-import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/auth-layout';
 import { logout } from '@/routes';
+import { Form, Head, router } from '@inertiajs/react';
 
 export default function VerifyEmail({ status }: { status?: string }) {
     const handleLogout = () => {
@@ -24,7 +23,11 @@ export default function VerifyEmail({ status }: { status?: string }) {
                 </div>
             )}
 
-            <Form action="/email/verification-notification" method="post" className="space-y-6 text-center">
+            <Form
+                action="/email/verification-notification"
+                method="post"
+                className="space-y-6 text-center"
+            >
                 {({ processing }) => (
                     <>
                         <Button disabled={processing} variant="secondary">
@@ -35,7 +38,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
                         <button
                             type="button"
                             onClick={handleLogout}
-                            className="mx-auto block text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                            className="mx-auto block text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
                         >
                             Log out
                         </button>

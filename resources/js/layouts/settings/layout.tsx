@@ -1,9 +1,9 @@
-import { Link } from '@inertiajs/react';
-import { Lock, Palette, Settings, Shield, User } from 'lucide-react';
-import type { PropsWithChildren } from 'react';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { cn, toUrl } from '@/lib/utils';
 import type { NavItem } from '@/types';
+import { Link } from '@inertiajs/react';
+import { Lock, Palette, Settings, Shield, User } from 'lucide-react';
+import type { PropsWithChildren } from 'react';
 
 const sidebarNavItems: NavItem[] = [
     {
@@ -38,12 +38,18 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                 <div className="rounded-2xl bg-gradient-to-r from-[#0b2d66] to-[#1e40af] px-6 py-6 text-white shadow-sm sm:px-7">
                     <div className="flex items-center gap-4">
                         <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white/15 backdrop-blur-sm">
-                            <Settings className="h-6 w-6 text-white" aria-hidden />
+                            <Settings
+                                className="h-6 w-6 text-white"
+                                aria-hidden
+                            />
                         </div>
                         <div className="min-w-0">
-                            <h1 className="text-lg font-semibold tracking-tight sm:text-xl">Account settings</h1>
+                            <h1 className="text-lg font-semibold tracking-tight sm:text-xl">
+                                Account settings
+                            </h1>
                             <p className="mt-0.5 text-sm text-white/80">
-                                Manage your profile, security, and display preferences
+                                Manage your profile, security, and display
+                                preferences
                             </p>
                         </div>
                     </div>
@@ -51,9 +57,12 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
 
                 <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
                     {/* Settings navigation — visibility & recognition (Nielsen) */}
-                    <aside className="w-full shrink-0 lg:w-56 xl:w-60" aria-label="Settings sections">
+                    <aside
+                        className="w-full shrink-0 lg:w-56 xl:w-60"
+                        aria-label="Settings sections"
+                    >
                         <nav className="rounded-xl border border-slate-200/80 bg-white p-2 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                            <p className="px-3 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            <p className="px-3 pt-1 pb-2 text-[11px] font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
                                 Settings
                             </p>
                             <ul className="flex flex-col gap-0.5" role="list">
@@ -61,10 +70,14 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                                     const active = isCurrentUrl(item.href);
                                     const Icon = item.icon;
                                     return (
-                                        <li key={`${toUrl(item.href)}-${index}`}>
+                                        <li
+                                            key={`${toUrl(item.href)}-${index}`}
+                                        >
                                             <Link
                                                 href={item.href}
-                                                aria-current={active ? 'page' : undefined}
+                                                aria-current={
+                                                    active ? 'page' : undefined
+                                                }
                                                 className={cn(
                                                     'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                                                     active
@@ -76,7 +89,9 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                                                     <Icon
                                                         className={cn(
                                                             'h-4 w-4 shrink-0',
-                                                            active ? 'text-white' : 'text-slate-500 dark:text-slate-400',
+                                                            active
+                                                                ? 'text-white'
+                                                                : 'text-slate-500 dark:text-slate-400',
                                                         )}
                                                         aria-hidden
                                                     />

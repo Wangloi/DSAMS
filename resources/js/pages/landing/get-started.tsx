@@ -1,8 +1,8 @@
-import { Head, usePage } from '@inertiajs/react';
 import LandingCta from '@/components/landing/landing-cta';
 import LandingFooter from '@/components/landing/landing-footer';
 import LandingNavbar from '@/components/landing/landing-navbar';
 import type { SharedData } from '@/types';
+import { Head, usePage } from '@inertiajs/react';
 
 export default function LandingGetStarted() {
     const { auth } = usePage<SharedData>().props;

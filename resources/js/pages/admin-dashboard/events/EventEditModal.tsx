@@ -1,6 +1,3 @@
-import { useForm } from '@inertiajs/react';
-import { Calendar, Check, Users } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
 import { SchoolMapSelector } from '@/components/SchoolMapSelector';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,7 +12,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
     Select,
     SelectContent,
@@ -24,6 +20,9 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { adminEventsUpdate } from '@/routes';
+import { useForm } from '@inertiajs/react';
+import { Calendar, Check, Users } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import {
     deriveEventLifecycleStatus,
     lifecycleStatusBadgeClass,
@@ -342,21 +341,32 @@ export default function EventEditModal({
                                             type="time"
                                             value={data.event_time}
                                             onChange={(e) => {
-                                                const timeInVal = e.target.value;
-                                                let calculatedTimeOut = data.registration_end_time;
+                                                const timeInVal =
+                                                    e.target.value;
+                                                let calculatedTimeOut =
+                                                    data.registration_end_time;
                                                 if (timeInVal) {
-                                                    const [hours, minutes] = timeInVal.split(':').map(Number);
+                                                    const [hours, minutes] =
+                                                        timeInVal
+                                                            .split(':')
+                                                            .map(Number);
                                                     const tempDate = new Date();
                                                     tempDate.setHours(hours);
-                                                    tempDate.setMinutes(minutes + 180);
-                                                    const pad = (n: number) => n.toString().padStart(2, '0');
+                                                    tempDate.setMinutes(
+                                                        minutes + 180,
+                                                    );
+                                                    const pad = (n: number) =>
+                                                        n
+                                                            .toString()
+                                                            .padStart(2, '0');
                                                     calculatedTimeOut = `${pad(tempDate.getHours())}:${pad(tempDate.getMinutes())}`;
                                                 }
 
                                                 setData((prev) => ({
                                                     ...prev,
                                                     event_time: timeInVal,
-                                                    registration_end_time: calculatedTimeOut,
+                                                    registration_end_time:
+                                                        calculatedTimeOut,
                                                 }));
                                             }}
                                             className={`h-9 dark:border-slate-600 dark:bg-slate-800 ${errors.event_time ? 'border-rose-500 focus-visible:ring-rose-500' : ''}`}
@@ -367,17 +377,25 @@ export default function EventEditModal({
                                             </span>
                                         )}
                                         {data.event_time && (
-                                            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
+                                            <span className="mt-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                                                 Time-In Ends:{' '}
                                                 {(() => {
-                                                    const [hours, minutes] = data.event_time.split(':').map(Number);
+                                                    const [hours, minutes] =
+                                                        data.event_time
+                                                            .split(':')
+                                                            .map(Number);
                                                     const date = new Date();
                                                     date.setHours(hours);
-                                                    date.setMinutes(minutes + 90);
-                                                    
+                                                    date.setMinutes(
+                                                        minutes + 90,
+                                                    );
+
                                                     let h = date.getHours();
-                                                    const m = String(date.getMinutes()).padStart(2, '0');
-                                                    const ampm = h >= 12 ? 'pm' : 'am';
+                                                    const m = String(
+                                                        date.getMinutes(),
+                                                    ).padStart(2, '0');
+                                                    const ampm =
+                                                        h >= 12 ? 'pm' : 'am';
                                                     h = h % 12;
                                                     h = h ? h : 12;
                                                     return `${h}:${m} ${ampm}`;
@@ -406,21 +424,31 @@ export default function EventEditModal({
                                         />
                                         {errors.registration_end_time && (
                                             <span className="text-xs font-medium text-rose-500">
-                                                {String(errors.registration_end_time)}
+                                                {String(
+                                                    errors.registration_end_time,
+                                                )}
                                             </span>
                                         )}
                                         {data.registration_end_time && (
-                                            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
+                                            <span className="mt-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                                                 Time-End Ends:{' '}
                                                 {(() => {
-                                                    const [hours, minutes] = data.registration_end_time.split(':').map(Number);
+                                                    const [hours, minutes] =
+                                                        data.registration_end_time
+                                                            .split(':')
+                                                            .map(Number);
                                                     const date = new Date();
                                                     date.setHours(hours);
-                                                    date.setMinutes(minutes + 90);
-                                                    
+                                                    date.setMinutes(
+                                                        minutes + 90,
+                                                    );
+
                                                     let h = date.getHours();
-                                                    const m = String(date.getMinutes()).padStart(2, '0');
-                                                    const ampm = h >= 12 ? 'pm' : 'am';
+                                                    const m = String(
+                                                        date.getMinutes(),
+                                                    ).padStart(2, '0');
+                                                    const ampm =
+                                                        h >= 12 ? 'pm' : 'am';
                                                     h = h % 12;
                                                     h = h ? h : 12;
                                                     return `${h}:${m} ${ampm}`;
@@ -429,27 +457,28 @@ export default function EventEditModal({
                                         )}
                                     </div>
 
-                                <div className="grid gap-2 border-t border-slate-100 pt-4 sm:col-span-2 dark:border-slate-800">
-                                    <div className="flex items-center gap-2">
-                                        <Badge
-                                            className={lifecycleStatusBadgeClass(
-                                                deriveEventLifecycleStatus(
+                                    <div className="grid gap-2 border-t border-slate-100 pt-4 sm:col-span-2 dark:border-slate-800">
+                                        <div className="flex items-center gap-2">
+                                            <Badge
+                                                className={lifecycleStatusBadgeClass(
+                                                    deriveEventLifecycleStatus(
+                                                        data.event_date,
+                                                    ),
+                                                )}
+                                            >
+                                                {deriveEventLifecycleStatus(
                                                     data.event_date,
-                                                ),
-                                            )}
-                                        >
-                                            {deriveEventLifecycleStatus(
-                                                data.event_date,
-                                            )}
-                                        </Badge>
-                                        <span className="text-xs text-slate-500 dark:text-slate-400">
-                                            Status changes with the event date.
-                                        </span>
+                                                )}
+                                            </Badge>
+                                            <span className="text-xs text-slate-500 dark:text-slate-400">
+                                                Status changes with the event
+                                                date.
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
                         {currentStep === 2 && (
                             <div className="grid animate-in grid-cols-1 gap-6 transition-all duration-200 duration-300 ease-in-out fade-in">
@@ -480,19 +509,36 @@ export default function EventEditModal({
                                     </div>
 
                                     <div className="grid gap-2 sm:col-span-2">
-                                        <Label htmlFor="attendance_type" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                        <Label
+                                            htmlFor="attendance_type"
+                                            className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                                        >
                                             Attendance Method *
                                         </Label>
                                         <Select
-                                            value={data.attendance_type || 'qr_scanner'}
-                                            onValueChange={(val: string) => setData('attendance_type', val)}
+                                            value={
+                                                data.attendance_type ||
+                                                'qr_scanner'
+                                            }
+                                            onValueChange={(val: string) =>
+                                                setData('attendance_type', val)
+                                            }
                                         >
-                                            <SelectTrigger id="attendance_type" className="h-9 dark:border-slate-600 dark:bg-slate-800">
+                                            <SelectTrigger
+                                                id="attendance_type"
+                                                className="h-9 dark:border-slate-600 dark:bg-slate-800"
+                                            >
                                                 <SelectValue placeholder="Select check-in method" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="qr_scanner">QR Scanner (Camera scan by admin)</SelectItem>
-                                                <SelectItem value="dynamic_qr">Dynamic Rotation QR (Self scan by students)</SelectItem>
+                                                <SelectItem value="qr_scanner">
+                                                    QR Scanner (Camera scan by
+                                                    admin)
+                                                </SelectItem>
+                                                <SelectItem value="dynamic_qr">
+                                                    Dynamic Rotation QR (Self
+                                                    scan by students)
+                                                </SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>

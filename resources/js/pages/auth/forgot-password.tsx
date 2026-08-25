@@ -1,13 +1,13 @@
 // Components
-import { Form, Head } from '@inertiajs/react';
-import { ArrowLeft, LoaderCircle, Mail } from 'lucide-react';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import VideoBackground from '@/components/VideoBackground';
-import { login, forgotPassword } from '@/routes';
+import { forgotPassword, login } from '@/routes';
+import { Form, Head } from '@inertiajs/react';
+import { ArrowLeft, LoaderCircle, Mail } from 'lucide-react';
 
 export default function ForgotPassword({ status }: { status?: string }) {
     return (
@@ -33,10 +33,13 @@ export default function ForgotPassword({ status }: { status?: string }) {
                             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white/15">
                                 <Mail className="h-7 w-7 text-white" />
                             </div>
-                            <h1 className="mt-3 text-2xl font-semibold">Forgot</h1>
+                            <h1 className="mt-3 text-2xl font-semibold">
+                                Forgot
+                            </h1>
                             <p className="text-2xl font-semibold">Password</p>
                             <p className="mt-1 text-xs text-white/90">
-                                Enter your email to receive a password reset link
+                                Enter your email to receive a password reset
+                                link
                             </p>
                         </div>
 
@@ -46,15 +49,22 @@ export default function ForgotPassword({ status }: { status?: string }) {
                             </div>
                         )}
 
-                        <Form action={forgotPassword()} method="post" className="mt-4">
+                        <Form
+                            action={forgotPassword()}
+                            method="post"
+                            className="mt-4"
+                        >
                             {({ processing, errors }) => (
                                 <>
                                     <div className="grid gap-2">
-                                        <Label htmlFor="email" className="text-sm text-slate-900">
+                                        <Label
+                                            htmlFor="email"
+                                            className="text-sm text-slate-900"
+                                        >
                                             Email address
                                         </Label>
                                         <div className="relative">
-                                            <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                                            <Mail className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-500" />
                                             <Input
                                                 id="email"
                                                 type="email"

@@ -7,6 +7,7 @@ type QrCodeDataUrl = string | null;
 
 export function useManageUsers(errors: Record<string, string> = {}) {
     const [open, setOpen] = useState(false);
+    const [phOpen, setPhOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<UserRow | null>(null);
 
     const emptyForm: UserForm = {
@@ -32,6 +33,7 @@ export function useManageUsers(errors: Record<string, string> = {}) {
 
     const closeModal = () => {
         setOpen(false);
+        setPhOpen(false);
         setEditingUser(null);
         resetForm();
     };
@@ -40,6 +42,12 @@ export function useManageUsers(errors: Record<string, string> = {}) {
         setEditingUser(null);
         resetForm();
         setOpen(true);
+    };
+
+    const openCreatePHModal = () => {
+        setEditingUser(null);
+        resetForm();
+        setPhOpen(true);
     };
 
     const openEditModal = (user: UserRow) => {
@@ -56,7 +64,7 @@ export function useManageUsers(errors: Record<string, string> = {}) {
                 role: user.role ?? 'Program Head',
                 officer_features: user.officer_features ?? [],
             });
-            setOpen(true);
+            setPhOpen(true);
             return;
         }
 
@@ -119,12 +127,16 @@ export function useManageUsers(errors: Record<string, string> = {}) {
     };
 
     const showValidationErrorAlert = (formErrors?: Record<string, string>) => {
-        const firstMessage = formErrors ? Object.values(formErrors).find(Boolean) : undefined;
+        const firstMessage = formErrors
+            ? Object.values(formErrors).find(Boolean)
+            : undefined;
 
         Swal.fire({
             icon: 'error',
             title: 'Please check your inputs',
-            text: firstMessage ?? 'Some fields have errors. Please review the form.',
+            text:
+                firstMessage ??
+                'Some fields have errors. Please review the form.',
             toast: true,
             position: 'top-end',
             timer: 3000,
@@ -141,21 +153,27 @@ export function useManageUsers(errors: Record<string, string> = {}) {
                 qr_code_data_url: qrCodeDataUrl,
             },
             {
-            preserveScroll: true,
-            onSuccess: () => {
-                closeModal();
-                showSaveSuccessAlert('create');
+                preserveScroll: true,
+                onSuccess: () => {
+                    closeModal();
+                    showSaveSuccessAlert('create');
+                },
+                onError: (formErrors) => {
+                    setOpen(true);
+                    showValidationErrorAlert(formErrors);
+                },
             },
-            onError: (formErrors) => {
-                setOpen(true);
-                showValidationErrorAlert(formErrors);
-            },
-            }
         );
     };
 
-    const updateUser = (userId: number | string, qrCodeDataUrl: QrCodeDataUrl) => {
-        const id = typeof userId === 'number' ? userId : Number.parseInt(String(userId), 10);
+    const updateUser = (
+        userId: number | string,
+        qrCodeDataUrl: QrCodeDataUrl,
+    ) => {
+        const id =
+            typeof userId === 'number'
+                ? userId
+                : Number.parseInt(String(userId), 10);
 
         if (!Number.isFinite(id) || id <= 0) {
             Swal.fire({
@@ -174,22 +192,27 @@ export function useManageUsers(errors: Record<string, string> = {}) {
                 qr_code_data_url: qrCodeDataUrl,
             },
             {
-            preserveScroll: true,
-            onSuccess: () => {
-                closeModal();
-                showSaveSuccessAlert('update');
+                preserveScroll: true,
+                onSuccess: () => {
+                    closeModal();
+                    showSaveSuccessAlert('update');
+                },
+                onError: (formErrors) => {
+                    setOpen(true);
+                    showValidationErrorAlert(formErrors);
+                },
             },
-            onError: (formErrors) => {
-                setOpen(true);
-                showValidationErrorAlert(formErrors);
-            },
-            }
         );
     };
 
     const updateProgramHead = (
         programHeadId: number,
-        payload: { name: string; email: string; program?: string; password?: string }
+        payload: {
+            name: string;
+            email: string;
+            program?: string;
+            password?: string;
+        },
     ) => {
         router.put(`/admin/program-heads/${programHeadId}`, payload, {
             preserveScroll: true,
@@ -204,51 +227,98 @@ export function useManageUsers(errors: Record<string, string> = {}) {
                 });
             },
             onError: (formErrors) => {
-                setOpen(true);
+                setPhOpen(true);
                 showValidationErrorAlert(formErrors);
             },
         });
     };
 
-    const submit = (qrCodeDataUrl: QrCodeDataUrl = null) => {
-        if (editingUser) {
-            const userType = String((editingUser as any)?.userType ?? '').toLowerCase();
-            if (userType === 'program_head') {
-                const programHeadId = Number((editingUser as any)?.program_head_id);
-                if (!Number.isFinite(programHeadId) || programHeadId <= 0) {
+    const createProgramHead = () => {
+        router.post(
+            '/admin/program-heads',
+            {
+                name: form.name,
+                email: form.email,
+                program: form.program,
+                password: form.password,
+            },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    closeModal();
                     Swal.fire({
-                        icon: 'error',
-                        title: 'Update failed',
-                        text: 'Missing program head id. Please refresh the page and try again.',
-                    });
-                    return;
-                }
-
-                const name = String(form.name ?? '').trim();
-                const email = String(form.email ?? '').trim();
-                if (!name || !email) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Missing required fields',
-                        text: 'Please fill: Name, Email',
-                        toast: true,
-                        position: 'top-end',
-                        timer: 3500,
+                        icon: 'success',
+                        title: 'Account created',
+                        text: 'Program Head account has been created successfully.',
+                        timer: 2000,
                         showConfirmButton: false,
-                        timerProgressBar: true,
                     });
-                    return;
-                }
+                },
+                onError: (formErrors) => {
+                    setPhOpen(true);
+                    showValidationErrorAlert(formErrors);
+                },
+            },
+        );
+    };
 
-                updateProgramHead(programHeadId, {
-                    name,
-                    email,
-                    program: String(form.program ?? '').trim() || undefined,
-                    password: String(form.password ?? '').trim() || undefined,
+    const submitProgramHead = () => {
+        if (editingUser) {
+            const programHeadId = Number((editingUser as any)?.program_head_id);
+            if (!Number.isFinite(programHeadId) || programHeadId <= 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Update failed',
+                    text: 'Missing program head id. Please refresh the page and try again.',
                 });
                 return;
             }
 
+            const name = String(form.name ?? '').trim();
+            const email = String(form.email ?? '').trim();
+            if (!name || !email) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Missing required fields',
+                    text: 'Please fill: Name, Email',
+                    toast: true,
+                    position: 'top-end',
+                    timer: 3500,
+                    showConfirmButton: false,
+                    timerProgressBar: true,
+                });
+                return;
+            }
+
+            updateProgramHead(programHeadId, {
+                name,
+                email,
+                program: String(form.program ?? '').trim() || undefined,
+                password: String(form.password ?? '').trim() || undefined,
+            });
+        } else {
+            const name = String(form.name ?? '').trim();
+            const email = String(form.email ?? '').trim();
+            const password = String(form.password ?? '').trim();
+            if (!name || !email || !password) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Missing required fields',
+                    text: 'Please fill: Name, Email, Password',
+                    toast: true,
+                    position: 'top-end',
+                    timer: 3500,
+                    showConfirmButton: false,
+                    timerProgressBar: true,
+                });
+                return;
+            }
+            createProgramHead();
+        }
+    };
+
+    const submit = (qrCodeDataUrl: QrCodeDataUrl = null) => {
+        if (editingUser) {
             if (!validateRequiredFields('update')) return;
             if (!editingUser.id) {
                 Swal.fire({
@@ -288,104 +358,124 @@ export function useManageUsers(errors: Record<string, string> = {}) {
 
         if (!result.isConfirmed) return;
 
-        router.post(`/admin/manage-users/${id}/archive`, {}, {
-            preserveScroll: true,
-            onSuccess: () => {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Archived',
-                    text: 'Account has been archived successfully.',
-                    timer: 2000,
-                    showConfirmButton: false,
-                });
+        router.post(
+            `/admin/manage-users/${id}/archive`,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Archived',
+                        text: 'Account has been archived successfully.',
+                        timer: 2000,
+                        showConfirmButton: false,
+                    });
+                },
+                onError: () => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Archive failed',
+                        text: 'Unable to archive the account. Please try again.',
+                    });
+                },
             },
-            onError: () => {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Archive failed',
-                    text: 'Unable to archive the account. Please try again.',
-                });
-            },
-        });
+        );
     };
 
     return {
         open,
         setOpen,
+        phOpen,
+        setPhOpen,
         editingUser,
         form,
         setForm,
         hasAnyError,
         closeModal,
         openCreateModal,
+        openCreatePHModal,
         openEditModal,
         submit,
+        submitProgramHead,
         confirmAndDeleteUser,
         approveStudent: (userId: number) => {
-            router.put(`/admin/manage-users/${userId}/status/approve`, { status: 'approved' }, {
-                preserveScroll: true,
-                preserveState: false,
-                onSuccess: () => {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Approved',
-                        text: 'Student account has been approved.',
-                        timer: 2000,
-                        showConfirmButton: false,
-                    });
+            router.put(
+                `/admin/manage-users/${userId}/status/approve`,
+                { status: 'approved' },
+                {
+                    preserveScroll: true,
+                    preserveState: false,
+                    onSuccess: () => {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Approved',
+                            text: 'Student account has been approved.',
+                            timer: 2000,
+                            showConfirmButton: false,
+                        });
+                    },
+                    onError: () => {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Approval failed',
+                            text: 'Unable to approve the account. Please try again.',
+                        });
+                    },
                 },
-                onError: () => {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Approval failed',
-                        text: 'Unable to approve the account. Please try again.',
-                    });
-                },
-            });
+            );
         },
         rejectStudent: (userId: number) => {
-            router.put(`/admin/manage-users/${userId}/status/approve`, { status: 'rejected' }, {
-                preserveScroll: true,
-                preserveState: false,
-                onSuccess: () => {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Rejected',
-                        text: 'Student account has been rejected.',
-                        timer: 2000,
-                        showConfirmButton: false,
-                    });
+            router.put(
+                `/admin/manage-users/${userId}/status/approve`,
+                { status: 'rejected' },
+                {
+                    preserveScroll: true,
+                    preserveState: false,
+                    onSuccess: () => {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Rejected',
+                            text: 'Student account has been rejected.',
+                            timer: 2000,
+                            showConfirmButton: false,
+                        });
+                    },
+                    onError: () => {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Rejection failed',
+                            text: 'Unable to reject the account. Please try again.',
+                        });
+                    },
                 },
-                onError: () => {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Rejection failed',
-                        text: 'Unable to reject the account. Please try again.',
-                    });
-                },
-            });
+            );
         },
         setPendingStudent: (userId: number) => {
-            router.put(`/admin/manage-users/${userId}/status/approve`, { status: 'pending' }, {
-                preserveScroll: true,
-                preserveState: false,
-                onSuccess: () => {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Pending',
-                        text: 'Student account has been set to pending.',
-                        timer: 2000,
-                        showConfirmButton: false,
-                    });
+            router.put(
+                `/admin/manage-users/${userId}/status/approve`,
+                { status: 'pending' },
+                {
+                    preserveScroll: true,
+                    preserveState: false,
+                    onSuccess: () => {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Pending',
+                            text: 'Student account has been set to pending.',
+                            timer: 2000,
+                            showConfirmButton: false,
+                        });
+                    },
+                    onError: () => {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Update failed',
+                            text: 'Unable to set account to pending. Please try again.',
+                        });
+                    },
                 },
-                onError: () => {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Update failed',
-                        text: 'Unable to set account to pending. Please try again.',
-                    });
-                },
-            });
+            );
         },
     };
 }

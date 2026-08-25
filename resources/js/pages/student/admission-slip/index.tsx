@@ -165,25 +165,118 @@ export default function StudentAdmissionSlipIndex() {
                                         )}
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <Label
-                                            htmlFor="reason_text"
-                                            className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
-                                        >
-                                            Reason / Details
+                                    <div className="space-y-3">
+                                        <Label className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400">
+                                            Reason *
                                         </Label>
-                                        <Input
-                                            id="reason_text"
-                                            value={data.reason_text}
-                                            onChange={(e) =>
-                                                setData(
-                                                    'reason_text',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            placeholder="More details about your request"
-                                            className="h-12 rounded-2xl border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/50"
-                                        />
+                                        <div className="mt-1 ml-1 grid grid-cols-1 gap-3 md:grid-cols-2">
+                                            {[
+                                                'Illness / Not Feeling Well',
+                                                'Medical / Dental Appointment',
+                                                'Family Emergency',
+                                                'Bereavement in the Family',
+                                                'Transportation Problem',
+                                                'Bad Weather / Calamity',
+                                                'Official School Activity',
+                                                'Financial Concern',
+                                            ].map((r) => {
+                                                const checked =
+                                                    data.reason_text === r;
+                                                return (
+                                                    <label
+                                                        key={r}
+                                                        className="dark:text-slate-350 flex cursor-pointer items-center space-x-2.5 text-sm font-medium text-slate-700"
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={checked}
+                                                            onChange={() =>
+                                                                setData(
+                                                                    'reason_text',
+                                                                    r,
+                                                                )
+                                                            }
+                                                            className="h-4.5 w-4.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                                        />
+                                                        <span>{r}</span>
+                                                    </label>
+                                                );
+                                            })}
+                                            <label className="dark:text-slate-355 flex cursor-pointer items-center space-x-2.5 text-sm font-medium text-slate-700">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={
+                                                        ![
+                                                            'Illness / Not Feeling Well',
+                                                            'Medical / Dental Appointment',
+                                                            'Family Emergency',
+                                                            'Bereavement in the Family',
+                                                            'Transportation Problem',
+                                                            'Bad Weather / Calamity',
+                                                            'Official School Activity',
+                                                            'Financial Concern',
+                                                        ].includes(
+                                                            data.reason_text,
+                                                        ) &&
+                                                        data.reason_text !== ''
+                                                    }
+                                                    onChange={() =>
+                                                        setData(
+                                                            'reason_text',
+                                                            'Others: ',
+                                                        )
+                                                    }
+                                                    className="h-4.5 w-4.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                                />
+                                                <span>Others</span>
+                                            </label>
+                                        </div>
+
+                                        {![
+                                            'Illness / Not Feeling Well',
+                                            'Medical / Dental Appointment',
+                                            'Family Emergency',
+                                            'Bereavement in the Family',
+                                            'Transportation Problem',
+                                            'Bad Weather / Calamity',
+                                            'Official School Activity',
+                                            'Financial Concern',
+                                        ].includes(data.reason_text) &&
+                                            data.reason_text !== '' && (
+                                                <div className="mt-2 animate-in space-y-1.5 duration-200 fade-in">
+                                                    <Label
+                                                        htmlFor="reason_other_details"
+                                                        className="ml-1 text-[9px] font-bold tracking-widest text-slate-400 uppercase"
+                                                    >
+                                                        Specify Reason Details *
+                                                    </Label>
+                                                    <textarea
+                                                        id="reason_other_details"
+                                                        value={
+                                                            data.reason_text.startsWith(
+                                                                'Others: ',
+                                                            )
+                                                                ? data.reason_text.replace(
+                                                                      'Others: ',
+                                                                      '',
+                                                                  )
+                                                                : data.reason_text
+                                                        }
+                                                        onChange={(e) =>
+                                                            setData(
+                                                                'reason_text',
+                                                                'Others: ' +
+                                                                    e.target
+                                                                        .value,
+                                                            )
+                                                        }
+                                                        placeholder="Specify other reason details..."
+                                                        rows={2}
+                                                        className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50/50 p-3 text-sm font-medium text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-slate-800 dark:bg-slate-800/50 dark:text-white dark:focus:bg-slate-800"
+                                                    />
+                                                </div>
+                                            )}
+
                                         {errors.reason_text && (
                                             <div className="ml-1 text-[11px] font-bold text-rose-500">
                                                 {errors.reason_text}

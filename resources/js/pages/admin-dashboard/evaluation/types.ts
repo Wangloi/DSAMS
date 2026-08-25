@@ -7,7 +7,12 @@ export type EventOption = {
 
 export type Question = {
     id: string;
-    type: 'rating' | 'multiple_choice' | 'checkbox' | 'short_text' | 'long_text';
+    type:
+        | 'rating'
+        | 'multiple_choice'
+        | 'checkbox'
+        | 'short_text'
+        | 'long_text';
     label: string;
     required?: boolean;
     options?: string[];

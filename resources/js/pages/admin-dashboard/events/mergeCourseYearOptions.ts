@@ -17,7 +17,10 @@ function courseBaseKey(id: string): string {
     return n.replace(/\s+program$/i, '').trim();
 }
 
-function preferCourseOption(a: CourseYearOption, b: CourseYearOption): CourseYearOption {
+function preferCourseOption(
+    a: CourseYearOption,
+    b: CourseYearOption,
+): CourseYearOption {
     const A = normalizeCourseId(a.id);
     const B = normalizeCourseId(b.id);
     if (A === B) {
@@ -55,7 +58,9 @@ export function dedupeCourseRows(rows: CourseYearOption[]): CourseYearOption[] {
         }
         byBase.set(base, preferCourseOption(existing, normalized));
     }
-    return Array.from(byBase.values()).sort((a, b) => a.name.localeCompare(b.name));
+    return Array.from(byBase.values()).sort((a, b) =>
+        a.name.localeCompare(b.name),
+    );
 }
 
 export function mergeAndDedupeCourses(
@@ -131,11 +136,13 @@ export function alignCourseIdsToCanonical(
 
 /** Dedupe raw course strings for read-only badges (view modal, etc.). */
 export function uniqueCourseStringsForDisplay(courseIds: string[]): string[] {
-    const rows = courseIds.map((id) => ({
-        id: normalizeCourseId(id),
-        name: normalizeCourseId(id),
-        code: normalizeCourseId(id),
-    })).filter((r) => r.id.length > 0);
+    const rows = courseIds
+        .map((id) => ({
+            id: normalizeCourseId(id),
+            name: normalizeCourseId(id),
+            code: normalizeCourseId(id),
+        }))
+        .filter((r) => r.id.length > 0);
     return dedupeCourseRows(rows).map((r) => r.id);
 }
 

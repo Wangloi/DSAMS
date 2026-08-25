@@ -166,7 +166,7 @@ class StudentDashboardController extends Controller
     /**
      * @return \Illuminate\Support\Collection<int, Evaluation>
      */
-    private static function pendingEvaluationsForStudent(Student $student)
+    public static function pendingEvaluationsForStudent(Student $student)
     {
         if (! Schema::hasTable('evaluations') || ! Schema::hasTable('evaluation_responses') || ! Schema::hasTable('attendances')) {
             return collect();

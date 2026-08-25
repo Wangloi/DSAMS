@@ -1,18 +1,28 @@
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { AlertTriangle } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function StatsWidgets() {
     return (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <Card className="border-0 shadow-sm">
                 <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Pending Admission Slips</CardTitle>
+                    <CardTitle className="text-sm">
+                        Pending Admission Slips
+                    </CardTitle>
                     <CardDescription className="text-xs">
                         Requests awaiting review
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-semibold text-slate-900">3</div>
+                    <div className="text-2xl font-semibold text-slate-900">
+                        3
+                    </div>
                 </CardContent>
             </Card>
 
@@ -24,7 +34,9 @@ export function StatsWidgets() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-semibold text-slate-900">420</div>
+                    <div className="text-2xl font-semibold text-slate-900">
+                        420
+                    </div>
                 </CardContent>
             </Card>
 
@@ -37,7 +49,9 @@ export function StatsWidgets() {
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-center gap-2">
-                        <div className="text-2xl font-semibold text-slate-900">5</div>
+                        <div className="text-2xl font-semibold text-slate-900">
+                            5
+                        </div>
                         <AlertTriangle className="h-4 w-4 text-amber-600" />
                     </div>
                 </CardContent>

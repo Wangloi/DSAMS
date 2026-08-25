@@ -1,7 +1,3 @@
-import { usePage } from '@inertiajs/react';
-import { Calendar, Edit, Users } from 'lucide-react';
-import { Check, Info } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -10,6 +6,9 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { usePage } from '@inertiajs/react';
+import { Calendar, Check, Edit, Info, Users } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
 export type EventViewRecord = {
     id: number;
@@ -106,10 +105,7 @@ export default function EventViewModal({
 
     const mapPoint = useMemo(() => {
         if (!event) return null;
-        if (
-            event.geofence_latitude == null ||
-            event.geofence_longitude == null
-        )
+        if (event.geofence_latitude == null || event.geofence_longitude == null)
             return null;
         const lat = Number(event.geofence_latitude);
         const lng = Number(event.geofence_longitude);
@@ -143,10 +139,11 @@ export default function EventViewModal({
                     <div className="mx-auto mt-6 flex max-w-xl items-center justify-between px-4">
                         <div className="relative flex flex-1 flex-col items-center">
                             <div
-                                className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-all duration-300 ${currentStep === 1
+                                className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-all duration-300 ${
+                                    currentStep === 1
                                         ? 'scale-110 bg-white text-blue-900 shadow-md ring-4 ring-white/20'
                                         : 'bg-emerald-500 text-white'
-                                    }`}
+                                }`}
                             >
                                 {currentStep > 1 ? (
                                     <Check className="h-5 w-5" />
@@ -172,12 +169,13 @@ export default function EventViewModal({
 
                         <div className="relative flex flex-1 flex-col items-center">
                             <div
-                                className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-all duration-300 ${currentStep === 2
+                                className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-all duration-300 ${
+                                    currentStep === 2
                                         ? 'scale-110 bg-white text-blue-900 shadow-md ring-4 ring-white/20'
                                         : currentStep > 2
-                                            ? 'bg-emerald-500 text-white'
-                                            : 'bg-blue-800 text-blue-200'
-                                    }`}
+                                          ? 'bg-emerald-500 text-white'
+                                          : 'bg-blue-800 text-blue-200'
+                                }`}
                             >
                                 {currentStep > 2 ? (
                                     <Check className="h-5 w-5" />
@@ -203,10 +201,11 @@ export default function EventViewModal({
 
                         <div className="relative flex flex-1 flex-col items-center">
                             <div
-                                className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-all duration-300 ${currentStep === 3
+                                className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-all duration-300 ${
+                                    currentStep === 3
                                         ? 'scale-110 bg-white text-blue-900 shadow-md ring-4 ring-white/20'
                                         : 'bg-blue-800 text-blue-200'
-                                    }`}
+                                }`}
                             >
                                 3
                             </div>
@@ -267,9 +266,14 @@ export default function EventViewModal({
                                         </Label>
                                         <Input
                                             id="eventDate"
-                                            value={typeof event.event_date === 'string'
-                                                ? event.event_date.split('T')[0]
-                                                : ''}
+                                            value={
+                                                typeof event.event_date ===
+                                                'string'
+                                                    ? event.event_date.split(
+                                                          'T',
+                                                      )[0]
+                                                    : ''
+                                            }
                                             readOnly
                                             className="h-9 bg-slate-50/50 dark:border-slate-600 dark:bg-slate-800"
                                         />
@@ -288,17 +292,25 @@ export default function EventViewModal({
                                             className="h-9 bg-slate-50/50 dark:border-slate-600 dark:bg-slate-800"
                                         />
                                         {event.event_time && (
-                                            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
+                                            <span className="mt-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                                                 Time-In Ends:{' '}
                                                 {(() => {
-                                                    const [hours, minutes] = event.event_time.split(':').map(Number);
+                                                    const [hours, minutes] =
+                                                        event.event_time
+                                                            .split(':')
+                                                            .map(Number);
                                                     const date = new Date();
                                                     date.setHours(hours);
-                                                    date.setMinutes(minutes + 90);
-                                                    
+                                                    date.setMinutes(
+                                                        minutes + 90,
+                                                    );
+
                                                     let h = date.getHours();
-                                                    const m = String(date.getMinutes()).padStart(2, '0');
-                                                    const ampm = h >= 12 ? 'pm' : 'am';
+                                                    const m = String(
+                                                        date.getMinutes(),
+                                                    ).padStart(2, '0');
+                                                    const ampm =
+                                                        h >= 12 ? 'pm' : 'am';
                                                     h = h % 12;
                                                     h = h ? h : 12;
                                                     return `${h}:${m} ${ampm}`;
@@ -320,17 +332,25 @@ export default function EventViewModal({
                                             className="h-9 bg-slate-50/50 dark:border-slate-600 dark:bg-slate-800"
                                         />
                                         {event.registration_end_time && (
-                                            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
+                                            <span className="mt-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                                                 Time-End Ends:{' '}
                                                 {(() => {
-                                                    const [hours, minutes] = event.registration_end_time.split(':').map(Number);
+                                                    const [hours, minutes] =
+                                                        event.registration_end_time
+                                                            .split(':')
+                                                            .map(Number);
                                                     const date = new Date();
                                                     date.setHours(hours);
-                                                    date.setMinutes(minutes + 90);
-                                                    
+                                                    date.setMinutes(
+                                                        minutes + 90,
+                                                    );
+
                                                     let h = date.getHours();
-                                                    const m = String(date.getMinutes()).padStart(2, '0');
-                                                    const ampm = h >= 12 ? 'pm' : 'am';
+                                                    const m = String(
+                                                        date.getMinutes(),
+                                                    ).padStart(2, '0');
+                                                    const ampm =
+                                                        h >= 12 ? 'pm' : 'am';
                                                     h = h % 12;
                                                     h = h ? h : 12;
                                                     return `${h}:${m} ${ampm}`;
@@ -406,91 +426,93 @@ export default function EventViewModal({
                                         </p>
                                     </div>
 
-                                    {event.geofence_latitude != null && event.geofence_longitude != null && (
-                                        <>
-                                            <div className="grid gap-2 sm:col-span-2">
-                                                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                                    Campus Map (read-only)
-                                                </Label>
-                                                <div className="grid gap-2 rounded-lg border border-slate-200 bg-white p-2 sm:col-span-2 dark:border-slate-800 dark:bg-slate-950/40">
-                                                    <SchoolMapSelector
-                                                        onLocationSelect={() => { }}
-                                                        initialLocation={
-                                                            event.geofence_latitude !=
-                                                                null &&
+                                    {event.geofence_latitude != null &&
+                                        event.geofence_longitude != null && (
+                                            <>
+                                                <div className="grid gap-2 sm:col-span-2">
+                                                    <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                                        Campus Map (read-only)
+                                                    </Label>
+                                                    <div className="grid gap-2 rounded-lg border border-slate-200 bg-white p-2 sm:col-span-2 dark:border-slate-800 dark:bg-slate-950/40">
+                                                        <SchoolMapSelector
+                                                            onLocationSelect={() => {}}
+                                                            initialLocation={
+                                                                event.geofence_latitude !=
+                                                                    null &&
                                                                 event.geofence_longitude !=
-                                                                null
-                                                                ? {
-                                                                    latitude:
-                                                                        Number(
-                                                                            event.geofence_latitude,
-                                                                        ),
-                                                                    longitude:
-                                                                        Number(
-                                                                            event.geofence_longitude,
-                                                                        ),
-                                                                    name: 'Selected facility',
-                                                                }
-                                                                : undefined
+                                                                    null
+                                                                    ? {
+                                                                          latitude:
+                                                                              Number(
+                                                                                  event.geofence_latitude,
+                                                                              ),
+                                                                          longitude:
+                                                                              Number(
+                                                                                  event.geofence_longitude,
+                                                                              ),
+                                                                          name: 'Selected facility',
+                                                                      }
+                                                                    : undefined
+                                                            }
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid gap-2">
+                                                    <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                                        Latitude
+                                                    </Label>
+                                                    <Input
+                                                        value={
+                                                            event.geofence_latitude !=
+                                                            null
+                                                                ? Number(
+                                                                      event.geofence_latitude,
+                                                                  ).toFixed(6)
+                                                                : ''
                                                         }
+                                                        readOnly
+                                                        className="h-9 bg-slate-50/50 dark:border-slate-600 dark:bg-slate-800"
                                                     />
                                                 </div>
-                                            </div>
 
-                                            <div className="grid gap-2">
-                                                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                                    Latitude
-                                                </Label>
-                                                <Input
-                                                    value={
-                                                        event.geofence_latitude !=
+                                                <div className="grid gap-2">
+                                                    <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                                        Longitude
+                                                    </Label>
+                                                    <Input
+                                                        value={
+                                                            event.geofence_longitude !=
                                                             null
-                                                            ? Number(
-                                                                event.geofence_latitude,
-                                                            ).toFixed(6)
-                                                            : ''
-                                                    }
-                                                    readOnly
-                                                    className="h-9 bg-slate-50/50 dark:border-slate-600 dark:bg-slate-800"
-                                                />
-                                            </div>
-
-                                            <div className="grid gap-2">
-                                                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                                    Longitude
-                                                </Label>
-                                                <Input
-                                                    value={
-                                                        event.geofence_longitude !=
-                                                            null
-                                                            ? Number(
-                                                                event.geofence_longitude,
-                                                            ).toFixed(6)
-                                                            : ''
-                                                    }
-                                                    readOnly
-                                                    className="h-9 bg-slate-50/50 dark:border-slate-600 dark:bg-slate-800"
-                                                />
-                                            </div>
-
-                                            <div className="grid gap-2 sm:col-span-2">
-                                                <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                                    Geofence Radius (meters)
-                                                </Label>
-                                                <Input
-                                                    value={'—'}
-                                                    readOnly
-                                                    className="h-9 bg-slate-50/50 dark:border-slate-600 dark:bg-slate-800"
-                                                />
-                                            </div>
-
-                                            {mapPoint && (
-                                                <div className="hidden">
-                                                    {mapPoint.x},{mapPoint.y}
+                                                                ? Number(
+                                                                      event.geofence_longitude,
+                                                                  ).toFixed(6)
+                                                                : ''
+                                                        }
+                                                        readOnly
+                                                        className="h-9 bg-slate-50/50 dark:border-slate-600 dark:bg-slate-800"
+                                                    />
                                                 </div>
-                                            )}
-                                        </>
-                                    )}
+
+                                                <div className="grid gap-2 sm:col-span-2">
+                                                    <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                                        Geofence Radius (meters)
+                                                    </Label>
+                                                    <Input
+                                                        value={'—'}
+                                                        readOnly
+                                                        className="h-9 bg-slate-50/50 dark:border-slate-600 dark:bg-slate-800"
+                                                    />
+                                                </div>
+
+                                                {mapPoint && (
+                                                    <div className="hidden">
+                                                        {mapPoint.x},
+                                                        {mapPoint.y}
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
                                 </div>
                             </div>
                         )}
@@ -505,7 +527,7 @@ export default function EventViewModal({
                                             </Label>
                                             <div className="flex flex-wrap gap-2">
                                                 {coursesForDisplay.length ===
-                                                    0 ? (
+                                                0 ? (
                                                     <span className="text-sm text-slate-500">
                                                         None
                                                     </span>
@@ -530,7 +552,7 @@ export default function EventViewModal({
                                             </Label>
                                             <div className="flex flex-wrap gap-2">
                                                 {event.year_levels.length ===
-                                                    0 ? (
+                                                0 ? (
                                                     <span className="text-sm text-slate-500">
                                                         None
                                                     </span>
@@ -566,20 +588,28 @@ export default function EventViewModal({
 
                                     <div className="grid gap-2 border-t border-slate-100 pt-4 sm:col-span-2 dark:border-slate-800">
                                         <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                            Assigned Attendance Scanner In-Charge
+                                            Assigned Attendance Scanner
+                                            In-Charge
                                         </Label>
                                         <div className="flex flex-wrap gap-2">
-                                            {(!event.scanner_student_ids || event.scanner_student_ids.length === 0) ? (
-                                                <span className="text-xs text-slate-500 italic">No individual scanner in-charge assigned.</span>
+                                            {!event.scanner_student_ids ||
+                                            event.scanner_student_ids.length ===
+                                                0 ? (
+                                                <span className="text-xs text-slate-500 italic">
+                                                    No individual scanner
+                                                    in-charge assigned.
+                                                </span>
                                             ) : (
-                                                event.scanner_student_ids.map((id: string | number) => (
-                                                    <span
-                                                        key={id}
-                                                        className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:border-indigo-800/50 dark:bg-indigo-950/40 dark:text-indigo-300"
-                                                    >
-                                                        Student ID: {id}
-                                                    </span>
-                                                ))
+                                                event.scanner_student_ids.map(
+                                                    (id: string | number) => (
+                                                        <span
+                                                            key={id}
+                                                            className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:border-indigo-800/50 dark:bg-indigo-950/40 dark:text-indigo-300"
+                                                        >
+                                                            Student ID: {id}
+                                                        </span>
+                                                    ),
+                                                )
                                             )}
                                         </div>
 

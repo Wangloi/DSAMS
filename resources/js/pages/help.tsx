@@ -1,9 +1,8 @@
-
-import { Head, usePage } from '@inertiajs/react';
-import LandingHelp from '@/components/landing/landing-help';
 import LandingFooter from '@/components/landing/landing-footer';
+import LandingHelp from '@/components/landing/landing-help';
 import LandingNavbar from '@/components/landing/landing-navbar';
 import type { SharedData } from '@/types';
+import { Head, usePage } from '@inertiajs/react';
 
 export default function HelpPage() {
     const { auth } = usePage<SharedData>().props;

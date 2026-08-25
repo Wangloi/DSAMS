@@ -22,7 +22,11 @@ export default function EvaluationQuestionsSection({
     duplicateQuestion: (id: string) => void;
     removeQuestion: (id: string) => void;
     updateQuestion: (id: string, patch: Partial<Question>) => void;
-    updateOption: (questionId: string, optionIndex: number, value: string) => void;
+    updateOption: (
+        questionId: string,
+        optionIndex: number,
+        value: string,
+    ) => void;
     addOption: (questionId: string) => void;
     removeOption: (questionId: string, optionIndex: number) => void;
 }) {
@@ -30,8 +34,12 @@ export default function EvaluationQuestionsSection({
         <div className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">Questions *</div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Add and configure your evaluation questions</p>
+                    <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                        Questions *
+                    </div>
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                        Add and configure your evaluation questions
+                    </p>
                 </div>
                 {!previewMode && (
                     <div className="flex flex-wrap gap-2">
@@ -42,7 +50,12 @@ export default function EvaluationQuestionsSection({
                             onClick={() => addQuestion('rating')}
                             className="flex items-center gap-2 dark:border-slate-600 dark:text-slate-300"
                         >
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg
+                                className="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
                                 <path
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
@@ -59,8 +72,18 @@ export default function EvaluationQuestionsSection({
                             onClick={() => addQuestion('multiple_choice')}
                             className="flex items-center gap-2 dark:border-slate-600 dark:text-slate-300"
                         >
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                            <svg
+                                className="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M4 6h16M4 10h16M4 14h16M4 18h16"
+                                />
                             </svg>
                             Multiple Choice
                         </Button>
@@ -71,7 +94,12 @@ export default function EvaluationQuestionsSection({
                             onClick={() => addQuestion('checkbox')}
                             className="flex items-center gap-2 dark:border-slate-600 dark:text-slate-300"
                         >
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg
+                                className="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
                                 <path
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
@@ -88,7 +116,12 @@ export default function EvaluationQuestionsSection({
                             onClick={() => addQuestion('short_text')}
                             className="flex items-center gap-2 dark:border-slate-600 dark:text-slate-300"
                         >
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg
+                                className="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
                                 <path
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
@@ -105,7 +138,12 @@ export default function EvaluationQuestionsSection({
                             onClick={() => addQuestion('long_text')}
                             className="flex items-center gap-2 dark:border-slate-600 dark:text-slate-300"
                         >
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg
+                                className="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
                                 <path
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
@@ -122,7 +160,11 @@ export default function EvaluationQuestionsSection({
             {form.form_data.questions.length === 0 ? (
                 <div className="rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-8 text-center">
                     <div className="mx-auto h-12 w-12 text-slate-400">
-                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
                             <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -131,15 +173,22 @@ export default function EvaluationQuestionsSection({
                             />
                         </svg>
                     </div>
-                    <h3 className="mt-2 text-sm font-medium text-slate-900">No questions yet</h3>
+                    <h3 className="mt-2 text-sm font-medium text-slate-900">
+                        No questions yet
+                    </h3>
                     <p className="mt-1 text-sm text-slate-500">
-                        Get started by adding your first question using the buttons above.
+                        Get started by adding your first question using the
+                        buttons above.
                     </p>
                 </div>
             ) : previewMode ? (
                 <div className="space-y-4">
                     {form.form_data.questions.map((q, idx) => (
-                        <EvaluationQuestionPreviewCard key={q.id} q={q} idx={idx} />
+                        <EvaluationQuestionPreviewCard
+                            key={q.id}
+                            q={q}
+                            idx={idx}
+                        />
                     ))}
                 </div>
             ) : (

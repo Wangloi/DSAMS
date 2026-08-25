@@ -35,8 +35,17 @@ export interface IncidentRow {
     dateTime: string;
     status: 'Pending' | 'Ongoing' | 'Resolved' | 'Escalated';
     violation_id: number | null;
-    raw: (IncidentReportPayload & { classification?: 'Warning' | 'Suspension' | 'Exclusion' | 'Expulsion'; status?: IncidentRow['status'] }) | null;
-};
+    raw:
+        | (IncidentReportPayload & {
+              classification?:
+                  | 'Warning'
+                  | 'Suspension'
+                  | 'Exclusion'
+                  | 'Expulsion';
+              status?: IncidentRow['status'];
+          })
+        | null;
+}
 
 export type IncidentStats = {
     total: number;
@@ -46,7 +55,12 @@ export type IncidentStats = {
     escalated: number;
 };
 
-export type TypeFilter = 'all' | 'warning' | 'suspension' | 'exclusion' | 'expulsion';
+export type TypeFilter =
+    | 'all'
+    | 'warning'
+    | 'suspension'
+    | 'exclusion'
+    | 'expulsion';
 export type StatusFilter = 'all' | IncidentRow['status'];
 
 export type KpiCard = {
@@ -58,7 +72,11 @@ export type KpiCard = {
     subtitle?: string;
 };
 
-export type DisciplinaryActionType = 'Warning' | 'Suspension' | 'Exclusion' | 'Expulsion';
+export type DisciplinaryActionType =
+    | 'Warning'
+    | 'Suspension'
+    | 'Exclusion'
+    | 'Expulsion';
 
 export interface DisciplinaryActionRecord {
     id: number;

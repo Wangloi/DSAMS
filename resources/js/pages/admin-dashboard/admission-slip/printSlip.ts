@@ -25,7 +25,9 @@ export default function printSlip(s: SlipRow) {
     .wrap { width: 100%; }
     .paper { width: 100%; max-width: 720px; margin: 0 auto; }
 
-    .top { text-align: center; line-height: 1.15; }
+    .header-container { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+    .logo { width: 65px; height: 65px; object-fit: cover; border-radius: 50%; }
+    .header-text { flex: 1; text-align: center; line-height: 1.15; }
     .school { font-weight: 800; letter-spacing: 0.4px; font-size: 15px; }
     .sub { font-weight: 500; font-size: 11px; margin-top: 4px; }
     .dept { font-weight: 800; font-size: 12px; margin-top: 8px; }
@@ -51,10 +53,14 @@ export default function printSlip(s: SlipRow) {
 <body>
   <div class="wrap">
     <div class="paper">
-      <div class="top">
-        <div class="school">ST. RITA'S COLLEGE OF BALINGASAG, INC.</div>
-        <div class="sub">Balingasag, Misamis Oriental</div>
-        <div class="dept">HIGHER EDUCATION DEPARTMENT</div>
+      <div class="header-container">
+        <img class="logo" src="/images/SRCB.png" alt="SRCB Logo" />
+        <div class="header-text">
+          <div class="school">ST. RITA'S COLLEGE OF BALINGASAG, INC.</div>
+          <div class="sub">Balingasag, Misamis Oriental</div>
+          <div class="dept">HIGHER EDUCATION DEPARTMENT</div>
+        </div>
+        <img class="logo" src="/images/DSA.png" alt="DSA Logo" />
       </div>
 
       <hr class="rule" />

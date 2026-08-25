@@ -1,6 +1,6 @@
-import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import type { TypeFilter, StatusFilter } from './types';
+import { Search } from 'lucide-react';
+import type { StatusFilter, TypeFilter } from './types';
 
 type Props = {
     typeFilter: TypeFilter;
@@ -22,10 +22,14 @@ export default function IncidentFilters({
     return (
         <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center">
             <div className="flex w-full flex-col gap-2 sm:w-auto">
-                <div className="text-xs font-semibold text-slate-600">Type:</div>
+                <div className="text-xs font-semibold text-slate-600">
+                    Type:
+                </div>
                 <select
                     value={typeFilter}
-                    onChange={(e) => onTypeFilterChange(e.target.value as TypeFilter)}
+                    onChange={(e) =>
+                        onTypeFilterChange(e.target.value as TypeFilter)
+                    }
                     className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 sm:w-52"
                 >
                     <option value="all">All</option>
@@ -37,10 +41,14 @@ export default function IncidentFilters({
             </div>
 
             <div className="flex w-full flex-col gap-2 sm:w-auto">
-                <div className="text-xs font-semibold text-slate-600">Status:</div>
+                <div className="text-xs font-semibold text-slate-600">
+                    Status:
+                </div>
                 <select
                     value={statusFilter}
-                    onChange={(e) => onStatusFilterChange(e.target.value as StatusFilter)}
+                    onChange={(e) =>
+                        onStatusFilterChange(e.target.value as StatusFilter)
+                    }
                     className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 sm:w-52"
                 >
                     <option value="all">All</option>
@@ -52,7 +60,7 @@ export default function IncidentFilters({
             </div>
 
             <div className="relative w-full sm:ml-auto sm:max-w-xs">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.target.value)}

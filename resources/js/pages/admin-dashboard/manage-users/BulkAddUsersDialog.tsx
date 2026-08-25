@@ -1,8 +1,3 @@
-import { router, useForm } from '@inertiajs/react';
-import { Download, FileSpreadsheet, Upload, Users } from 'lucide-react';
-import type React from 'react';
-import { useMemo, useState } from 'react';
-import Swal from 'sweetalert2';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -12,8 +7,12 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { router } from '@inertiajs/react';
+import { Download, FileSpreadsheet, Upload, Users } from 'lucide-react';
+import type React from 'react';
+import { useMemo, useState } from 'react';
+import Swal from 'sweetalert2';
 
 type Props = {
     open: boolean;
@@ -33,10 +32,10 @@ function splitCsvLine(line: string) {
     return line
         .split(',')
         .map((v) => v.trim())
-        .map((v) => (v.startsWith('"') && v.endsWith('"') ? v.slice(1, -1) : v));
+        .map((v) =>
+            v.startsWith('"') && v.endsWith('"') ? v.slice(1, -1) : v,
+        );
 }
-
-
 
 export default function BulkAddUsersDialog({ open, onOpenChange }: Props) {
     const [mode, setMode] = useState<'file' | 'text'>('file');
@@ -56,8 +55,13 @@ export default function BulkAddUsersDialog({ open, onOpenChange }: Props) {
         const firstLineCols = splitCsvLine(lines[0]);
         const lowerFirst = firstLineCols.map((h) => h.toLowerCase());
 
-        const hasHeader = ['student id', 'firstname', 'lastname'].some((k) => lowerFirst.includes(k))
-            || ['student_id', 'first_name', 'last_name'].some((k) => lowerFirst.includes(k));
+        const hasHeader =
+            ['student id', 'firstname', 'lastname'].some((k) =>
+                lowerFirst.includes(k),
+            ) ||
+            ['student_id', 'first_name', 'last_name'].some((k) =>
+                lowerFirst.includes(k),
+            );
 
         const startIndex = hasHeader ? 1 : 0;
         const rows: ParsedRow[] = [];
@@ -126,7 +130,9 @@ export default function BulkAddUsersDialog({ open, onOpenChange }: Props) {
                 },
                 onError: (err) => {
                     setIsSubmitting(false);
-                    const msg = Object.values(err)[0] || 'Import failed. Please check the file format.';
+                    const msg =
+                        Object.values(err)[0] ||
+                        'Import failed. Please check the file format.';
                     Swal.fire({
                         icon: 'error',
                         title: 'Import Error',
@@ -168,45 +174,69 @@ export default function BulkAddUsersDialog({ open, onOpenChange }: Props) {
                     onFinish: () => {
                         setIsSubmitting(false);
                     },
-                }
+                },
             );
         }
     };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-3xl overflow-hidden p-0 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-2xl">
+            <DialogContent className="overflow-hidden border-slate-200 bg-white p-0 shadow-2xl sm:max-w-3xl dark:border-slate-700 dark:bg-slate-800">
                 {/* Header */}
                 <div className="bg-gradient-to-r from-[#0b2d66] to-[#1e40af] px-6 py-5 text-white">
                     <DialogHeader>
-                        <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
+                        <DialogTitle className="flex items-center gap-2 text-xl font-bold text-white">
                             <Users className="h-6 w-6 text-blue-200" />
                             Bulk Add Students
                         </DialogTitle>
-                        <DialogDescription className="text-white/80 text-sm mt-1">
-                            Import multiple student records into the database via CSV or Excel (.xlsx).
+                        <DialogDescription className="mt-1 text-sm text-white/80">
+                            Import multiple student records into the database
+                            via CSV or Excel (.xlsx).
                         </DialogDescription>
                     </DialogHeader>
                 </div>
 
-                <div className="space-y-6 px-6 py-6 max-h-[75vh] overflow-y-auto">
+                <div className="max-h-[75vh] space-y-6 overflow-y-auto px-6 py-6">
                     {/* Template Download Section */}
                     <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 dark:border-blue-900/40 dark:bg-blue-950/20">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-200 flex items-center gap-1.5">
+                                <h4 className="flex items-center gap-1.5 text-sm font-semibold text-blue-900 dark:text-blue-200">
                                     <FileSpreadsheet className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                                     Download Import Template
                                 </h4>
-                                <p className="text-xs text-blue-700/80 dark:text-blue-300/70 mt-0.5">
-                                    Expected columns: <code className="font-mono bg-blue-100 dark:bg-blue-900/60 px-1 py-0.5 rounded text-[11px]">Student ID</code>, <code className="font-mono bg-blue-100 dark:bg-blue-900/60 px-1 py-0.5 rounded text-[11px]">Firstname</code>, <code className="font-mono bg-blue-100 dark:bg-blue-900/60 px-1 py-0.5 rounded text-[11px]">Lastname</code>, <code className="font-mono bg-blue-100 dark:bg-blue-900/60 px-1 py-0.5 rounded text-[11px]">Grade/Year Level</code>, <code className="font-mono bg-blue-100 dark:bg-blue-900/60 px-1 py-0.5 rounded text-[11px]">Section/Course</code>, <code className="font-mono bg-blue-100 dark:bg-blue-900/60 px-1 py-0.5 rounded text-[11px]">Department</code>
+                                <p className="mt-0.5 text-xs text-blue-700/80 dark:text-blue-300/70">
+                                    Expected columns:{' '}
+                                    <code className="rounded bg-blue-100 px-1 py-0.5 font-mono text-[11px] dark:bg-blue-900/60">
+                                        Student ID
+                                    </code>
+                                    ,{' '}
+                                    <code className="rounded bg-blue-100 px-1 py-0.5 font-mono text-[11px] dark:bg-blue-900/60">
+                                        Firstname
+                                    </code>
+                                    ,{' '}
+                                    <code className="rounded bg-blue-100 px-1 py-0.5 font-mono text-[11px] dark:bg-blue-900/60">
+                                        Lastname
+                                    </code>
+                                    ,{' '}
+                                    <code className="rounded bg-blue-100 px-1 py-0.5 font-mono text-[11px] dark:bg-blue-900/60">
+                                        Grade/Year Level
+                                    </code>
+                                    ,{' '}
+                                    <code className="rounded bg-blue-100 px-1 py-0.5 font-mono text-[11px] dark:bg-blue-900/60">
+                                        Section/Course
+                                    </code>
+                                    ,{' '}
+                                    <code className="rounded bg-blue-100 px-1 py-0.5 font-mono text-[11px] dark:bg-blue-900/60">
+                                        Department
+                                    </code>
                                 </p>
                             </div>
-                            <div className="flex items-center gap-2 shrink-0">
+                            <div className="flex shrink-0 items-center gap-2">
                                 <a
                                     href="/admin/manage-users/bulk-template?format=csv"
                                     download="student_bulk_template.csv"
-                                    className="inline-flex items-center gap-1.5 rounded-lg border border-blue-300 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm hover:bg-blue-50 dark:border-blue-700 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700 transition-colors"
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-blue-300 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition-colors hover:bg-blue-50 dark:border-blue-700 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
                                 >
                                     <Download className="h-3.5 w-3.5" />
                                     CSV Template
@@ -214,7 +244,7 @@ export default function BulkAddUsersDialog({ open, onOpenChange }: Props) {
                                 <a
                                     href="/admin/manage-users/bulk-template?format=xlsx"
                                     download="student_bulk_template.xlsx"
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 transition-colors"
+                                    className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
                                 >
                                     <Download className="h-3.5 w-3.5" />
                                     XLSX Template
@@ -224,11 +254,11 @@ export default function BulkAddUsersDialog({ open, onOpenChange }: Props) {
                     </div>
 
                     {/* Mode selector */}
-                    <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-2">
+                    <div className="flex items-center gap-2 border-b border-slate-200 pb-2 dark:border-slate-700">
                         <button
                             type="button"
                             onClick={() => setMode('file')}
-                            className={`flex items-center gap-2 px-3 py-1.5 text-sm font-semibold rounded-lg transition-all ${
+                            className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold transition-all ${
                                 mode === 'file'
                                     ? 'bg-blue-600 text-white shadow-sm'
                                     : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'
@@ -240,7 +270,7 @@ export default function BulkAddUsersDialog({ open, onOpenChange }: Props) {
                         <button
                             type="button"
                             onClick={() => setMode('text')}
-                            className={`flex items-center gap-2 px-3 py-1.5 text-sm font-semibold rounded-lg transition-all ${
+                            className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold transition-all ${
                                 mode === 'text'
                                     ? 'bg-blue-600 text-white shadow-sm'
                                     : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'
@@ -253,32 +283,41 @@ export default function BulkAddUsersDialog({ open, onOpenChange }: Props) {
                     {/* File Upload Mode */}
                     {mode === 'file' && (
                         <div className="grid gap-3">
-                            <Label htmlFor="bulk_file_upload" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                            <Label
+                                htmlFor="bulk_file_upload"
+                                className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                            >
                                 Choose File (.csv, .xlsx, .xls)
                             </Label>
-                            <div className="relative border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-6 text-center hover:border-blue-500 transition-colors bg-slate-50/50 dark:bg-slate-900/30">
+                            <div className="relative rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/50 p-6 text-center transition-colors hover:border-blue-500 dark:border-slate-600 dark:bg-slate-900/30">
                                 <input
                                     id="bulk_file_upload"
                                     type="file"
                                     accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
                                     onChange={handleFileChange}
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                                 />
                                 <div className="flex flex-col items-center justify-center gap-2">
-                                    <div className="grid h-10 w-10 place-items-center rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400">
+                                    <div className="grid h-10 w-10 place-items-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400">
                                         <Upload className="h-5 w-5" />
                                     </div>
                                     {selectedFile ? (
                                         <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                                            Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+                                            Selected: {selectedFile.name} (
+                                            {(selectedFile.size / 1024).toFixed(
+                                                1,
+                                            )}{' '}
+                                            KB)
                                         </div>
                                     ) : (
                                         <>
                                             <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                                Click or drag and drop your file here
+                                                Click or drag and drop your file
+                                                here
                                             </p>
                                             <p className="text-xs text-slate-500 dark:text-slate-400">
-                                                Supports CSV and Excel files up to 10MB
+                                                Supports CSV and Excel files up
+                                                to 10MB
                                             </p>
                                         </>
                                     )}
@@ -290,53 +329,96 @@ export default function BulkAddUsersDialog({ open, onOpenChange }: Props) {
                     {/* Paste CSV Text Mode */}
                     {mode === 'text' && (
                         <div className="grid gap-3">
-                            <Label htmlFor="bulk_csv_textarea" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                            <Label
+                                htmlFor="bulk_csv_textarea"
+                                className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                            >
                                 Paste CSV Text Lines
                             </Label>
                             <textarea
                                 id="bulk_csv_textarea"
-                                className="min-h-[180px] w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 p-3 text-xs font-mono text-slate-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                className="min-h-[180px] w-full rounded-lg border border-slate-200 bg-white p-3 font-mono text-xs text-slate-900 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
                                 value={rawText}
                                 onChange={(e) => setRawText(e.target.value)}
                                 placeholder={
-                                    "Student ID,Firstname,Lastname,Grade/Year Level,Section/Course,Department\n" +
-                                    "C230103,Vincent Jay,Abelidas,4th Year,BSBA,HED\n" +
-                                    "ID-C230104,Maria,Santos,1st Year,BSIT,HED\n"
+                                    'Student ID,Firstname,Lastname,Grade/Year Level,Section/Course,Department\n' +
+                                    'C230103,Vincent Jay,Abelidas,4th Year,BSBA,HED\n' +
+                                    'ID-C230104,Maria,Santos,1st Year,BSIT,HED\n'
                                 }
                             />
                             {parsedTextRows.length > 0 && (
-                                <div className="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden text-xs">
-                                    <div className="bg-slate-100 dark:bg-slate-800 px-3 py-2 font-semibold text-slate-700 dark:text-slate-300 flex justify-between">
-                                        <span>Parsed Records Preview ({parsedTextRows.length} rows)</span>
-                                        <span className="text-[11px] font-normal text-slate-500">Student ID auto-prefix applied</span>
+                                <div className="overflow-hidden rounded-lg border border-slate-200 text-xs dark:border-slate-700">
+                                    <div className="flex justify-between bg-slate-100 px-3 py-2 font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                        <span>
+                                            Parsed Records Preview (
+                                            {parsedTextRows.length} rows)
+                                        </span>
+                                        <span className="text-[11px] font-normal text-slate-500">
+                                            Student ID auto-prefix applied
+                                        </span>
                                     </div>
                                     <div className="max-h-[140px] overflow-y-auto">
-                                        <table className="w-full text-left border-collapse">
-                                            <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 border-b dark:border-slate-700">
+                                        <table className="w-full border-collapse text-left">
+                                            <thead className="border-b bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800/60">
                                                 <tr>
-                                                    <th className="px-3 py-1.5">Student ID</th>
-                                                    <th className="px-3 py-1.5">First Name</th>
-                                                    <th className="px-3 py-1.5">Last Name</th>
-                                                    <th className="px-3 py-1.5">Year Level</th>
-                                                    <th className="px-3 py-1.5">Course</th>
-                                                    <th className="px-3 py-1.5">Department</th>
+                                                    <th className="px-3 py-1.5">
+                                                        Student ID
+                                                    </th>
+                                                    <th className="px-3 py-1.5">
+                                                        First Name
+                                                    </th>
+                                                    <th className="px-3 py-1.5">
+                                                        Last Name
+                                                    </th>
+                                                    <th className="px-3 py-1.5">
+                                                        Year Level
+                                                    </th>
+                                                    <th className="px-3 py-1.5">
+                                                        Course
+                                                    </th>
+                                                    <th className="px-3 py-1.5">
+                                                        Department
+                                                    </th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
-                                                {parsedTextRows.slice(0, 5).map((r, idx) => (
-                                                    <tr key={idx} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
-                                                        <td className="px-3 py-1 font-mono text-blue-600 dark:text-blue-400 font-semibold">{r.student_id}</td>
-                                                        <td className="px-3 py-1">{r.first_name}</td>
-                                                        <td className="px-3 py-1">{r.last_name}</td>
-                                                        <td className="px-3 py-1">{r.year_level}</td>
-                                                        <td className="px-3 py-1">{r.course}</td>
-                                                        <td className="px-3 py-1">{r.program}</td>
-                                                    </tr>
-                                                ))}
+                                                {parsedTextRows
+                                                    .slice(0, 5)
+                                                    .map((r, idx) => (
+                                                        <tr
+                                                            key={idx}
+                                                            className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40"
+                                                        >
+                                                            <td className="px-3 py-1 font-mono font-semibold text-blue-600 dark:text-blue-400">
+                                                                {r.student_id}
+                                                            </td>
+                                                            <td className="px-3 py-1">
+                                                                {r.first_name}
+                                                            </td>
+                                                            <td className="px-3 py-1">
+                                                                {r.last_name}
+                                                            </td>
+                                                            <td className="px-3 py-1">
+                                                                {r.year_level}
+                                                            </td>
+                                                            <td className="px-3 py-1">
+                                                                {r.course}
+                                                            </td>
+                                                            <td className="px-3 py-1">
+                                                                {r.program}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
                                                 {parsedTextRows.length > 5 && (
                                                     <tr>
-                                                        <td colSpan={6} className="px-3 py-1 text-center text-slate-400 italic bg-slate-50/40 dark:bg-slate-800/30">
-                                                            ...and {parsedTextRows.length - 5} more rows
+                                                        <td
+                                                            colSpan={6}
+                                                            className="bg-slate-50/40 px-3 py-1 text-center text-slate-400 italic dark:bg-slate-800/30"
+                                                        >
+                                                            ...and{' '}
+                                                            {parsedTextRows.length -
+                                                                5}{' '}
+                                                            more rows
                                                         </td>
                                                     </tr>
                                                 )}
@@ -349,29 +431,58 @@ export default function BulkAddUsersDialog({ open, onOpenChange }: Props) {
                     )}
 
                     {/* Information Note */}
-                    <div className="rounded-lg bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40">
-                        <span className="font-bold">Defaults applied on bulk add:</span>
-                        <ul className="list-disc list-inside mt-1 space-y-0.5 text-[11px] opacity-90">
-                            <li><span className="font-semibold">Student ID</span> format: Auto-prepended with <code className="font-mono bg-amber-100 dark:bg-amber-900/60 px-1 py-0.2 rounded">ID-</code> if missing.</li>
-                            <li><span className="font-semibold">Full Name</span>: Automated as <code className="font-mono bg-amber-100 dark:bg-amber-900/60 px-1 py-0.2 rounded">Firstname Lastname</code> in database.</li>
-                            <li><span className="font-semibold">Defaults</span>: Password: <code className="font-mono">password123</code> | Role: <code className="font-mono">Student</code> | Status: <code className="font-mono">Approved</code> | Active: <code className="font-mono">1</code> | Verification: <code className="font-mono">Approved</code> | Email: <code className="font-mono">null</code></li>
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-300">
+                        <span className="font-bold">
+                            Defaults applied on bulk add:
+                        </span>
+                        <ul className="mt-1 list-inside list-disc space-y-0.5 text-[11px] opacity-90">
+                            <li>
+                                <span className="font-semibold">
+                                    Student ID
+                                </span>{' '}
+                                format: Auto-prepended with{' '}
+                                <code className="py-0.2 rounded bg-amber-100 px-1 font-mono dark:bg-amber-900/60">
+                                    ID-
+                                </code>{' '}
+                                if missing.
+                            </li>
+                            <li>
+                                <span className="font-semibold">Full Name</span>
+                                : Automated as{' '}
+                                <code className="py-0.2 rounded bg-amber-100 px-1 font-mono dark:bg-amber-900/60">
+                                    Firstname Lastname
+                                </code>{' '}
+                                in database.
+                            </li>
+                            <li>
+                                <span className="font-semibold">Defaults</span>:
+                                Password:{' '}
+                                <code className="font-mono">password123</code> |
+                                Role: <code className="font-mono">Student</code>{' '}
+                                | Status:{' '}
+                                <code className="font-mono">Approved</code> |
+                                Active: <code className="font-mono">1</code> |
+                                Verification:{' '}
+                                <code className="font-mono">Approved</code> |
+                                Email: <code className="font-mono">null</code>
+                            </li>
                         </ul>
                     </div>
                 </div>
 
-                <DialogFooter className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+                <DialogFooter className="border-t border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-700 dark:bg-slate-800">
                     <Button
                         type="button"
                         variant="outline"
                         onClick={close}
                         disabled={isSubmitting}
-                        className="border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+                        className="border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                     >
                         Cancel
                     </Button>
                     <Button
                         type="button"
-                        className="bg-emerald-600 text-white hover:bg-emerald-700 min-w-[100px]"
+                        className="min-w-[100px] bg-emerald-600 text-white hover:bg-emerald-700"
                         onClick={submit}
                         disabled={isSubmitting}
                     >

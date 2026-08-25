@@ -1,12 +1,15 @@
-import { Head, router, usePage } from '@inertiajs/react';
-import { useEffect, useMemo, useState } from 'react';
 import { AdmissionSlipRequestModal } from '@/components/AdmissionSlipRequestModal';
 import type { BreadcrumbItem } from '@/types';
+import { Head, router, usePage } from '@inertiajs/react';
+import { useEffect, useMemo, useState } from 'react';
 import AdmissionSlipHeader from '../../admin-dashboard/admission-slip/AdmissionSlipHeader';
 import AdmissionSlipStatsCard from '../../admin-dashboard/admission-slip/AdmissionSlipStatsCard';
 import AdmissionSlipTableCard from '../../admin-dashboard/admission-slip/AdmissionSlipTableCard';
 import printSlip from '../../admin-dashboard/admission-slip/printSlip';
-import type { PageProps, SlipRow } from '../../admin-dashboard/admission-slip/types';
+import type {
+    PageProps,
+    SlipRow,
+} from '../../admin-dashboard/admission-slip/types';
 import DSALayout from '../dsa-layout';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -22,9 +25,11 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function DSAAdmissionSlipPage() {
     const [open, setOpen] = useState(false);
-    const { props } = (usePage() as { props: PageProps });
+    const { props } = usePage() as { props: PageProps };
     const errors = props.errors ?? {};
-    const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+    const [activeTab, setActiveTab] = useState<
+        'all' | 'pending' | 'approved' | 'rejected'
+    >('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [pageIndex, setPageIndex] = useState(1);
     const [pageSize, setPageSize] = useState(5);
@@ -65,16 +70,32 @@ export default function DSAAdmissionSlipPage() {
 
     const slips = useMemo<SlipRow[]>(() => {
         const raw = props.slips ?? [];
-        return raw.map((s: { id: number; student_name: string; program_year_level: string; date_issued: string; case_text: string; reason_text: string; valid_until: string; status: string }) => ({
-            id: s.id,
-            studentName: s.student_name,
-            programYear: s.program_year_level,
-            dateIssued: s.date_issued,
-            caseText: s.case_text,
-            reasonText: s.reason_text,
-            validUntil: s.valid_until,
-            status: s.status === 'APPROVED' ? 'APPROVED' : s.status === 'REJECTED' ? 'REJECTED' : 'PENDING',
-        }));
+        return raw.map(
+            (s: {
+                id: number;
+                student_name: string;
+                program_year_level: string;
+                date_issued: string;
+                case_text: string;
+                reason_text: string;
+                valid_until: string;
+                status: string;
+            }) => ({
+                id: s.id,
+                studentName: s.student_name,
+                programYear: s.program_year_level,
+                dateIssued: s.date_issued,
+                caseText: s.case_text,
+                reasonText: s.reason_text,
+                validUntil: s.valid_until,
+                status:
+                    s.status === 'APPROVED'
+                        ? 'APPROVED'
+                        : s.status === 'REJECTED'
+                          ? 'REJECTED'
+                          : 'PENDING',
+            }),
+        );
     }, [props.slips]);
 
     const stats = useMemo(() => {
@@ -91,7 +112,14 @@ export default function DSAAdmissionSlipPage() {
             oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
             return validUntil >= oneWeekFromNow;
         }).length;
-        return { pending, approved, rejected, total, issuedToday, validThisWeek };
+        return {
+            pending,
+            approved,
+            rejected,
+            total,
+            issuedToday,
+            validThisWeek,
+        };
     }, [slips]);
 
     const filteredSlips = useMemo(() => {
@@ -145,12 +173,14 @@ export default function DSAAdmissionSlipPage() {
             <Head title="Admission Slip - DSA" />
             <div className="min-h-[calc(100vh-4rem)] bg-slate-100">
                 <div className="flex w-full flex-col gap-6 px-6 py-6">
-                    <AdmissionSlipHeader 
-                        onCreateNew={openCreate} 
-                        isRefreshing={isRefreshing} 
-                        lastUpdated={lastUpdated} 
+                    <AdmissionSlipHeader
+                        onCreateNew={openCreate}
+                        isRefreshing={isRefreshing}
+                        lastUpdated={lastUpdated}
                         isAutoRefreshEnabled={isAutoRefreshEnabled}
-                        onToggleAutoRefresh={() => setIsAutoRefreshEnabled(!isAutoRefreshEnabled)}
+                        onToggleAutoRefresh={() =>
+                            setIsAutoRefreshEnabled(!isAutoRefreshEnabled)
+                        }
                     />
 
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
@@ -174,7 +204,12 @@ export default function DSAAdmissionSlipPage() {
                         </div>
                         <AdmissionSlipStatsCard stats={stats} />
 
-                        <AdmissionSlipRequestModal open={open} setOpen={setOpen} errors={errors} mode="dsa" />
+                        <AdmissionSlipRequestModal
+                            open={open}
+                            setOpen={setOpen}
+                            errors={errors}
+                            mode="dsa"
+                        />
                     </div>
                 </div>
             </div>

@@ -1,6 +1,5 @@
-import React from 'react';
-import EvaluationPreviewDialog from '../EvaluationPreviewDialog';
 import AutoEvaluationUploadDialog from '../AutoEvaluationUploadDialog';
+import EvaluationPreviewDialog from '../EvaluationPreviewDialog';
 import { EvaluationForm, EventOption } from './types';
 
 interface EvaluationDialogsProps {

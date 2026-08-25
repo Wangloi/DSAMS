@@ -1,3 +1,11 @@
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
     Bar,
@@ -11,14 +19,6 @@ import {
     XAxis,
     YAxis,
 } from 'recharts';
-import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
 
 export function AnalysisPanels() {
     const useChartWidth = () => {

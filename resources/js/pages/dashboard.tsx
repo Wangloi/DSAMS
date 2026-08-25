@@ -1,9 +1,9 @@
-import { Head } from '@inertiajs/react';
-import { LayoutGrid } from 'lucide-react';
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
+import { Head } from '@inertiajs/react';
+import { LayoutGrid } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -23,8 +23,12 @@ export default function Dashboard() {
                             <LayoutGrid className="h-6 w-6 text-white" />
                         </div>
                         <div className="leading-tight">
-                            <div className="text-lg font-semibold">Dashboard</div>
-                            <div className="text-sm text-white/80">Overview and quick insights</div>
+                            <div className="text-lg font-semibold">
+                                Dashboard
+                            </div>
+                            <div className="text-sm text-white/80">
+                                Overview and quick insights
+                            </div>
                         </div>
                     </div>
                 </div>

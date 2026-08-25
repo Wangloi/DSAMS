@@ -1,23 +1,18 @@
-
-import { Head, router, usePage, useForm } from '@inertiajs/react';
-import { ArrowLeft, Save, X, MapPin } from 'lucide-react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { ArrowLeft, MapPin, Save, X } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useMemo, useState } from 'react';
 
 import { SchoolMapSelector } from '@/components/SchoolMapSelector';
 import { Button } from '@/components/ui/button';
 
-
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { adminDashboard, adminEvents, adminEventsUpdate } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
 import AdminLayout from '../admin-layout';
-
 
 import {
     alignCourseIdsToCanonical,
@@ -29,11 +24,12 @@ import {
 
 // Stepper utility
 const stepperClass = (step: number) =>
-    `h-9 w-9 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-300 ${step === 3
-        ? 'bg-white text-blue-900 ring-4 ring-white/20 scale-110 shadow-md'
-        : step < 3
-            ? 'bg-emerald-500 text-white'
-            : 'bg-blue-800 text-blue-200'
+    `h-9 w-9 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-300 ${
+        step === 3
+            ? 'bg-white text-blue-900 ring-4 ring-white/20 scale-110 shadow-md'
+            : step < 3
+              ? 'bg-emerald-500 text-white'
+              : 'bg-blue-800 text-blue-200'
     }`;
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -77,77 +73,63 @@ export default function EditEventPage() {
         typeof event?.event_date === 'string'
             ? event.event_date.slice(0, 10)
             : event?.event_date
-                ? String(event.event_date).slice(0, 10)
-                : '';
+              ? String(event.event_date).slice(0, 10)
+              : '';
 
-    const courseOptions = (
-        (props as { courses?: CourseYearOption[] }).courses ?? []
-    ) as CourseYearOption[];
+    const courseOptions = ((props as { courses?: CourseYearOption[] })
+        .courses ?? []) as CourseYearOption[];
 
-    const yearLevelOptions = (
-        (props as { yearLevels?: CourseYearOption[] }).yearLevels ?? []
-    ) as CourseYearOption[];
+    const yearLevelOptions = ((props as { yearLevels?: CourseYearOption[] })
+        .yearLevels ?? []) as CourseYearOption[];
 
     const [showMapSelector, setShowMapSelector] = useState(false);
 
     const [selectedLocationName, setSelectedLocationName] = useState('');
 
-    const { data, setData, put, processing, errors, reset } =
-        useForm({
-            event_name: event?.event_name || '',
-            description: event?.description || '',
+    const { data, setData, put, processing, errors, reset } = useForm({
+        event_name: event?.event_name || '',
+        description: event?.description || '',
 
-            courses: alignCourseIdsToCanonical(
-                event?.courses || [],
-                courseOptions,
-            ),
+        courses: alignCourseIdsToCanonical(event?.courses || [], courseOptions),
 
-            year_levels: alignYearLevelIdsToCanonical(
-                event?.year_levels || [],
-                yearLevelOptions,
-            ),
+        year_levels: alignYearLevelIdsToCanonical(
+            event?.year_levels || [],
+            yearLevelOptions,
+        ),
 
-            location: event?.location || '',
+        location: event?.location || '',
 
-            event_date: eventDate,
+        event_date: eventDate,
 
-            event_time: event?.event_time || '',
+        event_time: event?.event_time || '',
 
-            registration_end_time:
-                event?.registration_end_time || '',
+        registration_end_time: event?.registration_end_time || '',
 
-            organizer: event?.organizer || '',
+        organizer: event?.organizer || '',
 
-            geofence_enabled:
-                event?.geofence_enabled || false,
+        geofence_enabled: event?.geofence_enabled || false,
 
-            geofence_latitude:
-                event?.geofence_latitude != null &&
-                    event?.geofence_latitude !== ''
-                    ? String(event.geofence_latitude)
-                    : '',
+        geofence_latitude:
+            event?.geofence_latitude != null && event?.geofence_latitude !== ''
+                ? String(event.geofence_latitude)
+                : '',
 
-            geofence_longitude:
-                event?.geofence_longitude != null &&
-                    event?.geofence_longitude !== ''
-                    ? String(event.geofence_longitude)
-                    : '',
+        geofence_longitude:
+            event?.geofence_longitude != null &&
+            event?.geofence_longitude !== ''
+                ? String(event.geofence_longitude)
+                : '',
 
-            geofence_radius_m:
-                event?.geofence_radius_m != null
-                    ? String(event.geofence_radius_m)
-                    : '50',
+        geofence_radius_m:
+            event?.geofence_radius_m != null
+                ? String(event.geofence_radius_m)
+                : '50',
 
-            scanner_portal_active:
-                event?.scanner_portal_active || false,
-        });
+        scanner_portal_active: event?.scanner_portal_active || false,
+    });
 
     const mergedCourseChoices = useMemo(
-        () =>
-            mergeAndDedupeCourses(
-                courseOptions,
-                event?.courses || [],
-            ),
+        () => mergeAndDedupeCourses(courseOptions, event?.courses || []),
         [courseOptions, event?.courses],
     );
 
@@ -169,9 +151,7 @@ export default function EditEventPage() {
 
         setData('geofence_longitude', lng.toFixed(6));
 
-        setSelectedLocationName(
-            name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
-        );
+        setSelectedLocationName(name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
     };
 
     const handleSubmit = (e: FormEvent) => {
@@ -188,10 +168,7 @@ export default function EditEventPage() {
         });
     };
 
-    const handleCourseChange = (
-        course: string,
-        checked: boolean,
-    ) => {
+    const handleCourseChange = (course: string, checked: boolean) => {
         if (checked) {
             setData('courses', [...data.courses, course]);
         } else {
@@ -202,15 +179,9 @@ export default function EditEventPage() {
         }
     };
 
-    const handleYearLevelChange = (
-        yearLevel: string,
-        checked: boolean,
-    ) => {
+    const handleYearLevelChange = (yearLevel: string, checked: boolean) => {
         if (checked) {
-            setData('year_levels', [
-                ...data.year_levels,
-                yearLevel,
-            ]);
+            setData('year_levels', [...data.year_levels, yearLevel]);
         } else {
             setData(
                 'year_levels',
@@ -225,14 +196,11 @@ export default function EditEventPage() {
 
             <div className="min-h-[calc(100vh-4rem)] bg-slate-100 dark:bg-slate-900">
                 <div className="flex w-full flex-col gap-6 px-6 py-6">
-
                     {/* Header */}
                     <div className="flex items-center gap-4">
                         <Button
                             variant="outline"
-                            onClick={() =>
-                                router.visit(adminEvents())
-                            }
+                            onClick={() => router.visit(adminEvents())}
                             className="gap-2"
                         >
                             <ArrowLeft className="h-4 w-4" />
@@ -256,12 +224,9 @@ export default function EditEventPage() {
                         <div className="overflow-hidden rounded-t-3xl">
                             <div className="bg-gradient-to-r from-[#0b2d66] to-[#1e40af] px-6 py-5 text-white">
                                 <div className="mx-auto flex max-w-xl items-center justify-between px-4">
-
                                     {/* Step 1 */}
                                     <div className="relative flex flex-1 flex-col items-center">
-                                        <div className={stepperClass(1)}>
-                                            1
-                                        </div>
+                                        <div className={stepperClass(1)}>1</div>
 
                                         <span className="mt-2 text-[11px] font-medium tracking-wide text-white">
                                             Basic Info
@@ -277,9 +242,7 @@ export default function EditEventPage() {
 
                                     {/* Step 2 */}
                                     <div className="relative flex flex-1 flex-col items-center">
-                                        <div className={stepperClass(2)}>
-                                            2
-                                        </div>
+                                        <div className={stepperClass(2)}>2</div>
 
                                         <span className="mt-2 text-[11px] font-medium tracking-wide text-white">
                                             Location
@@ -295,9 +258,7 @@ export default function EditEventPage() {
 
                                     {/* Step 3 */}
                                     <div className="relative flex flex-1 flex-col items-center">
-                                        <div className={stepperClass(3)}>
-                                            3
-                                        </div>
+                                        <div className={stepperClass(3)}>3</div>
 
                                         <span className="mt-2 text-[11px] font-medium tracking-wide text-white">
                                             Audience
@@ -308,22 +269,14 @@ export default function EditEventPage() {
                         </div>
 
                         <CardHeader>
-                            <CardTitle>
-                                Event Information
-                            </CardTitle>
+                            <CardTitle>Event Information</CardTitle>
                         </CardHeader>
 
                         <CardContent className="px-8 pt-8 pb-8">
-                            <form
-                                onSubmit={handleSubmit}
-                                className="space-y-6"
-                            >
-
+                            <form onSubmit={handleSubmit} className="space-y-6">
                                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-
                                     {/* Left Column */}
                                     <div className="space-y-4">
-
                                         <div>
                                             <Label htmlFor="event_name">
                                                 Event Name *
@@ -349,9 +302,7 @@ export default function EditEventPage() {
 
                                             {errors.event_name && (
                                                 <p className="mt-1 text-sm text-red-500">
-                                                    {
-                                                        errors.event_name
-                                                    }
+                                                    {errors.event_name}
                                                 </p>
                                             )}
                                         </div>
@@ -389,7 +340,6 @@ export default function EditEventPage() {
 
                                     {/* Right Column */}
                                     <div className="space-y-4">
-
                                         <div>
                                             <Label htmlFor="event_date">
                                                 Event Date *
@@ -501,11 +451,10 @@ export default function EditEventPage() {
                                                 }
                                                 className="h-10 gap-2 border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                                             >
-                                                <MapPin className="inline-block mr-1 h-4 w-4" />
+                                                <MapPin className="mr-1 inline-block h-4 w-4" />
                                                 {showMapSelector
                                                     ? 'Hide Map'
                                                     : 'Select Location on Map'}
-
                                             </Button>
                                         </div>
                                     </div>
@@ -519,18 +468,18 @@ export default function EditEventPage() {
                                                 }
                                                 initialLocation={
                                                     data.geofence_latitude &&
-                                                        data.geofence_longitude
+                                                    data.geofence_longitude
                                                         ? {
-                                                            latitude:
-                                                                parseFloat(
-                                                                    data.geofence_latitude,
-                                                                ),
-                                                            longitude:
-                                                                parseFloat(
-                                                                    data.geofence_longitude,
-                                                                ),
-                                                            name: selectedLocationName,
-                                                        }
+                                                              latitude:
+                                                                  parseFloat(
+                                                                      data.geofence_latitude,
+                                                                  ),
+                                                              longitude:
+                                                                  parseFloat(
+                                                                      data.geofence_longitude,
+                                                                  ),
+                                                              name: selectedLocationName,
+                                                          }
                                                         : undefined
                                                 }
                                             />
@@ -555,99 +504,89 @@ export default function EditEventPage() {
 
                                 {/* Courses */}
                                 <div>
-                                    <h3 className="font-medium">Target Courses</h3>
+                                    <h3 className="font-medium">
+                                        Target Courses
+                                    </h3>
 
                                     <div className="mt-2 grid grid-cols-2 gap-3">
-                                        {mergedCourseChoices.map(
-                                            (opt, idx) => (
-                                                <div
-                                                    key={opt.id}
-                                                    className="flex items-center space-x-2"
-                                                >
-                                                    <Checkbox
-                                                        id={`edit_course_${idx}`}
-                                                        checked={data.courses.includes(
+                                        {mergedCourseChoices.map((opt, idx) => (
+                                            <div
+                                                key={opt.id}
+                                                className="flex items-center space-x-2"
+                                            >
+                                                <Checkbox
+                                                    id={`edit_course_${idx}`}
+                                                    checked={data.courses.includes(
+                                                        opt.id,
+                                                    )}
+                                                    onCheckedChange={(
+                                                        checked,
+                                                    ) =>
+                                                        handleCourseChange(
                                                             opt.id,
-                                                        )}
-                                                        onCheckedChange={(
-                                                            checked,
-                                                        ) =>
-                                                            handleCourseChange(
-                                                                opt.id,
-                                                                checked as boolean,
-                                                            )
-                                                        }
-                                                    />
+                                                            checked as boolean,
+                                                        )
+                                                    }
+                                                />
 
-                                                    <Label
-                                                        htmlFor={`edit_course_${idx}`}
-                                                        className="text-sm font-normal"
-                                                    >
-                                                        {opt.name}
+                                                <Label
+                                                    htmlFor={`edit_course_${idx}`}
+                                                    className="text-sm font-normal"
+                                                >
+                                                    {opt.name}
 
-                                                        {opt.code !==
-                                                            opt.name
-                                                            ? ` (${opt.code})`
-                                                            : ''}
-                                                    </Label>
-                                                </div>
-                                            ),
-                                        )}
+                                                    {opt.code !== opt.name
+                                                        ? ` (${opt.code})`
+                                                        : ''}
+                                                </Label>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
 
                                 {/* Year Levels */}
                                 <div>
-                                    <Label>
-                                        Target Year Levels
-                                    </Label>
+                                    <Label>Target Year Levels</Label>
 
                                     <div className="mt-2 grid grid-cols-2 gap-3">
-                                        {mergedYearChoices.map(
-                                            (opt, idx) => (
-                                                <div
-                                                    key={opt.id}
-                                                    className="flex items-center space-x-2"
-                                                >
-                                                    <Checkbox
-                                                        id={`edit_yl_${idx}`}
-                                                        checked={data.year_levels.includes(
+                                        {mergedYearChoices.map((opt, idx) => (
+                                            <div
+                                                key={opt.id}
+                                                className="flex items-center space-x-2"
+                                            >
+                                                <Checkbox
+                                                    id={`edit_yl_${idx}`}
+                                                    checked={data.year_levels.includes(
+                                                        opt.id,
+                                                    )}
+                                                    onCheckedChange={(
+                                                        checked,
+                                                    ) =>
+                                                        handleYearLevelChange(
                                                             opt.id,
-                                                        )}
-                                                        onCheckedChange={(
-                                                            checked,
-                                                        ) =>
-                                                            handleYearLevelChange(
-                                                                opt.id,
-                                                                checked as boolean,
-                                                            )
-                                                        }
-                                                    />
+                                                            checked as boolean,
+                                                        )
+                                                    }
+                                                />
 
-                                                    <Label
-                                                        htmlFor={`edit_yl_${idx}`}
-                                                        className="text-sm font-normal"
-                                                    >
-                                                        {opt.name}
-                                                    </Label>
-                                                </div>
-                                            ),
-                                        )}
+                                                <Label
+                                                    htmlFor={`edit_yl_${idx}`}
+                                                    className="text-sm font-normal"
+                                                >
+                                                    {opt.name}
+                                                </Label>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
 
                                 {/* Settings */}
                                 <div className="space-y-4">
-
                                     <div className="flex items-center space-x-2">
                                         <Checkbox
                                             id="geofence_enabled"
-                                            checked={
-                                                data.geofence_enabled
-                                            }
-                                            onCheckedChange={(
-                                                checked,
-                                            ) =>
+                                            checked={data.geofence_enabled}
+                                            onCheckedChange={(checked) =>
                                                 setData(
                                                     'geofence_enabled',
                                                     checked as boolean,
@@ -665,7 +604,6 @@ export default function EditEventPage() {
 
                                     {data.geofence_enabled && (
                                         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-
                                             <div>
                                                 <Label htmlFor="geofence_latitude">
                                                     Latitude *
@@ -733,12 +671,8 @@ export default function EditEventPage() {
                                     <div className="flex items-center space-x-2">
                                         <Checkbox
                                             id="scanner_portal_active"
-                                            checked={
-                                                data.scanner_portal_active
-                                            }
-                                            onCheckedChange={(
-                                                checked,
-                                            ) =>
+                                            checked={data.scanner_portal_active}
+                                            onCheckedChange={(checked) =>
                                                 setData(
                                                     'scanner_portal_active',
                                                     checked as boolean,
@@ -757,7 +691,6 @@ export default function EditEventPage() {
 
                                 {/* Actions */}
                                 <div className="flex justify-end gap-3 border-t pt-6">
-
                                     <Button
                                         type="button"
                                         variant="outline"

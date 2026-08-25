@@ -1,6 +1,6 @@
+import { adminEvaluationStore, adminEvaluationUpdate } from '@/routes';
 import { router } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
-import { adminEvaluationStore, adminEvaluationUpdate } from '@/routes';
 import EvaluationFormActions from './EvaluationFormActions';
 import EvaluationFormDetails from './EvaluationFormDetails';
 import EvaluationFormHeader from './EvaluationFormHeader';
@@ -24,7 +24,12 @@ type Props = {
     initialFormState?: Partial<FormState> | null;
 };
 
-export default function EvaluationFormDialog({ onClose, editingEvaluation, events, initialFormState }: Props) {
+export default function EvaluationFormDialog({
+    onClose,
+    editingEvaluation,
+    events,
+    initialFormState,
+}: Props) {
     const [form, setForm] = useState<FormState>(emptyForm);
     const [previewMode, setPreviewMode] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -32,11 +37,19 @@ export default function EvaluationFormDialog({ onClose, editingEvaluation, event
     const canSubmit = useMemo(() => {
         if (!String(form.name).trim()) return false;
         if (!String(form.eventId).trim()) return false;
-        if (!Array.isArray(form.form_data.questions) || form.form_data.questions.length === 0) return false;
+        if (
+            !Array.isArray(form.form_data.questions) ||
+            form.form_data.questions.length === 0
+        )
+            return false;
 
         for (const q of form.form_data.questions) {
             if (!String(q.label ?? '').trim()) return false;
-            if ((q.type === 'multiple_choice' || q.type === 'checkbox') && (!Array.isArray(q.options) || q.options.length === 0)) return false;
+            if (
+                (q.type === 'multiple_choice' || q.type === 'checkbox') &&
+                (!Array.isArray(q.options) || q.options.length === 0)
+            )
+                return false;
         }
 
         return true;
@@ -47,11 +60,16 @@ export default function EvaluationFormDialog({ onClose, editingEvaluation, event
             setForm({
                 name: editingEvaluation.name,
                 description: editingEvaluation.description ?? '',
-                eventId: editingEvaluation.event_id ? String(editingEvaluation.event_id) : '',
+                eventId: editingEvaluation.event_id
+                    ? String(editingEvaluation.event_id)
+                    : '',
                 is_active: editingEvaluation.is_active,
                 form_data: {
-                    questions: Array.isArray((editingEvaluation as any)?.form_data?.questions)
-                        ? ((editingEvaluation as any).form_data.questions as Question[])
+                    questions: Array.isArray(
+                        (editingEvaluation as any)?.form_data?.questions,
+                    )
+                        ? ((editingEvaluation as any).form_data
+                              .questions as Question[])
                         : [],
                 },
             });
@@ -82,7 +100,10 @@ export default function EvaluationFormDialog({ onClose, editingEvaluation, event
         if (editingEvaluation) {
             const evaluationId = (editingEvaluation as any)?.id;
             if (!evaluationId) {
-                console.error('EvaluationFormDialog: missing evaluation id for update', editingEvaluation);
+                console.error(
+                    'EvaluationFormDialog: missing evaluation id for update',
+                    editingEvaluation,
+                );
                 setIsProcessing(false);
                 return;
             }
@@ -100,8 +121,8 @@ export default function EvaluationFormDialog({ onClose, editingEvaluation, event
                     },
                     onFinish: () => {
                         setIsProcessing(false);
-                    }
-                }
+                    },
+                },
             );
         } else {
             router.post(adminEvaluationStore(), data, {
@@ -111,7 +132,7 @@ export default function EvaluationFormDialog({ onClose, editingEvaluation, event
                 },
                 onFinish: () => {
                     setIsProcessing(false);
-                }
+                },
             });
         }
     };
@@ -129,7 +150,10 @@ export default function EvaluationFormDialog({ onClose, editingEvaluation, event
                         type,
                         label: '',
                         required: true,
-                        options: type === 'multiple_choice' || type === 'checkbox' ? ['Option 1'] : undefined,
+                        options:
+                            type === 'multiple_choice' || type === 'checkbox'
+                                ? ['Option 1']
+                                : undefined,
                     },
                 ],
             },
@@ -141,7 +165,9 @@ export default function EvaluationFormDialog({ onClose, editingEvaluation, event
             ...p,
             form_data: {
                 ...p.form_data,
-                questions: p.form_data.questions.map((q) => (q.id === id ? { ...q, ...patch } : q)),
+                questions: p.form_data.questions.map((q) =>
+                    q.id === id ? { ...q, ...patch } : q,
+                ),
             },
         }));
     };
@@ -175,7 +201,8 @@ export default function EvaluationFormDialog({ onClose, editingEvaluation, event
             const idx = p.form_data.questions.findIndex((q) => q.id === id);
             if (idx === -1) return p;
             const nextIdx = direction === 'up' ? idx - 1 : idx + 1;
-            if (nextIdx < 0 || nextIdx >= p.form_data.questions.length) return p;
+            if (nextIdx < 0 || nextIdx >= p.form_data.questions.length)
+                return p;
             const questions = [...p.form_data.questions];
             const [item] = questions.splice(idx, 1);
             questions.splice(nextIdx, 0, item);
@@ -189,14 +216,20 @@ export default function EvaluationFormDialog({ onClose, editingEvaluation, event
         });
     };
 
-    const updateOption = (questionId: string, optionIndex: number, value: string) => {
+    const updateOption = (
+        questionId: string,
+        optionIndex: number,
+        value: string,
+    ) => {
         setForm((p) => ({
             ...p,
             form_data: {
                 ...p.form_data,
                 questions: p.form_data.questions.map((q) => {
                     if (q.id !== questionId) return q;
-                    const options = Array.isArray(q.options) ? [...q.options] : [];
+                    const options = Array.isArray(q.options)
+                        ? [...q.options]
+                        : [];
                     options[optionIndex] = value;
                     return { ...q, options };
                 }),
@@ -211,7 +244,9 @@ export default function EvaluationFormDialog({ onClose, editingEvaluation, event
                 ...p.form_data,
                 questions: p.form_data.questions.map((q) => {
                     if (q.id !== questionId) return q;
-                    const options = Array.isArray(q.options) ? [...q.options] : [];
+                    const options = Array.isArray(q.options)
+                        ? [...q.options]
+                        : [];
                     options.push(`Option ${options.length + 1}`);
                     return { ...q, options };
                 }),
@@ -226,7 +261,9 @@ export default function EvaluationFormDialog({ onClose, editingEvaluation, event
                 ...p.form_data,
                 questions: p.form_data.questions.map((q) => {
                     if (q.id !== questionId) return q;
-                    const options = Array.isArray(q.options) ? [...q.options] : [];
+                    const options = Array.isArray(q.options)
+                        ? [...q.options]
+                        : [];
                     options.splice(optionIndex, 1);
                     return { ...q, options };
                 }),

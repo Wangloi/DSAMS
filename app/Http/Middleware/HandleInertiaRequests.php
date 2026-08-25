@@ -151,11 +151,16 @@ class HandleInertiaRequests extends Middleware
                         $subtitle = (string) ($data['subtitle'] ?? $data['message'] ?? '');
                     }
 
+                    $slipId = $data['slip_id'] ?? null;
+                    $incidentId = $data['incident_id'] ?? $data['id'] ?? null;
+
                     return [
                         'id' => $notification->id,
                         'type' => $type,
                         'eventId' => $eventId,
                         'evaluationId' => $evaluationId,
+                        'slipId' => $slipId,
+                        'incidentId' => $incidentId,
                         'title' => $title,
                         'subtitle' => $subtitle,
                         'url' => (string) ($data['url'] ?? ''),

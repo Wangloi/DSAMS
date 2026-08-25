@@ -6,9 +6,17 @@
     <title>{{ $title ?? 'Report' }}</title>
     <style>
         body { font-family: Arial, Helvetica, sans-serif; color: #0f172a; margin: 24px; }
-        .header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
-        .title { font-size: 20px; font-weight: 700; }
-        .meta { font-size: 12px; color: #475569; }
+        .header-container { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 8px; }
+        .logo { width: 60px; height: 60px; object-fit: cover; border-radius: 50%; }
+        .header-text { flex: 1; text-align: center; }
+        .school-name { font-weight: bold; text-transform: uppercase; font-size: 13px; line-height: 1.15; }
+        .school-sub { font-size: 10px; color: #475569; margin-top: 2px; }
+        .school-dept { font-weight: bold; font-size: 11px; margin-top: 4px; }
+        .rule { border: none; border-top: 1px solid #cbd5e1; margin: 12px 0; }
+
+        .header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-top: 12px; margin-bottom: 12px; }
+        .title { font-size: 18px; font-weight: 700; }
+        .meta { font-size: 11px; color: #475569; }
         table { width: 100%; border-collapse: collapse; margin-top: 12px; }
         th, td { border: 1px solid #cbd5e1; padding: 8px; font-size: 12px; vertical-align: top; }
         th { background: #f1f5f9; text-align: left; }
@@ -20,6 +28,18 @@
     </style>
 </head>
 <body>
+    <div class="header-container">
+        <img class="logo" src="/images/SRCB.png" alt="SRCB Logo" />
+        <div class="header-text">
+            <div class="school-name">ST. RITA'S COLLEGE OF BALINGASAG, INC.</div>
+            <div class="school-sub">Balingasag, Misamis Oriental</div>
+            <div class="school-dept">HIGHER EDUCATION DEPARTMENT</div>
+        </div>
+        <img class="logo" src="/images/DSA.png" alt="DSA Logo" />
+    </div>
+
+    <hr class="rule" />
+
     <div class="header">
         <div>
             <div class="title">{{ $title ?? 'Report' }}</div>

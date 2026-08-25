@@ -47,11 +47,16 @@ class NotificationController extends Controller
                     $subtitle = (string) ($data['subtitle'] ?? $data['message'] ?? '');
                 }
 
+                $slipId = $data['slip_id'] ?? null;
+                $incidentId = $data['incident_id'] ?? $data['id'] ?? null;
+
                 return [
                     'id' => $notification->id,
                     'type' => $type,
                     'eventId' => $eventId,
                     'evaluationId' => $evaluationId,
+                    'slipId' => $slipId,
+                    'incidentId' => $incidentId,
                     'title' => $title,
                     'subtitle' => $subtitle,
                     'timeAgo' => $notification->created_at?->diffForHumans() ?? '',

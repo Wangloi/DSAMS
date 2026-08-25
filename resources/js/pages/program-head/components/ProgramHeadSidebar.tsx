@@ -9,24 +9,23 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from '@/components/ui/sidebar';
-import { cn } from '@/lib/utils';
 import {
+    programHeadCalendarEvents as eventManagement,
     programHeadAttendance,
     programHeadDashboard,
     programHeadReports,
     programHeadViolations,
-    programHeadCalendarEvents as eventManagement,
 } from '@/routes';
 
 import { Link, usePage } from '@inertiajs/react';
 import {
+    CalendarDays,
     FileText,
     LayoutGrid,
     PanelLeftClose,
     PanelLeftOpen,
     ShieldAlert,
     Users,
-    CalendarDays,
 } from 'lucide-react';
 import { useMemo } from 'react';
 
@@ -59,7 +58,7 @@ const programHeadNavItems: NavItemWithChildren[] = [
     },
     {
         title: 'Reports',
-        href: programHeadReports.url(),
+        href: programHeadReports(),
         icon: FileText,
     },
 ];
@@ -72,8 +71,8 @@ function SidebarToggle() {
             variant="ghost"
             size="icon"
             onClick={toggleSidebar}
-            className="h-8 w-8 rounded-md text-[#0b2d66] hover:bg-slate-100 transition-colors dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
-            title={open ? "Collapse Sidebar" : "Expand Sidebar"}
+            className="h-8 w-8 rounded-md text-[#0b2d66] transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+            title={open ? 'Collapse Sidebar' : 'Expand Sidebar'}
         >
             {open ? (
                 <PanelLeftClose className="h-5 w-5" />
@@ -90,10 +89,10 @@ export function ProgramHeadSidebar() {
 
     const dashboardPath = useMemo(() => {
         try {
-            return new URL(programHeadDashboard.url(), window.location.origin)
+            return new URL(programHeadDashboard(), window.location.origin)
                 .pathname;
         } catch {
-            return programHeadDashboard.url();
+            return programHeadDashboard();
         }
     }, []);
 
@@ -121,7 +120,6 @@ export function ProgramHeadSidebar() {
     const baseButtonClassName =
         'relative h-10 rounded-lg px-2.5 text-sm font-medium transition-all duration-200 data-[active=true]:bg-blue-600 data-[active=true]:text-white data-[active=true]:shadow-md data-[active=true]:before:absolute data-[active=true]:before:left-0 data-[active=true]:before:top-1.5 data-[active=true]:before:h-7 data-[active=true]:before:w-1 data-[active=true]:before:rounded-r-full data-[active=true]:before:bg-white dark:data-[active=true]:bg-blue-600/20 dark:data-[active=true]:text-blue-400 dark:data-[active=true]:before:bg-blue-400 dark:hover:bg-slate-800 dark:hover:text-white';
 
-
     const topNavItems = programHeadNavItems.slice(0, 2);
     const middleNavItems = programHeadNavItems.slice(2);
 
@@ -129,21 +127,7 @@ export function ProgramHeadSidebar() {
         <Sidebar
             collapsible="icon"
             variant="sidebar"
-            className={(`
-                [&_[data-sidebar=sidebar]]:mt-16
-                [&_[data-sidebar=sidebar]]:h-[calc(100svh-4rem)]
-                [&_[data-sidebar=sidebar]]:overflow-hidden
-                [&_[data-sidebar=sidebar]]:border-r
-                [&_[data-sidebar=sidebar]]:border-slate-200
-                [&_[data-sidebar=sidebar]]:bg-white
-                [&_[data-sidebar=sidebar]]:text-slate-800
-                [&_[data-sidebar=sidebar]]:shadow-sm
-
-                dark:[&_[data-sidebar=sidebar]]:border-slate-800
-                dark:[&_[data-sidebar=sidebar]]:bg-[#0B192C]
-                dark:[&_[data-sidebar=sidebar]]:text-white
-                dark:[&_[data-sidebar=sidebar]]:shadow-lg
-            `)}
+            className={`[&_[data-sidebar=sidebar]]:mt-16 [&_[data-sidebar=sidebar]]:h-[calc(100svh-4rem)] [&_[data-sidebar=sidebar]]:overflow-hidden [&_[data-sidebar=sidebar]]:border-r [&_[data-sidebar=sidebar]]:border-slate-200 [&_[data-sidebar=sidebar]]:bg-white [&_[data-sidebar=sidebar]]:text-slate-800 [&_[data-sidebar=sidebar]]:shadow-sm dark:[&_[data-sidebar=sidebar]]:border-slate-800 dark:[&_[data-sidebar=sidebar]]:bg-[#0B192C] dark:[&_[data-sidebar=sidebar]]:text-white dark:[&_[data-sidebar=sidebar]]:shadow-lg`}
         >
             <SidebarHeader className="border-b-0 p-0 dark:border-0" />
 
@@ -161,7 +145,10 @@ export function ProgramHeadSidebar() {
                                 <SidebarMenuButton
                                     asChild
                                     tooltip={{ children: item.title }}
-                                    isActive={isItemActive(item.href, item.title)}
+                                    isActive={isItemActive(
+                                        item.href,
+                                        item.title,
+                                    )}
                                     className={`${baseButtonClassName} text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400`}
                                 >
                                     <Link
@@ -190,7 +177,10 @@ export function ProgramHeadSidebar() {
                                 <SidebarMenuButton
                                     asChild
                                     tooltip={{ children: item.title }}
-                                    isActive={isItemActive(item.href, item.title)}
+                                    isActive={isItemActive(
+                                        item.href,
+                                        item.title,
+                                    )}
                                     className={`${baseButtonClassName} text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400`}
                                 >
                                     <Link

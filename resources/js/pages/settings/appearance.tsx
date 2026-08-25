@@ -1,7 +1,13 @@
-import { Palette } from 'lucide-react';
 import AppearanceTabs from '@/components/appearance-tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import SettingsPageLayout from '@/layouts/settings/settings-page-layout';
+import { Palette } from 'lucide-react';
 
 export default function Appearance() {
     return (

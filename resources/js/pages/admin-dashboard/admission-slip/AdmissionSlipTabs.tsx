@@ -1,4 +1,3 @@
-import type { Dispatch, SetStateAction } from 'react';
 import {
     Select,
     SelectContent,
@@ -6,6 +5,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import type { Dispatch, SetStateAction } from 'react';
 
 type Props = {
     activeTab: 'pending' | 'approved' | 'rejected';
@@ -13,7 +13,11 @@ type Props = {
     setPageIndex: Dispatch<SetStateAction<number>>;
 };
 
-export default function AdmissionSlipTabs({ activeTab, setActiveTab, setPageIndex }: Props) {
+export default function AdmissionSlipTabs({
+    activeTab,
+    setActiveTab,
+    setPageIndex,
+}: Props) {
     return (
         <div className="rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
             <Select

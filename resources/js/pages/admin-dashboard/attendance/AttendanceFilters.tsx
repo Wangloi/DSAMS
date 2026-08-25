@@ -1,5 +1,5 @@
-import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
 
 type DateRange = {
     start: string;
@@ -13,11 +13,11 @@ type Props = {
     setSearchQuery: (query: string) => void;
 };
 
-export default function AttendanceFilters({ 
-    dateRange, 
-    setDateRange, 
-    searchQuery, 
-    setSearchQuery 
+export default function AttendanceFilters({
+    dateRange,
+    setDateRange,
+    searchQuery,
+    setSearchQuery,
 }: Props) {
     return (
         <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center">
@@ -27,7 +27,12 @@ export default function AttendanceFilters({
                     <Input
                         type="date"
                         value={dateRange.start}
-                        onChange={(e) => setDateRange((prev) => ({ ...prev, start: e.target.value }))}
+                        onChange={(e) =>
+                            setDateRange((prev) => ({
+                                ...prev,
+                                start: e.target.value,
+                            }))
+                        }
                         className="h-9 w-[160px] border border-slate-200 bg-white"
                     />
                 </div>
@@ -36,14 +41,19 @@ export default function AttendanceFilters({
                     <Input
                         type="date"
                         value={dateRange.end}
-                        onChange={(e) => setDateRange((prev) => ({ ...prev, end: e.target.value }))}
+                        onChange={(e) =>
+                            setDateRange((prev) => ({
+                                ...prev,
+                                end: e.target.value,
+                            }))
+                        }
                         className="h-9 w-[160px] border border-slate-200 bg-white"
                     />
                 </div>
             </div>
 
             <div className="relative w-full sm:ml-auto sm:max-w-md">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input
                     placeholder="Search"
                     className="h-9 w-full border border-slate-200 bg-white pl-9"

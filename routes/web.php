@@ -296,6 +296,10 @@ Route::put('/admin/program-heads/{programHead}', [AdminManageUsersController::cl
     ->middleware('auth:admin')
     ->name('admin.program-heads.update');
 
+Route::post('/admin/program-heads', [AdminManageUsersController::class, 'storeProgramHead'])
+    ->middleware('auth:admin')
+    ->name('admin.program-heads.store');
+
 // Programs Routes
 Route::get('/admin/programs', [AdminProgramsController::class, 'index'])->middleware('auth:admin')->name('admin.programs');
 Route::post('/admin/programs', [AdminProgramsController::class, 'store'])->middleware('auth:admin')->name('admin.programs.store');
@@ -346,6 +350,15 @@ Route::put('/dsa/admission-slip/{admissionSlip}/archive', [DSAAdmissionSlipContr
 Route::put('/dsa/admission-slip/{admissionSlip}/unarchive', [DSAAdmissionSlipController::class, 'unarchive'])->middleware('auth:dsa')->name('dsa.admission-slip.unarchive');
 
 Route::get('/admin/students/lookup', function (Request $request) {
+    // Authenticate admin or web (dsa) user
+    $user = Auth::guard('admin')->user() ?: Auth::guard('web')->user();
+    if (!$user) {
+        abort(403, 'Unauthorized');
+    }
+    if (Auth::guard('web')->check() && $user->role !== 'dsa') {
+        abort(403, 'Unauthorized');
+    }
+
     $studentId = (string) $request->query('student_id', '');
     $studentId = trim($studentId);
 
@@ -365,9 +378,18 @@ Route::get('/admin/students/lookup', function (Request $request) {
         'course' => $student->course,
         'year_level' => $student->year_level,
     ]);
-})->middleware('auth:admin')->name('admin.students.lookup');
+})->middleware('auth:admin,web')->name('admin.students.lookup');
 
 Route::get('/admin/students/search', function (Request $request) {
+    // Authenticate admin or web (dsa) user
+    $user = Auth::guard('admin')->user() ?: Auth::guard('web')->user();
+    if (!$user) {
+        abort(403, 'Unauthorized');
+    }
+    if (Auth::guard('web')->check() && $user->role !== 'dsa') {
+        abort(403, 'Unauthorized');
+    }
+
     $query = $request->query('q', '');
     $query = trim($query);
 
@@ -391,11 +413,12 @@ Route::get('/admin/students/search', function (Request $request) {
         });
 
     return response()->json(['students' => $students]);
-})->middleware('auth:admin')->name('admin.students.search');
+})->middleware('auth:admin,web')->name('admin.students.search');
 
 Route::get('/admin/incidents-violations', [AdminIncidentsViolationsController::class, 'index'])->middleware('auth:admin')->name('admin.incidents-violations');
 Route::get('/admin/incidents-violations/{incident}', [AdminIncidentsViolationsController::class, 'show'])->middleware('auth:admin')->name('admin.incidents-violations.show');
 Route::post('/admin/incidents-violations', [AdminIncidentsViolationsController::class, 'store'])->middleware('auth:admin')->name('admin.incidents-violations.store');
+Route::post('/admin/incidents-violations/{incident}/status', [AdminIncidentsViolationsController::class, 'updateStatus'])->middleware('auth:admin')->name('admin.incidents-violations.update-status');
 Route::match(['put', 'post'], '/admin/incidents-violations/{incident}', [AdminIncidentsViolationsController::class, 'update'])->middleware('auth:admin')->name('admin.incidents-violations.update');
 Route::delete('/admin/incidents-violations/{incident}', [AdminIncidentsViolationsController::class, 'destroy'])->middleware('auth:admin')->name('admin.incidents-violations.destroy');
 Route::match(['put', 'post'], '/admin/incidents-violations/{incident}/archive', [AdminIncidentsViolationsController::class, 'archive'])->middleware('auth:admin')->name('admin.incidents-violations.archive');

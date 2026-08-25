@@ -1,6 +1,6 @@
-import { Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
+import { Pencil } from 'lucide-react';
 
 type Props = {
     isViewMode: boolean;
@@ -22,7 +22,7 @@ export default function IncidentReportDialogActions({
     submitLabel,
 }: Props) {
     return (
-        <DialogFooter className="border-t border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-6 py-4">
+        <DialogFooter className="border-t border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-600 dark:bg-slate-700">
             <div className="flex items-center gap-2">
                 {isViewMode && hasInitialValues ? (
                     <Button
@@ -31,11 +31,16 @@ export default function IncidentReportDialogActions({
                         className="h-10 bg-blue-600 hover:bg-blue-700"
                         onClick={onToggleEditMode}
                     >
-                        <Pencil className="h-4 w-4 mr-2" />
+                        <Pencil className="mr-2 h-4 w-4" />
                         Edit
                     </Button>
                 ) : null}
-                <Button type="button" variant="outline" className="h-10 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700" onClick={onClose}>
+                <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                    onClick={onClose}
+                >
                     {isViewMode ? 'Close' : 'Cancel'}
                 </Button>
             </div>

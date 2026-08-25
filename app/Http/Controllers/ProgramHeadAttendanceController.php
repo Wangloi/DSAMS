@@ -27,6 +27,7 @@ class ProgramHeadAttendanceController extends Controller
                     $query->where(function ($sub) use ($program) {
                         $sub->whereJsonContains('courses', $program)
                             ->orWhereNull('courses')
+                            ->orWhereJsonLength('courses', 0)
                             ->orWhere('courses', '[]');
                     });
                 })

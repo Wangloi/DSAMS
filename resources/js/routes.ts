@@ -86,6 +86,8 @@ export const adminIncidentsViolationsShow = (id: number | string) =>
     `/admin/incidents-violations/${id}`;
 export const adminIncidentsViolationsUpdate = (id: number | string) =>
     `/admin/incidents-violations/${id}`;
+export const adminIncidentsViolationsUpdateStatus = (id: number | string) =>
+    `/admin/incidents-violations/${id}/status`;
 export const adminIncidentsViolationsUpdatePost = (id: number | string) =>
     `/admin/incidents-violations/${id}`;
 export const adminIncidentsViolationsDestroy = (id: number | string) =>
@@ -222,4 +224,3 @@ export const forgotPassword = () => '/forgot-password';
 
 // Aliases
 export const login = () => '/login';
-

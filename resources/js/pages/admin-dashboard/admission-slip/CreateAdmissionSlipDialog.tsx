@@ -1,8 +1,3 @@
-import { router } from '@inertiajs/react';
-import { useMemo, useState, useEffect } from 'react';
-import { PlusCircle } from 'lucide-react';
-import Swal from 'sweetalert2';
-import type { SweetAlertResult } from 'sweetalert2';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,11 +5,15 @@ import {
     DialogContent,
     DialogDescription,
     DialogFooter,
-    DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { router } from '@inertiajs/react';
+import { PlusCircle } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import type { SweetAlertResult } from 'sweetalert2';
+import Swal from 'sweetalert2';
 import type { CreateSlipFormState } from './types';
 
 type Props = {
@@ -23,7 +22,11 @@ type Props = {
     errors: Record<string, string>;
 };
 
-export default function CreateAdmissionSlipDialog({ open, setOpen, errors }: Props) {
+export default function CreateAdmissionSlipDialog({
+    open,
+    setOpen,
+    errors,
+}: Props) {
     const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
     const todayPlus7 = useMemo(() => {
         const d = new Date();
@@ -45,8 +48,12 @@ export default function CreateAdmissionSlipDialog({ open, setOpen, errors }: Pro
     );
 
     const [form, setForm] = useState<CreateSlipFormState>(emptyForm);
-    const [lookupStatus, setLookupStatus] = useState<'idle' | 'loading' | 'found' | 'not_found'>('idle');
-    const [searchResults, setSearchResults] = useState<{ id: string; name: string }[]>([]);
+    const [lookupStatus, setLookupStatus] = useState<
+        'idle' | 'loading' | 'found' | 'not_found'
+    >('idle');
+    const [searchResults, setSearchResults] = useState<
+        { id: string; name: string }[]
+    >([]);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
     // Reset to emptyForm when the modal opens
@@ -67,9 +74,12 @@ export default function CreateAdmissionSlipDialog({ open, setOpen, errors }: Pro
         }
 
         try {
-            const res = await fetch(`/admin/students/search?q=${encodeURIComponent(query)}`, {
-                headers: { Accept: 'application/json' },
-            });
+            const res = await fetch(
+                `/admin/students/search?q=${encodeURIComponent(query)}`,
+                {
+                    headers: { Accept: 'application/json' },
+                },
+            );
             if (res.ok) {
                 const data = await res.json();
                 setSearchResults(data.students || []);
@@ -102,12 +112,15 @@ export default function CreateAdmissionSlipDialog({ open, setOpen, errors }: Pro
 
         setLookupStatus('loading');
         try {
-            const res = await fetch(`/admin/students/lookup?student_id=${encodeURIComponent(trimmed)}`, {
-                headers: {
-                    Accept: 'application/json',
+            const res = await fetch(
+                `/admin/students/lookup?student_id=${encodeURIComponent(trimmed)}`,
+                {
+                    headers: {
+                        Accept: 'application/json',
+                    },
+                    credentials: 'same-origin',
                 },
-                credentials: 'same-origin',
-            });
+            );
 
             if (!res.ok) {
                 setLookupStatus('not_found');
@@ -115,8 +128,14 @@ export default function CreateAdmissionSlipDialog({ open, setOpen, errors }: Pro
                 return;
             }
 
-            const data = (await res.json()) as { name?: string; course?: string; year_level?: string | number };
-            const programYear = [data.course, data.year_level].filter(Boolean).join(' ');
+            const data = (await res.json()) as {
+                name?: string;
+                course?: string;
+                year_level?: string | number;
+            };
+            const programYear = [data.course, data.year_level]
+                .filter(Boolean)
+                .join(' ');
             setForm((p) => ({
                 ...p,
                 studentName: String(data?.name ?? ''),
@@ -137,7 +156,8 @@ export default function CreateAdmissionSlipDialog({ open, setOpen, errors }: Pro
         if (!form.dateIssued.trim()) errors.push('Date issued is required');
         if (!form.caseText.trim()) errors.push('Case text is required');
         if (!form.reasonText.trim()) errors.push('Reason text is required');
-        if (!form.validUntil.trim()) errors.push('Valid until date is required');
+        if (!form.validUntil.trim())
+            errors.push('Valid until date is required');
         if (errors.length) {
             Swal.fire({
                 title: 'Validation error',
@@ -198,16 +218,22 @@ export default function CreateAdmissionSlipDialog({ open, setOpen, errors }: Pro
                                 Create Walk-in Slip
                             </DialogTitle>
                             <DialogDescription className="mt-1 text-xs font-medium text-blue-100/70">
-                                Fill out details below to generate a new walk-in admission slip.
+                                Fill out details below to generate a new walk-in
+                                admission slip.
                             </DialogDescription>
                         </div>
                     </div>
                 </div>
 
-                <div className="min-h-0 flex-1 overflow-y-auto p-8 space-y-6">
+                <div className="min-h-0 flex-1 space-y-6 overflow-y-auto p-8">
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                        <div className="grid gap-2.5 relative">
-                            <Label htmlFor="userId" className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400">User ID</Label>
+                        <div className="relative grid gap-2.5">
+                            <Label
+                                htmlFor="userId"
+                                className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
+                            >
+                                User ID
+                            </Label>
                             <Input
                                 id="userId"
                                 value={form.userId}
@@ -217,11 +243,15 @@ export default function CreateAdmissionSlipDialog({ open, setOpen, errors }: Pro
                                     handleSearch(v);
                                 }}
                                 onBlur={() => {
-                                    setTimeout(() => setIsDropdownOpen(false), 200);
+                                    setTimeout(
+                                        () => setIsDropdownOpen(false),
+                                        200,
+                                    );
                                     lookupStudent(form.userId);
                                 }}
                                 onFocus={() => {
-                                    if (searchResults.length > 0) setIsDropdownOpen(true);
+                                    if (searchResults.length > 0)
+                                        setIsDropdownOpen(true);
                                 }}
                                 placeholder="Enter student ID"
                                 autoComplete="off"
@@ -229,20 +259,27 @@ export default function CreateAdmissionSlipDialog({ open, setOpen, errors }: Pro
                             />
 
                             {isDropdownOpen && searchResults.length > 0 && (
-                                <div className="absolute top-[75px] left-0 z-[100] mt-1 w-full rounded-2xl border border-slate-200 bg-white py-2 shadow-2xl max-h-60 overflow-auto dark:border-slate-700 dark:bg-slate-800">
+                                <div className="absolute top-[75px] left-0 z-[100] mt-1 max-h-60 w-full overflow-auto rounded-2xl border border-slate-200 bg-white py-2 shadow-2xl dark:border-slate-700 dark:bg-slate-800">
                                     {searchResults.map((student) => (
                                         <button
                                             key={student.id}
                                             type="button"
-                                            className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 flex flex-col transition-colors"
+                                            className="flex w-full flex-col px-4 py-2 text-left text-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
                                             onClick={() => {
-                                                setForm(p => ({ ...p, userId: student.id }));
+                                                setForm((p) => ({
+                                                    ...p,
+                                                    userId: student.id,
+                                                }));
                                                 setIsDropdownOpen(false);
                                                 lookupStudent(student.id);
                                             }}
                                         >
-                                            <span className="font-bold text-slate-800 dark:text-slate-200">{student.id}</span>
-                                            <span className="text-xs text-slate-500 dark:text-slate-400">{student.name}</span>
+                                            <span className="font-bold text-slate-800 dark:text-slate-200">
+                                                {student.id}
+                                            </span>
+                                            <span className="text-xs text-slate-500 dark:text-slate-400">
+                                                {student.name}
+                                            </span>
                                         </button>
                                     ))}
                                 </div>
@@ -252,39 +289,54 @@ export default function CreateAdmissionSlipDialog({ open, setOpen, errors }: Pro
                                 {lookupStatus === 'loading'
                                     ? 'Looking up...'
                                     : lookupStatus === 'found'
-                                        ? '✓ Student found'
-                                        : lookupStatus === 'not_found'
-                                            ? '✗ Student not found'
-                                            : ''}
+                                      ? '✓ Student found'
+                                      : lookupStatus === 'not_found'
+                                        ? '✗ Student not found'
+                                        : ''}
                             </div>
                         </div>
 
                         <div className="grid gap-2.5">
-                            <Label htmlFor="studentName" className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400">Name</Label>
+                            <Label
+                                htmlFor="studentName"
+                                className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
+                            >
+                                Name
+                            </Label>
                             <Input
                                 id="studentName"
                                 value={form.studentName}
                                 readOnly
                                 placeholder="Student name will appear here"
-                                className="h-11 rounded-xl border-slate-200 bg-slate-100 px-4 text-slate-750 dark:border-slate-800 dark:bg-slate-800/80 cursor-not-allowed"
+                                className="text-slate-750 h-11 cursor-not-allowed rounded-xl border-slate-200 bg-slate-100 px-4 dark:border-slate-800 dark:bg-slate-800/80"
                             />
                             <InputError message={errors.student_name} />
                         </div>
 
                         <div className="grid gap-2.5">
-                            <Label htmlFor="programYear" className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400">Program/Year Level</Label>
+                            <Label
+                                htmlFor="programYear"
+                                className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
+                            >
+                                Program/Year Level
+                            </Label>
                             <Input
                                 id="programYear"
                                 value={form.programYear}
                                 readOnly
                                 placeholder="Program and year level will appear here"
-                                className="h-11 rounded-xl border-slate-200 bg-slate-100 px-4 text-slate-750 dark:border-slate-800 dark:bg-slate-800/80 cursor-not-allowed"
+                                className="text-slate-750 h-11 cursor-not-allowed rounded-xl border-slate-200 bg-slate-100 px-4 dark:border-slate-800 dark:bg-slate-800/80"
                             />
                             <InputError message={errors.program_year_level} />
                         </div>
 
                         <div className="grid gap-2.5">
-                            <Label htmlFor="dateIssued" className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400">Date Issued</Label>
+                            <Label
+                                htmlFor="dateIssued"
+                                className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
+                            >
+                                Date Issued
+                            </Label>
                             <Input
                                 id="dateIssued"
                                 type="date"
@@ -303,24 +355,39 @@ export default function CreateAdmissionSlipDialog({ open, setOpen, errors }: Pro
                         </div>
 
                         <div className="grid gap-2.5">
-                            <Label htmlFor="validUntil" className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400">Valid Until</Label>
+                            <Label
+                                htmlFor="validUntil"
+                                className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
+                            >
+                                Valid Until
+                            </Label>
                             <Input
                                 id="validUntil"
                                 type="date"
                                 value={form.validUntil}
                                 readOnly
-                                className="h-11 rounded-xl border-slate-200 bg-slate-100 px-4 text-slate-750 dark:border-slate-800 dark:bg-slate-800/80 cursor-not-allowed"
+                                className="text-slate-750 h-11 cursor-not-allowed rounded-xl border-slate-200 bg-slate-100 px-4 dark:border-slate-800 dark:bg-slate-800/80"
                             />
                             <InputError message={errors.valid_until} />
                         </div>
                     </div>
 
                     <div className="grid gap-2.5">
-                        <Label htmlFor="caseText" className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400">Case / Reason Title</Label>
+                        <Label
+                            htmlFor="caseText"
+                            className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
+                        >
+                            Case / Reason Title
+                        </Label>
                         <Input
                             id="caseText"
                             value={form.caseText}
-                            onChange={(e) => setForm((p) => ({ ...p, caseText: e.target.value }))}
+                            onChange={(e) =>
+                                setForm((p) => ({
+                                    ...p,
+                                    caseText: e.target.value,
+                                }))
+                            }
                             placeholder="Enter case"
                             className="h-11 rounded-xl border-slate-200 bg-slate-50 px-4 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50"
                         />
@@ -328,14 +395,112 @@ export default function CreateAdmissionSlipDialog({ open, setOpen, errors }: Pro
                     </div>
 
                     <div className="grid gap-2.5">
-                        <Label htmlFor="reasonText" className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400">Reason / Details</Label>
-                        <textarea
-                            id="reasonText"
-                            value={form.reasonText}
-                            onChange={(e) => setForm((p) => ({ ...p, reasonText: e.target.value }))}
-                            placeholder="Enter reason details"
-                            className="min-h-24 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 dark:border-slate-850 dark:bg-slate-800/50 dark:text-white"
-                        />
+                        <Label className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400">
+                            Reason *
+                        </Label>
+                        <div className="mt-1 ml-1 grid grid-cols-1 gap-3 md:grid-cols-2">
+                            {[
+                                'Illness / Not Feeling Well',
+                                'Medical / Dental Appointment',
+                                'Family Emergency',
+                                'Bereavement in the Family',
+                                'Transportation Problem',
+                                'Bad Weather / Calamity',
+                                'Official School Activity',
+                                'Financial Concern',
+                            ].map((r) => {
+                                const checked = form.reasonText === r;
+                                return (
+                                    <label
+                                        key={r}
+                                        className="flex cursor-pointer items-center space-x-2.5 text-sm font-medium text-slate-700 dark:text-slate-300"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={checked}
+                                            onChange={() =>
+                                                setForm((p) => ({
+                                                    ...p,
+                                                    reasonText: r,
+                                                }))
+                                            }
+                                            className="h-4.5 w-4.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <span>{r}</span>
+                                    </label>
+                                );
+                            })}
+                            <label className="flex cursor-pointer items-center space-x-2.5 text-sm font-medium text-slate-700 dark:text-slate-300">
+                                <input
+                                    type="checkbox"
+                                    checked={
+                                        ![
+                                            'Illness / Not Feeling Well',
+                                            'Medical / Dental Appointment',
+                                            'Family Emergency',
+                                            'Bereavement in the Family',
+                                            'Transportation Problem',
+                                            'Bad Weather / Calamity',
+                                            'Official School Activity',
+                                            'Financial Concern',
+                                        ].includes(form.reasonText) &&
+                                        form.reasonText !== ''
+                                    }
+                                    onChange={() =>
+                                        setForm((p) => ({
+                                            ...p,
+                                            reasonText: 'Others: ',
+                                        }))
+                                    }
+                                    className="h-4.5 w-4.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span>Others</span>
+                            </label>
+                        </div>
+
+                        {![
+                            'Illness / Not Feeling Well',
+                            'Medical / Dental Appointment',
+                            'Family Emergency',
+                            'Bereavement in the Family',
+                            'Transportation Problem',
+                            'Bad Weather / Calamity',
+                            'Official School Activity',
+                            'Financial Concern',
+                        ].includes(form.reasonText) &&
+                            form.reasonText !== '' && (
+                                <div className="mt-2 animate-in space-y-1.5 duration-200 fade-in">
+                                    <Label
+                                        htmlFor="reasonText_other"
+                                        className="ml-1 text-[9px] font-bold tracking-widest text-slate-400 uppercase"
+                                    >
+                                        Specify Reason Details *
+                                    </Label>
+                                    <textarea
+                                        id="reasonText_other"
+                                        value={
+                                            form.reasonText.startsWith(
+                                                'Others: ',
+                                            )
+                                                ? form.reasonText.replace(
+                                                      'Others: ',
+                                                      '',
+                                                  )
+                                                : form.reasonText
+                                        }
+                                        onChange={(e) =>
+                                            setForm((p) => ({
+                                                ...p,
+                                                reasonText:
+                                                    'Others: ' + e.target.value,
+                                            }))
+                                        }
+                                        placeholder="Specify other reason details..."
+                                        rows={2}
+                                        className="dark:border-slate-850 min-h-16 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 shadow-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:outline-none dark:bg-slate-800/50 dark:text-white"
+                                    />
+                                </div>
+                            )}
                         <InputError message={errors.reason_text} />
                     </div>
                 </div>

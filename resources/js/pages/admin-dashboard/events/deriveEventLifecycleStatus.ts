@@ -1,5 +1,7 @@
 /** Same calendar-day rules as `Event::deriveLifecycleStatusFromDate` (app-local date). */
-export function deriveEventLifecycleStatus(isoDateYmd: string): 'upcoming' | 'ongoing' | 'completed' {
+export function deriveEventLifecycleStatus(
+    isoDateYmd: string,
+): 'upcoming' | 'ongoing' | 'completed' {
     const raw = (isoDateYmd || '').trim().slice(0, 10);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
         return 'upcoming';

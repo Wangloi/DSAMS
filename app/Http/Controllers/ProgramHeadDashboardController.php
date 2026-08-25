@@ -20,12 +20,15 @@ class ProgramHeadDashboardController extends Controller
         $program = is_object($programHead) ? (string) ($programHead->program ?? '') : '';
 
         $activities = $this->getActivities();
-        $events = $this->getEvents();
+        $events = $this->getUpcomingEvents($program);
+        $recentEvents = $this->getRecentEvents($program);
 
         $selectedEventId = null;
         $requestedEvent = (string) $request->query('event', '');
         if ($requestedEvent !== '' && ctype_digit($requestedEvent)) {
             $selectedEventId = $requestedEvent;
+        } elseif (!empty($recentEvents)) {
+            $selectedEventId = (string) ($recentEvents[0]['id'] ?? '');
         } elseif (!empty($events)) {
             $selectedEventId = (string) ($events[0]['id'] ?? '');
         }
@@ -44,10 +47,11 @@ class ProgramHeadDashboardController extends Controller
             'program'               => $program,
             'recentActivities'      => $activities,
             'events'                => $events,
+            'recentEvents'          => $recentEvents,
             'selectedEventId'       => $selectedEventId,
             'attendanceRows'        => $attendanceRows,
             'violationsByYearLevel' => $violationsByYearLevel,
-            'totalViolationsCount'  => $totalViolationsCount,
+            'totalViolationsCount'  =>  $totalViolationsCount,
             'recentNotifications'   => $recentNotifications,
         ]);
     }
@@ -227,7 +231,7 @@ class ProgramHeadDashboardController extends Controller
     }
 
 
-    private function getEvents(): array
+    private function getUpcomingEvents(string $program): array
     {
         if (!Schema::hasTable('events')) {
             return [];
@@ -239,18 +243,104 @@ class ProgramHeadDashboardController extends Controller
             $eventsQuery->whereNull('archived_at');
         }
 
+        $programStudents = [];
+        $programStudentIds = [];
+        if ($program !== '' && Schema::hasTable('students')) {
+            $programStudents = Student::where('course', $program)
+                ->where('is_archived', false)
+                ->get(['id']);
+            $programStudentIds = $programStudents->pluck('id')->toArray();
+        }
+        $totalStudents = count($programStudentIds);
+
         return $eventsQuery
-            ->orderByDesc('event_date')
-            ->orderByDesc('event_time')
+            ->whereDate('event_date', '>=', \Carbon\Carbon::today()->toDateString())
+            ->orderBy('event_date', 'asc')
+            ->orderBy('event_time', 'asc')
             ->limit(200)
-            ->get(['id', 'event_name', 'event_date', 'event_time', 'status'])
-            ->map(function (Event $event) {
+            ->get(['id', 'event_name', 'event_date', 'event_time', 'status', 'organizer', 'location'])
+            ->map(function (Event $event) use ($programStudentIds, $totalStudents) {
+                $present = 0;
+                if ($totalStudents > 0 && Schema::hasTable('attendances')) {
+                    $present = Attendance::where('event_id', $event->id)
+                        ->whereIn('student_id', $programStudentIds)
+                        ->count();
+                }
+                $absent = max(0, $totalStudents - $present);
+                $presentRate = $totalStudents > 0 ? round(($present / $totalStudents) * 100) : 0;
+                $absentRate = $totalStudents > 0 ? round(($absent / $totalStudents) * 100) : 0;
+
                 return [
                     'id' => (string) $event->id,
                     'event_name' => (string) ($event->event_name ?? ''),
-                    'event_date' => $event->event_date?->format('Y-m-d') ?? '',
+                    'event_date' => $event->event_date ? \Carbon\Carbon::parse($event->event_date)->format('Y-m-d') : '',
                     'event_time' => (string) ($event->event_time ?? ''),
                     'status' => (string) ($event->status ?? ''),
+                    'organizer' => (string) ($event->organizer ?? ''),
+                    'location' => (string) ($event->location ?? ''),
+                    'present_count' => $present,
+                    'absent_count' => $absent,
+                    'present_rate' => $presentRate,
+                    'absent_rate' => $absentRate,
+                    'total_students' => $totalStudents,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function getRecentEvents(string $program): array
+    {
+        if (!Schema::hasTable('events')) {
+            return [];
+        }
+
+        $eventsQuery = Event::query();
+
+        if (Schema::hasColumn('events', 'archived_at')) {
+            $eventsQuery->whereNull('archived_at');
+        }
+
+        $programStudents = [];
+        $programStudentIds = [];
+        if ($program !== '' && Schema::hasTable('students')) {
+            $programStudents = Student::where('course', $program)
+                ->where('is_archived', false)
+                ->get(['id']);
+            $programStudentIds = $programStudents->pluck('id')->toArray();
+        }
+        $totalStudents = count($programStudentIds);
+
+        return $eventsQuery
+            ->whereDate('event_date', '<=', \Carbon\Carbon::today()->toDateString())
+            ->orderBy('event_date', 'desc')
+            ->orderBy('event_time', 'desc')
+            ->limit(200)
+            ->get(['id', 'event_name', 'event_date', 'event_time', 'status', 'organizer', 'location'])
+            ->map(function (Event $event) use ($programStudentIds, $totalStudents) {
+                $present = 0;
+                if ($totalStudents > 0 && Schema::hasTable('attendances')) {
+                    $present = Attendance::where('event_id', $event->id)
+                        ->whereIn('student_id', $programStudentIds)
+                        ->count();
+                }
+                $absent = max(0, $totalStudents - $present);
+                $presentRate = $totalStudents > 0 ? round(($present / $totalStudents) * 100) : 0;
+                $absentRate = $totalStudents > 0 ? round(($absent / $totalStudents) * 100) : 0;
+
+                return [
+                    'id' => (string) $event->id,
+                    'event_name' => (string) ($event->event_name ?? ''),
+                    'event_date' => $event->event_date ? \Carbon\Carbon::parse($event->event_date)->format('Y-m-d') : '',
+                    'event_time' => (string) ($event->event_time ?? ''),
+                    'status' => (string) ($event->status ?? ''),
+                    'organizer' => (string) ($event->organizer ?? ''),
+                    'location' => (string) ($event->location ?? ''),
+                    'present_count' => $present,
+                    'absent_count' => $absent,
+                    'present_rate' => $presentRate,
+                    'absent_rate' => $absentRate,
+                    'total_students' => $totalStudents,
                 ];
             })
             ->values()
@@ -336,9 +426,17 @@ class ProgramHeadDashboardController extends Controller
                 $incidentYears = [];
 
                 foreach ($involved as $id) {
-                    if (in_array((string)$id, $programStudentIds)) {
+                    if (is_array($id)) {
+                        $actualId = isset($id['id']) ? (string)$id['id'] : (string)reset($id);
+                    } elseif (is_object($id)) {
+                        $actualId = isset($id->id) ? (string)$id->id : '';
+                    } else {
+                        $actualId = (string)$id;
+                    }
+
+                    if ($actualId !== '' && in_array($actualId, $programStudentIds)) {
                         $foundProgramStudent = true;
-                        $year = (string)($yearLevelByStudentId[(string)$id] ?? '');
+                        $year = (string)($yearLevelByStudentId[$actualId] ?? '');
                         if ($year !== '') {
                             $incidentYears[] = $year;
                         }

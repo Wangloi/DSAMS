@@ -1,14 +1,14 @@
-import {
-    Eye,
-    Edit,
-    Archive,
-    ArchiveRestore,
-    MapPin,
-    Users,
-} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Archive,
+    ArchiveRestore,
+    Edit,
+    Eye,
+    MapPin,
+    Users,
+} from 'lucide-react';
 
 interface Event {
     id: number;
@@ -57,7 +57,13 @@ const getStatusColor = (status: string) => {
     }
 };
 
-export default function EventsTable({ events, onEdit, onArchive, onUnarchive, onView }: Props) {
+export default function EventsTable({
+    events,
+    onEdit,
+    onArchive,
+    onUnarchive,
+    onView,
+}: Props) {
     return (
         <Card className="border-0 bg-white shadow-lg dark:bg-[#0B192C]/50">
             <CardHeader className="pb-3">
@@ -74,25 +80,25 @@ export default function EventsTable({ events, onEdit, onArchive, onUnarchive, on
                     <table className="min-w-full border-collapse">
                         <thead className="border-b border-slate-100 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
                             <tr>
-                                <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
                                     Event Name
                                 </th>
-                                <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
                                     Organizer
                                 </th>
-                                <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
                                     Location
                                 </th>
-                                <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
                                     Date & Time
                                 </th>
-                                <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
                                     Status
                                 </th>
-                                <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
                                     Attendees
                                 </th>
-                                <th className="px-6 py-4 text-right text-[10px] font-bold uppercase tracking-wider">
+                                <th className="px-6 py-4 text-right text-[10px] font-bold tracking-wider uppercase">
                                     Actions
                                 </th>
                             </tr>
@@ -101,13 +107,17 @@ export default function EventsTable({ events, onEdit, onArchive, onUnarchive, on
                             {events.map((event) => {
                                 const initials = (event.event_name || 'EV')
                                     .split(' ')
-                                    .map(n => n[0])
+                                    .map((n) => n[0])
                                     .join('')
                                     .slice(0, 2)
                                     .toUpperCase();
 
                                 return (
-                                    <tr key={event.id} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
+                                    <tr
+                                        key={event.id}
+                                        onClick={() => onView(event)}
+                                        className="cursor-pointer transition-colors duration-150 hover:bg-blue-50/50 dark:hover:bg-blue-950/15"
+                                    >
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 text-xs font-bold text-[#1e40af] shadow-sm dark:from-blue-500/20 dark:to-indigo-500/20 dark:text-blue-300">
@@ -131,16 +141,33 @@ export default function EventsTable({ events, onEdit, onArchive, onUnarchive, on
                                         </td>
                                         <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
                                             {(() => {
-                                                const dateStr = event.event_date;
-                                                if (dateStr && dateStr.includes('-')) {
-                                                    const parts = dateStr.split('T')[0].split('-');
-                                                    return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).toLocaleDateString();
+                                                const dateStr =
+                                                    event.event_date;
+                                                if (
+                                                    dateStr &&
+                                                    dateStr.includes('-')
+                                                ) {
+                                                    const parts = dateStr
+                                                        .split('T')[0]
+                                                        .split('-');
+                                                    return new Date(
+                                                        Number(parts[0]),
+                                                        Number(parts[1]) - 1,
+                                                        Number(parts[2]),
+                                                    ).toLocaleDateString();
                                                 }
-                                                return new Date(dateStr).toLocaleDateString();
-                                            })()} at {event.event_time}
+                                                return new Date(
+                                                    dateStr,
+                                                ).toLocaleDateString();
+                                            })()}{' '}
+                                            at {event.event_time}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <Badge className={getStatusColor(event.status)}>
+                                            <Badge
+                                                className={getStatusColor(
+                                                    event.status,
+                                                )}
+                                            >
                                                 {event.status}
                                             </Badge>
                                         </td>
@@ -152,13 +179,18 @@ export default function EventsTable({ events, onEdit, onArchive, onUnarchive, on
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
+                                        <td
+                                            className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
                                             <div className="ml-auto flex w-fit items-center justify-end gap-1 rounded-lg border border-slate-100/50 bg-slate-50/50 p-1 shadow-sm dark:border-slate-800 dark:bg-slate-800/40">
                                                 <Button
                                                     type="button"
                                                     variant="ghost"
                                                     size="icon"
-                                                    onClick={() => onView(event)}
+                                                    onClick={() =>
+                                                        onView(event)
+                                                    }
                                                     className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-blue-50 hover:text-blue-600 dark:text-slate-400 dark:hover:bg-blue-950/30 dark:hover:text-blue-300"
                                                     aria-label="View event"
                                                 >
@@ -169,7 +201,9 @@ export default function EventsTable({ events, onEdit, onArchive, onUnarchive, on
                                                     type="button"
                                                     variant="ghost"
                                                     size="icon"
-                                                    onClick={() => onEdit(event)}
+                                                    onClick={() =>
+                                                        onEdit(event)
+                                                    }
                                                     className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-violet-50 hover:text-violet-600 dark:text-slate-400 dark:hover:bg-violet-950/30 dark:hover:text-violet-300"
                                                     aria-label="Edit event"
                                                 >
@@ -181,7 +215,9 @@ export default function EventsTable({ events, onEdit, onArchive, onUnarchive, on
                                                         type="button"
                                                         variant="ghost"
                                                         size="icon"
-                                                        onClick={() => onUnarchive(event)}
+                                                        onClick={() =>
+                                                            onUnarchive(event)
+                                                        }
                                                         className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-emerald-50 hover:text-emerald-600 dark:text-slate-400 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-300"
                                                         aria-label="Restore event"
                                                     >
@@ -192,7 +228,9 @@ export default function EventsTable({ events, onEdit, onArchive, onUnarchive, on
                                                         type="button"
                                                         variant="ghost"
                                                         size="icon"
-                                                        onClick={() => onArchive(event)}
+                                                        onClick={() =>
+                                                            onArchive(event)
+                                                        }
                                                         className="h-8 w-8 rounded-md text-rose-500 transition-all duration-200 hover:bg-rose-50 hover:text-rose-600 dark:text-rose-400 dark:hover:bg-rose-950/30 dark:hover:text-rose-300"
                                                         aria-label="Archive event"
                                                     >

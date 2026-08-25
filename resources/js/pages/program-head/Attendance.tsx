@@ -1,3 +1,12 @@
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Head } from '@inertiajs/react';
 import {
     Activity,
@@ -13,8 +22,6 @@ import {
     Zap,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AttendanceHeader from '../admin-dashboard/attendance/AttendanceHeader';
 import AttendanceStatsCards from '../admin-dashboard/attendance/AttendanceStatsCards';
 import AttendanceTable from '../admin-dashboard/attendance/AttendanceTable';
@@ -77,8 +84,14 @@ export default function Attendance({
 }: Props) {
     const [events, setEvents] = useState<AttendanceRow[]>(initialEvents);
     const [searchQuery, setSearchQuery] = useState(filters?.search ?? '');
+    const [statusFilter, setStatusFilter] = useState('');
     const [dateRange, setDateRange] = useState({ start: '', end: '' });
     const [selectedListEventId, setSelectedListEventId] = useState<string>('');
+    const [showAttendeesModal, setShowAttendeesModal] = useState(false);
+    const [viewingEventId, setViewingEventId] = useState<string | null>(null);
+    const [viewingEventName, setViewingEventName] = useState('');
+    const [attendees, setAttendees] = useState<any[]>([]);
+    const [attendeesLoading, setAttendeesLoading] = useState(false);
 
     const [showRealTimeMonitoring, setShowRealTimeMonitoring] = useState(false);
     const [monitoringEnabled, setMonitoringEnabled] = useState(true);
@@ -105,15 +118,16 @@ export default function Attendance({
                 (!dateRange.end ||
                     (datePart !== '' && datePart <= dateRange.end));
             const q = searchQuery.trim().toLowerCase();
-            const matches =
+            const matchesSearch =
                 !q ||
                 ev.event.toLowerCase().includes(q) ||
                 ev.organizer.toLowerCase().includes(q) ||
                 ev.location.toLowerCase().includes(q);
+            const matchesStatus = !statusFilter || ev.status === statusFilter;
 
-            return inRange && matches;
+            return inRange && matchesSearch && matchesStatus;
         });
-    }, [dateRange.end, dateRange.start, events, searchQuery]);
+    }, [dateRange.end, dateRange.start, events, searchQuery, statusFilter]);
 
     useEffect(() => {
         if (
@@ -259,6 +273,33 @@ export default function Attendance({
         setByCourse([]);
         setLiveCounts({ total: 0, present: 0, late: 0 });
         setLastUpdatedAt(null);
+    };
+
+    const handleViewAttendees = async (eventId: string) => {
+        const event = events.find((e) => String(e.id) === String(eventId));
+        setViewingEventId(eventId);
+        setViewingEventName(event?.event || 'Event Participants');
+        setShowAttendeesModal(true);
+        setAttendeesLoading(true);
+        try {
+            const res = await fetch(
+                `/program-head/attendance/${eventId}/logs`,
+                {
+                    headers: {
+                        Accept: 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                },
+            );
+            if (res.ok) {
+                const data = await res.json();
+                setAttendees(data.rows ?? []);
+            }
+        } catch (error) {
+            console.error('Failed to fetch attendees:', error);
+        } finally {
+            setAttendeesLoading(false);
+        }
     };
 
     return (
@@ -557,10 +598,11 @@ export default function Attendance({
 
                             <AttendanceTable
                                 attendanceEvents={filteredEvents}
-                                dateRange={dateRange}
-                                setDateRange={setDateRange}
                                 searchQuery={searchQuery}
                                 setSearchQuery={setSearchQuery}
+                                statusFilter={statusFilter}
+                                setStatusFilter={setStatusFilter}
+                                onViewStudents={handleViewAttendees}
                                 onOpenRealTimeMonitoring={
                                     handleOpenRealTimeMonitoringForEvent
                                 }
@@ -583,6 +625,84 @@ export default function Attendance({
                     )}
                 </div>
             </div>
+
+            <Dialog
+                open={showAttendeesModal}
+                onOpenChange={setShowAttendeesModal}
+            >
+                <DialogContent className="max-h-[85vh] w-[96vw] !max-w-4xl overflow-hidden border border-slate-200 bg-white p-0 dark:border-slate-800 dark:bg-slate-900">
+                    <DialogHeader className="border-b border-slate-100 bg-slate-50 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/50">
+                        <DialogTitle className="text-base font-bold text-slate-950 dark:text-white">
+                            {viewingEventName} - Attendees List
+                        </DialogTitle>
+                        <DialogDescription className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                            List of student attendees check-in logs
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="max-h-[calc(85vh-120px)] overflow-y-auto p-6">
+                        {attendeesLoading ? (
+                            <div className="py-8 text-center text-sm font-semibold text-slate-500">
+                                Loading attendees...
+                            </div>
+                        ) : attendees.length === 0 ? (
+                            <div className="py-8 text-center text-sm font-semibold text-slate-500">
+                                No attendees check-in recorded.
+                            </div>
+                        ) : (
+                            <div className="border-slate-150 overflow-hidden rounded-xl border bg-white dark:border-slate-800 dark:bg-transparent">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-sm">
+                                        <thead className="border-b border-slate-100 bg-slate-50 text-[10px] font-bold tracking-wider text-slate-400 uppercase dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-500">
+                                            <tr>
+                                                <th className="px-5 py-3">
+                                                    Student
+                                                </th>
+                                                <th className="px-5 py-3">
+                                                    Program
+                                                </th>
+                                                <th className="px-5 py-3">
+                                                    Time
+                                                </th>
+                                                <th className="px-5 py-3 text-right">
+                                                    Status
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                            {attendees.map((row, idx) => (
+                                                <tr
+                                                    key={row.id ?? idx}
+                                                    className="hover:bg-slate-50 dark:hover:bg-slate-800/20"
+                                                >
+                                                    <td className="px-5 py-3.5">
+                                                        <p className="text-xs font-bold text-slate-900 dark:text-white">
+                                                            {row.name}
+                                                        </p>
+                                                        <p className="text-[10px] font-semibold text-slate-400">
+                                                            {row.student_id}
+                                                        </p>
+                                                    </td>
+                                                    <td className="px-5 py-3.5 text-xs text-slate-600 dark:text-slate-300">
+                                                        {row.program}
+                                                    </td>
+                                                    <td className="px-5 py-3.5 text-xs text-slate-600 dark:text-slate-300">
+                                                        {row.time}
+                                                    </td>
+                                                    <td className="px-5 py-3.5 text-right">
+                                                        <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-black tracking-widest text-emerald-700 uppercase dark:bg-emerald-500/10 dark:text-emerald-400">
+                                                            {row.status}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
         </ProgramHeadLayout>
     );
 }

@@ -1,31 +1,22 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { 
-    ArrowLeft, 
-    ArrowRight, 
-    BookOpen, 
-    Calendar, 
-    Edit, 
-    GraduationCap, 
-    Users, 
-    TrendingUp, 
-    Award, 
-    Building2,
-    Clock,
-    Target,
-    Activity,
-    Star,
-    CheckCircle,
-    AlertCircle,
-    UserCheck,
-    BarChart3
-} from 'lucide-react';
-import React from 'react';
-import { Breadcrumbs } from '@/components/breadcrumbs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { adminPrograms, adminProgramsUpdate } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
+import { Head, router } from '@inertiajs/react';
+import {
+    AlertCircle,
+    ArrowLeft,
+    Award,
+    BookOpen,
+    Building2,
+    CheckCircle,
+    Clock,
+    Edit,
+    GraduationCap,
+    UserCheck,
+    Users,
+} from 'lucide-react';
 import AdminLayout from '../admin-layout';
 
 interface Student {
@@ -83,13 +74,17 @@ export default function AdminProgramsShowPage({ program }: ShowPageProps) {
     };
 
     const handlePageChange = (page: number) => {
-        router.get(`/admin/programs/${program.id}?page=${page}`, {}, { preserveScroll: true });
+        router.get(
+            `/admin/programs/${program.id}?page=${page}`,
+            {},
+            { preserveScroll: true },
+        );
     };
 
     return (
         <AdminLayout breadcrumbs={breadcrumbs}>
             <Head title={program.name} />
-            
+
             {/* Main Content */}
             <div className="flex w-full flex-col gap-6 px-6 py-6">
                 {/* Hero Section */}
@@ -100,22 +95,25 @@ export default function AdminProgramsShowPage({ program }: ShowPageProps) {
                                 <GraduationCap className="h-6 w-6 text-white" />
                             </div>
                             <div className="leading-tight">
-                                <div className="text-lg font-semibold">{program.name}</div>
-                                <div className="text-sm text-white/80">Program details and enrolled students</div>
+                                <div className="text-lg font-semibold">
+                                    {program.name}
+                                </div>
+                                <div className="text-sm text-white/80">
+                                    Program details and enrolled students
+                                </div>
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
                             <div className="flex items-center space-x-2">
-                                <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30">
+                                <Badge className="border-white/30 bg-white/20 text-white hover:bg-white/30">
                                     {program.code}
                                 </Badge>
-                                <Badge 
-                                    className={`
-                                        ${program.status === 'active' 
-                                            ? 'bg-emerald-500/20 text-emerald-100 border-emerald-400/30' 
-                                            : 'bg-amber-500/20 text-amber-100 border-amber-400/30'
-                                        }
-                                    `}
+                                <Badge
+                                    className={` ${
+                                        program.status === 'active'
+                                            ? 'border-emerald-400/30 bg-emerald-500/20 text-emerald-100'
+                                            : 'border-amber-400/30 bg-amber-500/20 text-amber-100'
+                                    } `}
                                 >
                                     <div className="flex items-center space-x-1">
                                         {program.status === 'active' ? (
@@ -123,21 +121,25 @@ export default function AdminProgramsShowPage({ program }: ShowPageProps) {
                                         ) : (
                                             <AlertCircle className="h-3 w-3" />
                                         )}
-                                        <span>{program.status === 'active' ? 'Active' : 'Inactive'}</span>
+                                        <span>
+                                            {program.status === 'active'
+                                                ? 'Active'
+                                                : 'Inactive'}
+                                        </span>
                                     </div>
                                 </Badge>
                             </div>
-                            <Button 
-                                onClick={handleEdit} 
+                            <Button
+                                onClick={handleEdit}
                                 className="bg-white/15 text-white hover:bg-white/25"
                             >
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit Program
                             </Button>
-                            <Button 
-                                variant="outline" 
+                            <Button
+                                variant="outline"
                                 onClick={() => router.visit(adminPrograms())}
-                                className="bg-white/15 text-white border-white/30 hover:bg-white/25"
+                                className="border-white/30 bg-white/15 text-white hover:bg-white/25"
                             >
                                 <ArrowLeft className="mr-2 h-4 w-4" />
                                 Back
@@ -146,46 +148,63 @@ export default function AdminProgramsShowPage({ program }: ShowPageProps) {
                     </div>
                 </div>
                 {/* Program Information */}
-                <Card className="border-0 shadow-lg bg-white dark:bg-slate-800">
+                <Card className="border-0 bg-white shadow-lg dark:bg-slate-800">
                     <CardHeader className="pb-3">
                         <div className="flex items-center space-x-2">
-                            <div className="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
+                            <div className="rounded-lg bg-indigo-100 p-2 dark:bg-indigo-900">
                                 <BookOpen className="h-5 w-5 text-indigo-600 dark:text-indigo-300" />
                             </div>
-                            <CardTitle className="text-lg font-semibold text-slate-800 dark:text-white">Program Information</CardTitle>
+                            <CardTitle className="text-lg font-semibold text-slate-800 dark:text-white">
+                                Program Information
+                            </CardTitle>
                         </div>
                     </CardHeader>
                     <CardContent className="pt-0">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <div className="space-y-4">
                                 <div>
-                                    <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Description</h4>
-                                    <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                                        {program.description || 'No description available for this program.'}
+                                    <h4 className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                        Description
+                                    </h4>
+                                    <p className="leading-relaxed text-slate-600 dark:text-slate-400">
+                                        {program.description ||
+                                            'No description available for this program.'}
                                     </p>
                                 </div>
-                                <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-600">
-                                    <div className="flex items-center space-x-2 mb-2">
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-700">
+                                    <div className="mb-2 flex items-center space-x-2">
                                         <Award className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Program Code</span>
+                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                            Program Code
+                                        </span>
                                     </div>
-                                    <p className="text-lg font-mono font-bold text-indigo-600 dark:text-indigo-400">{program.code}</p>
+                                    <p className="font-mono text-lg font-bold text-indigo-600 dark:text-indigo-400">
+                                        {program.code}
+                                    </p>
                                 </div>
                             </div>
                             <div className="space-y-4">
-                                <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-600">
-                                    <div className="flex items-center space-x-2 mb-2">
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-700">
+                                    <div className="mb-2 flex items-center space-x-2">
                                         <Building2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Department</span>
+                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                            Department
+                                        </span>
                                     </div>
-                                    <p className="text-lg font-bold text-purple-600 dark:text-purple-400">{program.department || 'N/A'}</p>
+                                    <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                                        {program.department || 'N/A'}
+                                    </p>
                                 </div>
-                                <div className="p-4 bg-slate-50 dark:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-600">
-                                    <div className="flex items-center space-x-2 mb-2">
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-700">
+                                    <div className="mb-2 flex items-center space-x-2">
                                         <Clock className="h-4 w-4 text-pink-600 dark:text-pink-400" />
-                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Duration</span>
+                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                            Duration
+                                        </span>
                                     </div>
-                                    <p className="text-lg font-bold text-pink-600 dark:text-pink-400">{program.duration || 'N/A'}</p>
+                                    <p className="text-lg font-bold text-pink-600 dark:text-pink-400">
+                                        {program.duration || 'N/A'}
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -193,41 +212,55 @@ export default function AdminProgramsShowPage({ program }: ShowPageProps) {
                 </Card>
 
                 {/* Enrolled Students */}
-                <Card className="border-0 shadow-lg bg-white dark:bg-slate-800">
+                <Card className="border-0 bg-white shadow-lg dark:bg-slate-800">
                     <CardHeader className="pb-3">
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle className="text-lg font-semibold text-slate-800 dark:text-white">
-                                    Enrolled Students ({program.pagination.total})
+                                    Enrolled Students (
+                                    {program.pagination.total})
                                 </CardTitle>
                             </div>
                             <div className="flex items-center gap-2">
-                                <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900 dark:text-purple-200 dark:border-purple-700">
-                                    Page {program.pagination.current_page} of {program.pagination.last_page}
+                                <Badge
+                                    variant="secondary"
+                                    className="border-purple-200 bg-purple-100 text-purple-800 dark:border-purple-700 dark:bg-purple-900 dark:text-purple-200"
+                                >
+                                    Page {program.pagination.current_page} of{' '}
+                                    {program.pagination.last_page}
                                 </Badge>
                             </div>
                         </div>
                     </CardHeader>
                     <CardContent className="pt-0">
                         {program.students.length === 0 ? (
-                            <div className="text-center py-16">
-                                <div className="w-20 h-20 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <div className="py-16 text-center">
+                                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700">
                                     <Users className="h-10 w-10 text-slate-400" />
                                 </div>
-                                <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">No Students Enrolled</h3>
-                                <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-                                    This program doesn't have any students enrolled yet. Students will appear here once they are assigned to this program.
+                                <h3 className="mb-3 text-xl font-semibold text-slate-900 dark:text-white">
+                                    No Students Enrolled
+                                </h3>
+                                <p className="mx-auto max-w-md text-slate-500 dark:text-slate-400">
+                                    This program doesn't have any students
+                                    enrolled yet. Students will appear here once
+                                    they are assigned to this program.
                                 </p>
                             </div>
                         ) : (
                             <>
-                                <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm">
-                                    <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-600 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800">
+                                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                                    <div className="border-b border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 px-5 py-4 dark:border-slate-600 dark:from-slate-700 dark:to-slate-800">
                                         <div className="flex items-center justify-between">
-                                            <h4 className="text-sm font-semibold text-slate-800 dark:text-white">Student List</h4>
-                                            <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-full">
-                                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                                                <span className="text-xs font-medium text-blue-700 dark:text-blue-300">{program.pagination.total} Total Students</span>
+                                            <h4 className="text-sm font-semibold text-slate-800 dark:text-white">
+                                                Student List
+                                            </h4>
+                                            <div className="flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 dark:border-blue-700 dark:bg-blue-900/30">
+                                                <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                                                <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                                                    {program.pagination.total}{' '}
+                                                    Total Students
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -235,61 +268,100 @@ export default function AdminProgramsShowPage({ program }: ShowPageProps) {
                                         <table className="w-full">
                                             <thead className="bg-slate-50 dark:bg-slate-700">
                                                 <tr className="border-b border-slate-200 dark:border-slate-600">
-                                                    <th className="px-5 py-4 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">#</th>
-                                                    <th className="px-5 py-4 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Student Name</th>
-                                                    <th className="px-5 py-4 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Student ID</th>
-                                                    <th className="px-5 py-4 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Email</th>
-                                                    <th className="px-5 py-4 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Year Level</th>
+                                                    <th className="px-5 py-4 text-left text-xs font-semibold tracking-wider text-slate-600 uppercase dark:text-slate-300">
+                                                        #
+                                                    </th>
+                                                    <th className="px-5 py-4 text-left text-xs font-semibold tracking-wider text-slate-600 uppercase dark:text-slate-300">
+                                                        Student Name
+                                                    </th>
+                                                    <th className="px-5 py-4 text-left text-xs font-semibold tracking-wider text-slate-600 uppercase dark:text-slate-300">
+                                                        Student ID
+                                                    </th>
+                                                    <th className="px-5 py-4 text-left text-xs font-semibold tracking-wider text-slate-600 uppercase dark:text-slate-300">
+                                                        Email
+                                                    </th>
+                                                    <th className="px-5 py-4 text-left text-xs font-semibold tracking-wider text-slate-600 uppercase dark:text-slate-300">
+                                                        Year Level
+                                                    </th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                                                {program.students.map((student, index) => (
-                                                    <tr 
-                                                        key={student.id} 
-                                                        className={`hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors duration-200 ${index === 0 ? 'bg-gradient-to-r from-blue-50/30 dark:from-blue-900/20 to-transparent' : ''}`}
-                                                    >
-                                                        <td className="px-5 py-4 text-sm font-semibold text-slate-800 dark:text-white">
-                                                            {(program.pagination.current_page - 1) * 10 + index + 1}
-                                                        </td>
-                                                        <td className="px-5 py-4">
-                                                            <div>
-                                                                <div className="font-medium text-slate-900 dark:text-white">{student.name}</div>
-                                                                <div className="text-xs text-slate-500 dark:text-slate-400">{student.email}</div>
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-5 py-4">
-                                                            <div className="flex items-center space-x-2">
-                                                                <div className="w-6 h-6 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center">
-                                                                    <UserCheck className="h-3 w-3 text-indigo-600 dark:text-indigo-300" />
+                                                {program.students.map(
+                                                    (student, index) => (
+                                                        <tr
+                                                            key={student.id}
+                                                            className={`transition-colors duration-200 hover:bg-slate-50 dark:hover:bg-slate-700 ${index === 0 ? 'bg-gradient-to-r from-blue-50/30 to-transparent dark:from-blue-900/20' : ''}`}
+                                                        >
+                                                            <td className="px-5 py-4 text-sm font-semibold text-slate-800 dark:text-white">
+                                                                {(program
+                                                                    .pagination
+                                                                    .current_page -
+                                                                    1) *
+                                                                    10 +
+                                                                    index +
+                                                                    1}
+                                                            </td>
+                                                            <td className="px-5 py-4">
+                                                                <div>
+                                                                    <div className="font-medium text-slate-900 dark:text-white">
+                                                                        {
+                                                                            student.name
+                                                                        }
+                                                                    </div>
+                                                                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                                                                        {
+                                                                            student.email
+                                                                        }
+                                                                    </div>
                                                                 </div>
-                                                                <span className="font-mono text-sm text-slate-700 dark:text-slate-300">{student.student_id}</span>
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-5 py-4">
-                                                            <div className="text-slate-600 dark:text-slate-400 text-sm">{student.email}</div>
-                                                        </td>
-                                                        <td className="px-5 py-4">
-                                                            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-700 hover:bg-blue-200 dark:hover:bg-blue-900/40">
-                                                                <span className="w-1.5 h-1.5 rounded-full mr-2 bg-blue-500"></span>
-                                                                {student.year_level}
-                                                            </span>
-                                                        </td>
-                                                    </tr>
-                                                ))}
+                                                            </td>
+                                                            <td className="px-5 py-4">
+                                                                <div className="flex items-center space-x-2">
+                                                                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900">
+                                                                        <UserCheck className="h-3 w-3 text-indigo-600 dark:text-indigo-300" />
+                                                                    </div>
+                                                                    <span className="font-mono text-sm text-slate-700 dark:text-slate-300">
+                                                                        {
+                                                                            student.student_id
+                                                                        }
+                                                                    </span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-5 py-4">
+                                                                <div className="text-sm text-slate-600 dark:text-slate-400">
+                                                                    {
+                                                                        student.email
+                                                                    }
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-5 py-4">
+                                                                <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-800 transition-all duration-200 hover:bg-blue-200 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/40">
+                                                                    <span className="mr-2 h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+                                                                    {
+                                                                        student.year_level
+                                                                    }
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    ),
+                                                )}
                                             </tbody>
                                         </table>
                                     </div>
                                 </div>
-                                
+
                                 {/* Pagination */}
-                                <div className="mt-3 flex flex-col gap-2 text-xs text-slate-600 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between px-5 pb-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                                <div className="mt-3 flex flex-col gap-2 border-t border-slate-200 bg-white px-5 pb-4 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
                                     <div>
                                         Showing {program.pagination.from} to{' '}
-                                        {program.pagination.to} of {program.pagination.total} students
+                                        {program.pagination.to} of{' '}
+                                        {program.pagination.total} students
                                     </div>
                                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                                         <div className="flex items-center gap-2">
-                                            <div className="text-slate-600 dark:text-slate-400">Show</div>
+                                            <div className="text-slate-600 dark:text-slate-400">
+                                                Show
+                                            </div>
                                             <select
                                                 value="10"
                                                 className="h-9 w-[70px] rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
@@ -297,37 +369,71 @@ export default function AdminProgramsShowPage({ program }: ShowPageProps) {
                                             >
                                                 <option value="10">10</option>
                                             </select>
-                                            <div className="text-slate-600 dark:text-slate-400">entries</div>
+                                            <div className="text-slate-600 dark:text-slate-400">
+                                                entries
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-1">
                                             <button
                                                 type="button"
-                                                className="rounded-md px-2 py-1 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50"
-                                                onClick={() => handlePageChange(program.pagination.current_page - 1)}
-                                                disabled={program.pagination.current_page === 1}
+                                                className="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-700"
+                                                onClick={() =>
+                                                    handlePageChange(
+                                                        program.pagination
+                                                            .current_page - 1,
+                                                    )
+                                                }
+                                                disabled={
+                                                    program.pagination
+                                                        .current_page === 1
+                                                }
                                             >
                                                 Prev
                                             </button>
-                                            {Array.from({ length: program.pagination.last_page }).slice(0, 5).map((_, idx) => {
-                                                const num = idx + 1;
-                                                return (
-                                                    <button
-                                                        key={num}
-                                                        type="button"
-                                                        onClick={() => handlePageChange(num)}
-                                                        className={
-                                                            'rounded-md px-2 py-1 ' + (program.pagination.current_page === num ? 'bg-[#23509A] text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700')
-                                                        }
-                                                    >
-                                                        {num}
-                                                    </button>
-                                                );
-                                            })}
+                                            {Array.from({
+                                                length: program.pagination
+                                                    .last_page,
+                                            })
+                                                .slice(0, 5)
+                                                .map((_, idx) => {
+                                                    const num = idx + 1;
+                                                    return (
+                                                        <button
+                                                            key={num}
+                                                            type="button"
+                                                            onClick={() =>
+                                                                handlePageChange(
+                                                                    num,
+                                                                )
+                                                            }
+                                                            className={
+                                                                'rounded-md px-2 py-1 ' +
+                                                                (program
+                                                                    .pagination
+                                                                    .current_page ===
+                                                                num
+                                                                    ? 'bg-[#23509A] text-white'
+                                                                    : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700')
+                                                            }
+                                                        >
+                                                            {num}
+                                                        </button>
+                                                    );
+                                                })}
                                             <button
                                                 type="button"
-                                                className="rounded-md px-2 py-1 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50"
-                                                onClick={() => handlePageChange(program.pagination.current_page + 1)}
-                                                disabled={program.pagination.current_page === program.pagination.last_page}
+                                                className="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-700"
+                                                onClick={() =>
+                                                    handlePageChange(
+                                                        program.pagination
+                                                            .current_page + 1,
+                                                    )
+                                                }
+                                                disabled={
+                                                    program.pagination
+                                                        .current_page ===
+                                                    program.pagination.last_page
+                                                }
                                             >
                                                 Next
                                             </button>

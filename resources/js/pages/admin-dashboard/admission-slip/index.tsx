@@ -1,16 +1,16 @@
+import { adminAdmissionSlip, adminDashboard } from '@/routes';
+import type { BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 import Swal from 'sweetalert2';
-import { adminAdmissionSlip, adminDashboard } from '@/routes';
-import type { BreadcrumbItem } from '@/types';
 import AdminLayout from '../admin-layout';
 import AdmissionSlipHeader from './AdmissionSlipHeader';
 import AdmissionSlipStatsCard from './AdmissionSlipStatsCard';
 import AdmissionSlipTableCard from './AdmissionSlipTableCard';
 import CreateAdmissionSlipDialog from './CreateAdmissionSlipDialog';
 import EditAdmissionSlipDialog from './EditAdmissionSlipDialog';
-import printSlip from './printSlip';
 import Pagination from './Pagination';
+import printSlip from './printSlip';
 import type { PageProps, SlipRow } from './types';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -28,10 +28,13 @@ export default function AdminAdmissionSlipPage() {
     const [open, setOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
     const [editingSlip, setEditingSlip] = useState<SlipRow | null>(null);
-    const { props } = (usePage() as { props: PageProps });
+    const [viewSlipId, setViewSlipId] = useState<number | null>(null);
+    const { props } = usePage() as { props: PageProps };
     const errors = props.errors ?? {};
     const [searchQuery, setSearchQuery] = useState('');
-    const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+    const [activeTab, setActiveTab] = useState<
+        'all' | 'pending' | 'approved' | 'rejected'
+    >('all');
     const [pageIndex, setPageIndex] = useState(1);
     const [pageSize, setPageSize] = useState(5);
 
@@ -39,7 +42,6 @@ export default function AdminAdmissionSlipPage() {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('open_add') === 'true') {
             setOpen(true);
-            // Clean up URL
             const url = new URL(window.location.href);
             url.searchParams.delete('open_add');
             window.history.replaceState({}, '', url.pathname);
@@ -48,16 +50,27 @@ export default function AdminAdmissionSlipPage() {
 
     const slips = useMemo<SlipRow[]>(() => {
         const raw = (props as PageProps).slips ?? [];
-        return raw.map((s: { id: number; student_name: string; program_year_level: string; date_issued: string; case_text: string; reason_text: string; valid_until: string; status: string }) => ({
-            id: s.id,
-            studentName: s.student_name,
-            programYear: s.program_year_level,
-            dateIssued: s.date_issued,
-            caseText: s.case_text,
-            reasonText: s.reason_text,
-            validUntil: s.valid_until,
-            status: s.status,
-        }));
+        return raw.map(
+            (s: {
+                id: number;
+                student_name: string;
+                program_year_level: string;
+                date_issued: string;
+                case_text: string;
+                reason_text: string;
+                valid_until: string;
+                status: string;
+            }) => ({
+                id: s.id,
+                studentName: s.student_name,
+                programYear: s.program_year_level,
+                dateIssued: s.date_issued,
+                caseText: s.case_text,
+                reasonText: s.reason_text,
+                validUntil: s.valid_until,
+                status: s.status,
+            }),
+        );
     }, [props]);
 
     const stats = useMemo(() => {
@@ -75,9 +88,15 @@ export default function AdminAdmissionSlipPage() {
     }, [slips]);
 
     const statusCounts = useMemo(() => {
-        const pending = slips.filter((s) => (s.status || 'PENDING').toUpperCase() === 'PENDING').length;
-        const approved = slips.filter((s) => (s.status || '').toUpperCase() === 'APPROVED').length;
-        const rejected = slips.filter((s) => (s.status || '').toUpperCase() === 'REJECTED').length;
+        const pending = slips.filter(
+            (s) => (s.status || 'PENDING').toUpperCase() === 'PENDING',
+        ).length;
+        const approved = slips.filter(
+            (s) => (s.status || '').toUpperCase() === 'APPROVED',
+        ).length;
+        const rejected = slips.filter(
+            (s) => (s.status || '').toUpperCase() === 'REJECTED',
+        ).length;
         return { pending, approved, rejected };
     }, [slips]);
 
@@ -132,6 +151,25 @@ export default function AdminAdmissionSlipPage() {
         setEditOpen(true);
     };
 
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const slipId = urlParams.get('slip_id');
+        if (slipId && slips.length > 0) {
+            const foundSlip = slips.find(
+                (s) => String(s.id) === String(slipId),
+            );
+            if (foundSlip) {
+                const timer = setTimeout(() => {
+                    setViewSlipId(foundSlip.id);
+                }, 350);
+                return () => clearTimeout(timer);
+            }
+            const url = new URL(window.location.href);
+            url.searchParams.delete('slip_id');
+            window.history.replaceState({}, '', url.pathname);
+        }
+    }, [slips]);
+
     const archiveSlip = (slip: SlipRow) => {
         Swal.fire({
             title: 'Archive this admission slip?',
@@ -144,12 +182,20 @@ export default function AdminAdmissionSlipPage() {
             cancelButtonText: 'Cancel',
         }).then((result) => {
             if (result.isConfirmed) {
-                router.put(`/admin/admission-slip/${slip.id}/archive`, {}, {
-                    preserveScroll: true,
-                    onSuccess: () => {
-                        Swal.fire('Archived!', 'Admission slip has been archived.', 'success');
+                router.put(
+                    `/admin/admission-slip/${slip.id}/archive`,
+                    {},
+                    {
+                        preserveScroll: true,
+                        onSuccess: () => {
+                            Swal.fire(
+                                'Archived!',
+                                'Admission slip has been archived.',
+                                'success',
+                            );
+                        },
                     },
-                });
+                );
             }
         });
     };
@@ -159,9 +205,7 @@ export default function AdminAdmissionSlipPage() {
             <Head title="Admission Slip" />
             <div className="min-h-[calc(100vh-4rem)] bg-slate-100 dark:bg-slate-900">
                 <div className="flex w-full flex-col gap-6 px-6 py-6">
-                    <AdmissionSlipHeader 
-                        onCreateNew={openCreate} 
-                    />
+                    <AdmissionSlipHeader onCreateNew={openCreate} />
 
                     <div className="space-y-4">
                         <AdmissionSlipStatsCard stats={stats} />
@@ -185,6 +229,8 @@ export default function AdminAdmissionSlipPage() {
                                     onArchive={archiveSlip}
                                     activeTab={activeTab}
                                     setActiveTab={setActiveTab}
+                                    viewSlipId={viewSlipId}
+                                    allSlips={slips}
                                 />
                                 <Pagination
                                     currentPage={pageIndex}
@@ -202,8 +248,17 @@ export default function AdminAdmissionSlipPage() {
                     </div>
                 </div>
             </div>
-            <CreateAdmissionSlipDialog open={open} setOpen={setOpen} errors={errors} />
-            <EditAdmissionSlipDialog open={editOpen} setOpen={setEditOpen} slip={editingSlip} errors={errors} />
+            <CreateAdmissionSlipDialog
+                open={open}
+                setOpen={setOpen}
+                errors={errors}
+            />
+            <EditAdmissionSlipDialog
+                open={editOpen}
+                setOpen={setEditOpen}
+                slip={editingSlip}
+                errors={errors}
+            />
         </AdminLayout>
     );
 }

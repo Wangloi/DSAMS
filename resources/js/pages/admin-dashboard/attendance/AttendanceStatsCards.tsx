@@ -1,6 +1,4 @@
 import { Calendar, Clock, TrendingUp, Users } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
 
 type KpiCard = {
     title: string;
@@ -18,19 +16,22 @@ type Props = {
     totalLate: number;
 };
 
-export default function AttendanceStatsCards({ 
-    totalEvents, 
-    totalAttendees, 
+export default function AttendanceStatsCards({
+    totalEvents,
+    totalAttendees,
     avgAttendanceRate,
-    totalLate 
+    totalLate,
 }: Props) {
-    const themeMap: Record<string, {
-        glow: string;
-        subtext: string;
-        subtextColor: string;
-        iconBg: string;
-        barGradient: string;
-    }> = {
+    const themeMap: Record<
+        string,
+        {
+            glow: string;
+            subtext: string;
+            subtextColor: string;
+            iconBg: string;
+            barGradient: string;
+        }
+    > = {
         'Total Events': {
             glow: 'bg-blue-500/5',
             subtext: 'Scheduled Events',
@@ -65,11 +66,15 @@ export default function AttendanceStatsCards({
         { title: 'Total Events', value: totalEvents, icon: Calendar },
         { title: 'Total check-ins', value: totalAttendees, icon: Users },
         { title: 'Total Late', value: totalLate, icon: Clock },
-        { title: 'Avg Attendance Rate', value: avgAttendanceRate, icon: TrendingUp },
+        {
+            title: 'Avg Attendance Rate',
+            value: avgAttendanceRate,
+            icon: TrendingUp,
+        },
     ];
 
     return (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-4 mb-6">
+        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-4">
             {kpis.map((kpi, index) => {
                 const theme = themeMap[kpi.title] || themeMap['Total Events'];
                 return (
@@ -77,25 +82,35 @@ export default function AttendanceStatsCards({
                         key={index}
                         className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800"
                     >
-                        <div className={`pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full ${theme.glow}`} />
+                        <div
+                            className={`pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full ${theme.glow}`}
+                        />
                         <div className="flex items-start justify-between gap-3">
                             <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                                <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
                                     {kpi.title}
                                 </p>
                                 <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
-                                    {kpi.title === 'Avg Attendance Rate' ? `${kpi.value}%` : kpi.value.toLocaleString()}
+                                    {kpi.title === 'Avg Attendance Rate'
+                                        ? `${kpi.value}%`
+                                        : kpi.value.toLocaleString()}
                                 </p>
-                                <p className={`mt-1 text-xs font-semibold ${theme.subtextColor}`}>
+                                <p
+                                    className={`mt-1 text-xs font-semibold ${theme.subtextColor}`}
+                                >
                                     {theme.subtext}
                                 </p>
                             </div>
-                            <div className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${theme.iconBg} transition-transform duration-300 group-hover:scale-110`}>
+                            <div
+                                className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${theme.iconBg} transition-transform duration-300 group-hover:scale-110`}
+                            >
                                 <kpi.icon className="h-5 w-5" />
                             </div>
                         </div>
                         <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                            <div className={`h-full w-full bg-gradient-to-r ${theme.barGradient} rounded-full`} />
+                            <div
+                                className={`h-full w-full bg-gradient-to-r ${theme.barGradient} rounded-full`}
+                            />
                         </div>
                     </div>
                 );

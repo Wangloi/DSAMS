@@ -1,8 +1,5 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { CheckCircle2, Star, TrendingUp } from 'lucide-react';
+import { Star, TrendingUp } from 'lucide-react';
 import { EvaluationForm, EvaluationStats, ProgramStatRow } from './types';
 
 interface EvaluationChartsProps {
@@ -30,8 +27,12 @@ export default function EvaluationCharts({
                 <CardHeader className="pb-3">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <CardTitle className="text-base font-semibold text-slate-900 dark:text-white">Comments Overview</CardTitle>
-                            <div className="text-sm text-slate-600 dark:text-slate-400">Sentiment analysis and rating distribution</div>
+                            <CardTitle className="text-base font-semibold text-slate-900 dark:text-white">
+                                Comments Overview
+                            </CardTitle>
+                            <div className="text-sm text-slate-600 dark:text-slate-400">
+                                Sentiment analysis and rating distribution
+                            </div>
                         </div>
                         <div className="flex items-center gap-2 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
                             <button
@@ -73,7 +74,8 @@ export default function EvaluationCharts({
                 <CardContent>
                     {(() => {
                         const avg =
-                            evaluationStats?.averageRating === null || evaluationStats?.averageRating === undefined
+                            evaluationStats?.averageRating === null ||
+                            evaluationStats?.averageRating === undefined
                                 ? null
                                 : Number(evaluationStats.averageRating);
 
@@ -81,36 +83,46 @@ export default function EvaluationCharts({
                         ratingSummary.forEach((r) => {
                             const m = String(r.label).match(/(\d+)/);
                             const star = m ? Number(m[1]) : NaN;
-                            if (!Number.isNaN(star)) ratingCountByStar.set(star, r.value);
+                            if (!Number.isNaN(star))
+                                ratingCountByStar.set(star, r.value);
                         });
 
                         const stars = [5, 4, 3, 2, 1];
-                        const maxCount = Math.max(1, ...stars.map((s) => ratingCountByStar.get(s) ?? 0));
+                        const maxCount = Math.max(
+                            1,
+                            ...stars.map((s) => ratingCountByStar.get(s) ?? 0),
+                        );
 
                         return (
                             <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
                                 <div className="lg:col-span-4">
                                     <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center dark:border-slate-800 dark:bg-[#0B192C]/50">
                                         <div className="text-5xl font-bold tracking-tight text-slate-900 dark:text-white">
-                                            {avg === null ? 'N/A' : avg.toFixed(2)}
+                                            {avg === null
+                                                ? 'N/A'
+                                                : avg.toFixed(2)}
                                         </div>
                                         <div className="mt-3 flex items-center justify-center gap-1">
-                                            {Array.from({ length: 5 }).map((_, i) => {
-                                                const idx = i + 1;
-                                                const filled = avg !== null && avg >= idx;
-                                                return (
-                                                    <Star
-                                                        key={idx}
-                                                        className={`h-5 w-5 ${
-                                                            filled
-                                                                ? 'fill-amber-400 text-amber-400'
-                                                                : 'text-slate-300 dark:text-slate-600'
-                                                        }`}
-                                                    />
-                                                );
-                                            })}
+                                            {Array.from({ length: 5 }).map(
+                                                (_, i) => {
+                                                    const idx = i + 1;
+                                                    const filled =
+                                                        avg !== null &&
+                                                        avg >= idx;
+                                                    return (
+                                                        <Star
+                                                            key={idx}
+                                                            className={`h-5 w-5 ${
+                                                                filled
+                                                                    ? 'fill-amber-400 text-amber-400'
+                                                                    : 'text-slate-300 dark:text-slate-600'
+                                                            }`}
+                                                        />
+                                                    );
+                                                },
+                                            )}
                                         </div>
-                                        <div className="mt-6 text-xs font-semibold uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400">
+                                        <div className="mt-6 text-xs font-semibold tracking-[0.25em] text-slate-500 uppercase dark:text-slate-400">
                                             Average
                                             <br />
                                             Evaluation
@@ -129,11 +141,16 @@ export default function EvaluationCharts({
                                 <div className="lg:col-span-8">
                                     <div className="space-y-4">
                                         {stars.map((s) => {
-                                            const count = ratingCountByStar.get(s) ?? 0;
-                                            const pct = (count / maxCount) * 100;
+                                            const count =
+                                                ratingCountByStar.get(s) ?? 0;
+                                            const pct =
+                                                (count / maxCount) * 100;
 
                                             return (
-                                                <div key={s} className="grid grid-cols-12 items-center gap-3">
+                                                <div
+                                                    key={s}
+                                                    className="grid grid-cols-12 items-center gap-3"
+                                                >
                                                     <div className="col-span-1 text-right text-xs font-semibold text-slate-600 dark:text-slate-400">
                                                         {s}★
                                                     </div>
@@ -141,7 +158,9 @@ export default function EvaluationCharts({
                                                         <div className="h-10 rounded-xl bg-slate-100 p-2 dark:bg-slate-800">
                                                             <div
                                                                 className="h-full rounded-lg bg-indigo-500"
-                                                                style={{ width: `${pct}%` }}
+                                                                style={{
+                                                                    width: `${pct}%`,
+                                                                }}
                                                             />
                                                         </div>
                                                     </div>

@@ -1,4 +1,3 @@
-import { Archive, Eye, Gavel, Pencil, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +10,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import type { IncidentRow, TypeFilter, StatusFilter } from './types';
+import { Archive, Gavel, Search } from 'lucide-react';
+import type { IncidentRow, StatusFilter, TypeFilter } from './types';
 
 type Props = {
     incidents: IncidentRow[];
@@ -22,7 +22,10 @@ type Props = {
     onViewDetail?: (incident: IncidentRow) => void;
     onEdit?: (incident: IncidentRow) => void;
     onArchive?: (incident: IncidentRow) => void;
-    onStatusChange?: (incident: IncidentRow, newStatus: IncidentRow['status']) => void;
+    onStatusChange?: (
+        incident: IncidentRow,
+        newStatus: IncidentRow['status'],
+    ) => void;
     onTypeFilterChange: (value: TypeFilter) => void;
     onStatusFilterChange: (value: StatusFilter) => void;
     onSearchChange: (value: string) => void;
@@ -68,18 +71,20 @@ export default function IncidentTable({
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                         <div className="relative">
-                            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+                            <Search className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                             <Input
                                 value={searchQuery}
                                 onChange={(e) => onSearchChange(e.target.value)}
                                 placeholder="Search incidents..."
-                                className="h-9 w-48 rounded-xl border-slate-200 bg-slate-50 pl-8 text-xs font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-white focus-visible:ring-blue-500"
+                                className="h-9 w-48 rounded-xl border-slate-200 bg-slate-50 pl-8 text-xs font-medium focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                             />
                         </div>
 
                         <Select
                             value={typeFilter}
-                            onValueChange={(value) => onTypeFilterChange(value as TypeFilter)}
+                            onValueChange={(value) =>
+                                onTypeFilterChange(value as TypeFilter)
+                            }
                         >
                             <SelectTrigger className="h-9 w-32 rounded-xl border-slate-200 bg-slate-50 text-xs font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-white">
                                 <SelectValue placeholder="All Types" />
@@ -87,25 +92,43 @@ export default function IncidentTable({
                             <SelectContent>
                                 <SelectItem value="all">All Types</SelectItem>
                                 <SelectItem value="warning">Warning</SelectItem>
-                                <SelectItem value="suspension">Suspension</SelectItem>
-                                <SelectItem value="exclusion">Exclusion</SelectItem>
-                                <SelectItem value="expulsion">Expulsion</SelectItem>
+                                <SelectItem value="suspension">
+                                    Suspension
+                                </SelectItem>
+                                <SelectItem value="exclusion">
+                                    Exclusion
+                                </SelectItem>
+                                <SelectItem value="expulsion">
+                                    Expulsion
+                                </SelectItem>
                             </SelectContent>
                         </Select>
 
                         <Select
                             value={statusFilter}
-                            onValueChange={(value) => onStatusFilterChange(value as StatusFilter)}
+                            onValueChange={(value) =>
+                                onStatusFilterChange(value as StatusFilter)
+                            }
                         >
                             <SelectTrigger className="h-9 w-32 rounded-xl border-slate-200 bg-slate-50 text-xs font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-white">
-                                <SelectValue placeholder={statusFilter === 'all' ? 'All Status' : `Status: ${statusFilter}`} />
+                                <SelectValue
+                                    placeholder={
+                                        statusFilter === 'all'
+                                            ? 'All Status'
+                                            : `Status: ${statusFilter}`
+                                    }
+                                />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Status</SelectItem>
                                 <SelectItem value="Pending">Pending</SelectItem>
                                 <SelectItem value="Ongoing">Ongoing</SelectItem>
-                                <SelectItem value="Resolved">Resolved</SelectItem>
-                                <SelectItem value="Escalated">Escalated</SelectItem>
+                                <SelectItem value="Resolved">
+                                    Resolved
+                                </SelectItem>
+                                <SelectItem value="Escalated">
+                                    Escalated
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -116,25 +139,25 @@ export default function IncidentTable({
                     <table className="min-w-full border-collapse">
                         <thead className="border-b border-slate-100 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
                             <tr>
-                                <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
                                     #
                                 </th>
-                                <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
                                     Case ID
                                 </th>
-                                <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
                                     Student
                                 </th>
-                                <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
                                     Violation Type
                                 </th>
-                                <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
                                     Classification
                                 </th>
-                                <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
                                     Status
                                 </th>
-                                <th className="px-6 py-4 text-right text-[10px] font-bold uppercase tracking-wider">
+                                <th className="px-6 py-4 text-right text-[10px] font-bold tracking-wider uppercase">
                                     Actions
                                 </th>
                             </tr>
@@ -142,14 +165,22 @@ export default function IncidentTable({
                         <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-transparent">
                             {incidents.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="px-6 py-16 text-center">
+                                    <td
+                                        colSpan={7}
+                                        className="px-6 py-16 text-center"
+                                    >
                                         <div className="mx-auto flex max-w-sm flex-col items-center justify-center text-center">
-                                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 mb-4 border border-slate-100 dark:border-slate-700/50 shadow-inner">
+                                            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 text-slate-400 shadow-inner dark:border-slate-700/50 dark:bg-slate-800 dark:text-slate-500">
                                                 <Gavel className="h-6 w-6" />
                                             </div>
-                                            <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-200">No Incident Records Logged</h3>
-                                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-normal max-w-[280px]">
-                                                All students are currently in good standing. New incidents reported will appear in this registry.
+                                            <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-200">
+                                                No Incident Records Logged
+                                            </h3>
+                                            <p className="mt-1 max-w-[280px] text-xs leading-normal text-slate-500 dark:text-slate-400">
+                                                All students are currently in
+                                                good standing. New incidents
+                                                reported will appear in this
+                                                registry.
                                             </p>
                                         </div>
                                     </td>
@@ -158,17 +189,21 @@ export default function IncidentTable({
                                 incidents.map((row, index) => {
                                     const initials = (row.student || 'ST')
                                         .split(' ')
-                                        .map(n => n[0])
+                                        .map((n) => n[0])
                                         .join('')
                                         .slice(0, 2)
                                         .toUpperCase();
 
                                     return (
-                                        <tr key={row.id} className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
-                                            <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400 font-medium">
+                                        <tr
+                                            key={row.id}
+                                            onClick={() => onViewDetail?.(row)}
+                                            className="cursor-pointer transition-colors duration-150 hover:bg-blue-50/50 dark:hover:bg-blue-950/15"
+                                        >
+                                            <td className="px-6 py-4 text-sm font-medium text-slate-500 dark:text-slate-400">
                                                 {index + 1}
                                             </td>
-                                            <td className="px-6 py-4 font-bold text-slate-900 dark:text-white uppercase tracking-tight text-sm">
+                                            <td className="px-6 py-4 text-sm font-bold tracking-tight text-slate-900 uppercase dark:text-white">
                                                 {row.caseId}
                                             </td>
                                             <td className="px-6 py-4">
@@ -180,7 +215,7 @@ export default function IncidentTable({
                                                         <div className="font-medium text-slate-900 dark:text-white">
                                                             {row.student}
                                                         </div>
-                                                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                                                        <div className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
                                                             ID: {row.studentId}
                                                         </div>
                                                     </div>
@@ -190,31 +225,68 @@ export default function IncidentTable({
                                                 {row.type}
                                             </td>
                                             <td className="px-6 py-4">
-                                                <Badge className={
-                                                    row.classification !== 'Warning' 
-                                                        ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400' 
-                                                        : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                                                }>
+                                                <Badge
+                                                    className={
+                                                        row.classification !==
+                                                        'Warning'
+                                                            ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400'
+                                                            : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                                    }
+                                                >
                                                     {row.classification}
                                                 </Badge>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td
+                                                className="px-6 py-4"
+                                                onClick={(e) =>
+                                                    e.stopPropagation()
+                                                }
+                                            >
                                                 <Select
                                                     value={row.status}
-                                                    onValueChange={(val) => onStatusChange?.(row, val as IncidentRow['status'])}
+                                                    onValueChange={(val) =>
+                                                        onStatusChange?.(
+                                                            row,
+                                                            val as IncidentRow['status'],
+                                                        )
+                                                    }
                                                 >
-                                                    <SelectTrigger className={cn("h-7 w-[110px] rounded-full border-0 text-[10px] font-black uppercase tracking-wider px-2.5 shadow-none transition-all cursor-pointer", getStatusColor(row.status))}>
-                                                        <SelectValue placeholder={row.status} />
+                                                    <SelectTrigger
+                                                        className={cn(
+                                                            'h-7 w-[110px] cursor-pointer rounded-full border-0 px-2.5 text-[10px] font-black tracking-wider uppercase shadow-none transition-all',
+                                                            getStatusColor(
+                                                                row.status,
+                                                            ),
+                                                        )}
+                                                    >
+                                                        <SelectValue
+                                                            placeholder={
+                                                                row.status
+                                                            }
+                                                        />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        <SelectItem value="Pending">Pending</SelectItem>
-                                                        <SelectItem value="Ongoing">Ongoing</SelectItem>
-                                                        <SelectItem value="Resolved">Resolved</SelectItem>
-                                                        <SelectItem value="Escalated">Escalated</SelectItem>
+                                                        <SelectItem value="Pending">
+                                                            Pending
+                                                        </SelectItem>
+                                                        <SelectItem value="Ongoing">
+                                                            Ongoing
+                                                        </SelectItem>
+                                                        <SelectItem value="Resolved">
+                                                            Resolved
+                                                        </SelectItem>
+                                                        <SelectItem value="Escalated">
+                                                            Escalated
+                                                        </SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                             </td>
-                                            <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
+                                            <td
+                                                className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap"
+                                                onClick={(e) =>
+                                                    e.stopPropagation()
+                                                }
+                                            >
                                                 <div className="ml-auto flex w-fit items-center justify-end gap-1 rounded-lg border border-slate-100/50 bg-slate-50/50 p-1 shadow-sm dark:border-slate-800 dark:bg-slate-800/40">
                                                     {onViewDetail && (
                                                         <Button
@@ -222,7 +294,11 @@ export default function IncidentTable({
                                                             variant="ghost"
                                                             size="icon"
                                                             className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-indigo-50 hover:text-indigo-600 dark:text-slate-400 dark:hover:bg-indigo-950/30 dark:hover:text-indigo-300"
-                                                            onClick={() => onViewDetail(row)}
+                                                            onClick={() =>
+                                                                onViewDetail(
+                                                                    row,
+                                                                )
+                                                            }
                                                             aria-label="Disciplinary Case Detail"
                                                             title="Disciplinary Case Detail"
                                                         >
@@ -235,7 +311,9 @@ export default function IncidentTable({
                                                             variant="ghost"
                                                             size="icon"
                                                             className="h-8 w-8 rounded-md text-rose-500 transition-all duration-200 hover:bg-rose-50 hover:text-rose-600 dark:text-rose-400 dark:hover:bg-rose-950/30 dark:hover:text-rose-300"
-                                                            onClick={() => onArchive(row)}
+                                                            onClick={() =>
+                                                                onArchive(row)
+                                                            }
                                                             aria-label="Archive Incident"
                                                             title="Archive Incident"
                                                         >
@@ -255,4 +333,3 @@ export default function IncidentTable({
         </Card>
     );
 }
-

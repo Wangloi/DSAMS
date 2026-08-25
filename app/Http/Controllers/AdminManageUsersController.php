@@ -839,6 +839,39 @@ class AdminManageUsersController extends Controller
         return redirect()->route('admin.manage-users')->with('success', 'Program Head account updated successfully.')->setStatusCode(303);
     }
 
+    public function storeProgramHead(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:program_heads,email'],
+            'program' => ['nullable', 'string', 'max:255'],
+            'password' => ['required', 'string', 'min:8'],
+        ]);
+
+        $programHead = ProgramHead::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'program' => $validated['program'] ?? null,
+            'password' => Hash::make($validated['password']),
+            'verification_status' => 'approved',
+        ]);
+
+        if (Schema::hasTable('activity_logs')) {
+            $admin = auth()->guard('admin')->user();
+            ActivityLog::logForUser(
+                $admin,
+                'User Management',
+                'Created',
+                "Created program head user: {$validated['email']}",
+                $request,
+                null,
+                $programHead->getAttributes()
+            );
+        }
+
+        return redirect()->route('admin.manage-users')->with('success', 'Program Head account created successfully.')->setStatusCode(303);
+    }
+
     public function downloadBulkTemplate(Request $request)
     {
         $format = strtolower($request->query('format', 'csv'));

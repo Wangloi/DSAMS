@@ -1,9 +1,14 @@
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { BrowserMultiFormatReader } from '@zxing/browser';
 import { NotFoundException } from '@zxing/library';
 import { QrCode, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 type QRScannerProps = {
     open: boolean;
@@ -37,7 +42,8 @@ export default function QRScanner({ open, onClose, onScan }: QRScannerProps) {
 
             codeReader.current = new BrowserMultiFormatReader();
 
-            const videoInputDevices = await BrowserMultiFormatReader.listVideoInputDevices();
+            const videoInputDevices =
+                await BrowserMultiFormatReader.listVideoInputDevices();
             if (videoInputDevices.length === 0) {
                 throw new Error('No camera devices found');
             }
@@ -45,21 +51,22 @@ export default function QRScanner({ open, onClose, onScan }: QRScannerProps) {
             const selectedDeviceId = videoInputDevices[0].deviceId;
 
             if (videoRef.current) {
-                controlsRef.current = await codeReader.current.decodeFromVideoDevice(
-                    selectedDeviceId,
-                    videoRef.current,
-                    (result, err) => {
-                        if (result) {
-                            onScan(result.getText());
-                            stopScanning();
-                            onClose();
-                        }
-                        if (err && !(err instanceof NotFoundException)) {
-                            console.error(err);
-                            setError('Error scanning QR code');
-                        }
-                    }
-                );
+                controlsRef.current =
+                    await codeReader.current.decodeFromVideoDevice(
+                        selectedDeviceId,
+                        videoRef.current,
+                        (result, err) => {
+                            if (result) {
+                                onScan(result.getText());
+                                stopScanning();
+                                onClose();
+                            }
+                            if (err && !(err instanceof NotFoundException)) {
+                                console.error(err);
+                                setError('Error scanning QR code');
+                            }
+                        },
+                    );
             }
         } catch (err) {
             console.error('Error starting scanner:', err);
@@ -104,7 +111,7 @@ export default function QRScanner({ open, onClose, onScan }: QRScannerProps) {
                         />
                         {scanning && (
                             <div className="absolute inset-0 border-2 border-blue-500">
-                                <div className="absolute left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 border-2 border-white" />
+                                <div className="absolute top-1/2 left-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 border-2 border-white" />
                             </div>
                         )}
                     </div>

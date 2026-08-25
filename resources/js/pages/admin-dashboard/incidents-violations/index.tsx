@@ -1,25 +1,30 @@
+import {
+    adminDashboard,
+    adminIncidentsViolations,
+    adminIncidentsViolationsArchive,
+    adminIncidentsViolationsShow,
+    adminIncidentsViolationsStore,
+    adminIncidentsViolationsUpdate,
+    adminIncidentsViolationsUpdateStatus,
+} from '@/routes';
+import type { BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 import Swal from 'sweetalert2';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-    adminDashboard,
-    adminIncidentsViolations, 
-    adminIncidentsViolationsStore, 
-    adminIncidentsViolationsShow,
-    adminIncidentsViolationsUpdate, 
-    adminIncidentsViolationsArchive 
-} from '@/routes';
-import type { BreadcrumbItem } from '@/types';
 import AdminLayout from '../admin-layout';
-import IncidentFilters from './IncidentFilters';
 import IncidentReportDialog from './IncidentReportDialog';
-import DisciplinaryCaseDetailDialog from './DisciplinaryCaseDetailDialog';
 import IncidentStatsCard from './IncidentStatsCard';
 import IncidentTable from './IncidentTable';
 import IncidentTableHeader from './IncidentTableHeader';
 import Pagination from './Pagination';
-import type { IncidentReportPayload, IncidentRow, IncidentStats, KpiCard, TypeFilter, StatusFilter, Violation } from './types';
+import type {
+    IncidentRow,
+    IncidentStats,
+    KpiCard,
+    StatusFilter,
+    TypeFilter,
+    Violation,
+} from './types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -32,7 +37,6 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-
 type PageProps = {
     incidents: IncidentRow[];
     violations: Violation[];
@@ -41,11 +45,17 @@ type PageProps = {
 };
 
 export default function AdminIncidentsViolationsPage() {
-    const { props } = (usePage() as { props: PageProps });
+    const { props } = usePage() as { props: PageProps };
 
     useEffect(() => {
         if (props.flash?.success) {
-            Swal.fire({ icon: 'success', title: 'Success', text: props.flash.success, timer: 2500, showConfirmButton: false });
+            Swal.fire({
+                icon: 'success',
+                title: 'Success',
+                text: props.flash.success,
+                timer: 2500,
+                showConfirmButton: false,
+            });
         }
     }, [props.flash]);
 
@@ -58,16 +68,28 @@ export default function AdminIncidentsViolationsPage() {
     const [pageIndex, setPageIndex] = useState(1);
     const [pageSize, setPageSize] = useState(5);
     const [incidentModalOpen, setIncidentModalOpen] = useState(false);
-    const [editingIncident, setEditingIncident] = useState<IncidentRow | null>(null);
-    const [dialogMode, setDialogMode] = useState<'create' | 'view' | 'edit'>('create');
+    const [editingIncident, setEditingIncident] = useState<IncidentRow | null>(
+        null,
+    );
+    const [dialogMode, setDialogMode] = useState<'create' | 'view' | 'edit'>(
+        'create',
+    );
     const [detailModalOpen, setDetailModalOpen] = useState(false);
 
     const stats: IncidentStats = useMemo(() => {
         const total = incidents.length;
-        const pending = incidents.filter((i: IncidentRow) => i.status === 'Pending').length;
-        const ongoing = incidents.filter((i: IncidentRow) => i.status === 'Ongoing').length;
-        const resolved = incidents.filter((i: IncidentRow) => i.status === 'Resolved').length;
-        const escalated = incidents.filter((i: IncidentRow) => i.status === 'Escalated').length;
+        const pending = incidents.filter(
+            (i: IncidentRow) => i.status === 'Pending',
+        ).length;
+        const ongoing = incidents.filter(
+            (i: IncidentRow) => i.status === 'Ongoing',
+        ).length;
+        const resolved = incidents.filter(
+            (i: IncidentRow) => i.status === 'Resolved',
+        ).length;
+        const escalated = incidents.filter(
+            (i: IncidentRow) => i.status === 'Escalated',
+        ).length;
         return { total, pending, ongoing, resolved, escalated };
     }, [incidents]);
 
@@ -86,14 +108,24 @@ export default function AdminIncidentsViolationsPage() {
 
         const matchesSearch = (row: IncidentRow) => {
             if (!q) return true;
-            const haystack = [row.caseId, row.student, row.type, row.classification, row.dateTime, row.status]
+            const haystack = [
+                row.caseId,
+                row.student,
+                row.type,
+                row.classification,
+                row.dateTime,
+                row.status,
+            ]
                 .filter(Boolean)
                 .join(' ')
                 .toLowerCase();
             return haystack.includes(q);
         };
 
-        return incidents.filter((row: IncidentRow) => matchesType(row) && matchesStatus(row) && matchesSearch(row));
+        return incidents.filter(
+            (row: IncidentRow) =>
+                matchesType(row) && matchesStatus(row) && matchesSearch(row),
+        );
     }, [incidents, searchQuery, statusFilter, typeFilter]);
 
     // const pageSize = 5; // Now using state
@@ -117,29 +149,36 @@ export default function AdminIncidentsViolationsPage() {
         }).then((result) => {
             if (result.isConfirmed) {
                 console.log('Attempting to archive incident:', row.id);
-                console.log('Archive URL:', adminIncidentsViolationsArchive(row.id));
-                
+                console.log(
+                    'Archive URL:',
+                    adminIncidentsViolationsArchive(row.id),
+                );
+
                 // Use POST since Route::match handles both PUT and POST
-                router.post(adminIncidentsViolationsArchive(row.id), {}, {
-                    preserveScroll: true,
-                    onSuccess: () => {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Archived',
-                            text: 'Incident has been archived successfully.',
-                            timer: 2000,
-                            showConfirmButton: false,
-                        });
+                router.post(
+                    adminIncidentsViolationsArchive(row.id),
+                    {},
+                    {
+                        preserveScroll: true,
+                        onSuccess: () => {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Archived',
+                                text: 'Incident has been archived successfully.',
+                                timer: 2000,
+                                showConfirmButton: false,
+                            });
+                        },
+                        onError: (errors: Record<string, string>) => {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Failed to archive incident. Please try again.',
+                            });
+                            console.error('Archive error:', errors);
+                        },
                     },
-                    onError: (errors: Record<string, string>) => {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Failed to archive incident. Please try again.',
-                        });
-                        console.error('Archive error:', errors);
-                    },
-                });
+                );
             }
         });
     };
@@ -166,7 +205,10 @@ export default function AdminIncidentsViolationsPage() {
         router.get(adminIncidentsViolationsShow(incident.id));
     };
 
-    const handleStatusChange = (row: IncidentRow, newStatus: IncidentRow['status']) => {
+    const handleStatusChange = (
+        row: IncidentRow,
+        newStatus: IncidentRow['status'],
+    ) => {
         if (row.status === newStatus) return;
 
         Swal.fire({
@@ -180,7 +222,7 @@ export default function AdminIncidentsViolationsPage() {
         }).then((result) => {
             if (result.isConfirmed) {
                 router.post(
-                    adminIncidentsViolationsUpdate(row.id),
+                    adminIncidentsViolationsUpdateStatus(row.id),
                     { status: newStatus },
                     {
                         preserveScroll: true,
@@ -196,7 +238,7 @@ export default function AdminIncidentsViolationsPage() {
                         onError: (err) => {
                             console.error('Failed to update status:', err);
                         },
-                    }
+                    },
                 );
             }
         });
@@ -208,28 +250,32 @@ export default function AdminIncidentsViolationsPage() {
             value: stats.total,
             change: '',
             accent: 'bg-blue-600',
-            iconWrap: 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300',
+            iconWrap:
+                'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300',
         },
         {
             title: 'Pending Cases',
             value: stats.pending,
             change: '',
             accent: 'bg-amber-500',
-            iconWrap: 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300',
+            iconWrap:
+                'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300',
         },
         {
             title: 'Ongoing Cases',
             value: stats.ongoing,
             change: '',
             accent: 'bg-sky-500',
-            iconWrap: 'bg-sky-50 dark:bg-sky-900/20 text-sky-700 dark:text-sky-300',
+            iconWrap:
+                'bg-sky-50 dark:bg-sky-900/20 text-sky-700 dark:text-sky-300',
         },
         {
             title: 'Resolved Cases',
             value: stats.resolved,
             change: '',
             accent: 'bg-emerald-600',
-            iconWrap: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300',
+            iconWrap:
+                'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300',
         },
     ];
 
@@ -302,7 +348,10 @@ export default function AdminIncidentsViolationsPage() {
                               location: 'Campus',
                               reportedBy: '',
                               studentsInvolved: [
-                                  { id: editingIncident.studentId, name: editingIncident.student }
+                                  {
+                                      id: editingIncident.studentId,
+                                      name: editingIncident.student,
+                                  },
                               ],
                               description: `Status: ${editingIncident.status} | Time: ${editingIncident.dateTime}`,
                               immediateAction: '',
@@ -310,8 +359,18 @@ export default function AdminIncidentsViolationsPage() {
                           }
                         : null
                 }
-                title={dialogMode === 'create' ? 'Report Incident' : dialogMode === 'view' ? 'View Incident Report' : 'Edit Incident Report'}
-                submitLabel={dialogMode === 'create' ? 'Report Incident' : 'Update Incident'}
+                title={
+                    dialogMode === 'create'
+                        ? 'Report Incident'
+                        : dialogMode === 'view'
+                          ? 'View Incident Report'
+                          : 'Edit Incident Report'
+                }
+                submitLabel={
+                    dialogMode === 'create'
+                        ? 'Report Incident'
+                        : 'Update Incident'
+                }
                 viewMode={dialogMode === 'view'}
                 violations={violations}
                 onSubmit={(payload) => {
@@ -322,10 +381,12 @@ export default function AdminIncidentsViolationsPage() {
                         incident_date: payload.date,
                         incident_time: payload.time,
                         location: payload.location,
-                        students_involved: payload.studentsInvolved.map(student => ({
-                            id: student.id,
-                            name: student.name,
-                        })),
+                        students_involved: payload.studentsInvolved.map(
+                            (student) => ({
+                                id: student.id,
+                                name: student.name,
+                            }),
+                        ),
                         description: payload.description,
                         immediate_action: payload.immediateAction,
                         received_by: payload.receivedBy,
@@ -334,24 +395,31 @@ export default function AdminIncidentsViolationsPage() {
 
                     const incidentId = editingIncident?.id;
                     if (incidentId != null) {
-                        console.log('Attempting to update incident:', incidentId);
-                        
+                        console.log(
+                            'Attempting to update incident:',
+                            incidentId,
+                        );
+
                         // Use POST since Route::match handles both PUT and POST
-                        router.post(adminIncidentsViolationsUpdate(incidentId), data, {
-                            preserveScroll: true,
-                            onSuccess: () => {
-                                setIncidentModalOpen(false);
-                                setEditingIncident(null);
+                        router.post(
+                            adminIncidentsViolationsUpdate(incidentId),
+                            data,
+                            {
+                                preserveScroll: true,
+                                onSuccess: () => {
+                                    setIncidentModalOpen(false);
+                                    setEditingIncident(null);
+                                },
+                                onError: (errors: Record<string, string>) => {
+                                    console.error('Update error:', errors);
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error',
+                                        text: 'Failed to update incident. Please try again.',
+                                    });
+                                },
                             },
-                            onError: (errors: Record<string, string>) => {
-                                console.error('Update error:', errors);
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Error',
-                                    text: 'Failed to update incident. Please try again.',
-                                });
-                            },
-                        });
+                        );
                     } else {
                         router.post(adminIncidentsViolationsStore(), data, {
                             preserveScroll: true,
