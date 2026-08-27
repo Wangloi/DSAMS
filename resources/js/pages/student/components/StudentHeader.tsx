@@ -161,7 +161,7 @@ export function StudentHeader() {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
-                            className="z-[60] w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-2xl dark:border-white/10 dark:bg-[#051139]"
+                            className="z-[60] w-[88vw] sm:w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-2xl dark:border-white/10 dark:bg-[#051139]"
                             align="end"
                         >
                             <div className="border-b border-slate-100 bg-slate-50 px-5 py-4 dark:border-white/10 dark:bg-white/5">

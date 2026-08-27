@@ -77,9 +77,10 @@ export default function ProgramHeadLogin({
     }, []);
 
     return (
-        <div className="relative min-h-svh overflow-hidden">
+        <div className="relative min-h-svh overflow-hidden bg-slate-900">
             <VideoBackground />
-            <div className="absolute inset-0 bg-blue-900/50" />
+            {/* Dark Overlay - matching the hero section */}
+            <div className="absolute inset-0 bg-black/35" />
 
             <Head title="Program Head Login" />
 

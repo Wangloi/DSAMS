@@ -1,8 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
 import React, { useState } from 'react';
-
-type UseFormReturn = ReturnType<typeof useForm>;
-
+import StudentLayout from '../components/StudentLayout';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -59,10 +57,10 @@ export default function StudentAdmissionSlipIndex() {
     };
 
     return (
-        <>
+        <StudentLayout>
             <Head title="Admission Slip" />
 
-            <div className="min-h-screen bg-slate-50 px-4 pt-24 sm:px-6 lg:px-8 dark:bg-[#020617]">
+            <div className="mx-auto max-w-2xl px-4 pt-6 pb-12 sm:px-6 lg:px-8">
                 <Card className="mx-auto max-w-2xl border-slate-200 dark:border-slate-800">
                     <CardHeader>
                         <CardTitle className="text-xl font-black text-slate-900 dark:text-white">
@@ -336,6 +334,6 @@ export default function StudentAdmissionSlipIndex() {
                     </CardContent>
                 </Card>
             </div>
-        </>
+        </StudentLayout>
     );
 }

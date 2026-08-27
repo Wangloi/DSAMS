@@ -7,6 +7,7 @@ export default function LandingAbout() {
             id="about"
             className="relative bg-gradient-to-br from-white via-[#FBFBFB] to-[#23509A]/5 py-24 lg:py-32"
         >
+            <div id="mission" className="absolute -top-16" />
             <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-16 px-4 lg:grid-cols-2 lg:px-8">
                 {/* Content */}
                 <div className="space-y-8">

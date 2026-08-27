@@ -8,6 +8,8 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
+    DialogDescription,
+    DialogFooter,
 } from '@/components/ui/dialog';
 import {
     DropdownMenu,
@@ -2370,156 +2372,166 @@ export default function AdminManageUsersPage() {
                 student={viewStudent as any}
             />
 
-            {/* Create Program Modal (Programs tab) */}
             <Dialog
                 open={isCreateModalOpen}
                 onOpenChange={setIsCreateModalOpen}
             >
-                <DialogContent className="bg-white sm:max-w-[600px] dark:bg-slate-800">
-                    <DialogHeader>
-                        <DialogTitle className="text-slate-900 dark:text-white">
-                            Create New Program
-                        </DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleProgSubmit} className="space-y-6">
-                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                            <div className="space-y-2">
-                                <Label
-                                    htmlFor="prog-name"
-                                    className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                                >
-                                    Program Name *
-                                </Label>
-                                <Input
-                                    id="prog-name"
-                                    type="text"
-                                    value={progData.name}
-                                    onChange={(e) =>
-                                        setProgData('name', e.target.value)
-                                    }
-                                    className="bg-white dark:bg-slate-700 dark:text-slate-300"
-                                    placeholder="e.g., Bachelor of Science in Computer Science"
-                                    required
-                                />
-                                {progErrors.name && (
-                                    <p className="text-sm text-red-600 dark:text-red-400">
-                                        {progErrors.name}
-                                    </p>
-                                )}
+                <DialogContent className="overflow-hidden border-slate-200 bg-white p-0 shadow-2xl sm:max-w-2xl dark:border-slate-700 dark:bg-slate-800">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-[#0b2d66] to-[#1e40af] px-6 py-5 text-white">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2 text-xl font-bold text-white">
+                                <BookOpen className="h-6 w-6 text-blue-200" />
+                                Create New Program
+                            </DialogTitle>
+                            <DialogDescription className="mt-1 text-sm text-white/80">
+                                Add a new academic program to the curriculum database.
+                            </DialogDescription>
+                        </DialogHeader>
+                    </div>
+
+                    <form onSubmit={handleProgSubmit}>
+                        <div className="space-y-6 px-6 py-6">
+                            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label
+                                        htmlFor="prog-name"
+                                        className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                                    >
+                                        Program Name *
+                                    </Label>
+                                    <Input
+                                        id="prog-name"
+                                        type="text"
+                                        value={progData.name}
+                                        onChange={(e) =>
+                                            setProgData('name', e.target.value)
+                                        }
+                                        className="bg-white dark:bg-slate-700 dark:text-slate-300"
+                                        placeholder="e.g., Bachelor of Science in Computer Science"
+                                        required
+                                    />
+                                    {progErrors.name && (
+                                        <p className="text-sm text-red-600 dark:text-red-400">
+                                            {progErrors.name}
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label
+                                        htmlFor="prog-code"
+                                        className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                                    >
+                                        Program Code *
+                                    </Label>
+                                    <Input
+                                        id="prog-code"
+                                        type="text"
+                                        value={progData.code}
+                                        onChange={(e) =>
+                                            setProgData('code', e.target.value)
+                                        }
+                                        className="bg-white font-mono dark:bg-slate-700 dark:text-slate-300"
+                                        placeholder="e.g., BSCS"
+                                        required
+                                    />
+                                    {progErrors.code && (
+                                        <p className="text-sm text-red-600 dark:text-red-400">
+                                            {progErrors.code}
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label
+                                        htmlFor="prog-dept"
+                                        className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                                    >
+                                        Department
+                                    </Label>
+                                    <Input
+                                        id="prog-dept"
+                                        type="text"
+                                        value={progData.department}
+                                        onChange={(e) =>
+                                            setProgData(
+                                                'department',
+                                                e.target.value,
+                                            )
+                                        }
+                                        className="bg-white dark:bg-slate-700 dark:text-slate-300"
+                                        placeholder="e.g., College of Engineering"
+                                    />
+                                    {progErrors.department && (
+                                        <p className="text-sm text-red-600 dark:text-red-400">
+                                            {progErrors.department}
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="space-y-2">
+                                    <Label
+                                        htmlFor="prog-duration"
+                                        className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                                    >
+                                        Duration
+                                    </Label>
+                                    <Input
+                                        id="prog-duration"
+                                        type="text"
+                                        value={progData.duration}
+                                        onChange={(e) =>
+                                            setProgData('duration', e.target.value)
+                                        }
+                                        className="bg-white dark:bg-slate-700 dark:text-slate-300"
+                                        placeholder="e.g., 4 years"
+                                    />
+                                    {progErrors.duration && (
+                                        <p className="text-sm text-red-600 dark:text-red-400">
+                                            {progErrors.duration}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                             <div className="space-y-2">
                                 <Label
-                                    htmlFor="prog-code"
+                                    htmlFor="prog-desc"
                                     className="text-sm font-medium text-slate-700 dark:text-slate-300"
                                 >
-                                    Program Code *
+                                    Description
                                 </Label>
-                                <Input
-                                    id="prog-code"
-                                    type="text"
-                                    value={progData.code}
+                                <Textarea
+                                    id="prog-desc"
+                                    value={progData.description}
                                     onChange={(e) =>
-                                        setProgData('code', e.target.value)
+                                        setProgData('description', e.target.value)
                                     }
-                                    className="bg-white font-mono dark:bg-slate-700 dark:text-slate-300"
-                                    placeholder="e.g., BSCS"
-                                    required
+                                    className="min-h-[100px] bg-white dark:bg-slate-700 dark:text-slate-300"
+                                    placeholder="Enter a detailed description of the program..."
+                                    rows={4}
                                 />
-                                {progErrors.code && (
+                                {progErrors.description && (
                                     <p className="text-sm text-red-600 dark:text-red-400">
-                                        {progErrors.code}
+                                        {progErrors.description}
                                     </p>
                                 )}
                             </div>
-                            <div className="space-y-2">
+                            <div className="flex items-center space-x-3">
+                                <Checkbox
+                                    id="prog-active"
+                                    checked={progData.is_active}
+                                    onCheckedChange={(checked: boolean) =>
+                                        setProgData('is_active', checked)
+                                    }
+                                />
                                 <Label
-                                    htmlFor="prog-dept"
+                                    htmlFor="prog-active"
                                     className="text-sm font-medium text-slate-700 dark:text-slate-300"
                                 >
-                                    Department
+                                    Active Program
                                 </Label>
-                                <Input
-                                    id="prog-dept"
-                                    type="text"
-                                    value={progData.department}
-                                    onChange={(e) =>
-                                        setProgData(
-                                            'department',
-                                            e.target.value,
-                                        )
-                                    }
-                                    className="bg-white dark:bg-slate-700 dark:text-slate-300"
-                                    placeholder="e.g., College of Engineering"
-                                />
-                                {progErrors.department && (
-                                    <p className="text-sm text-red-600 dark:text-red-400">
-                                        {progErrors.department}
-                                    </p>
-                                )}
-                            </div>
-                            <div className="space-y-2">
-                                <Label
-                                    htmlFor="prog-duration"
-                                    className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                                >
-                                    Duration
-                                </Label>
-                                <Input
-                                    id="prog-duration"
-                                    type="text"
-                                    value={progData.duration}
-                                    onChange={(e) =>
-                                        setProgData('duration', e.target.value)
-                                    }
-                                    className="bg-white dark:bg-slate-700 dark:text-slate-300"
-                                    placeholder="e.g., 4 years"
-                                />
-                                {progErrors.duration && (
-                                    <p className="text-sm text-red-600 dark:text-red-400">
-                                        {progErrors.duration}
-                                    </p>
-                                )}
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <Label
-                                htmlFor="prog-desc"
-                                className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                            >
-                                Description
-                            </Label>
-                            <Textarea
-                                id="prog-desc"
-                                value={progData.description}
-                                onChange={(e) =>
-                                    setProgData('description', e.target.value)
-                                }
-                                className="min-h-[100px] bg-white dark:bg-slate-700 dark:text-slate-300"
-                                placeholder="Enter a detailed description of the program..."
-                                rows={4}
-                            />
-                            {progErrors.description && (
-                                <p className="text-sm text-red-600 dark:text-red-400">
-                                    {progErrors.description}
-                                </p>
-                            )}
-                        </div>
-                        <div className="flex items-center space-x-3">
-                            <Checkbox
-                                id="prog-active"
-                                checked={progData.is_active}
-                                onCheckedChange={(checked: boolean) =>
-                                    setProgData('is_active', checked)
-                                }
-                            />
-                            <Label
-                                htmlFor="prog-active"
-                                className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                            >
-                                Active Program
-                            </Label>
-                        </div>
-                        <div className="flex items-center justify-end gap-4 border-t border-slate-200 pt-6 dark:border-slate-700">
+
+                        <DialogFooter className="border-t border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-700 dark:bg-slate-800">
                             <Button
                                 type="button"
                                 variant="outline"
@@ -2527,7 +2539,7 @@ export default function AdminManageUsersPage() {
                                     setIsCreateModalOpen(false);
                                     progReset();
                                 }}
-                                className="border-slate-300 text-slate-700 dark:border-slate-600 dark:text-slate-300"
+                                className="border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                             >
                                 Cancel
                             </Button>
@@ -2536,11 +2548,9 @@ export default function AdminManageUsersPage() {
                                 disabled={progProcessing}
                                 className="bg-blue-600 text-white hover:bg-blue-700"
                             >
-                                {progProcessing
-                                    ? 'Creating...'
-                                    : 'Create Program'}
+                                {progProcessing ? 'Creating...' : 'Create Program'}
                             </Button>
-                        </div>
+                        </DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>

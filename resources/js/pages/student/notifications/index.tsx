@@ -1,4 +1,4 @@
-import { AppShell } from '@/components/app-shell';
+import StudentLayout from '../components/StudentLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -13,7 +13,6 @@ import axios from 'axios';
 import { Bell, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import React, { useState } from 'react';
 import { StudentDashboardFooter } from '../components/StudentDashboardFooter';
-import { StudentHeader } from '../components/StudentHeader';
 
 interface Notification {
     id: string;
@@ -72,27 +71,10 @@ export default function StudentNotifications({
     };
 
     return (
-        <AppShell>
-            <StudentHeader />
+        <StudentLayout>
             <Head title="Notifications" />
 
-            <div className="mx-auto mt-24 flex min-h-screen w-full max-w-5xl flex-col space-y-6 p-4 sm:p-6 lg:p-8">
-                {/* Breadcrumbs */}
-                <nav className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                    <Link
-                        href={studentDashboard()}
-                        className="flex items-center gap-1.5 font-medium transition-colors hover:text-blue-600 dark:hover:text-blue-400"
-                    >
-                        <ChevronLeft className="h-4 w-4" />
-                        Dashboard
-                    </Link>
-                    <span className="text-slate-300 dark:text-slate-600">
-                        /
-                    </span>
-                    <span className="font-semibold text-slate-700 dark:text-slate-200">
-                        Notifications
-                    </span>
-                </nav>
+            <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col space-y-6 p-4 sm:p-6 lg:p-8">
 
                 {/* Header Section */}
                 <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -304,7 +286,6 @@ export default function StudentNotifications({
                 )}
             </div>
 
-            <StudentDashboardFooter />
-        </AppShell>
+        </StudentLayout>
     );
 }

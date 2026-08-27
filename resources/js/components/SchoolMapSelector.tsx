@@ -109,8 +109,8 @@ export function SchoolMapSelector({
             name: 'Gymnasium',
             x: 25,
             y: 69,
-            lat: 14.5993,
-            lng: 120.9844,
+            lat: 8.7428,
+            lng: 124.7742,
         },
         {
             id: 'rvm_ttp_program_office',
@@ -1070,10 +1070,10 @@ export function SchoolMapSelector({
 
     const pickedLatLng = lastPickedCoords
         ? estimateLatLngFromMapPoint(
-              lastPickedCoords.x,
-              lastPickedCoords.y,
-              campusCenter,
-          )
+            lastPickedCoords.x,
+            lastPickedCoords.y,
+            campusCenter,
+        )
         : null;
 
     // This is where you'll embed your SRCBMap.svg
@@ -1154,11 +1154,10 @@ export function SchoolMapSelector({
                                 ? setIsPlacingMarker(false)
                                 : enablePlaceMarker()
                         }
-                        className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                            isPlacingMarker
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600'
-                        }`}
+                        className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${isPlacingMarker
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600'
+                            }`}
                     >
                         {isPlacingMarker
                             ? 'Click map for visual pin'
@@ -1171,11 +1170,10 @@ export function SchoolMapSelector({
                                 ? setIsPickingCoords(false)
                                 : enablePickCoords()
                         }
-                        className={`inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                            isPickingCoords
-                                ? 'bg-amber-600 text-white'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600'
-                        }`}
+                        className={`inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${isPickingCoords
+                            ? 'bg-amber-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600'
+                            }`}
                     >
                         <Crosshair className="h-4 w-4" />
                         {isPickingCoords
@@ -1198,14 +1196,14 @@ export function SchoolMapSelector({
                     style={
                         isFullScreen
                             ? {
-                                  position: 'fixed',
-                                  top: 0,
-                                  left: 0,
-                                  width: '100vw',
-                                  height: '100vh',
-                                  zIndex: 1000,
-                                  backgroundColor: 'white',
-                              }
+                                position: 'fixed',
+                                top: 0,
+                                left: 0,
+                                width: '100vw',
+                                height: '100vh',
+                                zIndex: 1000,
+                                backgroundColor: 'white',
+                            }
                             : { height: '45vh', minHeight: '280px' }
                     }
                     ref={mapContainerRef}
@@ -1269,8 +1267,8 @@ export function SchoolMapSelector({
                                 isPlacingMarker || isPickingCoords
                                     ? 'crosshair'
                                     : isPanning
-                                      ? 'grabbing'
-                                      : 'grab',
+                                        ? 'grabbing'
+                                        : 'grab',
                         }}
                     >
                         <g
@@ -1327,11 +1325,10 @@ export function SchoolMapSelector({
                                         textAnchor="middle"
                                         fontSize={1.8 / zoomLevel}
                                         fill="#1f2937"
-                                        className={`pointer-events-none font-medium transition-opacity select-none ${
-                                            location.building
-                                                ? 'opacity-0 group-hover:opacity-100'
-                                                : 'opacity-100'
-                                        }`}
+                                        className={`pointer-events-none font-medium transition-opacity select-none ${location.building
+                                            ? 'opacity-0 group-hover:opacity-100'
+                                            : 'opacity-100'
+                                            }`}
                                     >
                                         {location.name}
                                     </text>

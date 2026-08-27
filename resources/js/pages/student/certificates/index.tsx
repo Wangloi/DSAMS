@@ -1,4 +1,4 @@
-import { AppShell } from '@/components/app-shell';
+import StudentLayout from '../components/StudentLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -28,7 +28,7 @@ import {
     UserSquare2,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { StudentHeader } from '../components/StudentHeader';
+
 
 type Certificate = {
     id: string;
@@ -197,7 +197,7 @@ export default function CertificatesPage() {
 
     return (
         <>
-            <AppShell>
+            <StudentLayout>
                 <Head title="Certificates" />
                 <style>{`
                 @media print {
@@ -283,17 +283,7 @@ export default function CertificatesPage() {
                 }
             `}</style>
 
-                <StudentHeader />
-
-                <div className="relative min-h-screen overflow-x-hidden bg-slate-50 transition-colors duration-500 dark:bg-[#020617]">
-                    {/* Visual Depth Layers - Mesh Gradients */}
-                    <div className="pointer-events-none fixed inset-0 overflow-hidden">
-                        <div className="absolute top-[-10%] left-[-10%] h-[50%] w-[50%] animate-pulse rounded-full bg-blue-600/10 mix-blend-multiply blur-[120px] dark:bg-blue-600/5 dark:mix-blend-soft-light" />
-                        <div className="absolute right-[-10%] bottom-[-10%] h-[50%] w-[50%] rounded-full bg-indigo-600/10 mix-blend-multiply blur-[120px] dark:bg-indigo-600/5 dark:mix-blend-soft-light" />
-                        <div className="absolute top-[20%] right-[10%] h-[30%] w-[30%] rounded-full bg-emerald-600/5 blur-[100px] dark:bg-emerald-600/5" />
-                    </div>
-
-                    <div className="relative z-10 mx-auto max-w-7xl px-4 pt-24 pb-12 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl px-4 pt-6 pb-12 sm:px-6 lg:px-8">
                         {/* Page Header section with Back Button */}
                         <div className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
                             <div className="space-y-4">
@@ -677,8 +667,7 @@ export default function CertificatesPage() {
                             </div>
                         )}
                     </div>
-                </div>
-            </AppShell>
+            </StudentLayout>
 
             <Dialog open={showDetails} onOpenChange={setShowDetails}>
                 <DialogContent className="fixed top-[50%] left-[50%] z-50 w-[95vw] translate-x-[-50%] translate-y-[-50%] overflow-hidden border bg-white p-6 shadow-2xl duration-200 sm:max-w-[825px] sm:rounded-xl">

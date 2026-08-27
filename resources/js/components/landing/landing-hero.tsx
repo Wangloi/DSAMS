@@ -9,17 +9,6 @@ export default function LandingHero({ canRegister }: { canRegister: boolean }) {
             id="home"
             className="relative flex min-h-screen items-center overflow-hidden"
         >
-            {/* Badge positioned at section level - completely isolated */}
-            <div className="absolute top-28 left-1/2 z-30 translate-x-1/2 transform lg:left-1/10 lg:translate-x-0">
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-white/80 backdrop-blur-md sm:px-4 sm:py-2 sm:text-sm">
-                    <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span className="hidden sm:inline">
-                        Modern Student Management System
-                    </span>
-                    <span className="sm:hidden">OSAMS</span>
-                </div>
-            </div>
-
             {/* Video Background */}
             <VideoBackground />
 
@@ -38,13 +27,19 @@ export default function LandingHero({ canRegister }: { canRegister: boolean }) {
             </div>
 
             <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div className="relative grid min-h-[80vh] items-center gap-8 sm:min-h-screen sm:gap-12 lg:grid-cols-2 lg:gap-16">
+                <div className="relative grid min-h-[85vh] lg:min-h-screen items-center gap-12 py-28 lg:py-0 lg:grid-cols-2 lg:gap-16">
                     {/* Content */}
-                    <div className="order-2 space-y-6 text-white sm:space-y-8 lg:order-1">
-                        <div className="space-y-3 sm:space-y-4">
-                            <div className="text-lg font-semibold text-white/95 sm:text-xl md:text-2xl"></div>
+                    <div className="order-1 space-y-6 text-white sm:space-y-8 lg:order-1">
+                        <div className="space-y-4 sm:space-y-6">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-white/80 backdrop-blur-md sm:px-4 sm:py-2 sm:text-sm w-fit">
+                                <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                <span className="hidden sm:inline">
+                                    Modern Student Management System
+                                </span>
+                                <span className="sm:hidden">OSAMS</span>
+                            </div>
 
-                            <h1 className="text-2xl leading-tight font-bold sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl">
+                            <h1 className="text-3xl leading-tight font-bold sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl">
                                 Streamline Student Affairs with
                                 <span className="bg-gradient-to-r from-[#8CE4FF] to-[#261CC1] bg-clip-text text-transparent">
                                     {' '}
@@ -82,7 +77,7 @@ export default function LandingHero({ canRegister }: { canRegister: boolean }) {
                     </div>
 
                     {/* Visual */}
-                    <div className="relative order-1 lg:order-2">
+                    <div className="relative order-2 lg:order-2">
                         <div className="relative mx-auto max-w-xs sm:max-w-sm lg:max-w-lg xl:max-w-xl">
                             {/* Main Card */}
                             <div className="rounded-2xl bg-white/95 p-6 shadow-2xl ring-1 ring-white/20 backdrop-blur-sm sm:p-8">
@@ -144,23 +139,23 @@ export default function LandingHero({ canRegister }: { canRegister: boolean }) {
                             </div>
 
                             {/* Floating Cards */}
-                            <div className="absolute -top-4 -right-4 rounded-xl bg-[#000D6A] p-3 text-white shadow-xl sm:-top-6 sm:-right-6 sm:p-4">
-                                <div className="flex items-center gap-2 sm:gap-3">
-                                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
-                                    <span className="text-sm font-medium">
+                            <div className="absolute -top-2 -right-2 rounded-xl bg-[#000D6A] p-2.5 text-white shadow-xl sm:-top-6 sm:-right-6 sm:p-4">
+                                <div className="flex items-center gap-1.5 sm:gap-3">
+                                    <CheckCircle className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
+                                    <span className="text-xs sm:text-sm font-medium">
                                         Live Updates
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="absolute -bottom-4 -left-4 rounded-xl bg-[#23509A] p-3 text-white shadow-xl sm:-bottom-6 sm:-left-6 sm:p-4">
-                                <div className="flex items-center gap-2 sm:gap-3">
-                                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 sm:h-8 sm:w-8">
-                                        <span className="text-xs font-bold sm:text-sm">
+                            <div className="absolute -bottom-2 -left-2 rounded-xl bg-[#23509A] p-2.5 text-white shadow-xl sm:-bottom-6 sm:-left-6 sm:p-4">
+                                <div className="flex items-center gap-1.5 sm:gap-3">
+                                    <div className="flex h-5 w-5 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-white/20">
+                                        <span className="text-[10px] sm:text-sm font-bold">
                                             QR
                                         </span>
                                     </div>
-                                    <span className="text-sm font-medium">
+                                    <span className="text-xs sm:text-sm font-medium">
                                         Scan Ready
                                     </span>
                                 </div>

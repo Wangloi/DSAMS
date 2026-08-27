@@ -52,12 +52,11 @@ export default function Login({
         <div className="relative flex min-h-svh w-full flex-row overflow-hidden bg-slate-50 font-sans selection:bg-blue-500 selection:text-white">
             <Head title="Log in - Student Affairs Management System" />
 
-            {/* Left: Light Mode Video Area */}
+            {/* Left: Video Area with White Opacity Overlay */}
             <div className="relative hidden flex-1 flex-col justify-between overflow-hidden bg-slate-100 md:flex">
                 <VideoBackground />
-                {/* Light bright gradient overlays */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-100/90 via-slate-100/60 to-white/40 backdrop-blur-[1px]" />
-                <div className="absolute inset-0 bg-white/20" />
+                {/* White Opacity Overlay */}
+                <div className="absolute inset-0 bg-white/45 backdrop-blur-[1px]" />
 
                 {/* Desktop Header Navigation */}
                 <div className="relative z-10 flex items-center justify-between p-8 lg:p-12">
@@ -79,7 +78,7 @@ export default function Login({
                         <span className="h-7 w-px bg-slate-300" />
                         <img
                             src="/images/DSA.png"
-                            alt="DSA Logo"
+                            alt="OSA Logo"
                             className="h-12 w-12 rounded-full object-cover ring-2 ring-slate-200 transition-transform hover:scale-105"
                         />
                     </div>
@@ -91,13 +90,15 @@ export default function Login({
                         {/* Prominent Hero Logos Display */}
 
                         <h1 className="text-4xl leading-tight font-black tracking-tight text-[#1b2f8a] lg:text-6xl">
-                            Student Affairs <br />
-                            <span className="text-[#23509A]">
-                                Management System
-                            </span>
+                            <span className="sr-only">Student Affairs Management System</span>
+                            <img
+                                src="/images/OSA_BNR1.png"
+                                alt="Student Affairs Management System"
+                                className="h-auto w-full max-w-md object-contain transition-transform hover:scale-[1.01]"
+                            />
                         </h1>
 
-                        <p className="max-w-lg text-base leading-relaxed font-medium text-slate-700 lg:text-lg">
+                        <p className="max-w-lg text-base leading-relaxed font-semibold text-slate-700 lg:text-lg">
                             Streamlining student services, activities, event
                             management, and discipline tracking into one modern
                             unified platform.
@@ -125,8 +126,8 @@ export default function Login({
                                 className="h-10 w-10 object-contain"
                             />
                             <img
-                                src="/images/DSA.png"
-                                alt="DSA"
+                                src="/images/OSA_Logo2.png"
+                                alt="OSA Logo"
                                 className="h-10 w-10 rounded-full"
                             />
                         </div>
@@ -166,7 +167,7 @@ export default function Login({
                                     if (
                                         Swal.isVisible() &&
                                         Swal.getTitle()?.textContent ===
-                                            'Signing in...'
+                                        'Signing in...'
                                     ) {
                                         Swal.close();
                                     }

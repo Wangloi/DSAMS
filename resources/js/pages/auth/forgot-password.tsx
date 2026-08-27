@@ -11,15 +11,16 @@ import { ArrowLeft, LoaderCircle, Mail } from 'lucide-react';
 
 export default function ForgotPassword({ status }: { status?: string }) {
     return (
-        <div className="relative min-h-svh overflow-hidden">
+        <div className="relative min-h-svh overflow-hidden bg-slate-900">
             <VideoBackground />
 
-            <div className="absolute inset-0 bg-blue-900/50" />
+            {/* White Opacity Overlay */}
+            <div className="absolute inset-0 bg-white/45 backdrop-blur-[1px]" />
             <div className="flex min-h-svh items-center justify-center px-5 py-6">
                 <Head title="Forgot password" />
 
                 <div className="mx-auto w-full max-w-md">
-                    <div className="rounded-3xl bg-white/40 p-6 shadow-sm backdrop-blur">
+                    <div className="rounded-3xl bg-white/90 p-6 shadow-2xl backdrop-blur-md">
                         <div className="mb-4">
                             <TextLink
                                 href={login()}

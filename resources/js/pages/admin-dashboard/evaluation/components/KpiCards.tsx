@@ -7,7 +7,12 @@ interface KpiCardsProps {
 export default function KpiCards({ kpis }: KpiCardsProps) {
     const filteredKpis = kpis.filter((kpi) => kpi.value !== 'N/A');
     const colsCount = filteredKpis.length;
-    const gridColsClass = colsCount === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-5';
+    const gridColsClass = 
+        colsCount === 1 ? 'lg:grid-cols-1' :
+        colsCount === 2 ? 'lg:grid-cols-2' :
+        colsCount === 3 ? 'lg:grid-cols-3' :
+        colsCount === 4 ? 'lg:grid-cols-4' :
+        'lg:grid-cols-5';
 
     return (
         <div

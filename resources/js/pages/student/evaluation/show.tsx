@@ -1,3 +1,4 @@
+import StudentLayout from '../components/StudentLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,9 +13,11 @@ import {
     ClipboardList,
     Send,
     Sparkles,
+    Star,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import Swal from 'sweetalert2';
+import { StudentDashboardFooter } from '../components/StudentDashboardFooter';
 
 type Question = {
     id: string;
@@ -105,7 +108,7 @@ export default function StudentEvaluationShow() {
                 icon: 'error',
                 title: 'Please complete required fields',
                 text: 'Answer all required questions before submitting.',
-                confirmButtonColor: '#4f46e5',
+                confirmButtonColor: '#0b2d66',
             });
             return;
         }
@@ -130,7 +133,7 @@ export default function StudentEvaluationShow() {
                         icon: 'error',
                         title: 'Submission failed',
                         text: 'Please try again.',
-                        confirmButtonColor: '#4f46e5',
+                        confirmButtonColor: '#0b2d66',
                     });
                 },
                 onFinish: () => setSubmitting(false),
@@ -138,398 +141,353 @@ export default function StudentEvaluationShow() {
         );
     };
 
-    if (alreadySubmitted) {
-        return (
-            <>
-                <Head title={`Evaluation: ${evaluation.name}`} />
-                <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4 dark:bg-slate-950">
-                    <div className="w-full max-w-md rounded-3xl border border-slate-100 bg-white p-8 text-center shadow-xl dark:border-slate-800 dark:bg-slate-900">
-                        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
-                            <CheckCircle2 className="h-10 w-10" />
-                        </div>
-                        <h2 className="mb-3 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                            All Done!
-                        </h2>
-                        <p className="mb-8 leading-relaxed font-medium text-slate-500 dark:text-slate-400">
-                            You've already submitted the evaluation for <br />
-                            <span className="font-bold text-slate-700 dark:text-slate-300">
-                                {evaluation.name}
-                            </span>
-                            . Thank you for your valuable feedback!
-                        </p>
-                        <Button
-                            className="h-12 w-full rounded-xl bg-slate-900 font-bold tracking-wide text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
-                            onClick={() => router.visit(studentDashboard())}
-                        >
-                            Return to Dashboard
-                        </Button>
-                    </div>
-                </div>
-            </>
-        );
-    }
-
     return (
-        <>
-            <Head title={`Evaluation: ${evaluation.name}`} />
+        <StudentLayout>
+            <Head title={`Evaluation: ${evaluation?.name || 'Form'}`} />
 
-            <div className="min-h-screen bg-[#f8fafc] pb-24 dark:bg-[#020617]">
-                {/* Hero Header */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-500 px-4 pt-8 pb-20">
-                    <div className="pointer-events-none absolute top-[-20%] right-[-10%] h-[150%] w-[50%] rounded-full bg-white/10 blur-[100px]" />
-                    <div className="pointer-events-none absolute bottom-[-20%] left-[-10%] h-[120%] w-[40%] rounded-full bg-sky-300/20 blur-[100px]" />
-
-                    <div className="relative z-10 mx-auto max-w-3xl">
-                        <button
-                            onClick={() => router.visit(studentDashboard())}
-                            className="group mb-8 flex items-center gap-2 text-sm font-bold tracking-wide text-white/80 uppercase transition-colors hover:text-white"
-                        >
-                            <div className="rounded-lg bg-white/10 p-1.5 transition-colors group-hover:bg-white/20">
-                                <ChevronLeft className="h-4 w-4" />
+            <div className="mx-auto max-w-3xl px-4 pt-6 pb-28 sm:px-6">
+                    {alreadySubmitted ? (
+                        <div className="mx-auto mt-12 w-full max-w-md rounded-3xl border border-slate-100 bg-white p-8 text-center shadow-xl dark:border-slate-800 dark:bg-slate-900">
+                            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
+                                <CheckCircle2 className="h-10 w-10" />
                             </div>
-                            Dashboard
-                        </button>
-
-                        <div className="flex flex-col gap-6 md:flex-row md:items-center">
-                            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/20 shadow-xl backdrop-blur-xl">
-                                <ClipboardList className="h-8 w-8 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="mb-2 text-3xl font-black tracking-tight text-white md:text-4xl">
+                            <h2 className="mb-3 text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                                All Done!
+                            </h2>
+                            <p className="mb-8 leading-relaxed font-medium text-slate-500 dark:text-slate-400">
+                                You've already submitted the evaluation for <br />
+                                <span className="font-bold text-slate-700 dark:text-slate-300">
                                     {evaluation.name}
-                                </h1>
-                                <p className="flex items-center gap-2 text-sm font-medium text-blue-100 md:text-base">
-                                    <Sparkles className="h-4 w-4 text-sky-300" />
-                                    {evaluation.eventLabel}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Main Content Area */}
-                <div className="relative z-20 mx-auto -mt-12 max-w-3xl px-4">
-                    {/* Progress Bar Card */}
-                    <div className="mb-8 flex items-center gap-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-xl shadow-slate-200/50 md:p-6 dark:border-slate-800 dark:bg-slate-900 dark:shadow-none">
-                        <div className="flex-1">
-                            <div className="mb-2 flex items-end justify-between">
-                                <span className="text-xs font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
-                                    Progress
                                 </span>
-                                <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
-                                    {answeredCount} of {questions.length}
-                                </span>
-                            </div>
-                            <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                <div
-                                    className="h-2.5 rounded-full bg-gradient-to-r from-indigo-500 to-blue-500 transition-all duration-700 ease-out"
-                                    style={{ width: `${progressPercentage}%` }}
-                                ></div>
-                            </div>
-                        </div>
-                        {progressPercentage === 100 && (
-                            <div className="hidden rounded-full bg-emerald-100 p-2 text-emerald-600 sm:flex dark:bg-emerald-500/20 dark:text-emerald-400">
-                                <CheckCircle2 className="h-5 w-5" />
-                            </div>
-                        )}
-                    </div>
-
-                    {questions.length === 0 ? (
-                        <div className="rounded-3xl border border-slate-100 bg-white p-12 text-center shadow-lg dark:border-slate-800 dark:bg-slate-900">
-                            <AlertCircle className="mx-auto mb-4 h-12 w-12 text-slate-300" />
-                            <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300">
-                                No questions available
-                            </h3>
-                            <p className="mt-2 text-sm text-slate-500">
-                                This evaluation form has not been configured
-                                yet.
+                                . Thank you for your valuable feedback!
                             </p>
+                            <Button
+                                className="h-12 w-full rounded-xl bg-slate-900 font-bold tracking-wide text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+                                onClick={() => router.visit(studentDashboard())}
+                            >
+                                Return to Dashboard
+                            </Button>
                         </div>
                     ) : (
-                        <div className="space-y-6">
-                            {questions.map((q, idx) => {
-                                const isAnswered =
-                                    answers[q.id] !== undefined &&
-                                    answers[q.id] !== '' &&
-                                    (!Array.isArray(answers[q.id]) ||
-                                        answers[q.id].length > 0);
+                        <>
+                            {/* Navigation back button */}
+                            <button
+                                onClick={() => router.visit(studentDashboard())}
+                                className="group mb-6 flex items-center gap-2 text-xs font-black tracking-widest text-[#0b2d66] uppercase transition-colors hover:text-[#1e40af] dark:text-blue-400 dark:hover:text-blue-300"
+                            >
+                                <div className="rounded-lg bg-white p-1.5 shadow-sm transition-colors group-hover:bg-slate-100 dark:bg-slate-800 dark:group-hover:bg-slate-700">
+                                    <ChevronLeft className="h-4 w-4" />
+                                </div>
+                                Back to Dashboard
+                            </button>
 
-                                return (
-                                    <div
-                                        key={q.id}
-                                        className={cn(
-                                            'group relative overflow-hidden rounded-3xl border bg-white p-6 shadow-sm transition-all duration-300 md:p-8 dark:bg-slate-900',
-                                            isAnswered
-                                                ? 'border-indigo-100 shadow-indigo-100/20 dark:border-indigo-900/50'
-                                                : 'border-slate-200 dark:border-slate-800',
-                                        )}
-                                    >
-                                        {/* Question Number Badge */}
-                                        <div className="mb-6 flex items-start gap-4">
+                            {/* PREMIUM HERO CARD FOR EVALUATION INFO */}
+                            <div className="group relative mb-8 overflow-hidden rounded-3xl bg-[#0b2d66] p-6 shadow-2xl sm:p-8">
+                                <div className="absolute top-0 right-0 h-[300px] w-[300px] translate-x-1/3 -translate-y-1/2 rounded-full bg-gradient-to-br from-blue-400/20 to-transparent blur-3xl transition-transform duration-1000 group-hover:scale-110" />
+                                <div className="absolute bottom-0 left-0 h-48 w-48 -translate-x-1/4 translate-y-1/2 rounded-full bg-indigo-500/10 blur-2xl" />
+
+                                <div className="relative z-10 flex flex-col gap-5 sm:flex-row sm:items-center">
+                                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/10 shadow-inner backdrop-blur-xl">
+                                        <ClipboardList className="h-7 w-7 text-blue-300" />
+                                    </div>
+                                    <div>
+                                        <h1 className="text-xl font-black tracking-tight text-white sm:text-2xl">
+                                            {evaluation.name}
+                                        </h1>
+                                        <p className="mt-1 flex items-center gap-2 text-xs font-bold text-blue-200/80 uppercase tracking-wider">
+                                            <Sparkles className="h-3.5 w-3.5 text-blue-300" />
+                                            {evaluation.eventLabel}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* PROGRESS BAR CARD */}
+                            <div className="mb-6 flex items-center gap-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-200/40 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/40 dark:shadow-none">
+                                <div className="flex-1">
+                                    <div className="mb-2 flex items-end justify-between">
+                                        <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
+                                            Progress
+                                        </span>
+                                        <span className="text-xs font-black tracking-widest text-[#0b2d66] uppercase dark:text-blue-400">
+                                            {answeredCount} of {questions.length} Answered
+                                        </span>
+                                    </div>
+                                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                        <div
+                                            className="h-2 rounded-full bg-gradient-to-r from-[#0b2d66] to-[#1e40af] transition-all duration-700 ease-out"
+                                            style={{ width: `${progressPercentage}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+                                {progressPercentage === 100 && (
+                                    <div className="hidden rounded-full bg-emerald-500/10 p-2 text-emerald-500 sm:flex dark:bg-emerald-500/20">
+                                        <CheckCircle2 className="h-5 w-5" />
+                                    </div>
+                                )}
+                            </div>
+
+                            {questions.length === 0 ? (
+                                <div className="rounded-3xl border border-slate-100 bg-white p-12 text-center shadow-lg dark:border-slate-800 dark:bg-slate-900/40">
+                                    <AlertCircle className="mx-auto mb-4 h-12 w-12 text-slate-300" />
+                                    <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300">
+                                        No questions available
+                                    </h3>
+                                    <p className="mt-2 text-sm text-slate-500">
+                                        This evaluation form has not been configured yet.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="space-y-5">
+                                    {questions.map((q, idx) => {
+                                        const isAnswered =
+                                            answers[q.id] !== undefined &&
+                                            answers[q.id] !== '' &&
+                                            (!Array.isArray(answers[q.id]) ||
+                                                answers[q.id].length > 0);
+
+                                        return (
                                             <div
+                                                key={q.id}
                                                 className={cn(
-                                                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-black transition-colors',
+                                                    'group relative overflow-hidden rounded-2xl border bg-white/80 p-5 shadow-sm backdrop-blur-xl transition-all duration-300 sm:p-6 dark:bg-slate-900/40',
                                                     isAnswered
-                                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                                                        : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
+                                                        ? 'border-blue-500/20 shadow-blue-500/5 dark:border-blue-500/10'
+                                                        : 'border-slate-200/60 dark:border-slate-800',
                                                 )}
                                             >
-                                                {idx + 1}
-                                            </div>
-                                            <div className="pt-1">
-                                                <h3 className="text-lg leading-snug font-bold text-slate-900 dark:text-white">
-                                                    {q.label}
-                                                    {q.required && (
-                                                        <span className="ml-1.5 text-rose-500">
-                                                            *
-                                                        </span>
-                                                    )}
-                                                </h3>
-                                            </div>
-                                        </div>
+                                                {/* Question Header */}
+                                                <div className="mb-5 flex items-start gap-3.5">
+                                                    <div
+                                                        className={cn(
+                                                            'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-black transition-colors',
+                                                            isAnswered
+                                                                ? 'bg-[#0b2d66] text-white shadow-md shadow-blue-900/20 dark:bg-blue-600'
+                                                                : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500',
+                                                        )}
+                                                    >
+                                                        {idx + 1}
+                                                    </div>
+                                                    <div className="pt-0.5">
+                                                        <h3 className="text-sm font-bold text-slate-900 dark:text-white sm:text-base">
+                                                            {q.label}
+                                                            {q.required && (
+                                                                <span className="ml-1.5 text-rose-500">
+                                                                    *
+                                                                </span>
+                                                            )}
+                                                        </h3>
+                                                    </div>
+                                                </div>
 
-                                        {/* Input Types */}
-                                        <div className="pl-0 md:pl-12">
-                                            {/* RATING */}
-                                            {q.type === 'rating' && (
-                                                <div className="flex flex-wrap items-center gap-3">
-                                                    {[1, 2, 3, 4, 5].map(
-                                                        (n) => {
-                                                            const isSelected =
-                                                                Number(
-                                                                    answers[
-                                                                        q.id
-                                                                    ],
-                                                                ) === n;
-                                                            return (
-                                                                <button
-                                                                    key={n}
-                                                                    type="button"
-                                                                    onClick={() =>
-                                                                        setAnswers(
-                                                                            (
-                                                                                p,
-                                                                            ) => ({
+                                                {/* Answers Body */}
+                                                <div className="sm:pl-10">
+                                                    {/* RATING */}
+                                                    {q.type === 'rating' && (
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            {[1, 2, 3, 4, 5].map((n) => {
+                                                                const isSelected =
+                                                                    Number(answers[q.id]) === n;
+                                                                return (
+                                                                    <button
+                                                                        key={n}
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            setAnswers((p) => ({
                                                                                 ...p,
                                                                                 [q.id]: n,
-                                                                            }),
-                                                                        )
-                                                                    }
-                                                                    className={cn(
-                                                                        'flex h-14 max-w-[80px] min-w-[50px] flex-1 transform items-center justify-center rounded-2xl border-2 text-lg font-black transition-all duration-200 hover:scale-105 active:scale-95',
-                                                                        isSelected
-                                                                            ? 'border-indigo-600 bg-indigo-600 text-white shadow-lg shadow-indigo-600/25'
-                                                                            : 'border-slate-100 bg-slate-50 text-slate-600 hover:border-indigo-200 hover:bg-indigo-50 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400 dark:hover:border-indigo-500/30 dark:hover:bg-indigo-500/10',
-                                                                    )}
-                                                                >
-                                                                    {n}
-                                                                </button>
-                                                            );
-                                                        },
+                                                                            }))
+                                                                        }
+                                                                        className={cn(
+                                                                            'flex h-10 w-10 items-center justify-center rounded-xl border-2 text-sm font-black transition-all duration-200 hover:scale-105 active:scale-95',
+                                                                            isSelected
+                                                                                ? 'border-[#0b2d66] bg-[#0b2d66] text-white shadow-md shadow-blue-900/20 dark:border-blue-600 dark:bg-blue-600'
+                                                                                : 'border-slate-100 bg-slate-50 text-slate-600 hover:border-blue-200 hover:bg-blue-50 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-400 dark:hover:border-blue-900/30 dark:hover:bg-blue-900/10',
+                                                                        )}
+                                                                    >
+                                                                        {n}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
                                                     )}
-                                                </div>
-                                            )}
 
-                                            {/* MULTIPLE CHOICE (Radio) */}
-                                            {q.type === 'multiple_choice' && (
-                                                <div className="grid gap-3">
-                                                    {(q.options ?? []).map(
-                                                        (opt) => {
-                                                            const isSelected =
-                                                                answers[
-                                                                    q.id
-                                                                ] === opt;
-                                                            return (
-                                                                <button
-                                                                    key={opt}
-                                                                    type="button"
-                                                                    onClick={() =>
-                                                                        setAnswers(
-                                                                            (
-                                                                                p,
-                                                                            ) => ({
+                                                    {/* MULTIPLE CHOICE */}
+                                                    {q.type === 'multiple_choice' && (
+                                                        <div className="grid gap-2">
+                                                            {(q.options ?? []).map((opt) => {
+                                                                const isSelected =
+                                                                    answers[q.id] === opt;
+                                                                return (
+                                                                    <button
+                                                                        key={opt}
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            setAnswers((p) => ({
                                                                                 ...p,
                                                                                 [q.id]: opt,
-                                                                            }),
-                                                                        )
-                                                                    }
-                                                                    className={cn(
-                                                                        'group flex w-full items-center justify-between rounded-2xl border-2 px-5 py-4 text-left transition-all duration-200',
-                                                                        isSelected
-                                                                            ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/20'
-                                                                            : 'border-slate-100 bg-slate-50 hover:border-indigo-200 hover:bg-indigo-50/30 dark:border-slate-800 dark:bg-slate-800/50 dark:hover:border-indigo-500/30',
-                                                                    )}
-                                                                >
-                                                                    <span
+                                                                            }))
+                                                                        }
                                                                         className={cn(
-                                                                            'font-medium transition-colors',
+                                                                            'group flex w-full items-center justify-between rounded-xl border-2 px-4 py-3 text-left transition-all duration-200',
                                                                             isSelected
-                                                                                ? 'text-indigo-900 dark:text-indigo-100'
-                                                                                : 'text-slate-700 dark:text-slate-300',
+                                                                                ? 'border-[#0b2d66] bg-blue-50/40 dark:border-blue-500/30 dark:bg-blue-950/20'
+                                                                                : 'border-slate-100 bg-slate-50 hover:border-blue-100 hover:bg-blue-50/20 dark:border-slate-800 dark:bg-slate-800/40 dark:hover:border-blue-950/25',
                                                                         )}
                                                                     >
-                                                                        {opt}
-                                                                    </span>
-                                                                    <div
+                                                                        <span
+                                                                            className={cn(
+                                                                                'text-xs font-semibold transition-colors sm:text-sm',
+                                                                                isSelected
+                                                                                    ? 'text-[#0b2d66] dark:text-blue-400'
+                                                                                    : 'text-slate-700 dark:text-slate-300',
+                                                                            )}
+                                                                        >
+                                                                            {opt}
+                                                                        </span>
+                                                                        <div
+                                                                            className={cn(
+                                                                                'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
+                                                                                isSelected
+                                                                                    ? 'border-[#0b2d66]'
+                                                                                    : 'border-slate-300 group-hover:border-blue-400 dark:border-slate-600',
+                                                                            )}
+                                                                        >
+                                                                            {isSelected && (
+                                                                                <div className="h-2 w-2 rounded-full bg-[#0b2d66] dark:bg-blue-500" />
+                                                                            )}
+                                                                        </div>
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+
+                                                    {/* CHECKBOX */}
+                                                    {q.type === 'checkbox' && (
+                                                        <div className="grid gap-2">
+                                                            {(q.options ?? []).map((opt) => {
+                                                                const isSelected =
+                                                                    Array.isArray(answers[q.id]) &&
+                                                                    answers[q.id].includes(opt);
+                                                                return (
+                                                                    <button
+                                                                        key={opt}
+                                                                        type="button"
+                                                                        onClick={() =>
+                                                                            toggleCheckbox(q.id, opt)
+                                                                        }
                                                                         className={cn(
-                                                                            'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
+                                                                            'group flex w-full items-center justify-between rounded-xl border-2 px-4 py-3 text-left transition-all duration-200',
                                                                             isSelected
-                                                                                ? 'border-indigo-600'
-                                                                                : 'border-slate-300 group-hover:border-indigo-300 dark:border-slate-600',
+                                                                                ? 'border-[#0b2d66] bg-blue-50/40 dark:border-blue-500/30 dark:bg-blue-950/20'
+                                                                                : 'border-slate-100 bg-slate-50 hover:border-blue-100 hover:bg-blue-50/20 dark:border-slate-800 dark:bg-slate-800/40 dark:hover:border-blue-950/25',
                                                                         )}
                                                                     >
-                                                                        {isSelected && (
-                                                                            <div className="h-2.5 w-2.5 rounded-full bg-indigo-600" />
-                                                                        )}
-                                                                    </div>
-                                                                </button>
-                                                            );
-                                                        },
+                                                                        <span
+                                                                            className={cn(
+                                                                                'text-xs font-semibold transition-colors sm:text-sm',
+                                                                                isSelected
+                                                                                    ? 'text-[#0b2d66] dark:text-blue-400'
+                                                                                    : 'text-slate-700 dark:text-slate-300',
+                                                                            )}
+                                                                        >
+                                                                            {opt}
+                                                                        </span>
+                                                                        <div
+                                                                            className={cn(
+                                                                                'flex h-4 w-4 shrink-0 items-center justify-center rounded-md border-2 transition-colors',
+                                                                                isSelected
+                                                                                    ? 'border-[#0b2d66] bg-[#0b2d66] text-white dark:border-blue-500 dark:bg-blue-500'
+                                                                                    : 'border-slate-300 group-hover:border-blue-400 dark:border-slate-600',
+                                                                            )}
+                                                                        >
+                                                                            {isSelected && (
+                                                                                <Check className="h-3 w-3" />
+                                                                            )}
+                                                                        </div>
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+
+                                                    {/* SHORT TEXT */}
+                                                    {q.type === 'short_text' && (
+                                                        <Input
+                                                            value={
+                                                                typeof answers[q.id] === 'string'
+                                                                    ? answers[q.id]
+                                                                    : ''
+                                                            }
+                                                            onChange={(e) =>
+                                                                setAnswers((p) => ({
+                                                                    ...p,
+                                                                    [q.id]: e.target.value,
+                                                                }))
+                                                            }
+                                                            placeholder="Type your answer here..."
+                                                            className="h-11 rounded-xl border-slate-200 bg-slate-50 px-4 text-sm focus:border-blue-500 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800/30"
+                                                        />
+                                                    )}
+
+                                                    {/* LONG TEXT */}
+                                                    {q.type === 'long_text' && (
+                                                        <Textarea
+                                                            value={
+                                                                typeof answers[q.id] === 'string'
+                                                                    ? answers[q.id]
+                                                                    : ''
+                                                            }
+                                                            onChange={(e) =>
+                                                                setAnswers((p) => ({
+                                                                    ...p,
+                                                                    [q.id]: e.target.value,
+                                                                }))
+                                                            }
+                                                            placeholder="Share your detailed feedback..."
+                                                            rows={3}
+                                                            className="resize-y rounded-xl border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed focus:border-blue-500 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800/30"
+                                                        />
                                                     )}
                                                 </div>
-                                            )}
-
-                                            {/* CHECKBOX */}
-                                            {q.type === 'checkbox' && (
-                                                <div className="grid gap-3">
-                                                    {(q.options ?? []).map(
-                                                        (opt) => {
-                                                            const isSelected =
-                                                                Array.isArray(
-                                                                    answers[
-                                                                        q.id
-                                                                    ],
-                                                                ) &&
-                                                                answers[
-                                                                    q.id
-                                                                ].includes(opt);
-                                                            return (
-                                                                <button
-                                                                    key={opt}
-                                                                    type="button"
-                                                                    onClick={() =>
-                                                                        toggleCheckbox(
-                                                                            q.id,
-                                                                            opt,
-                                                                        )
-                                                                    }
-                                                                    className={cn(
-                                                                        'group flex w-full items-center justify-between rounded-2xl border-2 px-5 py-4 text-left transition-all duration-200',
-                                                                        isSelected
-                                                                            ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/20'
-                                                                            : 'border-slate-100 bg-slate-50 hover:border-indigo-200 hover:bg-indigo-50/30 dark:border-slate-800 dark:bg-slate-800/50 dark:hover:border-indigo-500/30',
-                                                                    )}
-                                                                >
-                                                                    <span
-                                                                        className={cn(
-                                                                            'font-medium transition-colors',
-                                                                            isSelected
-                                                                                ? 'text-indigo-900 dark:text-indigo-100'
-                                                                                : 'text-slate-700 dark:text-slate-300',
-                                                                        )}
-                                                                    >
-                                                                        {opt}
-                                                                    </span>
-                                                                    <div
-                                                                        className={cn(
-                                                                            'flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-colors',
-                                                                            isSelected
-                                                                                ? 'border-indigo-600 bg-indigo-600 text-white'
-                                                                                : 'border-slate-300 group-hover:border-indigo-300 dark:border-slate-600',
-                                                                        )}
-                                                                    >
-                                                                        {isSelected && (
-                                                                            <Check className="h-3.5 w-3.5" />
-                                                                        )}
-                                                                    </div>
-                                                                </button>
-                                                            );
-                                                        },
-                                                    )}
-                                                </div>
-                                            )}
-
-                                            {/* SHORT TEXT */}
-                                            {q.type === 'short_text' && (
-                                                <Input
-                                                    value={
-                                                        typeof answers[q.id] ===
-                                                        'string'
-                                                            ? answers[q.id]
-                                                            : ''
-                                                    }
-                                                    onChange={(e) =>
-                                                        setAnswers((p) => ({
-                                                            ...p,
-                                                            [q.id]: e.target
-                                                                .value,
-                                                        }))
-                                                    }
-                                                    placeholder="Type your answer here..."
-                                                    className="h-14 rounded-2xl border-slate-200 bg-slate-50 px-5 text-base focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800/50"
-                                                />
-                                            )}
-
-                                            {/* LONG TEXT */}
-                                            {q.type === 'long_text' && (
-                                                <Textarea
-                                                    value={
-                                                        typeof answers[q.id] ===
-                                                        'string'
-                                                            ? answers[q.id]
-                                                            : ''
-                                                    }
-                                                    onChange={(e) =>
-                                                        setAnswers((p) => ({
-                                                            ...p,
-                                                            [q.id]: e.target
-                                                                .value,
-                                                        }))
-                                                    }
-                                                    placeholder="Share your detailed feedback..."
-                                                    rows={4}
-                                                    className="resize-y rounded-2xl border-slate-200 bg-slate-50 p-5 text-base leading-relaxed focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800/50"
-                                                />
-                                            )}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
 
                 {/* Fixed Bottom Submit Bar */}
-                {questions.length > 0 && (
-                    <div className="fixed right-0 bottom-0 left-0 z-50 border-t border-slate-200 bg-white/80 p-4 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/80">
+                {!alreadySubmitted && questions.length > 0 && (
+                    <div className="fixed right-0 bottom-0 left-0 z-40 border-t border-slate-100 bg-white/90 p-4 shadow-[0_-10px_30px_rgba(0,0,0,0.03)] backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/90">
                         <div className="mx-auto flex max-w-3xl items-center justify-between">
-                            <div className="hidden text-sm font-medium text-slate-500 sm:block dark:text-slate-400">
+                            <div className="hidden text-xs font-black tracking-widest text-slate-400 uppercase sm:block">
                                 {progressPercentage === 100
-                                    ? "All questions answered. You're ready to submit!"
-                                    : 'Please complete all required fields.'}
+                                    ? "All questions answered. Ready to submit!"
+                                    : 'Fill in all required fields to submit.'}
                             </div>
                             <Button
                                 type="button"
                                 onClick={submit}
                                 disabled={!canSubmit || submitting}
                                 className={cn(
-                                    'ml-auto h-14 w-full rounded-2xl px-8 font-black tracking-widest uppercase transition-all duration-300 sm:w-auto',
+                                    'ml-auto h-12 w-full rounded-xl px-8 text-xs font-black tracking-widest uppercase transition-all duration-300 sm:w-auto',
                                     canSubmit
-                                        ? 'bg-indigo-600 text-white hover:-translate-y-1 hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-600/30'
+                                        ? 'bg-[#0b2d66] text-white hover:-translate-y-0.5 hover:bg-[#1e40af] hover:shadow-lg hover:shadow-blue-900/20 active:scale-95'
                                         : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600',
                                 )}
                             >
-                                {submitting
-                                    ? 'Submitting...'
-                                    : 'Submit Evaluation'}
-                                {!submitting && (
-                                    <Send className="ml-2 h-4 w-4" />
-                                )}
+                                {submitting ? 'Submitting...' : 'Submit Evaluation'}
+                                {!submitting && <Send className="ml-2 h-3.5 w-3.5" />}
                             </Button>
                         </div>
                     </div>
                 )}
-            </div>
-        </>
+
+                <StudentDashboardFooter />
+        </StudentLayout>
     );
 }

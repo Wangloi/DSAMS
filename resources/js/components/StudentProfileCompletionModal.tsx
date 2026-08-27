@@ -230,7 +230,7 @@ export default function StudentProfileCompletionModal({
 
     return (
         <div className="fixed inset-0 z-[100] flex animate-in items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm duration-200 fade-in">
-            <div className="relative flex max-h-[90vh] w-full max-w-2xl animate-in flex-col overflow-hidden rounded-2xl border-0 bg-white shadow-2xl duration-200 zoom-in-95 dark:bg-slate-900">
+            <div className="relative flex max-h-[82vh] w-full max-w-2xl animate-in flex-col overflow-hidden rounded-2xl border-0 bg-white shadow-2xl duration-200 zoom-in-95 dark:bg-slate-900">
                 {/* Hero Gradient Header */}
                 <div className="relative shrink-0 overflow-hidden bg-gradient-to-r from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] px-6 py-6 text-white shadow-md">
                     <div className="pointer-events-none absolute -top-10 -right-10 h-36 w-36 rounded-full bg-blue-400/10 blur-2xl" />
@@ -309,7 +309,7 @@ export default function StudentProfileCompletionModal({
                 </div>
 
                 {/* Form Body */}
-                <div className="scrollbar-thin max-h-[60vh] flex-1 space-y-6 overflow-y-auto px-6 py-6">
+                <div className="scrollbar-thin max-h-[45vh] flex-1 space-y-6 overflow-y-auto px-6 py-6">
                     {Object.keys(errors).length > 0 && (
                         <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50/90 p-4 text-xs font-semibold text-red-700 shadow-sm dark:border-red-800/50 dark:bg-red-950/30 dark:text-red-300">
                             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-600 text-[10px] font-black text-white">

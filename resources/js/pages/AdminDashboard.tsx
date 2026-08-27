@@ -27,6 +27,8 @@ import {
     RotateCcw,
     Ticket,
     UserRoundCog,
+    CheckCircle,
+    History,
 } from 'lucide-react';
 import React from 'react';
 import {
@@ -99,6 +101,49 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: adminDashboard(),
     },
 ];
+
+interface CustomTooltipProps {
+    active?: boolean;
+    payload?: any[];
+    label?: string;
+    valueSuffix?: string;
+}
+
+const ChartTooltip = ({ active, payload, label, valueSuffix = '' }: CustomTooltipProps) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className="rounded-xl border border-slate-200/60 bg-white/95 p-3 shadow-[0_10px_25px_rgba(0,0,0,0.06)] backdrop-blur-sm dark:border-slate-700/50 dark:bg-slate-900/95 ring-1 ring-black/5 dark:ring-white/5">
+                {label && (
+                    <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase mb-1 dark:text-slate-500">
+                        {label}
+                    </p>
+                )}
+                <div className="space-y-1">
+                    {payload.map((item: any, index: number) => (
+                        <div key={index} className="flex items-center gap-1.5">
+                            {item.color && (
+                                <span
+                                    className="h-2 w-2 rounded-full shrink-0"
+                                    style={{ backgroundColor: item.color }}
+                                />
+                            )}
+                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                {item.name && item.name !== 'value' ? `${item.name}: ` : ''}
+                                <span className="font-extrabold text-[#23509A] dark:text-blue-400">
+                                    {item.value.toLocaleString()}
+                                </span>
+                                <span className="ml-1 text-[10px] font-medium text-slate-500">
+                                    {valueSuffix}
+                                </span>
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+    return null;
+};
 
 export default function AdminDashboard({
     user,
@@ -771,35 +816,9 @@ export default function AdminDashboard({
                                             }}
                                         />
                                         <Tooltip
-                                            content={({
-                                                active,
-                                                payload,
-                                                label,
-                                            }) => {
-                                                if (
-                                                    active &&
-                                                    payload &&
-                                                    payload.length
-                                                ) {
-                                                    return (
-                                                        <div className="rounded-xl border border-slate-100 bg-white p-3 shadow-xl dark:border-slate-800 dark:bg-slate-900">
-                                                            <p className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-                                                                {label}
-                                                            </p>
-                                                            <p className="mt-0.5 text-base font-black text-[#23509A] dark:text-blue-400">
-                                                                {
-                                                                    payload[0]
-                                                                        .value
-                                                                }{' '}
-                                                                <span className="text-xs font-normal text-slate-500">
-                                                                    Scans
-                                                                </span>
-                                                            </p>
-                                                        </div>
-                                                    );
-                                                }
-                                                return null;
-                                            }}
+                                            content={
+                                                <ChartTooltip valueSuffix="Scans" />
+                                            }
                                         />
                                         <Area
                                             type="monotone"
@@ -836,13 +855,9 @@ export default function AdminDashboard({
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
                                         <Tooltip
-                                            contentStyle={{
-                                                backgroundColor: '#ffffff',
-                                                border: 'none',
-                                                borderRadius: '8px',
-                                                boxShadow:
-                                                    '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                                            }}
+                                            content={
+                                                <ChartTooltip valueSuffix="Cases" />
+                                            }
                                         />
                                         <Pie
                                             data={violationBreakdown}
@@ -874,7 +889,7 @@ export default function AdminDashboard({
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-                        <Card className="flex h-[360px] flex-col border border-slate-200 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md lg:col-span-7 dark:border-slate-700 dark:bg-[#0B192C]/50">
+                        <Card className="flex h-[360px] flex-col border border-slate-200 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md lg:col-span-12 dark:border-slate-700 dark:bg-[#0B192C]/50">
                             <CardHeader className="px-5 pt-4 pb-2">
                                 <CardTitle className="text-sm font-bold text-slate-800 dark:text-white">
                                     Evaluation Ratings
@@ -909,13 +924,9 @@ export default function AdminDashboard({
                                             }}
                                         />
                                         <Tooltip
-                                            contentStyle={{
-                                                backgroundColor: '#ffffff',
-                                                border: 'none',
-                                                borderRadius: '8px',
-                                                boxShadow:
-                                                    '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                                            }}
+                                            content={
+                                                <ChartTooltip valueSuffix="Responses" />
+                                            }
                                         />
                                         <Bar
                                             dataKey="value"
@@ -926,50 +937,71 @@ export default function AdminDashboard({
                                 </ResponsiveContainer>
                             </CardContent>
                         </Card>
+                    </div>
 
-                        <Card className="flex h-[360px] flex-col border border-slate-200 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md lg:col-span-5 dark:border-slate-700 dark:bg-[#0B192C]/50">
-                            <CardHeader className="px-5 pt-4 pb-2">
-                                <CardTitle className="text-sm font-bold text-slate-800 dark:text-white">
-                                    Lost & Found Status
-                                </CardTitle>
+                    {/* Recent Activity Section */}
+                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+                        <Card className="flex flex-col border border-slate-200 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md lg:col-span-12 dark:border-slate-700 dark:bg-[#0B192C]/50">
+                            <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 bg-slate-50/50 px-5 pt-4 pb-3 dark:border-slate-800/80 dark:bg-slate-900/20">
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <History className="h-4.5 w-4.5 text-[#23509A] dark:text-blue-400" />
+                                        <CardTitle className="text-sm font-black text-slate-800 dark:text-white">
+                                            Recent Activity Logs
+                                        </CardTitle>
+                                    </div>
+                                    <CardDescription className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                        Latest system actions and audit trails
+                                    </CardDescription>
+                                </div>
                             </CardHeader>
-                            <CardContent className="flex h-64 items-center justify-center pb-4">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Tooltip
-                                            contentStyle={{
-                                                backgroundColor: '#ffffff',
-                                                border: 'none',
-                                                borderRadius: '8px',
-                                                boxShadow:
-                                                    '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                                            }}
-                                        />
-                                        <Pie
-                                            data={lostFoundStatus}
-                                            dataKey="value"
-                                            nameKey="name"
-                                            outerRadius={90}
-                                            cx="50%"
-                                            cy="50%"
-                                        >
-                                            {lostFoundStatus.map(
-                                                (entry, index) => (
-                                                    <Cell
-                                                        key={`cell-${index}`}
-                                                        fill={entry.color}
-                                                    />
-                                                ),
-                                            )}
-                                        </Pie>
-                                        <Legend
-                                            wrapperStyle={{
-                                                fontSize: 11,
-                                                color: '#64748b',
-                                            }}
-                                        />
-                                    </PieChart>
-                                </ResponsiveContainer>
+                            <CardContent className="px-5 py-4 flex-1">
+                                <div className="space-y-4">
+                                    {!recentActivities || recentActivities.length === 0 ? (
+                                        <p className="text-xs text-slate-400 italic py-4 text-center">
+                                            No recent activities logged.
+                                        </p>
+                                    ) : (
+                                        <div className="flow-root">
+                                            <ul className="-mb-8">
+                                                {recentActivities.slice(0, 5).map((activity, idx) => (
+                                                    <li key={activity.id}>
+                                                        <div className="relative pb-8">
+                                                            {idx !== recentActivities.slice(0, 5).length - 1 && (
+                                                                <span
+                                                                    className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-slate-200 dark:bg-slate-700"
+                                                                    aria-hidden="true"
+                                                                />
+                                                            )}
+                                                            <div className="relative flex space-x-3">
+                                                                <div>
+                                                                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 ring-4 ring-white dark:ring-slate-900">
+                                                                        <span className="text-[10px] font-black uppercase">
+                                                                            {activity.module.substring(0, 2) || 'AC'}
+                                                                        </span>
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
+                                                                    <div>
+                                                                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                                                            {activity.title}
+                                                                        </p>
+                                                                        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                                                            {activity.details}
+                                                                        </p>
+                                                                    </div>
+                                                                    <div className="whitespace-nowrap text-right text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+                                                                        <time dateTime={activity.time}>{activity.time}</time>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
                             </CardContent>
                         </Card>
                     </div>

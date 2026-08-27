@@ -155,22 +155,27 @@ export default function LandingFeaturesCarousel() {
     };
 
     return (
-        <section id="features" className="bg-[#FBFBFB] py-24 lg:py-32">
-            <div className="mx-auto w-full max-w-7xl px-4 lg:px-8">
-                <div className="mb-16 space-y-4 text-center">
-                    <h2 className="text-3xl font-bold text-[#000D6A] lg:text-5xl">
+        <section id="features" className="relative overflow-hidden bg-[#FBFBFB] py-24 lg:py-32">
+            {/* Ambient background glows */}
+            <div className="absolute top-0 left-1/4 h-[500px] w-[500px] rounded-full bg-gradient-to-tr from-[#23509A]/5 to-[#000D6A]/5 blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 right-1/4 h-[500px] w-[500px] rounded-full bg-gradient-to-br from-[#23509A]/5 to-[#000D6A]/5 blur-3xl pointer-events-none" />
+
+            <div id="services" className="absolute -top-16" />
+            <div className="relative mx-auto w-full max-w-7xl px-4 lg:px-8">
+                {/* Header Section */}
+                <div className="mb-16 space-y-6 text-center">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-[#23509A]/10 px-4 py-2 text-sm font-semibold text-[#23509A]">
+                        <span className="h-2 w-2 rounded-full bg-[#23509A] animate-pulse" />
+                        Services & Capabilities
+                    </div>
+                    <h2 className="text-3xl font-extrabold tracking-tight text-[#000D6A] sm:text-4xl lg:text-5xl">
                         Key Features of OSAMS
                     </h2>
-                    <p className="text-lg font-medium text-[#23509A] lg:text-xl">
-                        Comprehensive Student Affairs Management
+                    <p className="mx-auto max-w-2xl text-base text-slate-500 sm:text-lg">
+                        Discover the powerful tools that streamline student
+                        affairs management and enhance campus efficiency
+                        with our all-in-one unified solution.
                     </p>
-                    <div className="mx-auto max-w-3xl">
-                        <p className="text-lg text-[#000000]/70">
-                            Discover the powerful tools that streamline student
-                            affairs management and enhance campus efficiency
-                            with our all-in-one solution.
-                        </p>
-                    </div>
                 </div>
 
                 <div className="relative mt-16">
@@ -178,7 +183,7 @@ export default function LandingFeaturesCarousel() {
                     <button
                         type="button"
                         onClick={() => scrollByAmount(-1)}
-                        className="absolute top-1/2 left-4 z-10 hidden -translate-y-1/2 rounded-full bg-white p-3 text-[#23509A] shadow-lg ring-1 ring-[#23509A]/20 transition-all duration-200 hover:bg-[#23509A] hover:text-white hover:shadow-xl lg:flex"
+                        className="absolute top-1/2 left-0 z-10 hidden -translate-y-1/2 items-center justify-center rounded-2xl bg-white p-4 text-[#000D6A] shadow-[0_8px_30px_rgb(0,0,0,0.06)] ring-1 ring-[#23509A]/10 transition-all duration-300 hover:-translate-x-1 hover:bg-[#23509A] hover:text-white hover:shadow-xl active:scale-95 lg:flex cursor-pointer"
                         aria-label="Previous"
                     >
                         <ChevronLeft className="h-6 w-6" />
@@ -186,70 +191,69 @@ export default function LandingFeaturesCarousel() {
 
                     <div
                         ref={trackRef}
-                        className="flex snap-x snap-mandatory gap-8 overflow-x-auto px-4 pb-6 [-ms-overflow-style:none] [scrollbar-width:none] lg:px-16 [&::-webkit-scrollbar]:hidden"
+                        className="flex snap-x snap-mandatory gap-8 overflow-x-auto px-4 pb-8 [-ms-overflow-style:none] [scrollbar-width:none] lg:px-12 [&::-webkit-scrollbar]:hidden"
                     >
                         {features.map((feature, index) => (
                             <article
                                 key={feature.title}
-                                className="group relative w-full shrink-0 snap-center overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-[#23509A]/10 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl lg:w-[360px]"
+                                className="group relative w-[310px] sm:w-[350px] shrink-0 snap-center overflow-hidden rounded-3xl bg-white shadow-[0_10px_35px_rgba(35,80,154,0.05)] border border-[#23509A]/5 transition-all duration-500 ease-out hover:-translate-y-3 hover:shadow-[0_20px_50px_rgba(35,80,154,0.12)] flex flex-col justify-between"
                             >
-                                {/* Icon Badge */}
-                                <div
-                                    className="absolute top-6 right-6 z-10 rounded-full p-3 text-white shadow-lg"
-                                    style={{ backgroundColor: feature.color }}
-                                >
-                                    {feature.icon}
-                                </div>
-
-                                {/* Image */}
-                                <div className="relative h-48 w-full overflow-hidden">
+                                {/* Image and Floating Badge */}
+                                <div className="relative h-52 w-full overflow-hidden">
                                     <img
                                         src={feature.imageSrc}
                                         alt={feature.title}
-                                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                        className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                                         loading="lazy"
                                     />
+                                    {/* Gradient overlay */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent" />
+                                    
+                                    {/* Category Pill */}
+                                    <div className="absolute bottom-4 left-6 flex items-center gap-2">
+                                        <div className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white backdrop-blur-md border border-white/10">
+                                            Feature {index + 1}
+                                        </div>
+                                    </div>
+
+                                    {/* Icon Badge */}
                                     <div
-                                        className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-20"
+                                        className="absolute top-4 right-4 z-10 flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-lg backdrop-blur-md transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110"
                                         style={{
-                                            backgroundColor: feature.color,
+                                            background: `linear-gradient(135deg, ${feature.color}, ${feature.color}dd)`,
+                                            boxShadow: `0 8px 20px -6px ${feature.color}`,
                                         }}
-                                    />
+                                    >
+                                        {feature.icon}
+                                    </div>
                                 </div>
 
                                 {/* Content */}
-                                <div className="p-8">
-                                    <h3 className="mb-4 text-xl font-bold text-[#000D6A] transition-colors duration-200 group-hover:text-[#23509A]">
+                                <div className="flex flex-1 flex-col p-6 sm:p-8">
+                                    <h3 className="mb-3 text-xl font-extrabold tracking-tight text-[#000D6A] transition-colors duration-300 group-hover:text-[#23509A]">
                                         {feature.title}
                                     </h3>
-                                    <p className="mb-6 leading-relaxed text-gray-600">
+                                    <p className="mb-6 flex-1 text-sm leading-relaxed text-slate-500">
                                         {feature.description}
                                     </p>
 
-                                    {/* Capabilities */}
-                                    <div className="mb-6 space-y-2">
-                                        {feature.capabilities
-                                            .slice(0, 2)
-                                            .map((capability, capIndex) => (
-                                                <div
+                                    {/* Capabilities tag grid */}
+                                    <div className="mt-auto">
+                                        <div className="flex flex-wrap gap-2">
+                                            {feature.capabilities.map((capability, capIndex) => (
+                                                <span
                                                     key={capIndex}
-                                                    className="flex items-center text-sm text-gray-500"
+                                                    className="inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-semibold transition-all duration-300"
+                                                    style={{
+                                                        backgroundColor: `${feature.color}0c`,
+                                                        color: feature.color,
+                                                        border: `1px solid ${feature.color}15`,
+                                                    }}
                                                 >
-                                                    <CheckCircle className="mr-2 h-4 w-4 flex-shrink-0 text-green-500" />
-                                                    <span>{capability}</span>
-                                                </div>
+                                                    <CheckCircle className="mr-1.5 h-3.5 w-3.5 flex-shrink-0" style={{ color: feature.color }} />
+                                                    {capability}
+                                                </span>
                                             ))}
-                                    </div>
-
-                                    {/* Feature Number */}
-                                    <div className="flex items-center justify-between">
-                                        <div
-                                            className="rounded-full px-3 py-1 text-sm font-semibold text-white"
-                                            style={{
-                                                backgroundColor: feature.color,
-                                            }}
-                                        >
-                                            Feature {index + 1}
                                         </div>
                                     </div>
                                 </div>
@@ -260,7 +264,7 @@ export default function LandingFeaturesCarousel() {
                     <button
                         type="button"
                         onClick={() => scrollByAmount(1)}
-                        className="absolute top-1/2 right-4 z-10 hidden -translate-y-1/2 rounded-full bg-white p-3 text-[#23509A] shadow-lg ring-1 ring-[#23509A]/20 transition-all duration-200 hover:bg-[#23509A] hover:text-white hover:shadow-xl lg:flex"
+                        className="absolute top-1/2 right-0 z-10 hidden -translate-y-1/2 items-center justify-center rounded-2xl bg-white p-4 text-[#000D6A] shadow-[0_8px_30px_rgb(0,0,0,0.06)] ring-1 ring-[#23509A]/10 transition-all duration-300 hover:translate-x-1 hover:bg-[#23509A] hover:text-white hover:shadow-xl active:scale-95 lg:flex cursor-pointer"
                         aria-label="Next"
                     >
                         <ChevronRight className="h-6 w-6" />
@@ -272,11 +276,11 @@ export default function LandingFeaturesCarousel() {
                     {features.map((_, index) => (
                         <button
                             key={index}
-                            className="h-2 w-2 rounded-full bg-[#23509A]/30 transition-all duration-200 hover:bg-[#23509A]"
+                            className="h-2 w-2 rounded-full bg-[#23509A]/20 transition-all duration-300 hover:bg-[#23509A]"
                             onClick={() => {
                                 const el = trackRef.current;
                                 if (!el) return;
-                                const cardWidth = 360 + 32; // card width + gap
+                                const cardWidth = 350 + 32; // card width + gap
                                 el.scrollTo({
                                     left: index * cardWidth,
                                     behavior: 'smooth',
@@ -286,19 +290,27 @@ export default function LandingFeaturesCarousel() {
                     ))}
                 </div>
 
-                {/* Bottom CTA */}
-                <div className="mt-16 text-center">
-                    <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full bg-[#23509A]">
-                        <Database className="h-8 w-8 text-white" />
+                {/* Bottom CTA Card */}
+                <div className="mt-20">
+                    <div className="mx-auto max-w-4xl rounded-3xl bg-gradient-to-br from-white to-[#FBFBFB] p-8 md:p-12 shadow-[0_15px_40px_rgba(0,0,0,0.02)] border border-[#23509A]/10 text-center relative overflow-hidden">
+                        {/* Gradient background glows inside card */}
+                        <div className="absolute -right-10 -bottom-10 h-40 w-40 rounded-full bg-[#23509A]/5 blur-2xl" />
+                        <div className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-[#000D6A]/5 blur-2xl" />
+                        
+                        <div className="relative z-10 space-y-6">
+                            <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#23509A] to-[#000D6A] text-white shadow-lg">
+                                <Database className="h-8 w-8" />
+                            </div>
+                            <h3 className="text-2xl font-extrabold text-[#000D6A] sm:text-3xl">
+                                All-in-One Integrated Solution
+                            </h3>
+                            <p className="mx-auto max-w-2xl text-base sm:text-lg leading-relaxed text-slate-500">
+                                OSAMS integrates all student affairs operations into a unified,
+                                real-time database. Say goodbye to scattered files and manual coordination,
+                                and embrace automated workflows built for modern education.
+                            </p>
+                        </div>
                     </div>
-                    <h3 className="mb-4 text-2xl font-bold text-[#000D6A]">
-                        All-in-One Solution
-                    </h3>
-                    <p className="mx-auto max-w-2xl text-lg text-gray-600">
-                        OSAMS integrates all these features into a unified,
-                        user-friendly platform that simplifies student affairs
-                        management and enhances institutional efficiency.
-                    </p>
                 </div>
             </div>
         </section>

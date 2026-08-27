@@ -11,12 +11,16 @@ import os from 'os';
 function getLanIp(): string {
     const interfaces = os.networkInterfaces();
     for (const name of Object.keys(interfaces)) {
-        if (/virtual|vmware|vbox|vethernet/i.test(name)) {
+        if (/virtual|vmware|vbox|vethernet|host-only/i.test(name)) {
             continue;
         }
         for (const iface of interfaces[name] ?? []) {
             if (iface.family === 'IPv4' && !iface.internal) {
-                if (!iface.address.startsWith('169.254.')) {
+                // Exclude APIPA (169.254.x.x) and VirtualBox host-only (192.168.56.x) subnets
+                if (
+                    !iface.address.startsWith('169.254.') &&
+                    !iface.address.startsWith('192.168.56.')
+                ) {
                     return iface.address;
                 }
             }

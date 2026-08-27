@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react';
+import { useState, useEffect } from 'react';
 import {
     ArrowUp,
     Facebook,
@@ -10,6 +11,21 @@ import {
 } from 'lucide-react';
 
 export default function LandingFooter() {
+    const [isVisible, setIsVisible] = useState(false);
+
+    useEffect(() => {
+        const toggleVisibility = () => {
+            if (window.scrollY > 300) {
+                setIsVisible(true);
+            } else {
+                setIsVisible(false);
+            }
+        };
+
+        window.addEventListener('scroll', toggleVisibility);
+        return () => window.removeEventListener('scroll', toggleVisibility);
+    }, []);
+
     const scrollToTop = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -205,39 +221,46 @@ export default function LandingFooter() {
                 </div>
 
                 {/* Bottom Section */}
-                <div className="mt-12 border-t border-white/10 pt-8">
-                    <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
-                        <div className="text-sm text-white/70">
-                            © {new Date().getFullYear()} OSAMS. All rights
-                            reserved.
-                        </div>
+                <div className="mt-12 border-t border-white/10 pt-8 pb-12">
+                    <div className="mx-auto max-w-7xl px-4 lg:px-8">
+                        <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
+                            <div className="text-sm text-white/70">
+                                © {new Date().getFullYear()} OSAMS. All rights
+                                reserved.
+                            </div>
 
-                        <div className="flex items-center gap-6 text-sm text-white/70">
-                            <Link
-                                href="#"
-                                className="transition-colors duration-200 hover:text-[#23509A]"
-                            >
-                                Privacy Policy
-                            </Link>
-                            <Link
-                                href="#"
-                                className="transition-colors duration-200 hover:text-[#23509A]"
-                            >
-                                Terms of Service
-                            </Link>
-                        </div>
+                            <div className="flex items-center gap-6 text-sm text-white/70">
+                                <Link
+                                    href="#"
+                                    className="transition-colors duration-200 hover:text-[#23509A]"
+                                >
+                                    Privacy Policy
+                                </Link>
+                                <Link
+                                    href="#"
+                                    className="transition-colors duration-200 hover:text-[#23509A]"
+                                >
+                                    Terms of Service
+                                </Link>
+                            </div>
 
-                        {/* Scroll to Top */}
-                        <button
-                            onClick={scrollToTop}
-                            className="flex h-12 w-12 items-center justify-center rounded-full bg-[#23509A] text-white shadow-lg transition-all duration-200 hover:scale-110 hover:bg-white hover:text-[#23509A]"
-                            aria-label="Scroll to top"
-                        >
-                            <ArrowUp className="h-5 w-5" />
-                        </button>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            {/* Floating Scroll to Top Button */}
+            <button
+                onClick={scrollToTop}
+                className={`fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#23509A] text-white shadow-2xl ring-2 ring-white/10 transition-all duration-300 hover:scale-110 hover:bg-white hover:text-[#23509A] ${
+                    isVisible
+                        ? 'translate-y-0 opacity-100 pointer-events-auto'
+                        : 'translate-y-8 opacity-0 pointer-events-none'
+                }`}
+                aria-label="Scroll to top"
+            >
+                <ArrowUp className="h-5 w-5" />
+            </button>
         </footer>
     );
 }

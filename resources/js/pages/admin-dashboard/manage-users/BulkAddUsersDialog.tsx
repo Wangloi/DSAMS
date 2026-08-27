@@ -196,7 +196,7 @@ export default function BulkAddUsersDialog({ open, onOpenChange }: Props) {
                     </DialogHeader>
                 </div>
 
-                <div className="max-h-[75vh] space-y-6 overflow-y-auto px-6 py-6">
+                <div className="scrollbar-thin max-h-[52vh] space-y-6 overflow-y-auto px-6 py-6">
                     {/* Template Download Section */}
                     <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 dark:border-blue-900/40 dark:bg-blue-950/20">
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

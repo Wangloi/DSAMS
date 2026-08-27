@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Head, usePage } from '@inertiajs/react';
-import { Star, UserRoundCog } from 'lucide-react';
+import { Star, UserRoundCog, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import Swal from 'sweetalert2';
 
@@ -44,12 +44,11 @@ export default function EvaluationShow() {
                 icon: 'error',
                 title: 'Required Fields',
                 text: 'Please provide your name and select a rating.',
+                confirmButtonColor: '#0b2d66',
             });
             return;
         }
 
-        // Here you would typically submit to a public evaluation response endpoint
-        // For now, just show success
         Swal.fire({
             icon: 'success',
             title: 'Thank You!',
@@ -69,23 +68,37 @@ export default function EvaluationShow() {
     return (
         <>
             <Head title={`Evaluation: ${evaluation.name}`} />
-            <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
-                <Card className="w-full max-w-2xl shadow-lg">
-                    <CardHeader className="rounded-t-lg bg-gradient-to-r from-[#0b2d66] to-[#1e40af] text-center text-white">
-                        <div className="mb-2 flex items-center justify-center gap-3">
-                            <UserRoundCog className="h-8 w-8" />
+            <div className="relative flex min-h-screen items-center justify-center bg-slate-50 p-4 transition-colors duration-500 dark:bg-[#020617]">
+                {/* Visual Depth Layers - Mesh Gradients */}
+                <div className="pointer-events-none fixed inset-0 overflow-hidden">
+                    <div className="absolute top-[-10%] left-[-10%] h-[50%] w-[50%] animate-pulse rounded-full bg-blue-600/10 mix-blend-multiply blur-[120px] dark:bg-blue-600/5 dark:mix-blend-soft-light" />
+                    <div className="absolute right-[-10%] bottom-[-10%] h-[50%] w-[50%] rounded-full bg-indigo-600/10 mix-blend-multiply blur-[120px] dark:bg-indigo-600/5 dark:mix-blend-soft-light" />
+                    <div className="absolute top-[20%] right-[10%] h-[30%] w-[30%] rounded-full bg-emerald-600/5 blur-[100px] dark:bg-emerald-600/5" />
+                </div>
+
+                <Card className="relative z-10 w-full max-w-2xl overflow-hidden rounded-3xl border-none bg-white/80 shadow-2xl backdrop-blur-xl dark:bg-slate-900/40">
+                    <CardHeader className="relative overflow-hidden bg-[#0b2d66] p-6 text-center text-white sm:p-8">
+                        {/* Decorative Background Elements */}
+                        <div className="absolute top-0 right-0 h-[200px] w-[200px] translate-x-1/3 -translate-y-1/2 rounded-full bg-gradient-to-br from-blue-400/20 to-transparent blur-2xl" />
+                        
+                        <div className="relative z-10">
+                            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/20 bg-white/10 shadow-inner backdrop-blur-xl">
+                                <UserRoundCog className="h-6 w-6 text-blue-300" />
+                            </div>
+                            <CardTitle className="text-xl font-black tracking-tight text-white sm:text-2xl">
+                                {evaluation.name}
+                            </CardTitle>
+                            <p className="mt-1 flex items-center justify-center gap-1.5 text-xs font-bold text-blue-200/85 uppercase tracking-wider">
+                                <Sparkles className="h-3.5 w-3.5 text-blue-300" />
+                                {evaluation.event}
+                            </p>
                         </div>
-                        <CardTitle className="text-2xl">
-                            {evaluation.name}
-                        </CardTitle>
-                        <p className="text-white/80">{evaluation.event}</p>
                     </CardHeader>
 
-                    <CardContent className="space-y-6 p-6">
+                    <CardContent className="space-y-5 p-6 sm:p-8">
                         <div className="text-center">
-                            <p className="mb-6 text-slate-600">
-                                Please take a moment to share your feedback
-                                about this event.
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 sm:text-sm">
+                                Please take a moment to share your feedback about this event. Your review helps us improve future campus events.
                             </p>
                         </div>
 
@@ -93,7 +106,7 @@ export default function EvaluationShow() {
                             <div className="grid gap-2">
                                 <Label
                                     htmlFor="name"
-                                    className="text-sm font-medium"
+                                    className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
                                 >
                                     Your Name *
                                 </Label>
@@ -107,15 +120,15 @@ export default function EvaluationShow() {
                                         }))
                                     }
                                     placeholder="Enter your full name"
-                                    className="h-11"
+                                    className="h-12 rounded-2xl border-slate-200 bg-slate-50 px-4 focus:border-blue-500 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/30"
                                 />
                             </div>
 
                             <div className="grid gap-3">
-                                <Label className="text-sm font-medium">
+                                <Label className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400">
                                     Rating *
                                 </Label>
-                                <div className="flex items-center justify-center gap-1">
+                                <div className="flex items-center justify-center gap-2">
                                     {[1, 2, 3, 4, 5].map((star) => (
                                         <button
                                             key={star}
@@ -129,24 +142,23 @@ export default function EvaluationShow() {
                                             onMouseLeave={() =>
                                                 setHoveredRating(0)
                                             }
-                                            className="p-1 transition-transform hover:scale-110"
+                                            className="p-1 transition-transform hover:scale-110 active:scale-95"
                                         >
                                             <Star
-                                                className={`h-8 w-8 ${
+                                                className={`h-8 w-8 transition-colors ${
                                                     star <=
                                                     (hoveredRating ||
                                                         form.rating)
                                                         ? 'fill-amber-400 text-amber-400'
-                                                        : 'text-slate-300'
+                                                        : 'text-slate-300 dark:text-slate-650'
                                                 }`}
                                             />
                                         </button>
                                     ))}
                                 </div>
                                 {form.rating > 0 && (
-                                    <p className="text-center text-sm text-slate-600">
-                                        {form.rating} star
-                                        {form.rating !== 1 ? 's' : ''}
+                                    <p className="text-center text-xs font-bold text-slate-500 uppercase tracking-widest">
+                                        {form.rating} star{form.rating !== 1 ? 's' : ''} Selected
                                     </p>
                                 )}
                             </div>
@@ -154,7 +166,7 @@ export default function EvaluationShow() {
                             <div className="grid gap-2">
                                 <Label
                                     htmlFor="comment"
-                                    className="text-sm font-medium"
+                                    className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
                                 >
                                     Comments (Optional)
                                 </Label>
@@ -169,7 +181,7 @@ export default function EvaluationShow() {
                                     }
                                     placeholder="Share your thoughts about the event..."
                                     rows={4}
-                                    className="resize-none"
+                                    className="resize-none rounded-2xl border-slate-200 bg-slate-50 p-4 leading-relaxed focus:border-blue-500 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/30"
                                 />
                             </div>
                         </div>
@@ -177,7 +189,7 @@ export default function EvaluationShow() {
                         <div className="flex flex-col gap-3 pt-4">
                             <Button
                                 onClick={handleSubmit}
-                                className="h-12 w-full bg-[#0b2d66] font-medium text-white hover:bg-[#1e40af]"
+                                className="h-12 w-full rounded-2xl bg-[#0b2d66] text-xs font-black tracking-widest text-white uppercase shadow-lg shadow-blue-900/10 transition-all hover:bg-[#1e40af] active:scale-95 disabled:opacity-50"
                                 disabled={
                                     !form.name.trim() || form.rating === 0
                                 }
@@ -185,8 +197,8 @@ export default function EvaluationShow() {
                                 Submit Evaluation
                             </Button>
 
-                            <p className="text-center text-xs text-slate-500">
-                                Your feedback helps us improve future events.
+                            <p className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                OSAMS • Office of Student Affairs
                             </p>
                         </div>
                     </CardContent>

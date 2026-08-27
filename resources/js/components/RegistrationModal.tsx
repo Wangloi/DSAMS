@@ -119,7 +119,7 @@ export default function RegistrationModal({
                 onClick={handleClose}
             />
 
-            <div className="relative max-h-[90vh] w-full max-w-xl overflow-hidden rounded-2xl bg-gradient-to-b from-[#1b2f8a] to-[#0b1c5c] shadow-2xl">
+            <div className="relative max-h-[85vh] w-full max-w-xl overflow-hidden rounded-2xl bg-gradient-to-b from-[#1b2f8a] to-[#0b1c5c] shadow-2xl">
                 {/* Header */}
                 <div className="relative border-b border-white/10 px-6 py-4">
                     <div className="flex items-center justify-between">
@@ -148,7 +148,7 @@ export default function RegistrationModal({
                 </div>
 
                 {/* Content */}
-                <div className="max-h-[65vh] overflow-y-auto px-6 py-6">
+                <div className="scrollbar-thin max-h-[52vh] overflow-y-auto px-6 py-6">
                     {isSubmitted ? (
                         /* Success state */
                         <div className="flex flex-col items-center justify-center space-y-4 py-8 text-center">
