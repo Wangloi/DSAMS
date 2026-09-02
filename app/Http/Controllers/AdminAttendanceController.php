@@ -294,6 +294,8 @@ class AdminAttendanceController extends Controller
                     'time' => optional($timeCarbon)->format('h:i A') ?: '—',
                     'time_out' => $attendance->checked_out_at ? optional($attendance->checked_out_at)->format('h:i A') : '—',
                     'status' => (string) ($attendance->status ?? ''),
+                    'check_in_distance_m' => $attendance->check_in_distance_m,
+                    'check_out_distance_m' => $attendance->check_out_distance_m,
                 ];
             })
             ->values()
@@ -543,7 +545,7 @@ class AdminAttendanceController extends Controller
         $attendanceByStudentId = Attendance::query()
             ->where('event_id', $event->id)
             ->whereIn('student_id', $studentsWithAttendance->pluck('id')->all())
-            ->get(['student_id', 'checked_in_at', 'scanned_at', 'status'])
+            ->get(['student_id', 'checked_in_at', 'scanned_at', 'status', 'check_in_distance_m'])
             ->keyBy('student_id');
 
         $rows = $studentsWithAttendance->map(function (Student $student) use ($attendanceByStudentId) {
@@ -560,6 +562,7 @@ class AdminAttendanceController extends Controller
                 'checked_in_at' => $attendance
                     ? optional($attendance->checked_in_at ?? $attendance->scanned_at)->toDateTimeString()
                     : null,
+                'check_in_distance_m' => $attendance ? $attendance->check_in_distance_m : null,
             ];
         })->values();
 

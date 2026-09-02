@@ -153,6 +153,12 @@ Route::post('/student/attendance/{event}/dynamic-qr-scan', [StudentAttendanceCon
     ->middleware(['auth:student', 'approved'])
     ->name('student.attendance.dynamic-qr-scan.submit');
 
+// Direct GPS Geofence Check-in
+Route::post('/student/attendance/{event}/geofence-checkin', [StudentAttendanceController::class, 'directGeofenceCheckin'])
+    ->middleware(['auth:student', 'approved'])
+    ->name('student.attendance.geofence-checkin');
+
+
 // Admin: display rotating QR code for projector / monitor
 Route::get('/admin/attendance/{event}/dynamic-qr', [DynamicAttendanceQrController::class, 'show'])
     ->middleware(['web', 'auth:admin'])

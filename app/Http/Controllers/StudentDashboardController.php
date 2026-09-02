@@ -11,6 +11,7 @@ use App\Models\Program;
 use App\Models\Student;
 use App\Services\EvaluationEligibilityService;
 use App\Services\StudentNotificationPresenter;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Log;
@@ -44,7 +45,8 @@ class StudentDashboardController extends Controller
             ? StudentNotificationPresenter::recentForStudent($user, 5)
             : [];
 
-        $events = $this->getFormattedEvents();
+        $events = $this->getFormattedEvents($user);
+
 
         Log::info('[StudentDashboardController] computed notifications', [
             'student_id' => $user instanceof Student ? $user->id : null,
@@ -139,28 +141,71 @@ class StudentDashboardController extends Controller
             });
     }
 
-    private function getFormattedEvents()
+    private function getFormattedEvents($user = null)
     {
         if (!Schema::hasTable('events')) {
             return collect();
         }
 
-        return Event::active()
+        $events = Event::active()
             ->orderBy('event_date', 'desc')
             ->take(10)
-            ->get()
-            ->map(function ($event) {
-                return [
-                    'id'                   => $event->id,
-                    'title'                => $event->event_name,
-                    'date'                 => $event->event_date->format('M d, Y'),
-                    'time'                 => $event->event_time,
-                    'location'             => $event->location,
-                    'description'          => $event->description,
-                    'status'               => $event->status,
-                    'scanner_portal_active' => (bool) ($event->scanner_portal_active ?? false),
-                ];
-            });
+            ->get();
+
+        $studentId = ($user instanceof Student) ? $user->id : null;
+        $attendances = ($studentId && Schema::hasTable('attendances'))
+            ? Attendance::where('student_id', $studentId)
+                ->whereIn('event_id', $events->pluck('id'))
+                ->get()
+                ->keyBy('event_id')
+            : collect();
+
+        return $events->map(function ($event) use ($attendances) {
+            $att = $attendances->get($event->id);
+            $attendanceStatus = 'none';
+            if ($att) {
+                $attendanceStatus = $att->checked_out_at ? 'checked_out' : 'checked_in';
+            }
+
+            $isDone = false;
+            $statusLower = strtolower((string) ($event->status ?? ''));
+            if ($statusLower === 'completed' || $statusLower === 'cancelled') {
+                $isDone = true;
+            } elseif ($event->event_date) {
+                $eventDay = Carbon::parse($event->event_date)->startOfDay();
+                $today = Carbon::now()->startOfDay();
+                if ($eventDay->lt($today)) {
+                    $isDone = true;
+                } elseif ($eventDay->eq($today) && !empty($event->registration_end_time)) {
+                    try {
+                        $cutoff = Carbon::parse($event->event_date->format('Y-m-d') . ' ' . $event->registration_end_time);
+                        $blockAt = $cutoff->copy()->addMinutes(30);
+                        if (Carbon::now()->greaterThanOrEqualTo($blockAt)) {
+                            $isDone = true;
+                        }
+                    } catch (\Throwable) {}
+                }
+            }
+
+            return [
+                'id'                    => $event->id,
+                'title'                 => $event->event_name,
+                'date'                  => $event->event_date ? $event->event_date->format('M d, Y') : '',
+                'time'                  => $event->event_time,
+                'location'              => $event->location,
+                'description'           => $event->description,
+                'status'                => $isDone ? 'completed' : $event->status,
+                'is_done'               => $isDone,
+                'scanner_portal_active' => (bool) ($event->scanner_portal_active ?? false) && !$isDone,
+                'geofence_enabled'      => (bool) ($event->geofence_enabled ?? false),
+                'geofence_latitude'     => $event->geofence_latitude ? (float) $event->geofence_latitude : null,
+                'geofence_longitude'    => $event->geofence_longitude ? (float) $event->geofence_longitude : null,
+                'geofence_radius_m'     => (int) ($event->geofence_radius_m ?? 50),
+                'attendance_status'     => $attendanceStatus,
+                'checked_in_at'         => $att && $att->checked_in_at ? $att->checked_in_at->toDateTimeString() : null,
+                'checked_out_at'        => $att && $att->checked_out_at ? $att->checked_out_at->toDateTimeString() : null,
+            ];
+        });
     }
 
     /**

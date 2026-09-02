@@ -52,6 +52,7 @@ import {
     FileText,
     GraduationCap,
     MapPin,
+    Navigation,
     QrCode,
     ScanLine,
     ShieldCheck,
@@ -93,6 +94,14 @@ type EventRecord = {
     description: string;
     status: string;
     scanner_portal_active?: boolean;
+    geofence_enabled?: boolean;
+    geofence_latitude?: number | null;
+    geofence_longitude?: number | null;
+    geofence_radius_m?: number;
+    attendance_status?: 'none' | 'checked_in' | 'checked_out';
+    checked_in_at?: string | null;
+    checked_out_at?: string | null;
+    is_done?: boolean;
 };
 
 type ProgramOption = {
@@ -234,7 +243,153 @@ export default function StudentDashboard({
             ? dashboardNotifications
             : recentNotifications;
 
-    const activeEvents = events.filter((e) => e.scanner_portal_active);
+    const activeEvents = events.filter(
+        (e) =>
+            !e.is_done &&
+            e.status !== 'completed' &&
+            (e.scanner_portal_active || e.geofence_enabled),
+    );
+
+    const [gpsCheckingIn, setGpsCheckingIn] = useState<number | null>(null);
+
+    const handleGpsCheckin = (event: EventRecord) => {
+        if (event.is_done || event.status === 'completed') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Event Ended',
+                text: 'Attendance check-in is closed because this event has already ended.',
+                confirmButtonColor: '#0b2d66',
+            });
+            return;
+        }
+
+        if (typeof window === 'undefined' || !navigator.geolocation) {
+            Swal.fire({
+                icon: 'error',
+                title: 'GPS Unsupported',
+                text: 'Geolocation is not supported by your device/browser.',
+                confirmButtonColor: '#0b2d66',
+            });
+            return;
+        }
+
+        const isCheckout = event.attendance_status === 'checked_in';
+        const actionLabel = isCheckout ? 'Check-Out' : 'Check-In';
+
+        Swal.fire({
+            title: `GPS ${actionLabel}`,
+            text: `We will verify your current location for "${event.title}". Please ensure you are at the event venue.`,
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonColor: '#0b2d66',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: `Record ${actionLabel}`,
+        }).then((result) => {
+            if (!result.isConfirmed) return;
+
+            setGpsCheckingIn(event.id);
+
+            Swal.fire({
+                title: 'Detecting Location...',
+                text: 'Please allow location access if prompted by your browser.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+            });
+
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const { latitude, longitude, accuracy } = position.coords;
+
+                    try {
+                        const csrfToken =
+                            document
+                                .querySelector('meta[name="csrf-token"]')
+                                ?.getAttribute('content') || '';
+
+                        const response = await fetch(
+                            `/student/attendance/${event.id}/geofence-checkin`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    Accept: 'application/json',
+                                    'X-CSRF-TOKEN': csrfToken,
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                },
+                                body: JSON.stringify({
+                                    latitude,
+                                    longitude,
+                                    accuracy_m: accuracy,
+                                }),
+                            },
+                        );
+
+                        const data = await response.json();
+
+                        if (response.ok && data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: isCheckout ? 'Check-Out Successful!' : 'Check-In Successful!',
+                                html: `
+                                    <div class="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                                        <p class="font-medium">${data.message}</p>
+                                        <div class="mt-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs font-semibold text-left space-y-1">
+                                            <p>📍 Distance from venue: <strong class="text-blue-600 dark:text-blue-400">${data.distance_m}m</strong></p>
+                                            <p>🎯 Allowed radius: <strong>${data.allowed_radius_m}m</strong></p>
+                                            <p class="text-slate-400 mt-1">${data.checked_at}</p>
+                                        </div>
+                                    </div>
+                                `,
+                                confirmButtonColor: '#0b2d66',
+                            }).then(() => {
+                                router.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Attendance Denied',
+                                text: data.message || 'Unable to record attendance.',
+                                confirmButtonColor: '#0b2d66',
+                            });
+                        }
+                    } catch (err: any) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Network Error',
+                            text: 'Failed to communicate with the server. Please try again.',
+                            confirmButtonColor: '#0b2d66',
+                        });
+                    } finally {
+                        setGpsCheckingIn(null);
+                    }
+                },
+                (error) => {
+                    setGpsCheckingIn(null);
+                    let errMsg = 'Could not acquire your current location.';
+                    if (error.code === error.PERMISSION_DENIED) {
+                        errMsg = 'Location permission was denied. Please enable location permissions in your browser.';
+                    } else if (error.code === error.POSITION_UNAVAILABLE) {
+                        errMsg = 'Location signal is unavailable. Please check your device GPS.';
+                    } else if (error.code === error.TIMEOUT) {
+                        errMsg = 'Location request timed out. Please try again.';
+                    }
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Location Unavailable',
+                        text: errMsg,
+                        confirmButtonColor: '#0b2d66',
+                    });
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 0,
+                },
+            );
+        });
+    };
 
     // Resolve the student's course code to the full program name from the programs table
     const studentCourse = ((authUser as any)?.course ?? '').trim();
@@ -1868,8 +2023,12 @@ export default function StudentDashboard({
 
                             <div className="space-y-8">
                                 {events.map((event) => {
+                                    const isDone =
+                                        !!event.is_done ||
+                                        event.status?.toLowerCase() ===
+                                            'completed';
                                     const isOngoing =
-                                        event.scanner_portal_active;
+                                        !isDone && !!event.scanner_portal_active;
                                     return (
                                         <div
                                             key={event.id}
@@ -1880,9 +2039,11 @@ export default function StudentDashboard({
                                                 <div
                                                     className={cn(
                                                         'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg transition-transform duration-500 group-hover:scale-108',
-                                                        isOngoing
-                                                            ? 'animate-pulse bg-gradient-to-br from-emerald-400 to-teal-500 ring-4 shadow-emerald-500/30 ring-emerald-500/20'
-                                                            : 'bg-gradient-to-br from-blue-600 to-indigo-700',
+                                                        isDone
+                                                            ? 'bg-slate-300 dark:bg-slate-700'
+                                                            : isOngoing
+                                                              ? 'animate-pulse bg-gradient-to-br from-emerald-400 to-teal-500 ring-4 shadow-emerald-500/30 ring-emerald-500/20'
+                                                              : 'bg-gradient-to-br from-blue-600 to-indigo-700',
                                                     )}
                                                 >
                                                     <Calendar className="h-5 w-5" />
@@ -1900,16 +2061,25 @@ export default function StudentDashboard({
                                                             <Badge
                                                                 className={cn(
                                                                     'rounded-lg border px-2.5 py-0.5 text-[8px] font-black tracking-[0.25em] uppercase',
-                                                                    isOngoing
-                                                                        ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                                                                        : 'border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400',
+                                                                    isDone
+                                                                        ? 'border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400'
+                                                                        : isOngoing
+                                                                          ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                                                          : 'border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400',
                                                                 )}
                                                             >
-                                                                {isOngoing
-                                                                    ? 'Ongoing'
-                                                                    : event.status ||
-                                                                      'Upcoming'}
+                                                                {isDone
+                                                                    ? 'Completed'
+                                                                    : isOngoing
+                                                                      ? 'Ongoing'
+                                                                      : event.status ||
+                                                                        'Upcoming'}
                                                             </Badge>
+                                                            {event.geofence_enabled && (
+                                                                <Badge className="rounded-lg border border-violet-500/20 bg-violet-500/10 px-2.5 py-0.5 text-[8px] font-black tracking-[0.2em] text-violet-600 uppercase dark:text-violet-400">
+                                                                    📍 Geofenced ({event.geofence_radius_m || 50}m)
+                                                                </Badge>
+                                                            )}
                                                         </div>
                                                         <div className="text-slate-505 flex flex-wrap items-center gap-x-3.5 gap-y-1 text-xs font-semibold dark:text-slate-400">
                                                             <span className="flex items-center gap-1">
@@ -1940,21 +2110,80 @@ export default function StudentDashboard({
                                                         )}
                                                     </div>
 
-                                                    <div className="flex items-center justify-end">
-                                                        {isOngoing && (
-                                                            <Button
-                                                                className="h-8.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-4 text-[9px] font-black tracking-widest text-white uppercase shadow-lg shadow-emerald-500/20 transition-all hover:scale-105 active:scale-95"
-                                                                onClick={() =>
-                                                                    router.visit(
-                                                                        studentAttendanceDynamicQrScan(
-                                                                            event.id,
-                                                                        ),
-                                                                    )
-                                                                }
-                                                            >
-                                                                Scan
-                                                                <QrCode className="ml-1.5 h-3.5 w-3.5" />
-                                                            </Button>
+                                                    <div className="flex flex-wrap items-center justify-end gap-2">
+                                                        {isDone ? (
+                                                            event.attendance_status ===
+                                                            'checked_out' ? (
+                                                                <Badge className="gap-1 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                                    <Check className="h-3.5 w-3.5" />
+                                                                    Checked Out
+                                                                </Badge>
+                                                            ) : event.attendance_status ===
+                                                              'checked_in' ? (
+                                                                <Badge className="gap-1 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                                                    <Check className="h-3.5 w-3.5" />
+                                                                    Checked In
+                                                                </Badge>
+                                                            ) : (
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="rounded-xl border-slate-200 bg-slate-50/60 px-3 py-1.5 text-[10px] font-bold text-slate-400 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-500"
+                                                                >
+                                                                    Event Ended
+                                                                </Badge>
+                                                            )
+                                                        ) : (
+                                                            <>
+                                                                {event.geofence_enabled &&
+                                                                    (event.attendance_status ===
+                                                                    'checked_out' ? (
+                                                                        <Badge className="gap-1 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                                            <Check className="h-3.5 w-3.5" />
+                                                                            Checked Out
+                                                                        </Badge>
+                                                                    ) : (
+                                                                        <Button
+                                                                            className={cn(
+                                                                                'h-8.5 gap-1.5 rounded-xl px-3.5 text-[9px] font-black tracking-widest uppercase shadow-lg transition-all hover:scale-105 active:scale-95',
+                                                                                event.attendance_status ===
+                                                                                    'checked_in'
+                                                                                    ? 'bg-amber-600 text-white shadow-amber-500/25 hover:bg-amber-700'
+                                                                                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-blue-500/25 hover:from-blue-700 hover:to-indigo-700',
+                                                                            )}
+                                                                            disabled={
+                                                                                gpsCheckingIn ===
+                                                                                event.id
+                                                                            }
+                                                                            onClick={() =>
+                                                                                handleGpsCheckin(
+                                                                                    event,
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            <Navigation className="h-3.5 w-3.5" />
+                                                                            {event.attendance_status ===
+                                                                            'checked_in'
+                                                                                ? 'Check Out (GPS)'
+                                                                                : 'Check In (GPS)'}
+                                                                        </Button>
+                                                                    ))}
+
+                                                                {isOngoing && (
+                                                                    <Button
+                                                                        className="h-8.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-4 text-[9px] font-black tracking-widest text-white uppercase shadow-lg shadow-emerald-500/20 transition-all hover:scale-105 active:scale-95"
+                                                                        onClick={() =>
+                                                                            router.visit(
+                                                                                studentAttendanceDynamicQrScan(
+                                                                                    event.id,
+                                                                                ),
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        Scan
+                                                                        <QrCode className="ml-1.5 h-3.5 w-3.5" />
+                                                                    </Button>
+                                                                )}
+                                                            </>
                                                         )}
                                                     </div>
                                                 </div>
@@ -2042,11 +2271,42 @@ export default function StudentDashboard({
                         <div
                             onClick={() => {
                                 if (activeEvents.length > 0) {
-                                    router.visit(
-                                        studentAttendanceDynamicQrScan(
-                                            activeEvents[0].id,
-                                        ),
+                                    const geofenced = activeEvents.find(
+                                        (e) => e.geofence_enabled,
                                     );
+                                    if (geofenced) {
+                                        Swal.fire({
+                                            title: 'Event Check-In',
+                                            text: `Choose your check-in method for "${geofenced.title}":`,
+                                            icon: 'question',
+                                            showCancelButton: true,
+                                            showDenyButton: true,
+                                            confirmButtonColor: '#2563eb',
+                                            denyButtonColor: '#7c3aed',
+                                            cancelButtonColor: '#64748b',
+                                            confirmButtonText:
+                                                '📍 GPS Location Check-in',
+                                            denyButtonText:
+                                                '📷 Scan QR Code',
+                                            cancelButtonText: 'Cancel',
+                                        }).then((result) => {
+                                            if (result.isConfirmed) {
+                                                handleGpsCheckin(geofenced);
+                                            } else if (result.isDenied) {
+                                                router.visit(
+                                                    studentAttendanceDynamicQrScan(
+                                                        geofenced.id,
+                                                    ),
+                                                );
+                                            }
+                                        });
+                                    } else {
+                                        router.visit(
+                                            studentAttendanceDynamicQrScan(
+                                                activeEvents[0].id,
+                                            ),
+                                        );
+                                    }
                                 } else {
                                     Swal.fire({
                                         icon: 'info',
@@ -2071,11 +2331,10 @@ export default function StudentDashboard({
 
                                 <div className="mt-2 space-y-1">
                                     <h3 className="text-sm font-black tracking-tight text-slate-900 uppercase dark:text-white">
-                                        Scan QR Code
+                                        Check In Now
                                     </h3>
                                     <p className="text-[11px] leading-relaxed font-semibold text-slate-500 dark:text-slate-400">
-                                        Check-in to an active school event using
-                                        your camera.
+                                        Check in via GPS location or camera QR code.
                                     </p>
                                 </div>
 
@@ -2084,7 +2343,7 @@ export default function StudentDashboard({
                                     disabled={activeEvents.length === 0}
                                 >
                                     {activeEvents.length > 0
-                                        ? 'Scan Now'
+                                        ? 'Check In'
                                         : 'No Active Session'}
                                     {activeEvents.length > 0 && (
                                         <ChevronRight className="ml-1 h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />

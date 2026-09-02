@@ -49,6 +49,8 @@ interface LiveLogRow {
     checked_in_at: string;
     time: string;
     status: string;
+    check_in_distance_m?: number | null;
+    check_out_distance_m?: number | null;
 }
 
 interface ByCourseRow {
@@ -1165,9 +1167,17 @@ export default function RealTimeMonitoringPanel({
                                                                             : 'Present'}
                                                                     </div>
                                                                 </td>
-                                                                <td className="px-6 py-4 text-right text-sm font-bold text-blue-600 dark:text-blue-400">
-                                                                    {row.time ||
-                                                                        '---'}
+                                                                <td className="px-6 py-4 text-right">
+                                                                    <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                                                                        {row.time ||
+                                                                            '---'}
+                                                                    </div>
+                                                                    {row.check_in_distance_m !== undefined &&
+                                                                        row.check_in_distance_m !== null && (
+                                                                            <div className="mt-0.5 inline-flex items-center gap-1 rounded-md border border-violet-200/60 bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-600 dark:border-violet-800/40 dark:bg-violet-950/40 dark:text-violet-400" title="GPS Geofence Check-in distance from venue">
+                                                                                <span>📍 {row.check_in_distance_m}m</span>
+                                                                            </div>
+                                                                        )}
                                                                 </td>
                                                             </tr>
                                                         ),

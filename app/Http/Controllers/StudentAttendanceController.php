@@ -861,4 +861,179 @@ class StudentAttendanceController extends Controller
             ],
         ]);
     }
+
+    /**
+     * Direct GPS Location Check-In / Check-Out for geofenced events.
+     * Enables students to mark attendance using device GPS location without scanning QR.
+     */
+    public function directGeofenceCheckin(Request $request, Event $event): JsonResponse
+    {
+        /** @var Student|null $student */
+        $student = \Illuminate\Support\Facades\Auth::guard('student')->user() ?: auth()->user();
+
+        if (! $student || ! ($student instanceof Student)) {
+            return response()->json(['message' => 'Unauthorized student account.'], 403);
+        }
+
+        if ($student->status !== 'approved') {
+            return response()->json(['message' => 'Your account is pending approval.'], 403);
+        }
+
+        // Validate course/year level scanner access eligibility
+        $courses = is_array($event->courses) ? $event->courses : [];
+        $yearLevels = is_array($event->year_levels) ? $event->year_levels : [];
+        $studentCourse = $student->course ?? $student->program;
+        $studentYearLevel = $student->year_level;
+
+        $courseMatch = empty($courses) || in_array($studentCourse, $courses, true);
+        $yearLevelMatch = empty($yearLevels) || in_array($studentYearLevel, $yearLevels, true);
+
+        if (! $courseMatch || ! $yearLevelMatch) {
+            return response()->json(['message' => 'This event is not assigned to your course or year level.'], 403);
+        }
+
+        if (strtolower((string) $event->status) === 'completed' || strtolower((string) $event->status) === 'cancelled') {
+            return response()->json(['message' => 'This event has already ended. Attendance check-in is closed.'], 403);
+        }
+
+        if ($event->event_date) {
+            $eventDay = Carbon::parse($event->event_date)->startOfDay();
+            if ($eventDay->lt(Carbon::now()->startOfDay())) {
+                return response()->json(['message' => 'This event has already ended. Attendance check-in is closed.'], 403);
+            }
+        }
+
+        if (! (bool) ($event->geofence_enabled ?? false)) {
+            return response()->json(['message' => 'Geofenced location check-in is not enabled for this event.'], 422);
+        }
+
+        $validated = $request->validate([
+            'latitude'   => 'required|numeric',
+            'longitude'  => 'required|numeric',
+            'accuracy_m' => 'nullable|numeric',
+        ]);
+
+        $geofenceResponse = $this->validateGeofence($request, $event, $student, $validated);
+        if ($geofenceResponse) {
+            return $geofenceResponse;
+        }
+
+        // Pending evaluation gate
+        if ($studentCourse) {
+            $pendingEvaluations = Evaluation::query()
+                ->join('events', 'evaluations.event_id', '=', 'events.id')
+                ->join('attendances', 'events.id', '=', 'attendances.event_id')
+                ->where('attendances.student_id', $student->id)
+                ->where('attendances.status', 'present')
+                ->where('evaluations.is_active', true)
+                ->where('evaluations.is_archived', false)
+                ->where('events.event_date', '<', $event->event_date)
+                ->whereRaw('LOWER(TRIM(events.organizer)) LIKE ?', ['%' . strtolower($studentCourse) . '%'])
+                ->whereNotExists(function ($query) use ($student) {
+                    $query->select(\DB::raw(1))
+                        ->from('evaluation_responses')
+                        ->whereColumn('evaluation_responses.evaluation_id', 'evaluations.id')
+                        ->where('evaluation_responses.student_id', $student->id);
+                })
+                ->exists();
+
+            if ($pendingEvaluations) {
+                return response()->json([
+                    'message'             => 'You must complete evaluations for previous events before attending this one.',
+                    'requires_evaluation' => true,
+                ], 422);
+            }
+        }
+
+        $lat = (float) $validated['latitude'];
+        $lng = (float) $validated['longitude'];
+        $accuracyM = $validated['accuracy_m'] !== null ? (float) $validated['accuracy_m'] : null;
+
+        $now = Carbon::now();
+        $status = 'present';
+
+        if (! empty($event->registration_end_time)) {
+            $eventDate = Carbon::parse($event->event_date);
+            $cutoff = Carbon::parse($eventDate->format('Y-m-d').' '.$event->registration_end_time);
+            $blockAt = $cutoff->copy()->addMinutes(30);
+
+            if ($now->greaterThanOrEqualTo($blockAt)) {
+                return response()->json(['message' => 'Check-in is disabled 30 minutes after registration end time.'], 403);
+            }
+
+            if ($now->greaterThan($cutoff)) {
+                $status = 'late';
+            }
+        }
+
+        $existing = Attendance::query()
+            ->where('event_id', $event->id)
+            ->where('student_id', $student->id)
+            ->first();
+
+        $eventLat = (float) $event->geofence_latitude;
+        $eventLng = (float) $event->geofence_longitude;
+        $distanceRounded = (int) round($this->haversineDistanceMeters($lat, $lng, $eventLat, $eventLng));
+        $allowedRadius = (int) ($event->geofence_radius_m ?? 50);
+
+        if (! $existing) {
+            $attendance = Attendance::create([
+                'event_id'            => $event->id,
+                'student_id'          => $student->id,
+                'scanned_at'          => $now,
+                'status'              => $status,
+                'checked_in_at'       => $now,
+                'check_in_latitude'   => $lat,
+                'check_in_longitude'  => $lng,
+                'check_in_accuracy_m' => $accuracyM !== null ? (int) round($accuracyM) : null,
+                'check_in_distance_m' => $distanceRounded,
+                'check_in_user_agent' => $request->userAgent(),
+            ]);
+
+            $event->updateAttendanceCounts();
+            app(StudentNotificationDispatcher::class)->attendanceRecorded($event, $attendance);
+
+            if (Schema::hasTable('activity_logs')) {
+                ActivityLog::logForUser($student, 'Attendance', 'Checked In', "Direct GPS Check-in for event #{$event->id} (distance: {$distanceRounded}m)", $request);
+            }
+
+            return response()->json([
+                'success'          => true,
+                'message'          => "Check-in successful! You are {$distanceRounded}m from the venue.",
+                'type'             => 'check_in',
+                'status'           => $status,
+                'distance_m'       => $distanceRounded,
+                'allowed_radius_m' => $allowedRadius,
+                'checked_at'       => $now->toDateTimeString(),
+            ]);
+        } elseif ($existing->checked_out_at) {
+            return response()->json(['message' => 'You have already checked out for this event.'], 409);
+        } else {
+            $existing->update([
+                'scanned_at'           => $now,
+                'checked_out_at'       => $now,
+                'check_out_latitude'   => $lat,
+                'check_out_longitude'  => $lng,
+                'check_out_accuracy_m' => $accuracyM !== null ? (int) round($accuracyM) : null,
+                'check_out_distance_m' => $distanceRounded,
+            ]);
+
+            $event->updateAttendanceCounts();
+
+            if (Schema::hasTable('activity_logs')) {
+                ActivityLog::logForUser($student, 'Attendance', 'Checked Out', "Direct GPS Check-out for event #{$event->id} (distance: {$distanceRounded}m)", $request);
+            }
+
+            return response()->json([
+                'success'          => true,
+                'message'          => "Check-out successful! You are {$distanceRounded}m from the venue.",
+                'type'             => 'check_out',
+                'status'           => $existing->status,
+                'distance_m'       => $distanceRounded,
+                'allowed_radius_m' => $allowedRadius,
+                'checked_at'       => $now->toDateTimeString(),
+            ]);
+        }
+    }
 }
+
