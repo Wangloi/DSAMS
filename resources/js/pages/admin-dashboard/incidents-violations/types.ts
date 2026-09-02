@@ -34,6 +34,7 @@ export interface IncidentRow {
     classification: 'Warning' | 'Suspension' | 'Exclusion' | 'Expulsion';
     dateTime: string;
     status: 'Pending' | 'Ongoing' | 'Resolved' | 'Escalated';
+    calling_phase?: number;
     violation_id: number | null;
     raw:
         | (IncidentReportPayload & {

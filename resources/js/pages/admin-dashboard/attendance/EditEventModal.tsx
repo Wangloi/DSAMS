@@ -19,7 +19,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { deriveEventLifecycleStatus } from '@/pages/admin-dashboard/events/deriveEventLifecycleStatus';
-import { Calendar, MapPin, Users } from 'lucide-react';
+import { Calendar, MapPin, ShieldCheck, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 type AttendanceRow = {
@@ -182,7 +182,19 @@ export default function EditEventModal({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSubmit(formData);
+        const payload: EditEventPayload = {
+            ...formData,
+            geofenceLatitude: formData.geofenceEnabled
+                ? formData.geofenceLatitude || '8.743070'
+                : formData.geofenceLatitude,
+            geofenceLongitude: formData.geofenceEnabled
+                ? formData.geofenceLongitude || '124.774500'
+                : formData.geofenceLongitude,
+            geofenceRadiusM: formData.geofenceEnabled
+                ? formData.geofenceRadiusM || '300'
+                : formData.geofenceRadiusM,
+        };
+        onSubmit(payload);
         handleClose();
     };
 
@@ -203,7 +215,7 @@ export default function EditEventModal({
             geofenceEnabled: false,
             geofenceLatitude: '',
             geofenceLongitude: '',
-            geofenceRadiusM: '50',
+            geofenceRadiusM: '250',
             attendanceType: 'qr_scanner',
         });
         setScannerStudentIdInput('');
@@ -468,8 +480,8 @@ export default function EditEventModal({
                                             QR Scanner (Camera scan by admin)
                                         </SelectItem>
                                         <SelectItem value="dynamic_qr">
-                                            Dynamic Rotation QR (Self scan by
-                                            students)
+                                            GPS Location Check-in (Direct
+                                            check-in via GPS location)
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -798,126 +810,18 @@ export default function EditEventModal({
                                         className="h-4 w-4 rounded border-slate-300"
                                     />
                                     <span className="text-sm text-slate-700">
-                                        Enable geofence validation (50m strict)
+                                        Enable campus geofence validation
                                     </span>
                                 </div>
                             </div>
 
                             {formData.geofenceEnabled && (
-                                <>
-                                    <div className="grid gap-2 sm:col-span-2">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            className="h-9 text-sm"
-                                            onClick={() =>
-                                                setShowMapSelector(true)
-                                            }
-                                        >
-                                            📍 Select Location on Map
-                                        </Button>
-                                    </div>
-                                    {showMapSelector && (
-                                        <div className="grid gap-2 sm:col-span-2">
-                                            <SchoolMapSelector
-                                                onLocationSelect={
-                                                    handleMapLocationSelect
-                                                }
-                                                initialLocation={
-                                                    formData.geofenceLatitude &&
-                                                    formData.geofenceLongitude
-                                                        ? {
-                                                              latitude:
-                                                                  parseFloat(
-                                                                      formData.geofenceLatitude,
-                                                                  ),
-                                                              longitude:
-                                                                  parseFloat(
-                                                                      formData.geofenceLongitude,
-                                                                  ),
-                                                              name: selectedLocationName,
-                                                          }
-                                                        : undefined
-                                                }
-                                            />
-                                        </div>
-                                    )}
-                                    {selectedLocationName && (
-                                        <div className="grid gap-2 sm:col-span-2">
-                                            <div className="text-sm text-slate-600">
-                                                Selected:{' '}
-                                                <span className="font-semibold">
-                                                    {selectedLocationName}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    )}
-                                    <div className="grid gap-2">
-                                        <Label
-                                            htmlFor="geofenceLatitude"
-                                            className="text-sm font-medium text-slate-700"
-                                        >
-                                            Latitude
-                                        </Label>
-                                        <Input
-                                            id="geofenceLatitude"
-                                            value={formData.geofenceLatitude}
-                                            onChange={(e) =>
-                                                setFormData((prev) => ({
-                                                    ...prev,
-                                                    geofenceLatitude:
-                                                        e.target.value,
-                                                }))
-                                            }
-                                            placeholder="e.g. 14.5995123"
-                                            className="h-9"
-                                        />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label
-                                            htmlFor="geofenceLongitude"
-                                            className="text-sm font-medium text-slate-700"
-                                        >
-                                            Longitude
-                                        </Label>
-                                        <Input
-                                            id="geofenceLongitude"
-                                            value={formData.geofenceLongitude}
-                                            onChange={(e) =>
-                                                setFormData((prev) => ({
-                                                    ...prev,
-                                                    geofenceLongitude:
-                                                        e.target.value,
-                                                }))
-                                            }
-                                            placeholder="e.g. 120.9842195"
-                                            className="h-9"
-                                        />
-                                    </div>
-                                    <div className="grid gap-2 sm:col-span-2">
-                                        <Label
-                                            htmlFor="geofenceRadiusM"
-                                            className="text-sm font-medium text-slate-700"
-                                        >
-                                            Radius (meters)
-                                        </Label>
-                                        <Input
-                                            id="geofenceRadiusM"
-                                            type="number"
-                                            min={10}
-                                            max={500}
-                                            value={formData.geofenceRadiusM}
-                                            onChange={(e) =>
-                                                setFormData((prev) => ({
-                                                    ...prev,
-                                                    geofenceRadiusM:
-                                                        e.target.value,
-                                                }))
-                                            }
-                                            className="h-9"
-                                        />
-                                    </div>
-                                </>
+                                <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50/60 px-3 py-2 text-xs font-medium text-emerald-800 sm:col-span-2 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
+                                    <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                                    <span>
+                                        Geofence: <strong>Whole Campus (St. Rita's College of Balingasag)</strong>
+                                    </span>
+                                </div>
                             )}
                         </div>
 

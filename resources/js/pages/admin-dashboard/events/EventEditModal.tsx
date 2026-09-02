@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { adminEventsUpdate } from '@/routes';
 import { useForm } from '@inertiajs/react';
-import { Calendar, Check, Users } from 'lucide-react';
+import { Calendar, Check, ShieldCheck, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
     deriveEventLifecycleStatus,
@@ -92,17 +92,17 @@ function buildDefaults(
             (typeof event.geofence_latitude !== 'string' ||
                 event.geofence_latitude !== '')
                 ? String(event.geofence_latitude)
-                : '',
+                : '8.743070',
         geofence_longitude:
             event.geofence_longitude != null &&
             (typeof event.geofence_longitude !== 'string' ||
                 event.geofence_longitude !== '')
                 ? String(event.geofence_longitude)
-                : '',
+                : '124.774500',
         geofence_radius_m:
             event.geofence_radius_m != null
                 ? String(event.geofence_radius_m)
-                : '50',
+                : '300',
         scanner_portal_active: event.scanner_portal_active || false,
         attendance_type: event.attendance_type || 'qr_scanner',
     };
@@ -144,7 +144,7 @@ export default function EventEditModal({
         );
     }, [event, yearLevelOptions]);
 
-    const { data, setData, put, processing, reset, errors } = useForm<FormData>(
+    const { data, setData, put, processing, reset, errors, transform } = useForm<FormData>(
         event
             ? buildDefaults(event, courseOptions, yearLevelOptions)
             : ({} as any),
@@ -158,6 +158,18 @@ export default function EventEditModal({
 
     const handleSubmit = () => {
         if (!event) return;
+        transform((curr) => ({
+            ...curr,
+            geofence_latitude: curr.geofence_enabled
+                ? curr.geofence_latitude || '8.743070'
+                : curr.geofence_latitude,
+            geofence_longitude: curr.geofence_enabled
+                ? curr.geofence_longitude || '124.774500'
+                : curr.geofence_longitude,
+            geofence_radius_m: curr.geofence_enabled
+                ? curr.geofence_radius_m || '300'
+                : curr.geofence_radius_m,
+        }));
         put(adminEventsUpdate(event.id), {
             preserveScroll: true,
             onSuccess: () => {
@@ -536,8 +548,8 @@ export default function EventEditModal({
                                                     admin)
                                                 </SelectItem>
                                                 <SelectItem value="dynamic_qr">
-                                                    Dynamic Rotation QR (Self
-                                                    scan by students)
+                                                    GPS Location Check-in (Direct
+                                                    check-in via GPS location)
                                                 </SelectItem>
                                             </SelectContent>
                                         </Select>
@@ -572,110 +584,12 @@ export default function EventEditModal({
                                     </div>
 
                                     {data.geofence_enabled && (
-                                        <>
-                                            <div className="grid gap-2 sm:col-span-2">
-                                                <SchoolMapSelector
-                                                    onLocationSelect={(
-                                                        lat,
-                                                        lng,
-                                                    ) => {
-                                                        setData(
-                                                            'geofence_latitude',
-                                                            lat.toFixed(6),
-                                                        );
-                                                        setData(
-                                                            'geofence_longitude',
-                                                            lng.toFixed(6),
-                                                        );
-                                                    }}
-                                                    initialLocation={
-                                                        data.geofence_latitude &&
-                                                        data.geofence_longitude
-                                                            ? {
-                                                                  latitude:
-                                                                      parseFloat(
-                                                                          data.geofence_latitude,
-                                                                      ),
-                                                                  longitude:
-                                                                      parseFloat(
-                                                                          data.geofence_longitude,
-                                                                      ),
-                                                                  name: 'Selected facility',
-                                                              }
-                                                            : undefined
-                                                    }
-                                                />
-                                            </div>
-
-                                            <div className="grid gap-2">
-                                                <Label
-                                                    htmlFor="geofenceLatitude"
-                                                    className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                                                >
-                                                    Latitude
-                                                </Label>
-                                                <Input
-                                                    id="geofenceLatitude"
-                                                    value={
-                                                        data.geofence_latitude
-                                                    }
-                                                    onChange={(e) =>
-                                                        setData(
-                                                            'geofence_latitude',
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    className={`h-9 dark:border-slate-600 dark:bg-slate-800 ${errors.geofence_latitude ? 'border-rose-500 focus-visible:ring-rose-500' : ''}`}
-                                                />
-                                            </div>
-
-                                            <div className="grid gap-2">
-                                                <Label
-                                                    htmlFor="geofenceLongitude"
-                                                    className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                                                >
-                                                    Longitude
-                                                </Label>
-                                                <Input
-                                                    id="geofenceLongitude"
-                                                    value={
-                                                        data.geofence_longitude
-                                                    }
-                                                    onChange={(e) =>
-                                                        setData(
-                                                            'geofence_longitude',
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    className={`h-9 dark:border-slate-600 dark:bg-slate-800 ${errors.geofence_longitude ? 'border-rose-500 focus-visible:ring-rose-500' : ''}`}
-                                                />
-                                            </div>
-
-                                            <div className="grid gap-2 sm:col-span-2">
-                                                <Label
-                                                    htmlFor="geofenceRadiusM"
-                                                    className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                                                >
-                                                    Geofence Radius (meters)
-                                                </Label>
-                                                <Input
-                                                    id="geofenceRadiusM"
-                                                    type="number"
-                                                    min={10}
-                                                    max={500}
-                                                    value={
-                                                        data.geofence_radius_m
-                                                    }
-                                                    onChange={(e) =>
-                                                        setData(
-                                                            'geofence_radius_m',
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    className={`h-9 dark:border-slate-600 dark:bg-slate-800 ${errors.geofence_radius_m ? 'border-rose-500 focus-visible:ring-rose-500' : ''}`}
-                                                />
-                                            </div>
-                                        </>
+                                        <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50/60 px-3 py-2 text-xs font-medium text-emerald-800 sm:col-span-2 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
+                                            <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                                            <span>
+                                                Geofence: <strong>Whole Campus (St. Rita's College of Balingasag)</strong>
+                                            </span>
+                                        </div>
                                     )}
                                 </div>
                             </div>

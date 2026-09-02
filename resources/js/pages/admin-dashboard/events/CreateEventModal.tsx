@@ -48,51 +48,56 @@ export type CreateEventPayload = {
 };
 
 const SCHOOL_MAP_LOCATIONS = [
-    { name: 'Main Gate', lat: '14.599500', lng: '120.984200' },
+    {
+        name: "St. Rita's College of Balingasag (Full Campus)",
+        lat: '8.743180',
+        lng: '124.774380',
+    },
+    { name: 'Main Gate', lat: '8.742750', lng: '124.774450' },
     { name: 'Cafeteria', lat: '8.743160', lng: '124.774360' },
-    { name: 'Gymnasium', lat: '14.599300', lng: '120.984400' },
+    { name: 'Gymnasium', lat: '8.742800', lng: '124.774200' },
     { name: 'RVM TTP Program Office', lat: '8.743890', lng: '124.774250' },
-    { name: 'Power House', lat: '14.599300', lng: '120.984400' },
-    { name: 'Parking Area', lat: '14.599700', lng: '120.984000' },
+    { name: 'Power House', lat: '8.743050', lng: '124.774500' },
+    { name: 'Parking Area', lat: '8.742700', lng: '124.774400' },
     { name: 'Outer Ground', lat: '8.742990', lng: '124.774390' },
     { name: 'Inner Ground', lat: '8.743170', lng: '124.774370' },
-    { name: 'Parents Lounge', lat: '8.743130', lng: '124.777180' },
+    { name: 'Parents Lounge', lat: '8.743130', lng: '124.774350' },
     {
         name: 'Christian Formation Office (1st floor)',
-        lat: '14.599400',
-        lng: '120.984300',
+        lat: '8.743200',
+        lng: '124.774280',
     },
-    { name: 'Chapel (1st floor)', lat: '14.599400', lng: '120.984300' },
-    { name: 'Room 101 (1st floor)', lat: '14.599400', lng: '120.984300' },
+    { name: 'Chapel (1st floor)', lat: '8.743220', lng: '124.774290' },
+    { name: 'Room 101 (1st floor)', lat: '8.743240', lng: '124.774300' },
     { name: 'HM Laboratory (1st floor)', lat: '8.743150', lng: '124.774190' },
     {
         name: 'College Library (2nd Floor)',
-        lat: '14.599400',
-        lng: '120.984300',
+        lat: '8.743260',
+        lng: '124.774300',
     },
     {
         name: 'Dean of College (2nd Floor)',
-        lat: '14.599400',
-        lng: '120.984300',
+        lat: '8.743280',
+        lng: '124.774310',
     },
     {
         name: 'College Faculty Room (2nd Floor)',
-        lat: '14.599400',
-        lng: '120.984300',
+        lat: '8.743300',
+        lng: '124.774310',
     },
     {
         name: "Program Head's Office (2nd Floor)",
-        lat: '14.599400',
-        lng: '120.984300',
+        lat: '8.743320',
+        lng: '124.774320',
     },
-    { name: 'IT LABORATORY (3rd floor)', lat: '14.599400', lng: '120.984300' },
-    { name: 'Room 301 (3rd floor)', lat: '14.599400', lng: '120.984300' },
-    { name: 'Room 302 (3rd floor)', lat: '14.599400', lng: '120.984300' },
-    { name: 'Room 303 (3rd floor)', lat: '14.599400', lng: '120.984300' },
-    { name: 'CRIM LAB (4th floor)', lat: '14.599400', lng: '120.984300' },
-    { name: '401 Room (4th floor)', lat: '14.599400', lng: '120.984300' },
-    { name: '402 Room (4th floor)', lat: '14.599400', lng: '120.984300' },
-    { name: '403 Room (4th floor)', lat: '14.599400', lng: '120.984300' },
+    { name: 'IT LABORATORY (3rd floor)', lat: '8.743340', lng: '124.774320' },
+    { name: 'Room 301 (3rd floor)', lat: '8.743360', lng: '124.774330' },
+    { name: 'Room 302 (3rd floor)', lat: '8.743380', lng: '124.774330' },
+    { name: 'Room 303 (3rd floor)', lat: '8.743400', lng: '124.774340' },
+    { name: 'CRIM LAB (4th floor)', lat: '8.743420', lng: '124.774340' },
+    { name: '401 Room (4th floor)', lat: '8.743440', lng: '124.774350' },
+    { name: '402 Room (4th floor)', lat: '8.743460', lng: '124.774350' },
+    { name: '403 Room (4th floor)', lat: '8.743480', lng: '124.774360' },
 ];
 
 type Props = {
@@ -136,7 +141,7 @@ export default function CreateEventModal({
     const [formData, setFormData] = useState<CreateEventPayload>({
         eventName: '',
         organizer: '',
-        location: '',
+        location: "St. Rita's College of Balingasag",
         eventDate: '',
         eventTime: '',
         registrationEndTime: '',
@@ -146,10 +151,10 @@ export default function CreateEventModal({
         yearLevels: [],
         scannerStudentIds: [],
         geofenceEnabled: true,
-        geofenceLatitude: '',
-        geofenceLongitude: '',
-        geofenceRadiusM: '50',
-        attendanceType: 'qr_scanner',
+        geofenceLatitude: '8.743070',
+        geofenceLongitude: '124.774500',
+        geofenceRadiusM: '300',
+        attendanceType: 'dynamic_qr',
     });
 
     const [currentStep, setCurrentStep] = useState(1);
@@ -429,35 +434,8 @@ export default function CreateEventModal({
                 errors.registrationEndTime = 'Time-End must be after Time-In';
             }
         } else if (step === 2) {
-            if (formData.attendanceType === 'dynamic_qr') {
-                if (!formData.location.trim()) {
-                    errors.location =
-                        'Location description is required when using Dynamic Rotation QR';
-                }
-                if (!formData.geofenceLatitude) {
-                    errors.geofenceLatitude =
-                        'Latitude is required for campus geofencing';
-                } else if (isNaN(Number(formData.geofenceLatitude))) {
-                    errors.geofenceLatitude = 'Latitude must be a valid number';
-                }
-
-                if (!formData.geofenceLongitude) {
-                    errors.geofenceLongitude =
-                        'Longitude is required for campus geofencing';
-                } else if (isNaN(Number(formData.geofenceLongitude))) {
-                    errors.geofenceLongitude =
-                        'Longitude must be a valid number';
-                }
-
-                if (!formData.geofenceRadiusM) {
-                    errors.geofenceRadiusM = 'Radius is required';
-                } else {
-                    const radiusNum = Number(formData.geofenceRadiusM);
-                    if (isNaN(radiusNum) || radiusNum < 10 || radiusNum > 500) {
-                        errors.geofenceRadiusM =
-                            'Radius must be between 10 and 500 meters';
-                    }
-                }
+            if (!formData.location.trim()) {
+                errors.location = 'Event venue / location name is required';
             }
         }
 
@@ -515,7 +493,23 @@ export default function CreateEventModal({
 
         localStorage.removeItem(DRAFT_KEY);
         setIsDraftRestored(false);
-        onSubmit(formData);
+
+        const isGpsMode = formData.attendanceType === 'dynamic_qr';
+        const payload: CreateEventPayload = {
+            ...formData,
+            geofenceEnabled: isGpsMode ? true : !!formData.geofenceEnabled,
+            geofenceLatitude: isGpsMode
+                ? formData.geofenceLatitude || '8.743070'
+                : formData.geofenceLatitude,
+            geofenceLongitude: isGpsMode
+                ? formData.geofenceLongitude || '124.774500'
+                : formData.geofenceLongitude,
+            geofenceRadiusM: isGpsMode
+                ? formData.geofenceRadiusM || '300'
+                : formData.geofenceRadiusM,
+        };
+
+        onSubmit(payload);
         handleClose();
     };
 
@@ -1231,15 +1225,14 @@ export default function CreateEventModal({
                                                         </p>
                                                     </div>
                                                 </div>
-                                            </div>
-
-                                            {/* Option 2: Dynamic Rotation QR */}
+                                            </div>                                            {/* Option 2: GPS Location Check-in */}
                                             <div
                                                 onClick={() =>
                                                     setFormData((prev) => ({
                                                         ...prev,
                                                         attendanceType:
                                                             'dynamic_qr',
+                                                        geofenceEnabled: true,
                                                     }))
                                                 }
                                                 className={`relative cursor-pointer rounded-xl border p-4 transition-all duration-200 ${
@@ -1253,13 +1246,12 @@ export default function CreateEventModal({
                                                     <div
                                                         className={`shrink-0 rounded-lg p-2.5 ${formData.attendanceType === 'dynamic_qr' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}
                                                     >
-                                                        <Sparkles className="h-5 w-5" />
+                                                        <MapPin className="h-5 w-5" />
                                                     </div>
                                                     <div>
                                                         <div className="flex items-center justify-between text-sm font-bold text-slate-900 dark:text-white">
                                                             <span>
-                                                                Dynamic Rotation
-                                                                QR
+                                                                GPS Location Check-in
                                                             </span>
                                                             {formData.attendanceType ===
                                                                 'dynamic_qr' && (
@@ -1267,10 +1259,11 @@ export default function CreateEventModal({
                                                             )}
                                                         </div>
                                                         <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                                                            Project dynamic
-                                                            screen QR code;
-                                                            students scan using
-                                                            their phones.
+                                                            Students check in
+                                                            directly using their
+                                                            device's GPS location
+                                                            at the venue. No QR
+                                                            scan needed.
                                                         </p>
                                                     </div>
                                                 </div>
@@ -1278,67 +1271,95 @@ export default function CreateEventModal({
                                         </div>
                                     </div>
 
-                                    {/* Venue Location - Based on School Location Map for Dynamic Rotation QR */}
-                                    {formData.attendanceType ===
-                                        'dynamic_qr' && (
-                                        <div className="animate-in space-y-1.5 duration-200 fade-in-50">
-                                            <div className="flex items-center justify-between">
-                                                <Label
-                                                    htmlFor="location"
-                                                    className="text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300"
-                                                >
-                                                    Venue / Room Location
-                                                    (Campus Map){' '}
-                                                    <span className="text-rose-500">
-                                                        *
-                                                    </span>
-                                                </Label>
-                                                <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">
-                                                    Linked to Campus Geofence
+                                    {/* Event Venue / Location */}
+                                    <div className="space-y-1.5">
+                                        <div className="flex items-center justify-between">
+                                            <Label
+                                                htmlFor="location"
+                                                className="text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300"
+                                            >
+                                                Event Venue / Location Name{' '}
+                                                <span className="text-rose-500">
+                                                    *
                                                 </span>
-                                            </div>
+                                            </Label>
+                                            {formData.attendanceType ===
+                                                'dynamic_qr' && (
+                                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
+                                                    <ShieldCheck className="h-3.5 w-3.5" />
+                                                    Whole Campus Geotagged
+                                                </span>
+                                            )}
+                                        </div>
 
-                                            <div className="relative">
-                                                <Input
-                                                    id="location"
-                                                    list="schoolMapLocationsList"
-                                                    value={formData.location}
-                                                    onChange={(e) => {
-                                                        const val =
-                                                            e.target.value;
-                                                        const matched =
-                                                            SCHOOL_MAP_LOCATIONS.find(
-                                                                (loc) =>
-                                                                    loc.name.toLowerCase() ===
-                                                                    val.toLowerCase(),
-                                                            );
+                                        <Input
+                                            id="location"
+                                            value={formData.location}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    location: val,
+                                                    geofenceLatitude:
+                                                        prev.geofenceLatitude ||
+                                                        '8.743070',
+                                                    geofenceLongitude:
+                                                        prev.geofenceLongitude ||
+                                                        '124.774500',
+                                                    geofenceRadiusM:
+                                                        prev.geofenceRadiusM ||
+                                                        '300',
+                                                }));
 
-                                                        if (matched) {
-                                                            setFormData(
-                                                                (prev) => ({
-                                                                    ...prev,
-                                                                    location:
-                                                                        matched.name,
-                                                                    geofenceLatitude:
-                                                                        matched.lat,
-                                                                    geofenceLongitude:
-                                                                        matched.lng,
-                                                                    geofenceEnabled: true,
-                                                                }),
-                                                            );
-                                                            setSelectedLocationName(
-                                                                matched.name,
-                                                            );
-                                                        } else {
-                                                            setFormData(
-                                                                (prev) => ({
-                                                                    ...prev,
-                                                                    location:
-                                                                        val,
-                                                                }),
-                                                            );
-                                                        }
+                                                if (validationErrors.location) {
+                                                    setValidationErrors(
+                                                        (prev) => {
+                                                            const copy = {
+                                                                ...prev,
+                                                            };
+                                                            delete copy.location;
+                                                            return copy;
+                                                        },
+                                                    );
+                                                }
+                                            }}
+                                            placeholder="e.g. St. Rita's College of Balingasag Campus, Gymnasium, Grounds"
+                                            className={`h-10 dark:border-slate-700 dark:bg-slate-800/80 ${
+                                                validationErrors.location
+                                                    ? 'border-rose-500 focus-visible:ring-rose-500'
+                                                    : ''
+                                            }`}
+                                            required
+                                        />
 
+                                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                                            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                                                Quick suggestions:
+                                            </span>
+                                            {[
+                                                'Gymnasium',
+                                                'Audio Visual Room (AVR)',
+                                                'Quadrangle / Grounds',
+                                                'Mother Ignacia Hall',
+                                                'St. Rita Building',
+                                                'Campus-Wide',
+                                            ].map((venue) => (
+                                                <button
+                                                    key={venue}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setFormData(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                location: venue,
+                                                                geofenceLatitude:
+                                                                    '8.743070',
+                                                                geofenceLongitude:
+                                                                    '124.774500',
+                                                                geofenceRadiusM:
+                                                                    '300',
+                                                            }),
+                                                        );
                                                         if (
                                                             validationErrors.location
                                                         ) {
@@ -1349,336 +1370,37 @@ export default function CreateEventModal({
                                                                             ...prev,
                                                                         };
                                                                     delete copy.location;
-                                                                    delete copy.geofenceLatitude;
-                                                                    delete copy.geofenceLongitude;
                                                                     return copy;
                                                                 },
                                                             );
                                                         }
                                                     }}
-                                                    placeholder="Select or type campus location (e.g. IT LABORATORY, Gymnasium, Cafeteria)"
-                                                    className={`h-10 dark:border-slate-700 dark:bg-slate-800/80 ${
-                                                        validationErrors.location
-                                                            ? 'border-rose-500 focus-visible:ring-rose-500'
-                                                            : ''
-                                                    }`}
-                                                    required
-                                                />
-                                                <datalist id="schoolMapLocationsList">
-                                                    {SCHOOL_MAP_LOCATIONS.map(
-                                                        (loc) => (
-                                                            <option
-                                                                key={loc.name}
-                                                                value={loc.name}
-                                                            />
-                                                        ),
-                                                    )}
-                                                </datalist>
-                                            </div>
-
-                                            {validationErrors.location && (
-                                                <p className="text-xs font-medium text-rose-500">
-                                                    {validationErrors.location}
-                                                </p>
-                                            )}
-
-                                            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                                                Select an official location from
-                                                the campus map or click on the
-                                                campus map below to set
-                                                coordinates automatically.
-                                            </p>
+                                                    className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                                                >
+                                                    {venue}
+                                                </button>
+                                            ))}
                                         </div>
-                                    )}
 
-                                    {/* Geofence Feature Card - Always On for Dynamic Rotation QR */}
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                            Enter any venue name so students know where the activity is held. The GPS attendance geofence automatically covers the <strong>whole campus of St. Rita's College of Balingasag</strong> (300m radius).
+                                        </p>
+
+                                        {validationErrors.location && (
+                                            <p className="text-xs font-medium text-rose-500">
+                                                {validationErrors.location}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Whole Campus Geofence - Simple Text Only */}
                                     {formData.attendanceType ===
                                         'dynamic_qr' && (
-                                        <div className="animate-in space-y-4 rounded-xl border border-slate-200 bg-white p-4 duration-200 fade-in-50 sm:p-5 dark:border-slate-800 dark:bg-slate-800/50">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">
-                                                        <ShieldCheck className="h-5 w-5" />
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                                                            Campus Geofence
-                                                            Location Security
-                                                        </h4>
-                                                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                                                            Validate physical
-                                                            attendee location
-                                                            inside campus
-                                                            boundaries
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/40 dark:text-emerald-300">
-                                                    <Check className="h-3.5 w-3.5 stroke-[3]" />
-                                                    Always On
-                                                </span>
-                                            </div>
-
-                                            <div className="animate-in space-y-4 border-t border-slate-100 pt-3 duration-200 fade-in-50 dark:border-slate-700/60">
-                                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        onClick={() =>
-                                                            setShowMapSelector(
-                                                                (prev) => !prev,
-                                                            )
-                                                        }
-                                                        className="h-9 border-blue-200 bg-blue-50/60 text-xs font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-900/40 dark:bg-blue-950/40 dark:text-blue-300"
-                                                    >
-                                                        <Compass className="mr-1.5 h-4 w-4" />
-                                                        {showMapSelector
-                                                            ? 'Hide Campus Map Selector'
-                                                            : 'Pick Location on Interactive Campus Map'}
-                                                    </Button>
-
-                                                    {selectedLocationName && (
-                                                        <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-900/30 dark:bg-emerald-950/30 dark:text-emerald-400">
-                                                            <MapPin className="h-3.5 w-3.5" />
-                                                            {
-                                                                selectedLocationName
-                                                            }
-                                                        </span>
-                                                    )}
-                                                </div>
-
-                                                {showMapSelector && (
-                                                    <div className="overflow-hidden rounded-xl border border-slate-200 shadow-sm dark:border-slate-700">
-                                                        <SchoolMapSelector
-                                                            onLocationSelect={
-                                                                handleMapLocationSelect
-                                                            }
-                                                            initialLocation={
-                                                                formData.geofenceLatitude &&
-                                                                formData.geofenceLongitude
-                                                                    ? {
-                                                                          latitude:
-                                                                              parseFloat(
-                                                                                  formData.geofenceLatitude,
-                                                                              ),
-                                                                          longitude:
-                                                                              parseFloat(
-                                                                                  formData.geofenceLongitude,
-                                                                              ),
-                                                                          name: selectedLocationName,
-                                                                      }
-                                                                    : undefined
-                                                            }
-                                                        />
-                                                    </div>
-                                                )}
-
-                                                <div className="grid gap-4 sm:grid-cols-3">
-                                                    <div>
-                                                        <Label className="text-[11px] font-semibold text-slate-600 uppercase dark:text-slate-400">
-                                                            Latitude{' '}
-                                                            <span className="text-rose-500">
-                                                                *
-                                                            </span>
-                                                        </Label>
-                                                        <Input
-                                                            value={
-                                                                formData.geofenceLatitude
-                                                            }
-                                                            onChange={(e) => {
-                                                                setFormData(
-                                                                    (prev) => ({
-                                                                        ...prev,
-                                                                        geofenceLatitude:
-                                                                            e
-                                                                                .target
-                                                                                .value,
-                                                                    }),
-                                                                );
-                                                                if (
-                                                                    validationErrors.geofenceLatitude
-                                                                ) {
-                                                                    setValidationErrors(
-                                                                        (
-                                                                            prev,
-                                                                        ) => {
-                                                                            const copy =
-                                                                                {
-                                                                                    ...prev,
-                                                                                };
-                                                                            delete copy.geofenceLatitude;
-                                                                            return copy;
-                                                                        },
-                                                                    );
-                                                                }
-                                                            }}
-                                                            placeholder="e.g. 8.742771"
-                                                            className={`mt-1 h-9 font-mono text-xs dark:border-slate-700 dark:bg-slate-800 ${
-                                                                validationErrors.geofenceLatitude
-                                                                    ? 'border-rose-500'
-                                                                    : ''
-                                                            }`}
-                                                        />
-                                                        {validationErrors.geofenceLatitude && (
-                                                            <p className="mt-1 text-[11px] font-medium text-rose-500">
-                                                                {
-                                                                    validationErrors.geofenceLatitude
-                                                                }
-                                                            </p>
-                                                        )}
-                                                    </div>
-
-                                                    <div>
-                                                        <Label className="text-[11px] font-semibold text-slate-600 uppercase dark:text-slate-400">
-                                                            Longitude{' '}
-                                                            <span className="text-rose-500">
-                                                                *
-                                                            </span>
-                                                        </Label>
-                                                        <Input
-                                                            value={
-                                                                formData.geofenceLongitude
-                                                            }
-                                                            onChange={(e) => {
-                                                                setFormData(
-                                                                    (prev) => ({
-                                                                        ...prev,
-                                                                        geofenceLongitude:
-                                                                            e
-                                                                                .target
-                                                                                .value,
-                                                                    }),
-                                                                );
-                                                                if (
-                                                                    validationErrors.geofenceLongitude
-                                                                ) {
-                                                                    setValidationErrors(
-                                                                        (
-                                                                            prev,
-                                                                        ) => {
-                                                                            const copy =
-                                                                                {
-                                                                                    ...prev,
-                                                                                };
-                                                                            delete copy.geofenceLongitude;
-                                                                            return copy;
-                                                                        },
-                                                                    );
-                                                                }
-                                                            }}
-                                                            placeholder="e.g. 124.774366"
-                                                            className={`mt-1 h-9 font-mono text-xs dark:border-slate-700 dark:bg-slate-800 ${
-                                                                validationErrors.geofenceLongitude
-                                                                    ? 'border-rose-500'
-                                                                    : ''
-                                                            }`}
-                                                        />
-                                                        {validationErrors.geofenceLongitude && (
-                                                            <p className="mt-1 text-[11px] font-medium text-rose-500">
-                                                                {
-                                                                    validationErrors.geofenceLongitude
-                                                                }
-                                                            </p>
-                                                        )}
-                                                    </div>
-
-                                                    <div>
-                                                        <Label className="text-[11px] font-semibold text-slate-600 uppercase dark:text-slate-400">
-                                                            Radius (meters){' '}
-                                                            <span className="text-rose-500">
-                                                                *
-                                                            </span>
-                                                        </Label>
-                                                        <div className="mt-1 flex items-center gap-2">
-                                                            <Input
-                                                                type="number"
-                                                                min={10}
-                                                                max={500}
-                                                                value={
-                                                                    formData.geofenceRadiusM
-                                                                }
-                                                                onChange={(
-                                                                    e,
-                                                                ) => {
-                                                                    setFormData(
-                                                                        (
-                                                                            prev,
-                                                                        ) => ({
-                                                                            ...prev,
-                                                                            geofenceRadiusM:
-                                                                                e
-                                                                                    .target
-                                                                                    .value,
-                                                                        }),
-                                                                    );
-                                                                    if (
-                                                                        validationErrors.geofenceRadiusM
-                                                                    ) {
-                                                                        setValidationErrors(
-                                                                            (
-                                                                                prev,
-                                                                            ) => {
-                                                                                const copy =
-                                                                                    {
-                                                                                        ...prev,
-                                                                                    };
-                                                                                delete copy.geofenceRadiusM;
-                                                                                return copy;
-                                                                            },
-                                                                        );
-                                                                    }
-                                                                }}
-                                                                className={`h-9 text-xs dark:border-slate-700 dark:bg-slate-800 ${
-                                                                    validationErrors.geofenceRadiusM
-                                                                        ? 'border-rose-500'
-                                                                        : ''
-                                                                }`}
-                                                            />
-                                                            <div className="flex gap-1">
-                                                                {[
-                                                                    '30',
-                                                                    '50',
-                                                                    '100',
-                                                                ].map((val) => (
-                                                                    <button
-                                                                        key={
-                                                                            val
-                                                                        }
-                                                                        type="button"
-                                                                        onClick={() =>
-                                                                            setFormData(
-                                                                                (
-                                                                                    prev,
-                                                                                ) => ({
-                                                                                    ...prev,
-                                                                                    geofenceRadiusM:
-                                                                                        val,
-                                                                                }),
-                                                                            )
-                                                                        }
-                                                                        className={`rounded border px-2 py-1 text-[10px] font-semibold ${
-                                                                            formData.geofenceRadiusM ===
-                                                                            val
-                                                                                ? 'border-blue-600 bg-blue-600 text-white'
-                                                                                : 'border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300'
-                                                                        }`}
-                                                                    >
-                                                                        {val}m
-                                                                    </button>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                        {validationErrors.geofenceRadiusM && (
-                                                            <p className="mt-1 text-[11px] font-medium text-rose-500">
-                                                                {
-                                                                    validationErrors.geofenceRadiusM
-                                                                }
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
+                                        <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50/60 px-3 py-2 text-xs font-medium text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
+                                            <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                                            <span>
+                                                Geofence: <strong>Whole Campus (St. Rita's College of Balingasag)</strong>
+                                            </span>
                                         </div>
                                     )}
                                 </div>
@@ -2046,7 +1768,7 @@ export default function CreateEventModal({
                     <div className="flex items-center gap-2">
                         <span className="inline-flex items-center gap-1 rounded bg-slate-200/70 px-2 py-0.5 text-[11px] font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                             {formData.attendanceType === 'dynamic_qr'
-                                ? 'Dynamic QR'
+                                ? 'GPS Location Check-in'
                                 : 'QR Scanner'}
                         </span>
                         <span className="inline-flex items-center gap-1 rounded bg-blue-100 px-2 py-0.5 text-[11px] font-bold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">

@@ -53,11 +53,11 @@ export function SchoolMapSelector({
         lat:
             typeof campusFromConfig?.latitude === 'number'
                 ? campusFromConfig.latitude
-                : 8.744321,
+                : 8.74307,
         lng:
             typeof campusFromConfig?.longitude === 'number'
                 ? campusFromConfig.longitude
-                : 124.776543,
+                : 124.7745,
     };
     const [selectedLocation, setSelectedLocation] = useState<Location | null>(
         initialLocation || null,
@@ -89,12 +89,20 @@ export function SchoolMapSelector({
     // Edit x/y until each marker sits on the map image; set lat/lng to the real GPS at that spot for geofence checks.
     const schoolLocations = [
         {
+            id: 'full_campus',
+            name: "St. Rita's College of Balingasag (Full Campus)",
+            x: 50,
+            y: 50,
+            lat: 8.74307,
+            lng: 124.7745,
+        },
+        {
             id: 'main_gate',
             name: 'Main Gate',
             x: 55,
             y: 85,
-            lat: 14.5995,
-            lng: 120.9842,
+            lat: 8.74275,
+            lng: 124.77445,
         },
         {
             id: 'cafeteria',
@@ -125,16 +133,16 @@ export function SchoolMapSelector({
             name: 'Power House',
             x: 111,
             y: 67,
-            lat: 14.5993,
-            lng: 120.9844,
+            lat: 8.74305,
+            lng: 124.7745,
         },
         {
             id: 'parking_area',
             name: 'Parking Area',
             x: 111,
             y: 85,
-            lat: 14.5997,
-            lng: 120.984,
+            lat: 8.7427,
+            lng: 124.7744,
         },
         {
             id: 'outer_ground',
@@ -167,8 +175,8 @@ export function SchoolMapSelector({
             building: 'MOTHER IGNACIA BUILDING',
             x: 109,
             y: 46,
-            lat: 14.5994,
-            lng: 120.9843,
+            lat: 8.7432,
+            lng: 124.77428,
         },
         {
             id: 'chapel_1st_floor',
@@ -176,8 +184,8 @@ export function SchoolMapSelector({
             building: 'MOTHER IGNACIA BUILDING',
             x: 110,
             y: 43,
-            lat: 14.5994,
-            lng: 120.9843,
+            lat: 8.74322,
+            lng: 124.77429,
         },
         {
             id: 'room_101_1st_floor',
@@ -185,8 +193,8 @@ export function SchoolMapSelector({
             building: 'MOTHER IGNACIA BUILDING',
             x: 110,
             y: 40,
-            lat: 14.5994,
-            lng: 120.9843,
+            lat: 8.74324,
+            lng: 124.7743,
         },
         {
             id: 'hm_laboratory_1st_floor',
@@ -204,8 +212,8 @@ export function SchoolMapSelector({
             building: 'MOTHER IGNACIA BUILDING',
             x: 111,
             y: 36,
-            lat: 14.5994,
-            lng: 120.9843,
+            lat: 8.74326,
+            lng: 124.7743,
         },
         {
             id: 'dean_of_college_2nd_floor',
@@ -213,8 +221,8 @@ export function SchoolMapSelector({
             building: 'MOTHER IGNACIA BUILDING',
             x: 111,
             y: 16,
-            lat: 14.5994,
-            lng: 120.9843,
+            lat: 8.74328,
+            lng: 124.77431,
         },
         {
             id: 'college_faculty_room_2nd_floor',
@@ -222,8 +230,8 @@ export function SchoolMapSelector({
             building: 'MOTHER IGNACIA BUILDING',
             x: 111,
             y: 13,
-            lat: 14.5994,
-            lng: 120.9843,
+            lat: 8.7433,
+            lng: 124.77431,
         },
         {
             id: 'program_head_s_office_2nd_floor',
@@ -231,8 +239,8 @@ export function SchoolMapSelector({
             building: 'MOTHER IGNACIA BUILDING',
             x: 111,
             y: 8,
-            lat: 14.5994,
-            lng: 120.9843,
+            lat: 8.74332,
+            lng: 124.77432,
         },
 
         {
@@ -241,8 +249,8 @@ export function SchoolMapSelector({
             building: 'MOTHER IGNACIA BUILDING',
             x: 113,
             y: 39,
-            lat: 14.5994,
-            lng: 120.9843,
+            lat: 8.74334,
+            lng: 124.77432,
         },
         {
             id: 'room_301_3rd_floor',
@@ -250,8 +258,8 @@ export function SchoolMapSelector({
             building: 'MOTHER IGNACIA BUILDING',
             x: 113,
             y: 8,
-            lat: 14.5994,
-            lng: 120.9843,
+            lat: 8.74336,
+            lng: 124.77433,
         },
         {
             id: 'room_302_3rd_floor',
@@ -259,8 +267,8 @@ export function SchoolMapSelector({
             building: 'MOTHER IGNACIA BUILDING',
             x: 113,
             y: 13,
-            lat: 14.5994,
-            lng: 120.9843,
+            lat: 8.74338,
+            lng: 124.77433,
         },
         {
             id: 'room_303_3rd_floor',
@@ -268,8 +276,8 @@ export function SchoolMapSelector({
             building: 'MOTHER IGNACIA BUILDING',
             x: 113,
             y: 16,
-            lat: 14.5994,
-            lng: 120.9843,
+            lat: 8.7434,
+            lng: 124.77434,
         },
 
         {
@@ -278,8 +286,8 @@ export function SchoolMapSelector({
             building: 'MOTHER IGNACIA BUILDING',
             x: 115,
             y: 39,
-            lat: 14.5994,
-            lng: 120.9843,
+            lat: 8.74342,
+            lng: 124.77434,
         },
         {
             id: '401_room_4th_floor',
@@ -287,8 +295,8 @@ export function SchoolMapSelector({
             building: 'MOTHER IGNACIA BUILDING',
             x: 115,
             y: 8,
-            lat: 14.5994,
-            lng: 120.9843,
+            lat: 8.74344,
+            lng: 124.77435,
         },
         {
             id: '402_room_4th_floor',
@@ -296,8 +304,8 @@ export function SchoolMapSelector({
             building: 'MOTHER IGNACIA BUILDING',
             x: 115,
             y: 13,
-            lat: 14.5994,
-            lng: 120.9843,
+            lat: 8.74346,
+            lng: 124.77435,
         },
         {
             id: '403_room_4th_floor',
@@ -305,8 +313,8 @@ export function SchoolMapSelector({
             building: 'MOTHER IGNACIA BUILDING',
             x: 115,
             y: 16,
-            lat: 14.5994,
-            lng: 120.9843,
+            lat: 8.74348,
+            lng: 124.77436,
         },
 
         // ST. RITA BUILDING

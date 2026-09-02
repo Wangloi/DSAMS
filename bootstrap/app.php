@@ -29,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin/attendance/*/activate-scanner-portal',
             'student/attendance/*/scan',
             'student/attendance/*/dynamic-qr-scan',
+            'student/attendance/*/geofence-checkin',
         ]);
 
         $middleware->alias([

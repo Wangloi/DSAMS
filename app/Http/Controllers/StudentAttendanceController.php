@@ -109,15 +109,9 @@ class StudentAttendanceController extends Controller
             return response()->json(['message' => 'Location accuracy is too low. Please move to an open area and try again.'], 422);
         }
 
-        $eventLat = $event->geofence_latitude;
-        $eventLng = $event->geofence_longitude;
-        $radius = (int) ($event->geofence_radius_m ?? 50);
-        if ($eventLat === null || $eventLng === null) {
-            if (Schema::hasTable('activity_logs')) {
-                ActivityLog::logForUser($scanner, 'Attendance', 'Denied', 'Geofence not configured for event #' . $event->id, $request);
-            }
-            return response()->json(['message' => 'Event geofence is not configured. Please contact DSA.'], 422);
-        }
+        $eventLat = $event->geofence_latitude ?? config('geofence.campus_latitude', 8.743070);
+        $eventLng = $event->geofence_longitude ?? config('geofence.campus_longitude', 124.774500);
+        $radius = max((int) ($event->geofence_radius_m ?? 300), 200);
 
         $distance = $this->haversineDistanceMeters((float) $lat, (float) $lng, (float) $eventLat, (float) $eventLng);
         $buffer = min($accuracyM, 50.0);

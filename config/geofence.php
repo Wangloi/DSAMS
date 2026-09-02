@@ -13,7 +13,9 @@ return [
     |
     */
 
-    'campus_latitude' => (float) env('CAMPUS_LATITUDE', 8.744321),
-    'campus_longitude' => (float) env('CAMPUS_LONGITUDE', 124.776543),
+    'campus_name' => (string) env('CAMPUS_NAME', "St. Rita's College of Balingasag"),
+    'campus_latitude' => (float) env('CAMPUS_LATITUDE', 8.743070),
+    'campus_longitude' => (float) env('CAMPUS_LONGITUDE', 124.774500),
+    'campus_radius_m' => (int) env('CAMPUS_RADIUS_M', 300),
 
 ];

@@ -90,7 +90,22 @@ class StudentDashboardController extends Controller
         if (!Schema::hasTable('incidents') || !$user) {
             return 0;
         }
-        return Incident::whereJsonContains('students_involved', $user->id)->where('status', 'Pending')->count();
+
+        $studentDbId = (string) $user->id;
+        $studentSchoolId = (string) ($user->student_id ?? '');
+
+        return Incident::where('is_archived', false)
+            ->where('status', '!=', 'Resolved')
+            ->where(function ($q) use ($studentDbId, $studentSchoolId) {
+                $q->whereJsonContains('students_involved', $studentDbId)
+                  ->orWhereJsonContains('students_involved', ['id' => $studentDbId])
+                  ->orWhereJsonContains('students_involved', ['id' => (int) $studentDbId]);
+                if ($studentSchoolId) {
+                    $q->orWhereJsonContains('students_involved', $studentSchoolId)
+                      ->orWhereJsonContains('students_involved', ['id' => $studentSchoolId]);
+                }
+            })
+            ->count();
     }
 
     private function getEventAttendanceCount($user): int
@@ -127,16 +142,46 @@ class StudentDashboardController extends Controller
             return collect();
         }
 
-        return Incident::whereJsonContains('students_involved', $user->id)
+        $studentDbId = (string) $user->id;
+        $studentSchoolId = (string) ($user->student_id ?? '');
+
+        return Incident::where('is_archived', false)
+            ->where(function ($q) use ($studentDbId, $studentSchoolId) {
+                $q->whereJsonContains('students_involved', $studentDbId)
+                  ->orWhereJsonContains('students_involved', ['id' => $studentDbId])
+                  ->orWhereJsonContains('students_involved', ['id' => (int) $studentDbId]);
+                if ($studentSchoolId) {
+                    $q->orWhereJsonContains('students_involved', $studentSchoolId)
+                      ->orWhereJsonContains('students_involved', ['id' => $studentSchoolId]);
+                }
+            })
             ->orderBy('created_at', 'desc')
-            ->take(5)
+            ->take(10)
             ->get()
             ->map(function ($incident) {
+                $date = $incident->incident_date ? Carbon::parse($incident->incident_date) : null;
+                $time = $incident->incident_time ? Carbon::parse($incident->incident_time) : null;
+                $callingPhase = $incident->calling_phase ?? (
+                    $incident->status === 'Resolved' ? 8 : (
+                        $incident->status === 'Escalated' ? 7 : (
+                            $incident->status === 'Ongoing' ? 4 : 1
+                        )
+                    )
+                );
+
                 return [
                     'id' => $incident->id,
+                    'caseId' => $date ? ($date->format('Y').'-'.str_pad((string) $incident->id, 3, '0', STR_PAD_LEFT)) : (string) $incident->id,
                     'title' => $incident->incident_type,
-                    'date' => $incident->incident_date->format('M d, Y'),
-                    'statusLabel' => $incident->status === 'Pending' ? 'Under Review' : 'Resolved',
+                    'classification' => $incident->classification,
+                    'date' => $date ? $date->format('M d, Y') : '—',
+                    'time' => $time ? $time->format('h:i A') : '',
+                    'location' => $incident->location ?? 'Office of the Dean of Student Affairs',
+                    'status' => $incident->status,
+                    'calling_phase' => $callingPhase,
+                    'statusLabel' => $incident->status === 'Resolved' ? 'Resolved' : ($callingPhase >= 4 ? 'Under Review / Hearing' : 'Notice to Appear Issued'),
+                    'reported_by' => $incident->reported_by,
+                    'description' => $incident->description,
                 ];
             });
     }

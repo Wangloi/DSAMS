@@ -19,10 +19,13 @@ import {
     ShieldAlert,
     UserCheck,
 } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import AdminLayout from '../admin-layout';
+import CallingSlipModal from './CallingSlipModal';
 import DisciplinaryActionPanel from './DisciplinaryActionPanel';
-import StudentCallingProcessFlow from './StudentCallingProcessFlow';
+import StudentCallingProcessFlow, { STUDENT_CALLING_PHASES } from './StudentCallingProcessFlow';
+import { router } from '@inertiajs/react';
+import Swal from 'sweetalert2';
 import type {
     DisciplinaryActionRecord,
     DisciplinaryHistoryItem,
@@ -109,6 +112,64 @@ export default function DisciplinaryCaseDetailPage({
     const yearLevelMock =
         studentDetails?.yearLevel ||
         (incident.id % 2 === 0 ? '3rd Year' : '4th Year');
+    const [callingSlipOpen, setCallingSlipOpen] = useState(false);
+    const [isAdvancingPhase, setIsAdvancingPhase] = useState(false);
+
+    const currentPhase = incident.calling_phase ?? (
+        incident.status === 'Resolved' ? 8 : (
+            incident.status === 'Escalated' ? 7 : (
+                incident.status === 'Ongoing' ? 4 : 1
+            )
+        )
+    );
+
+    const nextPhase = currentPhase < 8 ? currentPhase + 1 : 8;
+    const currentPhaseItem = STUDENT_CALLING_PHASES.find(p => p.phase === currentPhase) || STUDENT_CALLING_PHASES[0];
+    const nextPhaseItem = STUDENT_CALLING_PHASES.find(p => p.phase === nextPhase) || STUDENT_CALLING_PHASES[7];
+
+    const handleAdvancePhase = () => {
+        if (currentPhase >= 8) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Case Completed',
+                text: 'This case is already at the final Phase 8 (Record is Updated / Resolved).',
+                confirmButtonColor: '#0b2d66',
+            });
+            return;
+        }
+
+        Swal.fire({
+            title: `Advance to Phase ${nextPhase}?`,
+            text: `Move case to: "${nextPhaseItem.title}".`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#0b2d66',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: `Yes, Advance to Phase ${nextPhase}`,
+        }).then((result) => {
+            if (result.isConfirmed) {
+                setIsAdvancingPhase(true);
+                router.post(
+                    `/admin/incidents-violations/${incident.id}/phase`,
+                    { calling_phase: nextPhase },
+                    {
+                        preserveScroll: true,
+                        onSuccess: () => {
+                            setIsAdvancingPhase(false);
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Phase Advanced!',
+                                text: `Case is now at Phase ${nextPhase}: ${nextPhaseItem.shortLabel}`,
+                                timer: 2000,
+                                showConfirmButton: false,
+                            });
+                        },
+                        onError: () => setIsAdvancingPhase(false),
+                    }
+                );
+            }
+        });
+    };
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -158,7 +219,15 @@ export default function DisciplinaryCaseDetailPage({
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-2 self-start sm:self-auto">
+                            <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                                <Button
+                                    type="button"
+                                    className="h-11 gap-2 rounded-xl bg-amber-400 px-5 font-bold text-[#0B192C] shadow-md transition-all duration-200 hover:bg-amber-300 hover:shadow-lg"
+                                    onClick={() => setCallingSlipOpen(true)}
+                                >
+                                    <FileText className="h-5 w-5" />
+                                    <span>Print Calling Slip</span>
+                                </Button>
                                 <Button
                                     type="button"
                                     className="h-11 gap-2 rounded-xl bg-white px-5 font-bold text-[#1e3a8a] shadow-md transition-all duration-200 hover:bg-blue-50 hover:shadow-lg"
@@ -246,6 +315,60 @@ export default function DisciplinaryCaseDetailPage({
                                     </div>
                                 </CardContent>
                             </Card>
+
+                            {/* Quick Action Bar for Calling Phase Progression */}
+                            <div className="rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 via-indigo-50 to-white p-4 shadow-sm dark:border-blue-900/50 dark:from-slate-900 dark:via-blue-950/30 dark:to-slate-900">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0B192C] text-amber-400 shadow-sm">
+                                            <ShieldAlert className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] font-black uppercase tracking-wider text-blue-700 dark:text-blue-400">
+                                                    Calling Workflow
+                                                </span>
+                                                <Badge className="bg-amber-400 text-[#0B192C] text-[10px] font-extrabold px-2 py-0.5">
+                                                    Step {currentPhase} of 8
+                                                </Badge>
+                                            </div>
+                                            <p className="text-xs font-bold text-slate-900 dark:text-white mt-0.5">
+                                                {currentPhaseItem.title}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setCallingSlipOpen(true)}
+                                            className="h-9 gap-1.5 rounded-xl border-slate-300 text-xs font-bold text-slate-700 hover:bg-white dark:border-slate-700 dark:text-slate-300"
+                                        >
+                                            <Printer className="h-3.5 w-3.5" />
+                                            Calling Slip
+                                        </Button>
+
+                                        {currentPhase < 8 ? (
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                disabled={isAdvancingPhase}
+                                                onClick={handleAdvancePhase}
+                                                className="h-9 gap-1.5 rounded-xl bg-[#0b2d66] px-4 text-xs font-black text-white shadow-sm hover:bg-blue-900 active:scale-95 transition-all"
+                                            >
+                                                <span>Advance to Step {nextPhase}</span>
+                                                <span className="opacity-70">({nextPhaseItem.shortLabel})</span>
+                                            </Button>
+                                        ) : (
+                                            <Badge className="h-9 px-4 bg-emerald-600 text-white font-bold text-xs gap-1.5">
+                                                <span>✓ Case Resolved & Updated</span>
+                                            </Badge>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
 
                             {/* Card 1.5: Student Calling Process Tracker */}
                             <StudentCallingProcessFlow
@@ -959,6 +1082,14 @@ export default function DisciplinaryCaseDetailPage({
                     </div>
                 </div>
             </div>
+
+            {/* Calling Slip Modal */}
+            <CallingSlipModal
+                open={callingSlipOpen}
+                onOpenChange={setCallingSlipOpen}
+                incident={incident}
+                studentDetails={studentDetails}
+            />
         </AdminLayout>
     );
 }

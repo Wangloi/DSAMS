@@ -271,8 +271,10 @@ class HandleInertiaRequests extends Middleware
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'geofence' => [
                 'campus' => [
+                    'name' => config('geofence.campus_name'),
                     'latitude' => config('geofence.campus_latitude'),
                     'longitude' => config('geofence.campus_longitude'),
+                    'radius_m' => config('geofence.campus_radius_m'),
                 ],
             ],
             // Gate flag: true when student has logged in but not yet completed their profile info

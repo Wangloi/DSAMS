@@ -86,8 +86,8 @@ export default function EventViewModal({
 
     const campusCenter = useMemo(
         () => ({
-            lat: geofenceConfig?.campus?.latitude ?? 8.744321,
-            lng: geofenceConfig?.campus?.longitude ?? 124.776543,
+            lat: geofenceConfig?.campus?.latitude ?? 8.74307,
+            lng: geofenceConfig?.campus?.longitude ?? 124.7745,
         }),
         [geofenceConfig],
     );

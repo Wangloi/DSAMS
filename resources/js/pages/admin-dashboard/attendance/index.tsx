@@ -261,8 +261,8 @@ export default function AdminAttendancePage() {
 
     // Real-time monitoring state
     const [showRealTimeMonitoring, setShowRealTimeMonitoring] = useState(false);
-    const [monitoringEnabled, setMonitoringEnabled] = useState(false);
-    const [scannerPortalActive, setScannerPortalActive] = useState(false);
+    const [monitoringEnabled, setMonitoringEnabled] = useState(true);
+    const [scannerPortalActive, setScannerPortalActive] = useState(true);
     const [monitorEventId, setMonitorEventId] = useState<string>('');
     const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
     const [attendanceMode, setAttendanceMode] = useState<'entry' | 'exit'>(
@@ -843,8 +843,8 @@ export default function AdminAttendancePage() {
 
         setMonitorEventId(id);
         setShowRealTimeMonitoring(true);
-        setMonitoringEnabled(false);
-        setScannerPortalActive(ev ? !!ev.scannerPortalActive : false);
+        setMonitoringEnabled(true);
+        setScannerPortalActive(ev ? !!ev.scannerPortalActive : true);
         setLastUpdatedAt(null);
         setLiveCurrentPage(1);
         setMonitoringTab(tab);

@@ -18,9 +18,11 @@ import {
     CheckCircle2,
     ChevronRight,
     Clock,
+    Compass,
     Info,
     LogIn,
     LogOut,
+    MapPin,
     Pause,
     Play,
     QrCode,
@@ -83,8 +85,8 @@ export default function RealTimeMonitoringPanel({
     const [monitoringTab, setMonitoringTab] = useState<
         'dashboard' | 'scanner' | 'dynamic-qr'
     >('dashboard');
-    const [monitoringEnabled, setMonitoringEnabled] = useState(false);
-    const [scannerPortalActive, setScannerPortalActive] = useState(false);
+    const [monitoringEnabled, setMonitoringEnabled] = useState(true);
+    const [scannerPortalActive, setScannerPortalActive] = useState(true);
 
     const [lastUpdatedAt, setLastUpdatedAt] = useState<string>('');
     const [liveRows, setLiveRows] = useState<LiveLogRow[]>([]);
@@ -243,6 +245,27 @@ export default function RealTimeMonitoringPanel({
             if (interval) clearInterval(interval);
         };
     }, [monitoringEnabled, monitorEventId, refreshLogs]);
+
+    // Automatically start live monitoring and activate scanner portal session on load without manual click
+    useEffect(() => {
+        if (!monitorEventId) return;
+        setMonitoringEnabled(true);
+        void refreshLogs();
+        if (hasBackendEvents) {
+            router.post(
+                adminAttendanceActivateScannerPortal(monitorEventId),
+                {},
+                {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        setScannerPortalActive(true);
+                        setMonitoringEnabled(true);
+                        void refreshLogs();
+                    },
+                },
+            );
+        }
+    }, [monitorEventId, hasBackendEvents]);
 
     const renderQr = useCallback(async (payload: string) => {
         const canvas = qrCanvasRef.current;
@@ -840,10 +863,8 @@ export default function RealTimeMonitoringPanel({
                                                 : 'text-white/70 hover:bg-white/10 hover:text-white',
                                         )}
                                     >
-                                        <QrCode className="h-3.5 w-3.5" />
-                                        {monitoredEvent?.geofence_enabled
-                                            ? 'Geo Dynamic QR'
-                                            : 'Dynamic QR'}
+                                        <MapPin className="h-3.5 w-3.5" />
+                                        GPS Geofence
                                     </button>
                                 )}
                         </div>
@@ -1186,10 +1207,21 @@ export default function RealTimeMonitoringPanel({
                                                     <tr>
                                                         <td
                                                             colSpan={4}
-                                                            className="px-6 py-10 text-center text-slate-400"
+                                                            className="px-6 py-12 text-center text-slate-400"
                                                         >
-                                                            No scans recorded
-                                                            yet
+                                                            <div className="flex flex-col items-center justify-center gap-2">
+                                                                <Activity className="h-8 w-8 text-slate-300 dark:text-slate-600 animate-pulse" />
+                                                                <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                                                                    {monitoredEvent?.attendance_type === 'dynamic_qr'
+                                                                        ? 'No GPS check-ins recorded yet'
+                                                                        : 'No attendance records yet'}
+                                                                </p>
+                                                                <p className="text-xs text-slate-400">
+                                                                    {monitoredEvent?.attendance_type === 'dynamic_qr'
+                                                                        ? 'Waiting for students to check in from their dashboard via GPS...'
+                                                                        : 'Waiting for attendance records...'}
+                                                                </p>
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 )}
@@ -1930,114 +1962,81 @@ export default function RealTimeMonitoringPanel({
                     <div className="flex flex-col gap-6 lg:col-span-8">
                         <Card className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-[#0B192C]/50">
                             <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-800">
-                                <CardTitle className="text-base font-bold">
-                                    Dynamic Rotation QR Code
-                                </CardTitle>
                                 <div>
-                                    {scannerPortalActive ? (
-                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
-                                            <Wifi className="h-3.5 w-3.5 text-emerald-500" />{' '}
-                                            Session Active
-                                        </span>
-                                    ) : (
-                                        <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-400">
-                                            <WifiOff className="h-3.5 w-3.5 text-rose-500" />{' '}
-                                            Session Inactive
-                                        </span>
-                                    )}
+                                    <CardTitle className="text-base font-bold">
+                                        GPS Location Check-in & Geofence
+                                    </CardTitle>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                        Students check in directly using their device's GPS location
+                                    </p>
+                                </div>
+                                <div>
+                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+                                        Whole Campus Active
+                                    </span>
                                 </div>
                             </CardHeader>
-                            <CardContent className="flex flex-col items-center justify-center gap-6 p-8">
-                                {qrError ? (
-                                    <div className="flex flex-col items-center gap-3 text-center">
-                                        <WifiOff className="h-12 w-12 text-rose-500" />
-                                        <p className="text-sm font-medium text-rose-600">
-                                            {qrError}
-                                        </p>
-                                        <div className="flex gap-2.5">
-                                            <Button
-                                                onClick={
-                                                    handleActivatePortalAndStartMonitoring
-                                                }
-                                                className="h-9 rounded-xl bg-blue-600 font-bold text-white shadow-md shadow-blue-500/10 hover:bg-blue-700"
-                                            >
-                                                Activate Portal & Live Feed
-                                            </Button>
-                                            <Button
-                                                onClick={fetchDynamicQrToken}
-                                                variant="outline"
-                                                className="h-9 rounded-xl border-slate-200 font-bold"
-                                            >
-                                                Retry
-                                            </Button>
+                            <CardContent className="flex flex-col gap-6 p-6">
+                                {/* Campus Perimeter Card */}
+                                <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 via-blue-50/40 to-white p-5 dark:border-indigo-900/40 dark:from-indigo-950/30 dark:to-slate-900">
+                                    <div className="flex items-start gap-4">
+                                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-600/20">
+                                            <MapPin className="h-6 w-6" />
+                                        </div>
+                                        <div className="flex-1 space-y-2">
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                <h4 className="text-base font-bold text-slate-900 dark:text-white">
+                                                    St. Rita's College of Balingasag
+                                                </h4>
+                                                <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-bold text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300">
+                                                    Radius: 300m
+                                                </span>
+                                            </div>
+                                            <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                                                Students physically located anywhere within the 300-meter campus perimeter can check in instantly from their student dashboard without scanning any QR codes.
+                                            </p>
+                                            <div className="flex flex-wrap gap-4 pt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                                                <span className="flex items-center gap-1.5">
+                                                    <Compass className="h-4 w-4 text-indigo-500" />
+                                                    Center: 8.743070° N, 124.774500° E
+                                                </span>
+                                                <span className="flex items-center gap-1.5">
+                                                    <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                                                    Coverage: Full Campus Grounds
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
-                                ) : (
-                                    <>
-                                        <div className="relative">
-                                            <svg
-                                                className="absolute -rotate-90"
-                                                width="340"
-                                                height="340"
-                                                viewBox="0 0 340 340"
-                                                style={{ top: -10, left: -10 }}
-                                            >
-                                                <circle
-                                                    cx="170"
-                                                    cy="170"
-                                                    r="162"
-                                                    fill="none"
-                                                    stroke="rgba(148,163,184,0.15)"
-                                                    strokeWidth="4"
-                                                />
-                                                <circle
-                                                    cx="170"
-                                                    cy="170"
-                                                    r="162"
-                                                    fill="none"
-                                                    stroke={
-                                                        remaining <= 5
-                                                            ? '#f87171'
-                                                            : '#3b82f6'
-                                                    }
-                                                    strokeWidth="4"
-                                                    strokeLinecap="round"
-                                                    strokeDasharray={`${2 * Math.PI * 162 * (remaining / 30)} ${2 * Math.PI * 162}`}
-                                                    className="transition-all duration-300"
-                                                />
-                                            </svg>
-                                            <div
-                                                className={`overflow-hidden rounded-2xl border bg-white p-3 shadow-md ${qrLoading ? 'opacity-40' : 'opacity-100'}`}
-                                            >
-                                                <canvas
-                                                    ref={qrCanvasRef}
-                                                    width={320}
-                                                    height={320}
-                                                    style={{
-                                                        width: 320,
-                                                        height: 320,
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
+                                </div>
 
-                                        <div
-                                            className={`flex items-center gap-2 text-sm font-bold ${remaining <= 5 ? 'text-rose-500' : 'text-slate-500'}`}
-                                        >
-                                            <Clock className="h-4 w-4" />
-                                            {remaining > 0
-                                                ? `Refreshing in ${remaining}s`
-                                                : 'Refreshing...'}
-                                        </div>
-
-                                        {token && (
-                                            <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-4 py-2 font-mono text-xs text-slate-500 dark:bg-slate-800/40">
-                                                <ShieldCheck className="h-4 w-4 text-emerald-500" />{' '}
-                                                Active Token: {token}
-                                            </div>
-                                        )}
-                                    </>
-                                )}
+                                {/* Live GPS Attendance Stats Grid */}
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                                    <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 text-center dark:border-slate-800 dark:bg-slate-800/40">
+                                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400">
+                                            Total GPS Checked In
+                                        </p>
+                                        <p className="mt-1 text-2xl font-black text-slate-900 dark:text-white">
+                                            {liveCounts.total}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 text-center dark:border-emerald-900/30 dark:bg-emerald-950/20">
+                                        <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider dark:text-emerald-400">
+                                            On Time
+                                        </p>
+                                        <p className="mt-1 text-2xl font-black text-emerald-700 dark:text-emerald-300">
+                                            {liveCounts.present}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4 text-center dark:border-amber-900/30 dark:bg-amber-950/20">
+                                        <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider dark:text-amber-400">
+                                            Late Arrivals
+                                        </p>
+                                        <p className="mt-1 text-2xl font-black text-amber-700 dark:text-amber-300">
+                                            {liveCounts.late}
+                                        </p>
+                                    </div>
+                                </div>
                             </CardContent>
                         </Card>
                     </div>
@@ -2045,51 +2044,52 @@ export default function RealTimeMonitoringPanel({
                     <div className="flex flex-col gap-6 lg:col-span-4">
                         <Card className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-[#0B192C]/50">
                             <h3 className="mb-4 text-sm font-bold">
-                                Self Check-in Live Counts
+                                GPS Attendance Status
                             </h3>
                             <div className="grid grid-cols-1 gap-3">
                                 <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50">
                                     <span className="text-xs font-bold text-slate-500">
-                                        Checked In
+                                        Attendance Mode
                                     </span>
-                                    <span className="text-xl font-black">
-                                        {liveCounts.total}
+                                    <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                                        GPS Check-in (No QR)
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between rounded-xl bg-emerald-50 p-3 dark:bg-emerald-500/10">
                                     <span className="text-xs font-bold text-emerald-700">
-                                        Present
+                                        Geofence Center
                                     </span>
-                                    <span className="text-xl font-black text-emerald-700">
-                                        {liveCounts.present}
+                                    <span className="text-xs font-mono font-bold text-emerald-700">
+                                        8.74307, 124.7745
                                     </span>
                                 </div>
-                                <div className="flex items-center justify-between rounded-xl bg-amber-50 p-3 dark:bg-amber-500/10">
-                                    <span className="text-xs font-bold text-amber-700">
-                                        Late
+                                <div className="flex items-center justify-between rounded-xl bg-blue-50 p-3 dark:bg-blue-500/10">
+                                    <span className="text-xs font-bold text-blue-700">
+                                        Allowed Perimeter
                                     </span>
-                                    <span className="text-xl font-black text-amber-700">
-                                        {liveCounts.late}
+                                    <span className="text-xs font-bold text-blue-700">
+                                        300m Radius
                                     </span>
                                 </div>
                             </div>
                         </Card>
+
                         <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-5 dark:border-blue-900/30 dark:bg-blue-950/20">
                             <h4 className="mb-2 text-xs font-bold tracking-wider text-blue-800 uppercase dark:text-blue-400">
-                                Instructions
+                                How Students Attend
                             </h4>
                             <ol className="list-decimal space-y-1.5 pl-4 text-xs text-blue-600/90 dark:text-blue-300/80">
                                 <li>
-                                    Display this rotating QR code on a
-                                    projector/screen.
+                                    Students log into DSAMS on their mobile phone or device.
                                 </li>
                                 <li>
-                                    Students open their DSAMS mobile
-                                    application.
+                                    Open this event in their <strong>Student Dashboard</strong>.
                                 </li>
                                 <li>
-                                    Tap "Scan Attendance QR" and scan this QR
-                                    code.
+                                    Click <strong>"Check In using GPS Location"</strong>.
+                                </li>
+                                <li>
+                                    If within St. Rita's College campus grounds, their attendance is recorded immediately.
                                 </li>
                             </ol>
                         </div>

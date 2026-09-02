@@ -31,6 +31,30 @@ class StudentAdmissionSlipController extends Controller
             $studentName = (string) ($student?->name ?? '');
         }
 
+        // Disciplinary clearance check: prevent admission slip if active major violation
+        if ($student) {
+            $studentDbId = (string) $student->id;
+            $studentSchoolId = (string) ($student->student_id ?? '');
+
+            $hasActiveMajorIncident = \App\Models\Incident::where('is_archived', false)
+                ->where('status', '!=', 'Resolved')
+                ->whereIn('classification', ['Suspension', 'Exclusion', 'Expulsion'])
+                ->where(function ($q) use ($studentDbId, $studentSchoolId) {
+                    $q->whereJsonContains('students_involved', $studentDbId)
+                      ->orWhereJsonContains('students_involved', ['id' => $studentDbId])
+                      ->orWhereJsonContains('students_involved', ['id' => (int) $studentDbId]);
+                    if ($studentSchoolId) {
+                        $q->orWhereJsonContains('students_involved', $studentSchoolId)
+                          ->orWhereJsonContains('students_involved', ['id' => $studentSchoolId]);
+                    }
+                })
+                ->first();
+
+            if ($hasActiveMajorIncident) {
+                return redirect()->back()->with('error', "Disciplinary Clearance Required: You have an active incident ({$hasActiveMajorIncident->incident_type} - {$hasActiveMajorIncident->classification}). Please report to the Office of Student Affairs before requesting an Admission Slip.");
+            }
+        }
+
         $programYearLevel = trim((string) ($validated['program_year_level'] ?? ''));
         if ($programYearLevel === '') {
             $programYearLevel = trim(implode(' ', array_filter([
