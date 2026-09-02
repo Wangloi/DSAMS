@@ -18,6 +18,6 @@ class LostReport extends Model
     ];
 
     protected $casts = [
-        'date_lost' => 'date',
+        'date_lost' => 'date:Y-m-d',
     ];
 }

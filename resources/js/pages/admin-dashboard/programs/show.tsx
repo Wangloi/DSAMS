@@ -265,7 +265,7 @@ export default function AdminProgramsShowPage({ program }: ShowPageProps) {
                                         </div>
                                     </div>
                                     <div className="overflow-x-auto">
-                                        <table className="w-full">
+                                        <table className="w-full min-w-max">
                                             <thead className="bg-slate-50 dark:bg-slate-700">
                                                 <tr className="border-b border-slate-200 dark:border-slate-600">
                                                     <th className="px-5 py-4 text-left text-xs font-semibold tracking-wider text-slate-600 uppercase dark:text-slate-300">

@@ -437,7 +437,7 @@ export default function AdminDashboard({
                             </CardHeader>
                             <CardContent className="flex-1 p-0">
                                 <div className="overflow-x-auto">
-                                    <table className="w-full border-collapse text-left text-sm">
+                                    <table className="w-full min-w-max border-collapse text-left text-sm">
                                         <thead className="border-b border-slate-100 bg-slate-50/80 text-[10px] font-bold tracking-wider text-slate-400 uppercase dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-500">
                                             <tr>
                                                 <th className="px-4 py-3 font-bold">

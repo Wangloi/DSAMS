@@ -37,6 +37,7 @@ class AdminManageUsersController extends Controller
             'course',
             'year_level',
             'role',
+            'officer_features',
             'is_active',
             'status',
             'verification_status',
@@ -112,7 +113,7 @@ class AdminManageUsersController extends Controller
 
         return ProgramHead::query()
             ->orderByDesc('id')
-            ->get(['id', 'name', 'email', 'program', 'created_at', 'updated_at'])
+            ->get(['id', 'name', 'email', 'program', 'verification_status', 'created_at', 'updated_at'])
             ->map(function (ProgramHead $ph) {
                 return [
                     'id' => 1000000000 + (int) $ph->id,
@@ -127,7 +128,7 @@ class AdminManageUsersController extends Controller
                     'year_level' => '',
                     'role' => 'Program Head',
                     'is_active' => true,
-                    'status' => 'approved',
+                    'status' => $ph->verification_status ?? 'pending',
                     'qr_code_path' => null,
                     'entry_status' => null,
                     'program' => $ph->program,
@@ -669,10 +670,20 @@ class AdminManageUsersController extends Controller
             ->filter(fn ($id) => $id < 1000000000)
             ->values();
 
-        if ($studentIds->isNotEmpty() && Schema::hasColumn('students', 'verification_status')) {
-            Student::query()
-                ->whereIn('id', $studentIds->all())
-                ->update(['verification_status' => $status]);
+        if ($studentIds->isNotEmpty()) {
+            $updateData = [];
+            if (Schema::hasColumn('students', 'verification_status')) {
+                $updateData['verification_status'] = $status;
+            }
+            if (Schema::hasColumn('students', 'status')) {
+                $updateData['status'] = $status;
+            }
+
+            if (!empty($updateData)) {
+                Student::query()
+                    ->whereIn('id', $studentIds->all())
+                    ->update($updateData);
+            }
         }
 
         if ($programHeadIds->isNotEmpty() && Schema::hasColumn('program_heads', 'verification_status')) {
@@ -766,7 +777,7 @@ class AdminManageUsersController extends Controller
         $validated = $request->validate([
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['integer'],
-            'year_level' => ['required', 'string', 'in:1st Year,2nd Year,3rd Year,4th Year,Irregular'],
+            'year_level' => ['required', 'string', 'in:1st Year,2nd Year,3rd Year,4th Year,Irregular,Graduated'],
         ]);
 
         $ids = $validated['ids'];
@@ -798,6 +809,125 @@ class AdminManageUsersController extends Controller
         return redirect()->route('admin.manage-users')->with(
             'success',
             'Year level updated successfully.'
+        )->setStatusCode(303);
+    }
+
+    public function bulkSetProgram(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+            'program' => ['required', 'string', 'max:255'],
+        ]);
+
+        $ids = $validated['ids'];
+
+        $studentIds = collect($ids)
+            ->filter(fn ($id) => $id < 1000000000)
+            ->values();
+
+        if ($studentIds->isNotEmpty()) {
+            Student::query()
+                ->whereIn('id', $studentIds->all())
+                ->update(['course' => $validated['program']]);
+        }
+
+        if (Schema::hasTable('activity_logs')) {
+            $admin = auth()->guard('admin')->user();
+            ActivityLog::logForUser(
+                $admin,
+                'User Management',
+                'Bulk Updated Program',
+                "Bulk set program to '{$validated['program']}' for " . count($studentIds) . ' students',
+                $request,
+                ['program' => null, 'ids' => $studentIds->all()],
+                ['program' => $validated['program'], 'ids' => $studentIds->all()]
+            );
+        }
+
+        return redirect()->route('admin.manage-users')->with(
+            'success',
+            'Program updated successfully.'
+        )->setStatusCode(303);
+    }
+
+    public function bulkSetEntryStatus(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+            'entry_status' => ['required', 'string', 'max:255'],
+        ]);
+
+        $ids = $validated['ids'];
+
+        $studentIds = collect($ids)
+            ->filter(fn ($id) => $id < 1000000000)
+            ->values();
+
+        if ($studentIds->isNotEmpty()) {
+            Student::query()
+                ->whereIn('id', $studentIds->all())
+                ->update(['entry_status' => $validated['entry_status']]);
+        }
+
+        if (Schema::hasTable('activity_logs')) {
+            $admin = auth()->guard('admin')->user();
+            ActivityLog::logForUser(
+                $admin,
+                'User Management',
+                'Bulk Updated Entry Status',
+                "Bulk set entry status to '{$validated['entry_status']}' for " . count($studentIds) . ' students',
+                $request,
+                ['entry_status' => null, 'ids' => $studentIds->all()],
+                ['entry_status' => $validated['entry_status'], 'ids' => $studentIds->all()]
+            );
+        }
+
+        return redirect()->route('admin.manage-users')->with(
+            'success',
+            'Entry status updated successfully.'
+        )->setStatusCode(303);
+    }
+
+    public function bulkResetOfficerRole(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $ids = $validated['ids'];
+
+        $studentIds = collect($ids)
+            ->filter(fn ($id) => $id < 1000000000)
+            ->values();
+
+        if ($studentIds->isNotEmpty()) {
+            Student::query()
+                ->whereIn('id', $studentIds->all())
+                ->update([
+                    'role' => 'Student',
+                    'officer_features' => null,
+                ]);
+        }
+
+        if (Schema::hasTable('activity_logs')) {
+            $admin = auth()->guard('admin')->user();
+            ActivityLog::logForUser(
+                $admin,
+                'User Management',
+                'Bulk Reset Officer Role',
+                'Bulk reset officer role to Student for ' . count($studentIds) . ' students',
+                $request,
+                ['role' => null, 'ids' => $studentIds->all()],
+                ['role' => 'Student', 'ids' => $studentIds->all()]
+            );
+        }
+
+        return redirect()->route('admin.manage-users')->with(
+            'success',
+            'Officer roles reset to Student successfully.'
         )->setStatusCode(303);
     }
 

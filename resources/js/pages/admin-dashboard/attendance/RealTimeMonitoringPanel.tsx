@@ -1060,7 +1060,7 @@ export default function RealTimeMonitoringPanel({
                                 </CardHeader>
                                 <CardContent className="p-0">
                                     <div className="overflow-x-auto">
-                                        <table className="w-full">
+                                        <table className="w-full min-w-max">
                                             <thead className="bg-slate-50/50 dark:bg-slate-900/50">
                                                 <tr className="border-b border-slate-100 dark:border-slate-800">
                                                     <th className="px-6 py-4 text-left text-[10px] font-bold tracking-widest text-slate-500 uppercase">
@@ -1806,7 +1806,7 @@ export default function RealTimeMonitoringPanel({
                             </CardHeader>
                             <CardContent className="p-0">
                                 <div className="overflow-x-auto">
-                                    <table className="w-full">
+                                    <table className="w-full min-w-max">
                                         <thead className="bg-slate-50/50 dark:bg-slate-900/50">
                                             <tr className="border-b border-slate-100 dark:border-slate-800">
                                                 <th className="px-6 py-4 text-left text-[10px] font-bold tracking-widest text-slate-500 uppercase">

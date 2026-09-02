@@ -904,7 +904,7 @@ export default function AdminQrScannerPage({
                                         </CardHeader>
                                         <CardContent className="p-0">
                                             <div className="overflow-x-auto">
-                                                <table className="w-full text-left">
+                                                <table className="w-full min-w-max text-left">
                                                     <thead className="border-b border-slate-100 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/50">
                                                         <tr>
                                                             <th className="px-8 py-4 text-[10px] font-black tracking-[0.15em] text-slate-500 uppercase">
@@ -1645,7 +1645,7 @@ export default function AdminQrScannerPage({
                                         </CardHeader>
                                         <CardContent className="p-0">
                                             <div className="overflow-x-auto">
-                                                <table className="w-full">
+                                                <table className="w-full min-w-max">
                                                     <thead className="bg-slate-50/50 dark:bg-slate-900/50">
                                                         <tr className="border-b border-slate-100 dark:border-slate-800">
                                                             <th className="px-6 py-4 text-left text-[10px] font-bold tracking-widest text-slate-500 uppercase">
@@ -1955,7 +1955,7 @@ export default function AdminQrScannerPage({
                                             </CardHeader>
                                             <CardContent className="p-0">
                                                 <div className="overflow-x-auto">
-                                                    <table className="w-full">
+                                                    <table className="w-full min-w-max">
                                                         <thead className="border-b border-slate-100 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/50">
                                                             <tr>
                                                                 <th className="px-6 py-4 text-left text-[10px] font-black tracking-[0.15em] text-slate-500 uppercase">
@@ -2128,7 +2128,7 @@ export default function AdminQrScannerPage({
                                 ) : (
                                     <div className="overflow-hidden rounded-[2rem] border border-slate-100 bg-white dark:border-slate-800 dark:bg-slate-900/50">
                                         <div className="max-h-[400px] overflow-x-auto">
-                                            <table className="w-full text-left">
+                                            <table className="w-full min-w-max text-left">
                                                 <thead className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
                                                     <tr>
                                                         <th className="px-8 py-4 text-[10px] font-black tracking-[0.15em] text-slate-500 uppercase">

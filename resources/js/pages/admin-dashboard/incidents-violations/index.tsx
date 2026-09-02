@@ -17,6 +17,7 @@ import IncidentStatsCard from './IncidentStatsCard';
 import IncidentTable from './IncidentTable';
 import IncidentTableHeader from './IncidentTableHeader';
 import Pagination from './Pagination';
+import StudentCallingProcessFlow from './StudentCallingProcessFlow';
 import type {
     IncidentRow,
     IncidentStats,
@@ -291,6 +292,8 @@ export default function AdminIncidentsViolationsPage() {
                             <IncidentStatsCard key={kpi.title} kpi={kpi} />
                         ))}
                     </div>
+
+                    <StudentCallingProcessFlow compact />
 
                     <IncidentTable
                         incidents={pagedRows}

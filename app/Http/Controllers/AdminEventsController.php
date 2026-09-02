@@ -26,7 +26,11 @@ class AdminEventsController extends Controller
             })
             ->when($request->status, function ($q, $status) {
                 $today = now()->toDateString();
-                if ($status === 'upcoming') {
+                if ($status === 'pending') {
+                    $q->where('approval_status', 'pending');
+                } elseif ($status === 'rejected') {
+                    $q->where('approval_status', 'rejected');
+                } elseif ($status === 'upcoming') {
                     $q->whereDate('event_date', '>', $today);
                 } elseif ($status === 'ongoing') {
                     $q->whereDate('event_date', '=', $today);
@@ -127,6 +131,14 @@ class AdminEventsController extends Controller
         $scannerStudentIds = array_values(array_unique(array_filter(array_map('strval', $scannerStudentIdsRaw), function ($v) {
             return trim($v) !== '';
         })));
+
+        $location = $validated['location'] ?? 'Campus / Unspecified';
+        $conflict = Event::findScheduleConflict($validated['event_date'], $location, $validated['event_time']);
+        if ($conflict) {
+            return redirect()->back()->withErrors([
+                'location' => "Schedule Conflict! Venue '{$location}' is already booked on {$validated['event_date']} at {$conflict->event_time} for '{$conflict->event_name}'."
+            ])->with('error', "Schedule Conflict Detected! Venue '{$location}' is already booked on {$validated['event_date']} at {$conflict->event_time} for '{$conflict->event_name}'.");
+        }
 
         $event = Event::create([
             'event_name' => $validated['event_name'],
@@ -235,6 +247,14 @@ class AdminEventsController extends Controller
         $scannerStudentIds = array_values(array_unique(array_filter(array_map('strval', $scannerStudentIdsRaw), function ($v) {
             return trim($v) !== '';
         })));
+
+        $location = $validated['location'] ?? 'Campus / Unspecified';
+        $conflict = Event::findScheduleConflict($validated['event_date'], $location, $validated['event_time'], $event->id);
+        if ($conflict) {
+            return redirect()->back()->withErrors([
+                'location' => "Schedule Conflict! Venue '{$location}' is already booked on {$validated['event_date']} at {$conflict->event_time} for '{$conflict->event_name}'."
+            ])->with('error', "Schedule Conflict Detected! Venue '{$location}' is already booked on {$validated['event_date']} at {$conflict->event_time} for '{$conflict->event_name}'.");
+        }
 
         $event->update([
             'event_name' => $validated['event_name'],
@@ -577,6 +597,50 @@ class AdminEventsController extends Controller
                 'eventTime' => $a->event_time ?? null,
             ];
         })->values()->all();
+    }
+
+    public function approveSchedule(Request $request, Event $event)
+    {
+        $conflict = Event::findScheduleConflict((string) $event->event_date, (string) $event->location, (string) $event->event_time, $event->id);
+        if ($conflict) {
+            $formattedDate = $event->event_date?->format('Y-m-d') ?? '';
+            return redirect()->back()->with('error', "Cannot approve request! Venue '{$event->location}' is already booked on {$formattedDate} at {$conflict->event_time} for '{$conflict->event_name}'.");
+        }
+
+        $event->update([
+            'approval_status' => 'approved',
+            'rejection_reason' => null,
+        ]);
+
+        if (Schema::hasTable('program_heads')) {
+            $programHeads = \App\Models\ProgramHead::all();
+            if ($programHeads->isNotEmpty()) {
+                \Illuminate\Support\Facades\Notification::send($programHeads, new \App\Notifications\ActivityPlanStatusUpdatedProgramHead($event, 'approved'));
+            }
+        }
+
+        return redirect()->back()->with('success', 'Event schedule and activity plan approved successfully.');
+    }
+
+    public function rejectSchedule(Request $request, Event $event)
+    {
+        $validated = $request->validate([
+            'rejection_reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $event->update([
+            'approval_status' => 'rejected',
+            'rejection_reason' => $validated['rejection_reason'] ?? 'Schedule request rejected by administrator.',
+        ]);
+
+        if (Schema::hasTable('program_heads')) {
+            $programHeads = \App\Models\ProgramHead::all();
+            if ($programHeads->isNotEmpty()) {
+                \Illuminate\Support\Facades\Notification::send($programHeads, new \App\Notifications\ActivityPlanStatusUpdatedProgramHead($event, 'rejected'));
+            }
+        }
+
+        return redirect()->back()->with('success', 'Event schedule request rejected.');
     }
 }
 

@@ -23,16 +23,20 @@ import {
     ArchiveRestore,
     Calendar,
     CalendarDays,
+    CheckCircle2,
     ChevronLeft,
     ChevronRight,
     Clock,
+    Download,
     Edit,
     Eye,
+    FileText,
     LayoutDashboard,
     MapPin,
     PlusCircle,
     Search,
     Users,
+    XCircle,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import Swal from 'sweetalert2';
@@ -65,6 +69,11 @@ interface Event {
     registration_end_time: string | null;
     organizer: string;
     status: 'upcoming' | 'ongoing' | 'completed';
+    approval_status?: 'pending' | 'approved' | 'rejected';
+    activity_plan_path?: string | null;
+    activity_plan_url?: string | null;
+    requested_by?: string | null;
+    rejection_reason?: string | null;
     qr_code: string | null;
     attendances: Array<{
         id: number;
@@ -175,8 +184,91 @@ export default function AdminEventsIndex() {
         announcements = [],
     } = props;
 
-    const renderStatusBadge = (status: string) => {
-        switch (status) {
+    const handleApproveSchedule = (eventId: number, eventName: string) => {
+        Swal.fire({
+            title: 'Approve Schedule Request?',
+            text: `This will approve the activity plan and proposed schedule for "${eventName}".`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#059669',
+            confirmButtonText: 'Yes, Approve Schedule',
+        }).then((res) => {
+            if (res.isConfirmed) {
+                router.post(`/admin/events/${eventId}/approve-schedule`, {}, {
+                    onSuccess: () => {
+                        Swal.fire({
+                            title: 'Schedule Approved!',
+                            text: 'The activity plan schedule is now official.',
+                            icon: 'success',
+                            confirmButtonColor: '#059669',
+                        });
+                    },
+                });
+            }
+        });
+    };
+
+    const handleRejectSchedule = (eventId: number, eventName: string) => {
+        Swal.fire({
+            title: 'Reject Schedule Request?',
+            text: `Provide reason for rejecting the activity plan for "${eventName}":`,
+            input: 'textarea',
+            inputPlaceholder: 'Enter reason for rejection (optional)...',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            confirmButtonText: 'Reject Schedule',
+        }).then((res) => {
+            if (res.isConfirmed) {
+                router.post(`/admin/events/${eventId}/reject-schedule`, {
+                    rejection_reason: res.value || 'Schedule request rejected by administrator.'
+                }, {
+                    onSuccess: () => {
+                        Swal.fire({
+                            title: 'Schedule Rejected',
+                            text: 'The program head has been notified.',
+                            icon: 'info',
+                            confirmButtonColor: '#dc2626',
+                        });
+                    },
+                });
+            }
+        });
+    };
+
+    const getEventLifecycleStatus = (event: Event): string => {
+        if (event.event_date) {
+            const dateStr = String(event.event_date).split('T')[0];
+            const todayStr = new Date().toISOString().split('T')[0];
+            if (dateStr < todayStr) return 'completed';
+            if (dateStr > todayStr) return 'upcoming';
+            return 'ongoing';
+        }
+        return event.status || 'upcoming';
+    };
+
+    const renderStatusBadge = (event: Event) => {
+        if (event.approval_status === 'pending') {
+            return (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 shadow-sm dark:border-amber-900/40 dark:bg-amber-950/40 dark:text-amber-400">
+                    <Clock className="h-3 w-3 animate-pulse text-amber-500" />
+                    Pending Approval
+                </span>
+            );
+        }
+
+        if (event.approval_status === 'rejected') {
+            return (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700 shadow-sm dark:border-rose-900/40 dark:bg-rose-950/40 dark:text-rose-400">
+                    <XCircle className="h-3 w-3 text-rose-500" />
+                    Schedule Rejected
+                </span>
+            );
+        }
+
+        const effectiveStatus = getEventLifecycleStatus(event);
+
+        switch (effectiveStatus) {
             case 'upcoming':
                 return (
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50/80 px-2.5 py-1 text-xs font-semibold text-blue-700 shadow-sm dark:border-blue-900/30 dark:bg-blue-950/30 dark:text-blue-400">
@@ -205,7 +297,7 @@ export default function AdminEventsIndex() {
                 return (
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-300">
                         <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
-                        {status}
+                        {effectiveStatus}
                     </span>
                 );
         }
@@ -479,9 +571,14 @@ export default function AdminEventsIndex() {
                     .toLowerCase()
                     .includes(searchTerm.toLowerCase());
 
-            const matchesStatus = !statusFilter
-                ? event.status !== 'completed'
-                : event.status === statusFilter;
+            const matchesStatus =
+                !statusFilter || statusFilter === 'all'
+                    ? true
+                    : statusFilter === 'pending'
+                      ? event.approval_status === 'pending'
+                      : statusFilter === 'rejected'
+                        ? event.approval_status === 'rejected'
+                        : getEventLifecycleStatus(event) === statusFilter;
             const matchesCourse =
                 !courseFilter || event.courses.includes(courseFilter);
             const matchesYearLevel =
@@ -771,8 +868,11 @@ export default function AdminEventsIndex() {
                         </div>
                     </div>
                     {/* ── KPI Cards ── */}
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <div
+                            onClick={() => handleStatusFilterChange('all')}
+                            className="group relative cursor-pointer overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800"
+                        >
                             <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-blue-500/5" />
                             <div className="flex items-start justify-between gap-3">
                                 <div>
@@ -795,43 +895,10 @@ export default function AdminEventsIndex() {
                             </div>
                         </div>
 
-                        <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
-                            <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-amber-500/5" />
-                            <div className="flex items-start justify-between gap-3">
-                                <div>
-                                    <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
-                                        Upcoming
-                                    </p>
-                                    <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
-                                        {
-                                            events.filter(
-                                                (e: Event) =>
-                                                    e.status === 'upcoming',
-                                            ).length
-                                        }
-                                    </p>
-                                    <p className="mt-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
-                                        Scheduled
-                                    </p>
-                                </div>
-                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-500/10 text-amber-600 ring-1 ring-amber-200/50 transition-transform duration-300 group-hover:scale-110 dark:bg-amber-500/20 dark:text-amber-400 dark:ring-amber-900/30">
-                                    <Clock className="h-5 w-5" />
-                                </div>
-                            </div>
-                            <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                <div
-                                    className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-600"
-                                    style={{
-                                        width:
-                                            pagination.total > 0
-                                                ? `${Math.round((events.filter((e: Event) => e.status === 'upcoming').length / pagination.total) * 100)}%`
-                                                : '0%',
-                                    }}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
+                        <div
+                            onClick={() => handleStatusFilterChange('ongoing')}
+                            className="group relative cursor-pointer overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800"
+                        >
                             <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-emerald-500/5" />
                             <div className="flex items-start justify-between gap-3">
                                 <div>
@@ -840,9 +907,9 @@ export default function AdminEventsIndex() {
                                     </p>
                                     <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
                                         {
-                                            events.filter(
+                                            allEvents.filter(
                                                 (e: Event) =>
-                                                    e.status === 'ongoing',
+                                                    getEventLifecycleStatus(e) === 'ongoing',
                                             ).length
                                         }
                                     </p>
@@ -863,15 +930,18 @@ export default function AdminEventsIndex() {
                                     className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600"
                                     style={{
                                         width:
-                                            pagination.total > 0
-                                                ? `${Math.round((events.filter((e: Event) => e.status === 'ongoing').length / pagination.total) * 100)}%`
+                                            allEvents.length > 0
+                                                ? `${Math.round((allEvents.filter((e: Event) => getEventLifecycleStatus(e) === 'ongoing').length / allEvents.length) * 100)}%`
                                                 : '0%',
                                     }}
                                 />
                             </div>
                         </div>
 
-                        <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
+                        <div
+                            onClick={() => handleStatusFilterChange('completed')}
+                            className="group relative cursor-pointer overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800"
+                        >
                             <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-slate-400/5" />
                             <div className="flex items-start justify-between gap-3">
                                 <div>
@@ -880,9 +950,9 @@ export default function AdminEventsIndex() {
                                     </p>
                                     <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
                                         {
-                                            events.filter(
+                                            allEvents.filter(
                                                 (e: Event) =>
-                                                    e.status === 'completed',
+                                                    getEventLifecycleStatus(e) === 'completed',
                                             ).length
                                         }
                                     </p>
@@ -899,8 +969,8 @@ export default function AdminEventsIndex() {
                                     className="h-full rounded-full bg-gradient-to-r from-slate-300 to-slate-500"
                                     style={{
                                         width:
-                                            pagination.total > 0
-                                                ? `${Math.round((events.filter((e: Event) => e.status === 'completed').length / pagination.total) * 100)}%`
+                                            allEvents.length > 0
+                                                ? `${Math.round((allEvents.filter((e: Event) => getEventLifecycleStatus(e) === 'completed').length / allEvents.length) * 100)}%`
                                                 : '0%',
                                     }}
                                 />
@@ -1104,6 +1174,9 @@ export default function AdminEventsIndex() {
                                                 <SelectItem value="all">
                                                     All Status
                                                 </SelectItem>
+                                                <SelectItem value="pending">
+                                                    Pending Approval
+                                                </SelectItem>
                                                 <SelectItem value="upcoming">
                                                     Upcoming
                                                 </SelectItem>
@@ -1112,6 +1185,9 @@ export default function AdminEventsIndex() {
                                                 </SelectItem>
                                                 <SelectItem value="completed">
                                                     Completed
+                                                </SelectItem>
+                                                <SelectItem value="rejected">
+                                                    Schedule Rejected
                                                 </SelectItem>
                                             </SelectContent>
                                         </Select>
@@ -1165,7 +1241,7 @@ export default function AdminEventsIndex() {
                                 </div>
 
                                 <div className="overflow-x-auto">
-                                    <table className="w-full border-collapse text-left text-sm">
+                                    <table className="w-full min-w-max border-collapse text-left text-sm">
                                         <thead>
                                             <tr className="border-b border-slate-100 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-800/40">
                                                 <th className="w-12 px-6 py-3.5 text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
@@ -1252,9 +1328,7 @@ export default function AdminEventsIndex() {
                                                                 </div>
                                                             </td>
                                                             <td className="px-6 py-4">
-                                                                {renderStatusBadge(
-                                                                    event.status,
-                                                                )}
+                                                                {renderStatusBadge(event)}
                                                             </td>
                                                             <td className="px-6 py-4">
                                                                 {renderAttendanceProgress(
@@ -1263,6 +1337,30 @@ export default function AdminEventsIndex() {
                                                             </td>
                                                             <td className="px-6 py-4 text-right">
                                                                 <div className="flex items-center justify-end gap-1">
+                                                                    {event.approval_status === 'pending' && (
+                                                                        <>
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                className="h-8 w-8 rounded-lg text-emerald-600 transition-colors hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                                                                                onClick={() => handleApproveSchedule(event.id, event.event_name)}
+                                                                                title="Approve Schedule Request"
+                                                                            >
+                                                                                <CheckCircle2 className="h-4 w-4" />
+                                                                            </Button>
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                className="h-8 w-8 rounded-lg text-rose-600 transition-colors hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                                                                                onClick={() => handleRejectSchedule(event.id, event.event_name)}
+                                                                                title="Reject Schedule Request"
+                                                                            >
+                                                                                <XCircle className="h-4 w-4" />
+                                                                            </Button>
+                                                                        </>
+                                                                    )}
                                                                     <Button
                                                                         type="button"
                                                                         variant="ghost"

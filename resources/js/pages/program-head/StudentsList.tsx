@@ -12,9 +12,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Head, Link, router } from '@inertiajs/react';
 import {
+    CalendarDays,
     CheckCircle,
     ChevronDown,
     ChevronRight,
+    Eye,
     Filter,
     GraduationCap,
     Search,
@@ -26,6 +28,8 @@ import {
 import React, { useMemo, useState } from 'react';
 import Swal from 'sweetalert2';
 import ProgramHeadLayout from './components/ProgramHeadLayout';
+import ViewStudentDialog from '../admin-dashboard/manage-users/ViewStudentDialog';
+import type { UserRow } from '../admin-dashboard/manage-users/types';
 
 type StudentRow = {
     id: string;
@@ -34,6 +38,35 @@ type StudentRow = {
     course: string;
     year_level: string;
     status: string;
+    is_active?: boolean;
+    email?: string;
+    first_name?: string | null;
+    middle_name?: string | null;
+    last_name?: string | null;
+    qr_code_path?: string | null;
+    entry_status?: string | null;
+    program?: string | null;
+    major?: string | null;
+    home_address?: string | null;
+    birthday?: string | null;
+    place_of_birth?: string | null;
+    religion?: string | null;
+    gender?: string | null;
+    contact_no?: string | null;
+    nationality?: string | null;
+    elementary_school?: string | null;
+    elementary_year_graduated?: string | number | null;
+    junior_high_school?: string | null;
+    junior_high_year_graduated?: string | number | null;
+    senior_high_school?: string | null;
+    senior_high_year_graduated?: string | number | null;
+    mother_name?: string | null;
+    mother_contact?: string | null;
+    father_name?: string | null;
+    father_contact?: string | null;
+    guardian_name?: string | null;
+    guardian_relation?: string | null;
+    guardian_contact?: string | null;
 };
 
 type Props = {
@@ -46,6 +79,17 @@ export default function StudentsList({ user, program, students }: Props) {
     const [searchQuery, setSearchQuery] = useState('');
     const [yearFilter, setYearFilter] = useState('All');
     const [currentPage, setCurrentPage] = useState(1);
+
+    const [viewingStudent, setViewingStudent] = useState<UserRow | null>(null);
+    const [isViewOpen, setIsViewOpen] = useState(false);
+
+    const handleViewRecord = (student: StudentRow) => {
+        setViewingStudent({
+            ...student,
+            id: Number(student.id),
+        } as any);
+        setIsViewOpen(true);
+    };
     const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
     const itemsPerPage = 10;
 
@@ -148,23 +192,47 @@ export default function StudentsList({ user, program, students }: Props) {
                     </nav>
 
                     {/* Premium Hero Header */}
-                    <div className="group relative overflow-hidden rounded-[2.5rem] border border-white/5 bg-[#0b2d66] p-8 text-white shadow-2xl transition-all duration-500 dark:bg-[#051139]">
-                        <div className="absolute -top-20 -right-20 h-96 w-96 rounded-full bg-blue-400/10 blur-3xl transition-transform duration-1000 group-hover:scale-110" />
-                        <div className="absolute -bottom-20 -left-20 h-96 w-96 rounded-full bg-indigo-500/10 blur-3xl transition-transform duration-1000 group-hover:scale-110" />
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] p-6 shadow-xl shadow-blue-900/20">
+                        <div className="pointer-events-none absolute -top-12 -right-12 h-56 w-56 rounded-full bg-white/5" />
+                        <div className="pointer-events-none absolute -top-4 -right-4 h-32 w-32 rounded-full bg-white/5" />
+                        <div className="pointer-events-none absolute bottom-0 left-1/3 h-48 w-48 -translate-y-1/4 rounded-full bg-blue-400/10 blur-2xl" />
 
-                        <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-                            <div className="flex items-center gap-6">
-                                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 shadow-inner ring-1 ring-white/20 backdrop-blur-xl transition-transform duration-500 group-hover:rotate-3">
-                                    <Users className="h-8 w-8 text-blue-100" />
+                        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/10 text-white shadow-inner ring-1 ring-white/20 backdrop-blur-sm">
+                                    <Users className="h-7 w-7 text-blue-200" />
                                 </div>
                                 <div>
-                                    <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">
+                                    <h1 className="text-2xl font-black tracking-tight text-white">
                                         All Students
                                     </h1>
-                                    <p className="mt-1 flex items-center gap-2 font-medium text-blue-100/70">
-                                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-blue-400" />
-                                        {program || 'Program'} Directory
-                                    </p>
+                                    <div className="mt-0.5 flex flex-col gap-2 sm:flex-row sm:items-center">
+                                        <p className="text-sm font-medium text-blue-200/80">
+                                            Manage student verification, view lists, and search details.
+                                        </p>
+                                        {program && (
+                                            <Badge
+                                                variant="outline"
+                                                className="w-fit gap-1 self-center rounded-lg border-white/10 bg-white/5 px-2 py-0.5 text-[9px] font-black tracking-widest text-white uppercase backdrop-blur-md sm:self-auto"
+                                            >
+                                                <Users className="h-2.5 w-2.5 text-blue-300" />
+                                                {program}
+                                            </Badge>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Live Date Indicator widget */}
+                            <div className="hidden items-center gap-3 self-center rounded-xl border border-white/10 bg-white/10 px-4 py-2.5 text-white ring-1 ring-white/20 backdrop-blur-md md:flex">
+                                <CalendarDays className="h-4 w-4 text-blue-200" />
+                                <div className="text-xs font-semibold tracking-wide text-white/90 uppercase">
+                                    {new Date().toLocaleDateString('en-US', {
+                                        weekday: 'short',
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric',
+                                    })}
                                 </div>
                             </div>
                         </div>
@@ -510,6 +578,9 @@ export default function StudentsList({ user, program, students }: Props) {
                                                 <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
                                                     Verification Status
                                                 </th>
+                                                <th className="px-6 py-4 text-right text-[10px] font-bold tracking-wider uppercase">
+                                                    Actions
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-transparent">
@@ -582,11 +653,7 @@ export default function StudentsList({ user, program, students }: Props) {
                                                                 </Badge>
                                                             </td>
                                                             <td className="px-6 py-4 text-left">
-                                                                {isActive(
-                                                                    Number(
-                                                                        student.id,
-                                                                    ),
-                                                                ) ? (
+                                                                {student.is_active ? (
                                                                     <Badge
                                                                         variant="outline"
                                                                         className="border-emerald-200 bg-emerald-50 text-[10px] font-black tracking-widest text-emerald-700 uppercase dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400"
@@ -619,6 +686,17 @@ export default function StudentsList({ user, program, students }: Props) {
                                                                         ? student.status
                                                                         : 'Pending'}
                                                                 </Badge>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-right">
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => handleViewRecord(student)}
+                                                                    className="h-8 gap-1.5 rounded-lg border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-[#0B192C] dark:text-slate-300 dark:hover:bg-slate-800/80"
+                                                                >
+                                                                    <Eye className="h-3.5 w-3.5" />
+                                                                    View Record
+                                                                </Button>
                                                             </td>
                                                         </tr>
                                                     );
@@ -685,6 +763,12 @@ export default function StudentsList({ user, program, students }: Props) {
                     </Card>
                 </div>
             </div>
+
+            <ViewStudentDialog
+                open={isViewOpen}
+                onOpenChange={setIsViewOpen}
+                student={viewingStudent}
+            />
         </ProgramHeadLayout>
     );
 }

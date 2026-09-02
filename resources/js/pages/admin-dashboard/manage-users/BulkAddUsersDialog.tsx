@@ -357,8 +357,8 @@ export default function BulkAddUsersDialog({ open, onOpenChange }: Props) {
                                             Student ID auto-prefix applied
                                         </span>
                                     </div>
-                                    <div className="max-h-[140px] overflow-y-auto">
-                                        <table className="w-full border-collapse text-left">
+                                    <div className="max-h-[140px] overflow-auto">
+                                        <table className="w-full min-w-max border-collapse text-left">
                                             <thead className="border-b bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800/60">
                                                 <tr>
                                                     <th className="px-3 py-1.5">

@@ -25,16 +25,24 @@ import { UserMenuContent } from '@/components/user-menu-content';
 import { useInitials } from '@/hooks/use-initials';
 import { MobileNavigation } from '@/pages/admin-dashboard/mobile-navigation';
 import type { SharedData } from '@/types';
-import { Link, usePage } from '@inertiajs/react';
+import { cn } from '@/lib/utils';
+import { Link, router, usePage } from '@inertiajs/react';
+import axios from 'axios';
+import { programHeadHelp, programHeadNotifications } from '@/routes';
 import {
+    ArrowRight,
     Bell,
     BookOpen,
     CheckCircle2,
     ChevronDown,
+    FileText,
     HelpCircle,
     LifeBuoy,
     Mail,
     Menu,
+    QrCode,
+    Shield,
+    Users,
     X,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -43,7 +51,8 @@ export function ProgramHeadHeader() {
     const page = usePage<SharedData>();
     const { auth } = page.props;
     const getInitials = useInitials();
-    const [notificationsRead, setNotificationsRead] = useState(false);
+    const [locallyRead, setLocallyRead] = useState<string[]>([]);
+    const [bellClicked, setBellClicked] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [helpOpen, setHelpOpen] = useState(false);
 
@@ -59,14 +68,75 @@ export function ProgramHeadHeader() {
         title: string;
         subtitle?: string;
         timeAgo?: string;
+        is_read?: boolean;
+        slipId?: number | string;
+        incidentId?: number | string;
+        eventId?: number | string;
     }>;
 
-    const unreadNotifications = notificationsRead
+    const unreadNotifications = bellClicked
         ? 0
-        : notificationsToRender.length;
+        : notificationsToRender.filter(
+              (n) => !n.is_read && !locallyRead.includes(n.id),
+          ).length;
 
     const handleNotificationBellClick = () => {
-        setNotificationsRead(true);
+        setBellClicked(true);
+    };
+
+    const getNotificationHref = (n: any) => {
+        if (!n || !n.type) return null;
+        if (
+            n.type === 'activity_plan_submitted_admin' ||
+            n.type === 'activity_plan_status_updated'
+        ) {
+            return '/program-head/calendar-events';
+        }
+        if (
+            n.type === 'admission_slip_requested' ||
+            n.type === 'admission_slip_status_updated'
+        ) {
+            return '/program-head/students';
+        }
+        if (
+            n.type === 'incident_reported_program_head' ||
+            n.type === 'incident_reported_admin'
+        ) {
+            return '/program-head/violations';
+        }
+        if (
+            n.type === 'student_verification_requested' ||
+            n.type === 'student_registered'
+        ) {
+            return '/program-head/students';
+        }
+        return null;
+    };
+
+    const handleNotificationClick = (n: any) => {
+        const isRead = n.is_read || locallyRead.includes(n.id);
+        if (!isRead) {
+            setLocallyRead((prev) => [...prev, n.id]);
+            axios.post(`/notifications/${n.id}/mark-read`).catch(console.error);
+        }
+
+        const href = getNotificationHref(n);
+        if (href) {
+            router.visit(href);
+        }
+    };
+
+    const handleMarkAllAsRead = () => {
+        const allIds = notificationsToRender.map((n) => n.id);
+        setLocallyRead(allIds);
+        axios
+            .post('/notifications/mark-all-read')
+            .then(() => {
+                router.reload({
+                    only: ['recentNotifications', 'unreadNotifications'],
+                });
+            })
+            .catch(console.error);
     };
 
     const propsAny = page.props as unknown as Record<string, any>;
@@ -104,7 +174,7 @@ export function ProgramHeadHeader() {
                             </SheetTrigger>
                             <SheetContent
                                 side="left"
-                                className="w-72 border-r border-slate-200 bg-white p-0 dark:border-white/10 dark:bg-[#0B192C]"
+                                className="w-72 border-r border-slate-200 bg-white p-0 dark:border-white/10 dark:bg-[#0B192C] [&>button]:hidden"
                             >
                                 <SheetHeader className="sr-only">
                                     <SheetTitle>Navigation Menu</SheetTitle>
@@ -203,77 +273,80 @@ export function ProgramHeadHeader() {
                                 <HelpCircle className="h-4 w-4 sm:h-5 sm:w-5" />
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-xl rounded-2xl border border-slate-200 bg-white p-6 text-slate-900 shadow-xl dark:border-white/10 dark:bg-[#0B192C] dark:text-white">
-                            <DialogHeader>
-                                <div className="flex items-center gap-3">
-                                    <div className="rounded-xl bg-blue-600/10 p-2.5 text-blue-600 dark:bg-blue-400/10 dark:text-blue-400">
-                                        <LifeBuoy className="h-6 w-6" />
+                        <DialogContent className="max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 text-slate-900 shadow-xl dark:border-white/10 dark:bg-[#0B192C] dark:text-white">
+                            <div className="relative overflow-hidden bg-gradient-to-br from-[#0c2d66] to-[#1e40af] px-6 py-8 text-white">
+                                <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/5 pointer-events-none" />
+                                <div className="relative flex items-center gap-3">
+                                    <div className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 text-white backdrop-blur-md">
+                                        <LifeBuoy className="h-5 w-5" />
                                     </div>
                                     <div>
-                                        <DialogTitle className="text-lg font-bold">
-                                            Program Head Help & Guide
+                                        <DialogTitle className="text-base font-bold">
+                                            Program Head Help Guide
                                         </DialogTitle>
-                                        <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-                                            Quick reference and system support
-                                            for managing your department
+                                        <DialogDescription className="text-xs text-blue-200/80">
+                                            Quick references and department management support
                                         </DialogDescription>
                                     </div>
                                 </div>
-                            </DialogHeader>
+                            </div>
 
-                            <div className="mt-4 space-y-4 text-sm leading-relaxed">
-                                <div className="space-y-3 rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-white/5 dark:bg-white/5">
-                                    <div className="flex items-center gap-2 font-semibold text-blue-700 dark:text-blue-400">
-                                        <BookOpen className="h-4 w-4" />
-                                        <span>Key Features Guide</span>
+                            <div className="p-5 space-y-4">
+                                <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                                    Welcome to the OSAMS Program Head Support. Access student verification workflows, activity telemetry, or open full guides.
+                                </p>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-800/40">
+                                        <div className="mt-0.5 rounded-lg bg-blue-50 p-1.5 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+                                            <Users className="h-3.5 w-3.5" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-[11px] font-bold text-slate-800 dark:text-white">Roster</h4>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal mt-0.5">Validate student profiles</p>
+                                        </div>
                                     </div>
-                                    <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
-                                        <li className="flex items-start gap-2">
-                                            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                                            <span>
-                                                <strong>Student Roster:</strong>{' '}
-                                                View department student
-                                                profiles, statuses, and course
-                                                enrollments.
-                                            </span>
-                                        </li>
-                                        <li className="flex items-start gap-2">
-                                            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                                            <span>
-                                                <strong>
-                                                    Attendance Monitoring:
-                                                </strong>{' '}
-                                                Track student event check-in/out
-                                                records in real time.
-                                            </span>
-                                        </li>
-                                        <li className="flex items-start gap-2">
-                                            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                                            <span>
-                                                <strong>
-                                                    Violations & Clearance:
-                                                </strong>{' '}
-                                                Manage student infractions and
-                                                sanction resolutions.
-                                            </span>
-                                        </li>
-                                    </ul>
+
+                                    <div className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-800/40">
+                                        <div className="mt-0.5 rounded-lg bg-emerald-50 p-1.5 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
+                                            <QrCode className="h-3.5 w-3.5" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-[11px] font-bold text-slate-800 dark:text-white">Attendance</h4>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal mt-0.5">Real-time scan monitoring</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-800/40">
+                                        <div className="mt-0.5 rounded-lg bg-rose-50 p-1.5 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
+                                            <Shield className="h-3.5 w-3.5" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-[11px] font-bold text-slate-800 dark:text-white">Clearance</h4>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal mt-0.5">Log department infractions</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-800/40">
+                                        <div className="mt-0.5 rounded-lg bg-purple-50 p-1.5 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400">
+                                            <FileText className="h-3.5 w-3.5" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-[11px] font-bold text-slate-800 dark:text-white">Reports</h4>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal mt-0.5">Department statistics & CSV</p>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div className="space-y-2 rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-white/5 dark:bg-white/5">
-                                    <div className="flex items-center gap-2 font-semibold text-slate-800 dark:text-slate-200">
-                                        <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                        <span>Technical Support</span>
-                                    </div>
-                                    <p className="text-xs text-slate-600 dark:text-slate-400">
-                                        Need assistance or account adjustments?
-                                        Contact the System Administrator or
-                                        Student Affairs Office at{' '}
-                                        <strong className="text-blue-600 dark:text-blue-400">
-                                            dsa@srcb.edu.ph
-                                        </strong>
-                                        .
-                                    </p>
+                                <div className="border-t border-slate-100 pt-4 dark:border-slate-800">
+                                    <Link
+                                        href={programHeadHelp()}
+                                        onClick={() => setHelpOpen(false)}
+                                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/10 transition-all hover:bg-blue-700 hover:shadow-lg"
+                                    >
+                                        View Full System Guide & Docs
+                                        <ArrowRight className="h-3.5 w-3.5" />
+                                    </Link>
                                 </div>
                             </div>
                         </DialogContent>
@@ -298,6 +371,83 @@ export function ProgramHeadHeader() {
                                 ) : null}
                             </Button>
                         </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                            className="z-[60] w-88 rounded-2xl border border-slate-100 shadow-xl dark:border-slate-800 dark:bg-[#0B192C]"
+                            align="end"
+                        >
+                            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+                                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                                    Notifications
+                                </h3>
+                                {unreadNotifications > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={handleMarkAllAsRead}
+                                        className="text-xs font-semibold text-blue-600 transition-colors hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                    >
+                                        Mark all as read
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="max-h-80 divide-y divide-slate-100 overflow-y-auto dark:divide-slate-800">
+                                {notificationsToRender.length > 0 ? (
+                                    notificationsToRender.map((n) => {
+                                        const isRead =
+                                            n.is_read ||
+                                            locallyRead.includes(n.id);
+                                        return (
+                                            <div
+                                                key={n.id}
+                                                onClick={() =>
+                                                    handleNotificationClick(n)
+                                                }
+                                                className={cn(
+                                                    'group flex cursor-pointer items-start gap-3 px-4 py-3 transition-all',
+                                                    isRead
+                                                        ? 'bg-transparent opacity-70 hover:bg-slate-50 dark:hover:bg-slate-800/40'
+                                                        : 'bg-blue-50/40 hover:bg-blue-50/70 dark:bg-blue-950/10 dark:hover:bg-blue-950/20',
+                                                )}
+                                            >
+                                                <div className="min-w-0 flex-1">
+                                                    <p
+                                                        className={cn(
+                                                            'text-sm transition-colors',
+                                                            isRead
+                                                                ? 'dark:text-slate-350 font-medium text-slate-700'
+                                                                : 'font-bold text-slate-900 group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400',
+                                                        )}
+                                                    >
+                                                        {n.title}
+                                                    </p>
+                                                    {n.subtitle && (
+                                                        <p className="mt-1 text-xs leading-normal text-slate-600 dark:text-slate-400">
+                                                            {n.subtitle}
+                                                        </p>
+                                                    )}
+                                                    {n.timeAgo && (
+                                                        <p className="mt-1.5 text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+                                                            {n.timeAgo}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="px-4 py-6 text-center text-xs text-slate-500 dark:text-slate-400">
+                                        No new notifications
+                                    </div>
+                                )}
+                            </div>
+
+                            <Link
+                                href="/program-head/notifications"
+                                className="block border-t border-slate-100 p-3 text-center text-xs font-bold text-blue-600 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:text-blue-400 dark:hover:bg-slate-800/40"
+                            >
+                                View all notifications
+                            </Link>
+                        </DropdownMenuContent>
                     </DropdownMenu>
 
                     {/* User Menu */}

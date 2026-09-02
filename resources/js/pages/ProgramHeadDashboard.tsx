@@ -10,17 +10,23 @@ import {
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     Activity,
+    ArrowLeft,
     ArrowRight,
     BarChart2,
     CalendarCheck,
     CalendarDays,
+    CheckCircle2,
     Clock,
     FileText,
+    Pause,
+    Play,
+    RefreshCw,
     RotateCcw,
     ShieldAlert,
     Users,
+    Zap,
 } from 'lucide-react';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import Swal from 'sweetalert2';
 import ProgramHeadLayout from './program-head/components/ProgramHeadLayout';
 
@@ -110,6 +116,71 @@ export default function ProgramHeadDashboard({ user }: Props) {
     const program = String(page.props.program ?? '').trim();
     const violationsByYearLevel = page.props.violationsByYearLevel ?? [];
     const totalViolationsCount = page.props.totalViolationsCount ?? 0;
+
+    const [activeTab, setActiveTab] = useState<'recent' | 'live'>('recent');
+    const [monitorEventId, setMonitorEventId] = useState<string>('');
+    const [monitoringEnabled, setMonitoringEnabled] = useState<boolean>(true);
+    const [liveCounts, setLiveCounts] = useState({ total: 0, present: 0, late: 0 });
+    const [liveRows, setLiveRows] = useState<any[]>([]);
+    const [loadingLive, setLoadingLive] = useState<boolean>(false);
+    const [lastUpdatedLive, setLastUpdatedLive] = useState<string | null>(null);
+
+    // List of all events (upcoming + recent) to make selectable
+    const allSelectableEvents = useMemo(() => {
+        const map = new Map();
+        [...recentEvents, ...events].forEach((e) => {
+            if (e.id) map.set(String(e.id), e);
+        });
+        return Array.from(map.values());
+    }, [recentEvents, events]);
+
+    // Set initial monitorEventId if empty and selectable events exist
+    useEffect(() => {
+        if (!monitorEventId && allSelectableEvents.length > 0) {
+            setMonitorEventId(String(allSelectableEvents[0].id));
+        }
+    }, [allSelectableEvents, monitorEventId]);
+
+    const fetchLiveLogs = useCallback(async () => {
+        if (!monitorEventId) return;
+        setLoadingLive(true);
+        try {
+            const res = await fetch(`/program-head/attendance/${monitorEventId}/logs?limit=5`, {
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setLiveRows(data.rows ?? []);
+                setLiveCounts({
+                    total: data.counts?.total ?? 0,
+                    present: data.counts?.present ?? 0,
+                    late: data.counts?.late ?? 0,
+                });
+                setLastUpdatedLive(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+            }
+        } catch (error) {
+            console.error('Failed to fetch live logs:', error);
+        } finally {
+            setLoadingLive(false);
+        }
+    }, [monitorEventId]);
+
+    // Live poller
+    useEffect(() => {
+        if (activeTab !== 'live' || !monitoringEnabled || !monitorEventId) {
+            return;
+        }
+
+        void fetchLiveLogs();
+        const interval = window.setInterval(() => {
+            void fetchLiveLogs();
+        }, 3000);
+
+        return () => window.clearInterval(interval);
+    }, [activeTab, monitoringEnabled, monitorEventId, fetchLiveLogs]);
 
     const counts = useMemo(() => {
         const present = attendanceRows.filter(
@@ -246,6 +317,10 @@ export default function ProgramHeadDashboard({ user }: Props) {
                         <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                             <div className="h-full w-full rounded-full bg-gradient-to-r from-indigo-400 to-indigo-600" />
                         </div>
+                        <div className="mt-3 flex items-center gap-1.5 text-[11px] font-black tracking-wider text-indigo-600 uppercase transition-all duration-200 group-hover:text-indigo-700 dark:text-indigo-400 dark:group-hover:text-indigo-300">
+                            <span>View Student Records</span>
+                            <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
+                        </div>
                     </div>
 
                     {/* Present Today */}
@@ -273,6 +348,10 @@ export default function ProgramHeadDashboard({ user }: Props) {
                         <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                             <div className="h-full w-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600" />
                         </div>
+                        <div className="mt-3 flex items-center gap-1.5 text-[11px] font-black tracking-wider text-emerald-600 uppercase transition-all duration-200 group-hover:text-emerald-700 dark:text-emerald-400 dark:group-hover:text-emerald-300">
+                            <span>View Attendance Logs</span>
+                            <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
+                        </div>
                     </div>
 
                     {/* Incident Records */}
@@ -299,6 +378,10 @@ export default function ProgramHeadDashboard({ user }: Props) {
                         </div>
                         <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                             <div className="h-full w-full rounded-full bg-gradient-to-r from-rose-400 to-rose-600" />
+                        </div>
+                        <div className="mt-3 flex items-center gap-1.5 text-[11px] font-black tracking-wider text-rose-600 uppercase transition-all duration-200 group-hover:text-rose-700 dark:text-rose-400 dark:group-hover:text-rose-300">
+                            <span>View Incident Records</span>
+                            <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
                         </div>
                     </div>
                 </div>
@@ -550,74 +633,274 @@ export default function ProgramHeadDashboard({ user }: Props) {
                     </Card>
 
                     {/* Attendance Overview – 2 cols */}
-                    <Card className="flex h-[380px] flex-col overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-lg shadow-blue-900/5 lg:col-span-2 dark:border-slate-800 dark:bg-[#0B192C]/70">
+                    <Card className="flex min-h-[385px] flex-col overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-lg shadow-blue-900/5 lg:col-span-2 dark:border-slate-800 dark:bg-[#0B192C]/70">
                         <CardHeader className="dark:border-slate-850 flex flex-row items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-blue-50/50 via-white to-transparent px-5 pt-4 pb-3.5 dark:from-slate-800/40 dark:via-transparent">
                             <div className="flex items-center gap-3">
-                                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-600 text-white shadow-md shadow-blue-500/20">
-                                    <Users className="h-4.5 w-4.5" />
+                                <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-white shadow-md transition-all ${
+                                    activeTab === 'live'
+                                        ? 'bg-red-600 shadow-red-500/20 animate-pulse'
+                                        : 'bg-blue-600 shadow-blue-500/20'
+                                }`}>
+                                    {activeTab === 'live' ? (
+                                        <Activity className="h-4.5 w-4.5 animate-pulse" />
+                                    ) : (
+                                        <Users className="h-4.5 w-4.5" />
+                                    )}
                                 </div>
                                 <div>
                                     <CardTitle className="flex items-center gap-2 text-base font-black text-slate-900 dark:text-white">
                                         Attendance Overview
                                     </CardTitle>
                                     <CardDescription className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                                        Real-time engagement
+                                        {activeTab === 'live' ? 'Live scan logs' : 'Recent event statistics'}
                                     </CardDescription>
                                 </div>
                             </div>
+
+                            {/* Tab selector */}
+                            <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-0.5 dark:bg-slate-800">
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('recent')}
+                                    className={`rounded-lg px-2.5 py-1 text-[10px] font-extrabold tracking-wide uppercase transition-all ${
+                                        activeTab === 'recent'
+                                            ? 'bg-white text-blue-900 shadow-sm dark:bg-slate-700 dark:text-white'
+                                            : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                                    }`}
+                                >
+                                    Recent
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setActiveTab('live');
+                                        // Auto select first event if empty
+                                        if (!monitorEventId && allSelectableEvents.length > 0) {
+                                            setMonitorEventId(String(allSelectableEvents[0].id));
+                                        }
+                                    }}
+                                    className={`relative flex items-center gap-1 rounded-lg px-2.5 py-1 text-[10px] font-extrabold tracking-wide uppercase transition-all ${
+                                        activeTab === 'live'
+                                            ? 'bg-white text-blue-900 shadow-sm dark:bg-slate-700 dark:text-white'
+                                            : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                                    }`}
+                                >
+                                    <span>Live Monitor</span>
+                                    <span className="relative flex h-1.5 w-1.5">
+                                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-red-500"></span>
+                                    </span>
+                                </button>
+                            </div>
                         </CardHeader>
 
-                        <CardContent className="scrollbar-thin max-h-[300px] flex-1 space-y-4 overflow-y-auto px-6 py-4">
-                            {recentEvents.length === 0 ? (
-                                <div className="flex h-full flex-col items-center justify-center gap-3 py-12 text-slate-400">
-                                    <CalendarCheck className="h-10 w-10 opacity-20" />
-                                    <p className="text-sm font-medium">
-                                        No events recorded.
-                                    </p>
-                                </div>
+                        <CardContent className="scrollbar-thin flex-1 space-y-4 overflow-y-auto px-6 py-4">
+                            {activeTab === 'recent' ? (
+                                recentEvents.length === 0 ? (
+                                    <div className="flex h-full flex-col items-center justify-center gap-3 py-12 text-slate-400">
+                                        <CalendarCheck className="h-10 w-10 opacity-20" />
+                                        <p className="text-sm font-medium">No events recorded.</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3.5">
+                                        {recentEvents.slice(0, 4).map((ev: any) => (
+                                            <div
+                                                key={ev.id}
+                                                className="group relative rounded-xl border border-slate-100 bg-slate-50/30 p-3 transition-all duration-200 hover:border-blue-100 hover:bg-blue-50/10 dark:border-white/5 dark:bg-white/5 dark:hover:border-slate-800 dark:hover:bg-slate-800/10"
+                                            >
+                                                <div className="flex items-start justify-between gap-4">
+                                                    <div className="space-y-0.5">
+                                                        <span className="block text-xs font-black text-slate-850 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                                            {ev.event_name}
+                                                        </span>
+                                                        <span className="block text-[9px] font-bold text-slate-400 uppercase">
+                                                            {formatDate(ev.event_date)}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Live Monitor link button */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setMonitorEventId(String(ev.id));
+                                                            setActiveTab('live');
+                                                        }}
+                                                        className="flex items-center gap-1 rounded-lg bg-blue-50 px-2 py-1 text-[9px] font-black text-blue-700 transition hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-400 dark:hover:bg-blue-950/70"
+                                                    >
+                                                        <Zap className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                                                        Monitor
+                                                    </button>
+                                                </div>
+
+                                                {/* Progress Bar showing Present vs Absent */}
+                                                <div className="relative mt-2.5 flex h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-850">
+                                                    <div
+                                                        className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
+                                                        style={{ width: `${ev.present_rate ?? 0}%` }}
+                                                        title={`Present: ${ev.present_rate}%`}
+                                                    />
+                                                    <div
+                                                        className="h-full bg-gradient-to-r from-rose-500 to-pink-400 transition-all duration-500"
+                                                        style={{ width: `${ev.absent_rate ?? 0}%` }}
+                                                        title={`Absent: ${ev.absent_rate}%`}
+                                                    />
+                                                </div>
+
+                                                <div className="mt-1.5 flex justify-between text-[10px] font-black">
+                                                    <span className="text-emerald-600 dark:text-emerald-400">
+                                                        Present: {ev.present_rate ?? 0}% ({ev.present_count ?? 0})
+                                                    </span>
+                                                    <span className="text-rose-600 dark:text-rose-400">
+                                                        Absent: {ev.absent_rate ?? 0}% ({ev.absent_count ?? 0})
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )
                             ) : (
-                                recentEvents.slice(0, 5).map((ev: any) => (
-                                    <div
-                                        key={ev.id}
-                                        className="space-y-1.5 border-b border-slate-100 pb-3 last:border-0 last:pb-0 dark:border-white/5"
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <span className="max-w-[180px] truncate text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                {ev.event_name}
+                                /* Live Monitor Tab content */
+                                <div className="space-y-4">
+                                    {/* Selector & Polling control row */}
+                                    <div className="flex items-center gap-2">
+                                        <select
+                                            value={monitorEventId}
+                                            onChange={(e) => setMonitorEventId(e.target.value)}
+                                            className="h-9 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-850 shadow-sm focus:border-blue-500 focus:outline-none dark:border-slate-800 dark:bg-[#0B192C] dark:text-white"
+                                        >
+                                            {allSelectableEvents.map((ev) => (
+                                                <option key={ev.id} value={ev.id}>
+                                                    {ev.event_name} ({formatDate(ev.event_date)})
+                                                </option>
+                                            ))}
+                                        </select>
+
+                                        <div className="flex items-center gap-1 shrink-0">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="icon"
+                                                onClick={() => setMonitoringEnabled((prev) => !prev)}
+                                                className="h-9 w-9 rounded-xl border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-800 dark:bg-[#0B192C]"
+                                                title={monitoringEnabled ? 'Pause Live Polling' : 'Resume Live Polling'}
+                                            >
+                                                {monitoringEnabled ? (
+                                                    <Pause className="h-3.5 w-3.5 text-amber-500 fill-amber-500/10" />
+                                                ) : (
+                                                    <Play className="h-3.5 w-3.5 text-emerald-500 fill-emerald-500/10" />
+                                                )}
+                                            </Button>
+
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="icon"
+                                                disabled={loadingLive || !monitorEventId}
+                                                onClick={fetchLiveLogs}
+                                                className={`h-9 w-9 rounded-xl border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-800 dark:bg-[#0B192C] ${
+                                                    loadingLive ? 'animate-spin' : ''
+                                                }`}
+                                                title="Manual Sync"
+                                            >
+                                                <RefreshCw className="h-3.5 w-3.5 text-slate-500" />
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    {/* Stats Row */}
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-2.5 text-center dark:border-white/5 dark:bg-white/5">
+                                            <span className="block text-[8px] font-black uppercase text-slate-400 tracking-wider">
+                                                Total Scans
                                             </span>
-                                            <span className="text-[10px] font-black text-slate-400 uppercase dark:text-slate-500">
-                                                {formatDate(ev.event_date)}
+                                            <span className="mt-0.5 block text-base font-black text-slate-850 dark:text-white">
+                                                {liveCounts.total}
                                             </span>
                                         </div>
-                                        {/* Progress Bar showing Present vs Absent */}
-                                        <div className="relative flex h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-white/5">
-                                            <div
-                                                className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
-                                                style={{
-                                                    width: `${ev.present_rate ?? 0}%`,
-                                                }}
-                                                title={`Present: ${ev.present_rate}%`}
-                                            />
-                                            <div
-                                                className="h-full bg-gradient-to-r from-rose-500 to-pink-400 transition-all duration-500"
-                                                style={{
-                                                    width: `${ev.absent_rate ?? 0}%`,
-                                                }}
-                                                title={`Absent: ${ev.absent_rate}%`}
-                                            />
-                                        </div>
-                                        <div className="flex justify-between text-[10px] font-bold">
-                                            <span className="text-emerald-600 dark:text-emerald-400">
-                                                P: {ev.present_rate ?? 0}% (
-                                                {ev.present_count ?? 0})
+                                        <div className="rounded-xl border border-emerald-100 bg-emerald-50/20 p-2.5 text-center dark:border-emerald-950/20 dark:bg-emerald-950/10">
+                                            <span className="block text-[8px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">
+                                                Present
                                             </span>
-                                            <span className="text-rose-600 dark:text-rose-400">
-                                                A: {ev.absent_rate ?? 0}% (
-                                                {ev.absent_count ?? 0})
+                                            <span className="mt-0.5 block text-base font-black text-emerald-600 dark:text-emerald-400">
+                                                {liveCounts.present}
+                                            </span>
+                                        </div>
+                                        <div className="rounded-xl border border-amber-100 bg-amber-50/20 p-2.5 text-center dark:border-amber-950/20 dark:bg-amber-950/10">
+                                            <span className="block text-[8px] font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider">
+                                                Late
+                                            </span>
+                                            <span className="mt-0.5 block text-base font-black text-amber-600 dark:text-amber-400">
+                                                {liveCounts.late}
                                             </span>
                                         </div>
                                     </div>
-                                ))
+
+                                    {/* Scrollable Scans feed */}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-wider text-slate-400">
+                                            <span>Recent Scan Feed</span>
+                                            {lastUpdatedLive ? (
+                                                <span className="text-slate-400 dark:text-slate-500">
+                                                    Synced {lastUpdatedLive}
+                                                </span>
+                                            ) : (
+                                                <span>No scans received</span>
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-1.5 max-h-[140px] overflow-y-auto scrollbar-none pr-1">
+                                            {liveRows.length === 0 ? (
+                                                <div className="flex flex-col items-center justify-center gap-1.5 py-4 text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/10">
+                                                    <span className="relative flex h-1.5 w-1.5">
+                                                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-slate-450 opacity-75"></span>
+                                                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-slate-400"></span>
+                                                    </span>
+                                                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-550">Waiting for attendance check-ins...</p>
+                                                </div>
+                                            ) : (
+                                                liveRows.slice(0, 3).map((row) => (
+                                                    <div
+                                                        key={row.id}
+                                                        className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-2 shadow-sm dark:border-slate-850 dark:bg-[#0C1E35] transition-all hover:bg-slate-50 dark:hover:bg-slate-800/20"
+                                                    >
+                                                        <div className="min-w-0">
+                                                            <p className="truncate text-xs font-bold text-slate-850 dark:text-slate-100">
+                                                                {row.name}
+                                                            </p>
+                                                            <p className="text-[9px] font-semibold text-slate-400">
+                                                                {row.student_id} &bull; {row.program}
+                                                            </p>
+                                                        </div>
+                                                        <div className="text-right shrink-0">
+                                                            <span className={`inline-block rounded-lg px-2 py-0.5 text-[9px] font-black uppercase ${
+                                                                row.status?.toLowerCase() === 'late'
+                                                                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+                                                                    : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+                                                            }`}>
+                                                                {row.status}
+                                                            </span>
+                                                            <p className="mt-0.5 text-[9px] font-semibold text-slate-400 flex items-center gap-1 justify-end">
+                                                                <Clock className="h-2.5 w-2.5" />
+                                                                {row.time}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+
+                                        {/* Navigate to full monitoring */}
+                                        <div className="pt-1 text-center">
+                                            <Link
+                                                href={`/program-head/attendance`}
+                                                className="inline-flex items-center gap-1 text-[10px] font-black text-blue-600 hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                                            >
+                                                Open Full Real-Time Monitoring Panel
+                                                <ArrowRight className="h-3 w-3" />
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </div>
                             )}
                         </CardContent>
                     </Card>

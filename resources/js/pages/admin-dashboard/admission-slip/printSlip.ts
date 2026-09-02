@@ -9,7 +9,7 @@ export default function printSlip(s: SlipRow) {
             .replaceAll('"', '&quot;')
             .replaceAll("'", '&#039;');
 
-    const win = window.open('', '_blank', 'width=900,height=650');
+    const win = window.open('', '_blank', 'width=450,height=600');
     if (!win) return;
 
     const html = `<!doctype html>
@@ -17,73 +17,183 @@ export default function printSlip(s: SlipRow) {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Admission Slip</title>
+  <title>Admission Slip - Receipt</title>
   <style>
-    @page { size: A4; margin: 16mm; }
-    * { box-sizing: border-box; }
-    body { font-family: Arial, Helvetica, sans-serif; color: #111827; }
-    .wrap { width: 100%; }
-    .paper { width: 100%; max-width: 720px; margin: 0 auto; }
+    @page {
+      size: 80mm auto;
+      margin: 0;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Courier New', Courier, monospace, Arial, sans-serif;
+      color: #000;
+      background-color: #fff;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+    .container {
+      width: 80mm;
+      padding: 4mm 6mm;
+    }
+    .logo-container {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+    .logo {
+      width: 36px;
+      height: 36px;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+    .header-text {
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .school {
+      font-weight: bold;
+      font-size: 9.5px;
+      line-height: 1.2;
+    }
+    .sub {
+      font-size: 8px;
+      color: #444;
+      margin-top: 1px;
+    }
+    .dept {
+      font-weight: bold;
+      font-size: 9px;
+      margin-top: 3px;
+    }
+    .divider {
+      border-top: 1px dashed #000;
+      margin: 8px 0;
+    }
+    .title {
+      font-weight: bold;
+      font-size: 13px;
+      text-align: center;
+      margin: 6px 0 10px 0;
+      letter-spacing: 0.5px;
+    }
+    .info-item {
+      margin-bottom: 6px;
+      font-size: 10.5px;
+    }
+    .info-label {
+      font-weight: bold;
+      font-size: 8.5px;
+      color: #444;
+      text-transform: uppercase;
+      display: block;
+    }
+    .info-value {
+      margin-top: 1px;
+      padding-left: 2px;
+      word-break: break-word;
+    }
+    .signature-section {
+      margin-top: 20px;
+      text-align: center;
+    }
+    .sig-line {
+      border-bottom: 1px solid #000;
+      width: 75%;
+      margin: 0 auto;
+      height: 18px;
+    }
+    .sig-label {
+      font-size: 8px;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .dean-section {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 9.5px;
+    }
+    .dean-name {
+      font-weight: bold;
+    }
+    .dean-title {
+      font-style: italic;
+      font-size: 8.5px;
+      margin-top: 1px;
+    }
 
-    .header-container { display: flex; align-items: center; justify-content: space-between; width: 100%; }
-    .logo { width: 65px; height: 65px; object-fit: cover; border-radius: 50%; }
-    .header-text { flex: 1; text-align: center; line-height: 1.15; }
-    .school { font-weight: 800; letter-spacing: 0.4px; font-size: 15px; }
-    .sub { font-weight: 500; font-size: 11px; margin-top: 4px; }
-    .dept { font-weight: 800; font-size: 12px; margin-top: 8px; }
-
-    .rule { border: none; border-top: 1px solid #111827; margin: 12px 0; }
-    .title { font-weight: 900; font-size: 14px; letter-spacing: 0.6px; text-align: center; margin: 16px 0 24px 0; }
-
-    .fields { font-size: 12px; }
-    .row { display: flex; align-items: flex-end; gap: 14px; margin: 18px 0; }
-    .label { width: 110px; font-weight: 700; }
-    .labelSmall { width: 110px; font-weight: 700; line-height: 1.1; }
-    .line { flex: 1; border-bottom: 1px solid #111827; padding-bottom: 2px; min-height: 16px; }
-    .value { display: inline-block; transform: translateY(2px); }
-
-    .signature { margin-top: 64px; text-align: center; }
-    .sigline { margin: 0 auto; width: 60%; border-bottom: 1px solid #111827; height: 22px; }
-    .siglabel { margin-top: 8px; font-style: italic; font-weight: 600; font-size: 11px; }
-    .dean { margin-top: 36px; text-align: center; }
-    .deanName { font-weight: 900; font-size: 13px; letter-spacing: 0.4px; }
-    .deanTitle { font-style: italic; font-weight: 600; font-size: 11px; margin-top: 4px; }
+    /* Screen preview rendering style */
+    @media screen {
+      body {
+        background-color: #f1f5f9;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        width: 100vw;
+        height: 100vh;
+        padding: 20px;
+        overflow-y: auto;
+      }
+      .container {
+        background-color: #fff;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="paper">
-      <div class="header-container">
-        <img class="logo" src="/images/SRCB.png" alt="SRCB Logo" />
-        <div class="header-text">
-          <div class="school">ST. RITA'S COLLEGE OF BALINGASAG, INC.</div>
-          <div class="sub">Balingasag, Misamis Oriental</div>
-          <div class="dept">HIGHER EDUCATION DEPARTMENT</div>
-        </div>
-        <img class="logo" src="/images/DSA.png" alt="DSA Logo" />
-      </div>
+  <div class="container">
+    <div class="logo-container">
+      <img class="logo" src="/images/SRCB.png" alt="SRCB Logo" />
+      <img class="logo" src="/images/DSA.png" alt="DSA Logo" />
+    </div>
+    
+    <div class="header-text">
+      <div class="school">ST. RITA'S COLLEGE OF BALINGASAG, INC.</div>
+      <div class="sub">Balingasag, Misamis Oriental</div>
+      <div class="dept">HIGHER EDUCATION DEPARTMENT</div>
+    </div>
 
-      <hr class="rule" />
+    <div class="divider"></div>
 
-      <div class="title">ADMISSION SLIP</div>
+    <div class="title">ADMISSION SLIP</div>
 
-      <div class="fields">
-        <div class="row"><div class="label">Name:</div><div class="line"><span class="value">${escapeHtml(s.studentName)}</span></div></div>
-        <div class="row"><div class="labelSmall">Program/Year<br/>Level:</div><div class="line"><span class="value">${escapeHtml(s.programYear)}</span></div></div>
-        <div class="row"><div class="label">Case:</div><div class="line"><span class="value">${escapeHtml(s.caseText)}</span></div></div>
-        <div class="row"><div class="label">Reason:</div><div class="line"><span class="value">${escapeHtml(s.reasonText)}</span></div></div>
-        <div class="row"><div class="label">This form is valid until:</div><div class="line"><span class="value">${escapeHtml(s.validUntil)}</span></div></div>
-      </div>
+    <div class="info-item">
+      <span class="info-label">Name:</span>
+      <div class="info-value">${escapeHtml(s.studentName)}</div>
+    </div>
+    <div class="info-item">
+      <span class="info-label">Program/Year Level:</span>
+      <div class="info-value">${escapeHtml(s.programYear)}</div>
+    </div>
+    <div class="info-item">
+      <span class="info-label">Case:</span>
+      <div class="info-value">${escapeHtml(s.caseText)}</div>
+    </div>
+    <div class="info-item">
+      <span class="info-label">Reason:</span>
+      <div class="info-value">${escapeHtml(s.reasonText)}</div>
+    </div>
+    <div class="info-item">
+      <span class="info-label">Valid Until:</span>
+      <div class="info-value">${escapeHtml(s.validUntil)}</div>
+    </div>
 
-      <div class="signature">
-        <div class="sigline"></div>
-        <div class="siglabel">Signature over Printed Name</div>
-      </div>
+    <div class="signature-section">
+      <div class="sig-line"></div>
+      <div class="sig-label">Signature over Printed Name</div>
+    </div>
 
-      <div class="dean">
-        <div class="deanName">MANUEL N. OCLARIT JR.</div>
-        <div class="deanTitle">Dean of Student Affairs</div>
-      </div>
+    <div class="dean-section">
+      <div class="dean-name">MANUEL N. OCLARIT JR.</div>
+      <div class="dean-title">Dean of Student Affairs</div>
     </div>
   </div>
 
@@ -91,7 +201,7 @@ export default function printSlip(s: SlipRow) {
     window.addEventListener('load', () => {
       setTimeout(() => {
         window.print();
-      }, 250);
+      }, 300);
     });
   </script>
 </body>

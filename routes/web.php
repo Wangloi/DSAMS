@@ -65,7 +65,13 @@ Route::get('/features', function () {
 })->name('landing.features');
 
 Route::get('/about', function () {
-    return Inertia::render('landing/about');
+    $stats = [
+        'totalStudents' => \App\Models\Student::count(),
+        'totalEvents' => \App\Models\Event::count(),
+    ];
+    return Inertia::render('landing/about', [
+        'stats' => $stats,
+    ]);
 })->name('landing.about');
 
 Route::get('/get-started', function () {
@@ -111,6 +117,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 Route::get('/student-dashboard', [StudentDashboardController::class, 'index'])->middleware(['auth:student', 'approved'])->name('student.dashboard');
+
+Route::get('/student/help', function () {
+    return Inertia::render('student/help/index');
+})->middleware(['auth:student', 'approved'])->name('student.help');
 
 Route::get('/student/attendance/scanner-portal/{event}', [StudentAttendanceController::class, 'scannerPortal'])
     ->middleware(['auth:student', 'approved'])
@@ -218,6 +228,7 @@ Route::post('/student/admission-slip', [\App\Http\Controllers\StudentAdmissionSl
 // Student Registration Routes — now single-step (credentials only)
 Route::post('/student-register/step1', [StudentRegistrationController::class, 'storeStep1'])->name('student.register.step1.store');
 Route::post('/student-register/restart', [StudentRegistrationController::class, 'restart'])->name('student.register.restart');
+Route::post('/register', [StudentRegistrationController::class, 'register'])->name('register');
 
 // Student Profile Completion — called after first login when personal info is missing
 Route::post('/student/complete-profile', [StudentProfileController::class, 'store'])
@@ -254,10 +265,17 @@ Route::get('/program-head/reports/violations', function () {
 });
 
 Route::get('/program-head/calendar-events', [ProgramHeadEventsController::class, 'index'])->middleware(['auth:program_head', 'verified'])->name('program-head.calendar-events');
+Route::post('/program-head/calendar-events', [ProgramHeadEventsController::class, 'store'])->middleware(['auth:program_head', 'verified'])->name('program-head.calendar-events.store');
 
 Route::get('/program-head/activity-log', function () {
     return Inertia::render('program-head/ActivityLog');
 })->middleware(['auth:program_head', 'verified'])->name('program-head.activity-log');
+
+Route::get('/program-head/help', function () {
+    return Inertia::render('program-head/help/index');
+})->middleware(['auth:program_head', 'verified'])->name('program-head.help');
+
+Route::get('/program-head/notifications', [App\Http\Controllers\NotificationController::class, 'programHeadIndex'])->middleware(['auth:program_head', 'verified'])->name('program-head.notifications');
 
 Route::get('/admin/notifications', [App\Http\Controllers\NotificationController::class, 'index'])->middleware('auth:admin')->name('admin.notifications');
 
@@ -289,6 +307,9 @@ Route::post('/admin/manage-users/bulk/verification/reject', [AdminManageUsersCon
 Route::post('/admin/manage-users/bulk/status/activate', [AdminManageUsersController::class, 'bulkActivate'])->middleware('auth:admin')->name('admin.manage-users.bulk-status-activate');
 Route::post('/admin/manage-users/bulk/status/deactivate', [AdminManageUsersController::class, 'bulkDeactivate'])->middleware('auth:admin')->name('admin.manage-users.bulk-status-deactivate');
 Route::post('/admin/manage-users/bulk/year-level', [AdminManageUsersController::class, 'bulkSetYearLevel'])->middleware('auth:admin')->name('admin.manage-users.bulk-year-level');
+Route::post('/admin/manage-users/bulk/program', [AdminManageUsersController::class, 'bulkSetProgram'])->middleware('auth:admin')->name('admin.manage-users.bulk-program');
+Route::post('/admin/manage-users/bulk/entry-status', [AdminManageUsersController::class, 'bulkSetEntryStatus'])->middleware('auth:admin')->name('admin.manage-users.bulk-entry-status');
+Route::post('/admin/manage-users/bulk/reset-officer-role', [AdminManageUsersController::class, 'bulkResetOfficerRole'])->middleware('auth:admin')->name('admin.manage-users.bulk-reset-officer-role');
 Route::match(['put', 'post'], '/admin/manage-users/{student}/unarchive', [AdminManageUsersController::class, 'unarchive'])->middleware('auth:admin')->name('admin.manage-users.unarchive');
 Route::delete('/admin/manage-users/{student}', [AdminManageUsersController::class, 'destroy'])->middleware('auth:admin')->name('admin.manage-users.destroy');
 
@@ -325,6 +346,8 @@ Route::get('/admin/events/{event}/qr-code', [\App\Http\Controllers\AdminEventsCo
 Route::get('/admin/events/{event}/participant-monitoring', [\App\Http\Controllers\AdminEventsController::class, 'participantMonitoring'])->middleware('auth:admin')->name('admin.events.participant-monitoring');
 Route::get('/admin/events/{event}/attendance-assignment', [\App\Http\Controllers\AdminEventsController::class, 'attendanceAssignment'])->middleware('auth:admin')->name('admin.events.attendance-assignment');
 Route::post('/admin/events/{event}/attendance-assignment', [\App\Http\Controllers\AdminEventsController::class, 'storeAttendanceAssignment'])->middleware('auth:admin')->name('admin.events.attendance-assignment.store');
+Route::post('/admin/events/{event}/approve-schedule', [\App\Http\Controllers\AdminEventsController::class, 'approveSchedule'])->middleware('auth:admin')->name('admin.events.approve-schedule');
+Route::post('/admin/events/{event}/reject-schedule', [\App\Http\Controllers\AdminEventsController::class, 'rejectSchedule'])->middleware('auth:admin')->name('admin.events.reject-schedule');
 
 Route::get('/admin/admission-slip', [AdminAdmissionSlipController::class, 'index'])->middleware('auth:admin')->name('admin.admission-slip');
 Route::post('/admin/admission-slip', [AdminAdmissionSlipController::class, 'store'])->middleware('auth:admin')->name('admin.admission-slip.store');
@@ -419,6 +442,7 @@ Route::get('/admin/incidents-violations', [AdminIncidentsViolationsController::c
 Route::get('/admin/incidents-violations/{incident}', [AdminIncidentsViolationsController::class, 'show'])->middleware('auth:admin')->name('admin.incidents-violations.show');
 Route::post('/admin/incidents-violations', [AdminIncidentsViolationsController::class, 'store'])->middleware('auth:admin')->name('admin.incidents-violations.store');
 Route::post('/admin/incidents-violations/{incident}/status', [AdminIncidentsViolationsController::class, 'updateStatus'])->middleware('auth:admin')->name('admin.incidents-violations.update-status');
+Route::post('/admin/incidents-violations/{incident}/phase', [AdminIncidentsViolationsController::class, 'updateCallingPhase'])->middleware('auth:admin')->name('admin.incidents-violations.update-phase');
 Route::match(['put', 'post'], '/admin/incidents-violations/{incident}', [AdminIncidentsViolationsController::class, 'update'])->middleware('auth:admin')->name('admin.incidents-violations.update');
 Route::delete('/admin/incidents-violations/{incident}', [AdminIncidentsViolationsController::class, 'destroy'])->middleware('auth:admin')->name('admin.incidents-violations.destroy');
 Route::match(['put', 'post'], '/admin/incidents-violations/{incident}/archive', [AdminIncidentsViolationsController::class, 'archive'])->middleware('auth:admin')->name('admin.incidents-violations.archive');
@@ -493,6 +517,9 @@ Route::get('/admin/analytics/data', [AdminAnalyticsController::class, 'data'])->
 Route::get('/admin/reports', [AdminReportsController::class, 'index'])->middleware('auth:admin')->name('admin.reports');
 Route::get('/admin/reports/export/csv', [AdminReportsController::class, 'exportCsv'])->middleware('auth:admin')->name('admin.reports.export.csv');
 Route::get('/admin/reports/print', [AdminReportsController::class, 'print'])->middleware('auth:admin')->name('admin.reports.print');
+Route::get('/admin/help', function () {
+    return Inertia::render('admin-dashboard/help/index');
+})->middleware('auth:admin')->name('admin.help');
 
 Route::get('/admin/attendance/{event}/print', [AdminAttendanceController::class, 'printEvent'])->middleware('auth:admin')->name('admin.attendance.print-event');
 

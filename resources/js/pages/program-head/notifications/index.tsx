@@ -2,22 +2,21 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { adminAdmissionSlip, adminDashboard } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import axios from 'axios';
 import { Bell, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import React, { useState } from 'react';
-import AdminLayout from '../admin-layout';
+import ProgramHeadLayout from '../components/ProgramHeadLayout';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Admin Dashboard',
-        href: adminDashboard(),
+        title: 'Program Head Dashboard',
+        href: '/program-head-dashboard',
     },
     {
         title: 'Notifications',
-        href: '/admin/notifications',
+        href: '/program-head/notifications',
     },
 ];
 
@@ -46,7 +45,7 @@ interface Props {
     paginatedNotifications: PaginatedNotifications;
 }
 
-export default function AdminNotifications({ paginatedNotifications }: Props) {
+export default function ProgramHeadNotifications({ paginatedNotifications }: Props) {
     const [locallyRead, setLocallyRead] = useState<string[]>([]);
 
     const notifications = paginatedNotifications.data;
@@ -73,26 +72,54 @@ export default function AdminNotifications({ paginatedNotifications }: Props) {
         );
     };
 
+    const getActionHref = (n: Notification) => {
+        if (
+            n.type === 'activity_plan_submitted_admin' ||
+            n.type === 'activity_plan_status_updated'
+        ) {
+            return '/program-head/calendar-events';
+        }
+        if (
+            n.type === 'admission_slip_requested' ||
+            n.type === 'admission_slip_status_updated'
+        ) {
+            return '/program-head/students';
+        }
+        if (
+            n.type === 'incident_reported_program_head' ||
+            n.type === 'incident_reported_admin'
+        ) {
+            return '/program-head/violations';
+        }
+        if (
+            n.type === 'student_verification_requested' ||
+            n.type === 'student_registered'
+        ) {
+            return '/program-head/students';
+        }
+        return null;
+    };
+
     return (
-        <AdminLayout breadcrumbs={breadcrumbs}>
-            <Head title="All Notifications" />
+        <ProgramHeadLayout breadcrumbs={breadcrumbs}>
+            <Head title="Program Head Notifications" />
 
             <div className="flex h-full w-full flex-col space-y-6 p-4 sm:p-6 lg:p-8">
                 {/* Header Section */}
                 <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                            Notifications
+                        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                            Department Notifications
                         </h1>
-                        <p className="mt-1 text-sm text-slate-500">
-                            View and manage all system notifications and alerts.
+                        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                            View and manage all schedule requests, student rosters, and activity updates.
                         </p>
                     </div>
 
                     <div className="flex items-center gap-2">
                         <Button
                             variant="outline"
-                            className="bg-white"
+                            className="bg-white dark:bg-slate-800 dark:border-slate-700"
                             onClick={markAllAsRead}
                         >
                             <Check className="mr-2 h-4 w-4" />
@@ -102,36 +129,31 @@ export default function AdminNotifications({ paginatedNotifications }: Props) {
                 </div>
 
                 {/* Notifications List */}
-                <Card className="overflow-hidden border-slate-200 shadow-sm">
-                    <div className="flex flex-col">
+                <Card className="divide-y divide-slate-100 overflow-hidden border border-slate-200 shadow-sm dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
+                    <div>
                         {notifications.length > 0 ? (
                             notifications.map((n) => {
-                                const isRead =
-                                    n.is_read || locallyRead.includes(n.id);
+                                const isRead = n.is_read || locallyRead.includes(n.id);
+                                const actionHref = getActionHref(n);
+
                                 return (
                                     <div
                                         key={n.id}
-                                        onClick={(e) =>
-                                            !isRead && markSingleAsRead(n.id, e)
-                                        }
+                                        onClick={(e) => markSingleAsRead(n.id, e)}
                                         className={cn(
-                                            'group relative flex flex-col justify-between gap-4 border-b border-slate-100 p-5 transition-colors sm:flex-row sm:items-center',
+                                            'flex flex-col gap-4 p-4 transition-colors sm:flex-row sm:items-center sm:justify-between sm:p-5',
                                             isRead
-                                                ? 'cursor-default bg-slate-50/50'
-                                                : 'cursor-pointer bg-white hover:bg-slate-50',
+                                                ? 'bg-white opacity-75 hover:bg-slate-50/80 dark:bg-slate-900 dark:hover:bg-slate-800/40'
+                                                : 'bg-blue-50/40 hover:bg-blue-50/70 dark:bg-blue-950/20 dark:hover:bg-blue-950/30',
                                         )}
                                     >
-                                        {!isRead && (
-                                            <div className="absolute top-0 bottom-0 left-0 w-1 rounded-r-full bg-blue-600" />
-                                        )}
-
-                                        <div className="flex flex-1 items-start gap-4">
+                                        <div className="flex items-start gap-4">
                                             <div
                                                 className={cn(
                                                     'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
                                                     isRead
-                                                        ? 'bg-slate-100'
-                                                        : 'bg-blue-100 text-blue-600',
+                                                        ? 'bg-slate-100 dark:bg-slate-800'
+                                                        : 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400',
                                                 )}
                                             >
                                                 <Bell
@@ -139,7 +161,7 @@ export default function AdminNotifications({ paginatedNotifications }: Props) {
                                                         'h-5 w-5',
                                                         isRead
                                                             ? 'text-slate-400'
-                                                            : 'text-blue-600',
+                                                            : 'text-blue-600 dark:text-blue-400',
                                                     )}
                                                 />
                                             </div>
@@ -150,8 +172,8 @@ export default function AdminNotifications({ paginatedNotifications }: Props) {
                                                         className={cn(
                                                             'text-base transition-colors',
                                                             isRead
-                                                                ? 'font-medium text-slate-700'
-                                                                : 'font-bold text-slate-900',
+                                                                ? 'font-medium text-slate-700 dark:text-slate-300'
+                                                                : 'font-bold text-slate-900 dark:text-white',
                                                         )}
                                                     >
                                                         {n.title}
@@ -159,7 +181,7 @@ export default function AdminNotifications({ paginatedNotifications }: Props) {
                                                     {!isRead && (
                                                         <Badge
                                                             variant="secondary"
-                                                            className="h-5 border-0 bg-blue-100 px-1.5 text-[10px] text-blue-700 hover:bg-blue-100"
+                                                            className="h-5 border-0 bg-blue-100 px-1.5 text-[10px] text-blue-700 hover:bg-blue-100 dark:bg-blue-900/50 dark:text-blue-300"
                                                         >
                                                             NEW
                                                         </Badge>
@@ -167,13 +189,13 @@ export default function AdminNotifications({ paginatedNotifications }: Props) {
                                                 </div>
 
                                                 {n.subtitle && (
-                                                    <p className="text-sm text-slate-600">
+                                                    <p className="text-sm text-slate-600 dark:text-slate-400">
                                                         {n.subtitle}
                                                     </p>
                                                 )}
 
                                                 <div className="mt-1 flex items-center gap-4">
-                                                    <p className="text-xs font-medium text-slate-400">
+                                                    <p className="text-xs font-medium text-slate-400 dark:text-slate-500">
                                                         {n.created_at
                                                             ? new Date(
                                                                   n.created_at,
@@ -195,22 +217,12 @@ export default function AdminNotifications({ paginatedNotifications }: Props) {
 
                                         {/* Action buttons based on notification type */}
                                         <div className="flex shrink-0">
-                                            {n.type ===
-                                                'admission_slip_requested' && (
+                                            {actionHref && (
                                                 <Link
-                                                    href={adminAdmissionSlip()}
+                                                    href={actionHref}
                                                     className="inline-flex w-full items-center justify-center rounded-lg bg-[#23509A] px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#000D6A] sm:w-auto"
                                                 >
-                                                    Review Request
-                                                </Link>
-                                            )}
-                                            {n.type ===
-                                                'activity_plan_submitted_admin' && (
-                                                <Link
-                                                    href="/admin/events?status=pending"
-                                                    className="inline-flex w-full items-center justify-center rounded-lg bg-[#23509A] px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#000D6A] sm:w-auto"
-                                                >
-                                                    Review Schedule Request
+                                                    View Details
                                                 </Link>
                                             )}
                                         </div>
@@ -219,16 +231,14 @@ export default function AdminNotifications({ paginatedNotifications }: Props) {
                             })
                         ) : (
                             <div className="flex flex-col items-center justify-center px-4 py-20 text-center">
-                                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
-                                    <Bell className="h-8 w-8 text-slate-300" />
+                                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+                                    <Bell className="h-8 w-8 text-slate-300 dark:text-slate-600" />
                                 </div>
-                                <h3 className="text-lg font-bold text-slate-900">
+                                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                                     All caught up!
                                 </h3>
-                                <p className="mt-1 max-w-sm text-sm text-slate-500">
-                                    You don't have any notifications at the
-                                    moment. We'll let you know when there's
-                                    something new.
+                                <p className="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">
+                                    You don't have any notifications at the moment. We'll let you know when there's an update from administrators.
                                 </p>
                             </div>
                         )}
@@ -238,53 +248,48 @@ export default function AdminNotifications({ paginatedNotifications }: Props) {
                 {/* Pagination */}
                 {paginatedNotifications.last_page > 1 && (
                     <div className="flex items-center justify-between">
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
                             Showing page{' '}
-                            <span className="font-medium text-slate-900">
+                            <span className="font-medium text-slate-900 dark:text-white">
                                 {paginatedNotifications.current_page}
                             </span>{' '}
                             of{' '}
-                            <span className="font-medium text-slate-900">
+                            <span className="font-medium text-slate-900 dark:text-white">
                                 {paginatedNotifications.last_page}
                             </span>
                         </p>
+                        <div className="flex items-center gap-2">
+                            {paginatedNotifications.prev_page_url ? (
+                                <Link href={paginatedNotifications.prev_page_url}>
+                                    <Button variant="outline" size="sm" className="dark:border-slate-700 dark:bg-slate-800">
+                                        <ChevronLeft className="mr-1 h-4 w-4" />
+                                        Previous
+                                    </Button>
+                                </Link>
+                            ) : (
+                                <Button variant="outline" size="sm" disabled className="dark:border-slate-700 dark:bg-slate-800">
+                                    <ChevronLeft className="mr-1 h-4 w-4" />
+                                    Previous
+                                </Button>
+                            )}
 
-                        <div className="flex gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={!paginatedNotifications.prev_page_url}
-                                onClick={() =>
-                                    paginatedNotifications.prev_page_url &&
-                                    router.get(
-                                        paginatedNotifications.prev_page_url,
-                                        {},
-                                        { preserveScroll: true },
-                                    )
-                                }
-                            >
-                                <ChevronLeft className="mr-1 h-4 w-4" />{' '}
-                                Previous
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={!paginatedNotifications.next_page_url}
-                                onClick={() =>
-                                    paginatedNotifications.next_page_url &&
-                                    router.get(
-                                        paginatedNotifications.next_page_url,
-                                        {},
-                                        { preserveScroll: true },
-                                    )
-                                }
-                            >
-                                Next <ChevronRight className="ml-1 h-4 w-4" />
-                            </Button>
+                            {paginatedNotifications.next_page_url ? (
+                                <Link href={paginatedNotifications.next_page_url}>
+                                    <Button variant="outline" size="sm" className="dark:border-slate-700 dark:bg-slate-800">
+                                        Next
+                                        <ChevronRight className="ml-1 h-4 w-4" />
+                                    </Button>
+                                </Link>
+                            ) : (
+                                <Button variant="outline" size="sm" disabled className="dark:border-slate-700 dark:bg-slate-800">
+                                    Next
+                                    <ChevronRight className="ml-1 h-4 w-4" />
+                                </Button>
+                            )}
                         </div>
                     </div>
                 )}
             </div>
-        </AdminLayout>
+        </ProgramHeadLayout>
     );
 }

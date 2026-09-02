@@ -477,5 +477,83 @@ export function useManageUsers(errors: Record<string, string> = {}) {
                 },
             );
         },
+        approveProgramHead: (phId: number) => {
+            router.put(
+                `/admin/manage-users/program-heads/${phId}/verification/approve`,
+                { status: 'approved' },
+                {
+                    preserveScroll: true,
+                    preserveState: false,
+                    onSuccess: () => {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Approved',
+                            text: 'Program Head account has been approved.',
+                            timer: 2000,
+                            showConfirmButton: false,
+                        });
+                    },
+                    onError: () => {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Approval failed',
+                            text: 'Unable to approve the account. Please try again.',
+                        });
+                    },
+                },
+            );
+        },
+        rejectProgramHead: (phId: number) => {
+            router.put(
+                `/admin/manage-users/program-heads/${phId}/verification/reject`,
+                { status: 'rejected' },
+                {
+                    preserveScroll: true,
+                    preserveState: false,
+                    onSuccess: () => {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Rejected',
+                            text: 'Program Head account has been rejected.',
+                            timer: 2000,
+                            showConfirmButton: false,
+                        });
+                    },
+                    onError: () => {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Rejection failed',
+                            text: 'Unable to reject the account. Please try again.',
+                        });
+                    },
+                },
+            );
+        },
+        setPendingProgramHead: (phId: number) => {
+            router.put(
+                `/admin/manage-users/program-heads/${phId}/verification/approve`,
+                { status: 'pending' },
+                {
+                    preserveScroll: true,
+                    preserveState: false,
+                    onSuccess: () => {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Pending',
+                            text: 'Program Head account has been set to pending.',
+                            timer: 2000,
+                            showConfirmButton: false,
+                        });
+                    },
+                    onError: () => {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Update failed',
+                            text: 'Unable to set account to pending. Please try again.',
+                        });
+                    },
+                },
+            );
+        },
     };
 }

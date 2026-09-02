@@ -21,6 +21,7 @@ import {
     UserCheck,
 } from 'lucide-react';
 import type { IncidentRow } from './types';
+import StudentCallingProcessFlow from './StudentCallingProcessFlow';
 
 interface DisciplinaryCaseDetailDialogProps {
     open: boolean;
@@ -212,6 +213,13 @@ export default function DisciplinaryCaseDetailDialog({
                                     </div>
                                 </CardContent>
                             </Card>
+
+                            {/* Card 1.5: Student Calling Process Tracker */}
+                            <StudentCallingProcessFlow
+                                currentPhase={(incident as any).calling_phase ?? (incident.status === 'Resolved' ? 8 : (incident.status === 'Escalated' ? 7 : (incident.status === 'Ongoing' ? 4 : 1)))}
+                                incidentId={incident.id}
+                                editable={true}
+                            />
 
                             {/* Card 2: Statutory Reference */}
                             <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-[#0F213A]">

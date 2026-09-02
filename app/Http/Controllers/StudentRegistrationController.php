@@ -125,4 +125,84 @@ class StudentRegistrationController extends Controller
         Session::forget('registration_data');
         return redirect()->route('login');
     }
+
+    public function register(Request $request)
+    {
+        \Log::info('Unified registration request:', $request->all());
+
+        $role = $request->input('role');
+
+        $rules = [
+            'role' => 'required|in:student,program_head,admin',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'password' => 'required|min:8|confirmed',
+        ];
+
+        if ($role === 'student') {
+            $rules['student_id'] = 'required|string|max:50|unique:students,student_id';
+            $rules['course'] = 'required|string|max:255';
+            $rules['email'] .= '|unique:students,email';
+        } elseif ($role === 'program_head') {
+            $rules['student_id'] = 'required|string|max:50'; 
+            $rules['course'] = 'required|string|max:255';
+            $rules['email'] .= '|unique:program_heads,email';
+        } elseif ($role === 'admin') {
+            $rules['student_id'] = 'required|string|max:50'; 
+            $rules['email'] .= '|unique:admin_users,email';
+        }
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            \Log::error('Registration validation errors:', $validator->errors()->toArray());
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        try {
+            if ($role === 'student') {
+                $student = Student::create([
+                    'name'         => $request->name,
+                    'email'        => $request->email,
+                    'password'     => bcrypt($request->password),
+                    'student_id'   => $request->student_id,
+                    'course'       => $request->course,
+                    'year_level'   => '1st Year',
+                    'role'         => 'student',
+                    'is_active'    => false,
+                    'status'       => 'pending',
+                    'verification_status' => 'pending',
+                ]);
+                \Log::info('Registered Student successfully:', ['id' => $student->id, 'email' => $student->email]);
+            } elseif ($role === 'program_head') {
+                $ph = \App\Models\ProgramHead::create([
+                    'name' => $request->name,
+                    'email' => $request->email,
+                    'password' => bcrypt($request->password),
+                    'program' => $request->course,
+                    'verification_status' => 'pending',
+                ]);
+                \Log::info('Registered Program Head successfully:', ['id' => $ph->id, 'email' => $ph->email]);
+            } elseif ($role === 'admin') {
+                $admin = \App\Models\AdminUser::create([
+                    'name' => $request->name,
+                    'email' => $request->email,
+                    'password' => bcrypt($request->password),
+                ]);
+                \Log::info('Registered Admin successfully:', ['id' => $admin->id, 'email' => $admin->email]);
+            }
+
+            session()->flash('status', 'Registration successful! Your account is pending verification and approval.');
+
+            return redirect()->route('login');
+
+        } catch (\Exception $e) {
+            \Log::error('Registration failed with exception:', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+            return redirect()->back()->withErrors(['email' => 'Registration failed: ' . $e->getMessage()])->withInput();
+        }
+    }
 }

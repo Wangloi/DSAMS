@@ -25,11 +25,12 @@ import {
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
-import { adminDashboard, adminNotifications } from '@/routes';
+import { adminDashboard, adminNotifications, adminHelp } from '@/routes';
 import type { SharedData } from '@/types';
 import { Link, router, usePage } from '@inertiajs/react';
 import axios from 'axios';
 import {
+    ArrowRight,
     Bell,
     BookOpen,
     CheckCircle2,
@@ -39,6 +40,7 @@ import {
     Mail,
     Menu,
     Shield,
+    Users,
     X,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -141,6 +143,12 @@ export function AdminHeader() {
         if (n.type === 'evaluation_available') {
             return '/admin/evaluation';
         }
+        if (n.type === 'activity_plan_submitted_admin') {
+            return '/admin/events?status=pending';
+        }
+        if (n.type === 'activity_plan_status_updated') {
+            return '/admin/events';
+        }
         return null;
     };
 
@@ -200,7 +208,7 @@ export function AdminHeader() {
                         </SheetTrigger>
                         <SheetContent
                             side="left"
-                            className="w-72 border-r border-slate-200 bg-white p-0 dark:border-white/10 dark:bg-[#0B192C]"
+                            className="w-72 border-r border-slate-200 bg-white p-0 dark:border-white/10 dark:bg-[#0B192C] [&>button]:hidden"
                         >
                             <SheetHeader className="sr-only">
                                 <SheetTitle>Navigation Menu</SheetTitle>
@@ -298,178 +306,80 @@ export function AdminHeader() {
                                 <HelpCircle className="h-4 w-4 sm:h-5 sm:w-5" />
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 text-slate-900 shadow-xl dark:border-white/10 dark:bg-[#0B192C] dark:text-white">
-                            <DialogHeader>
-                                <div className="flex items-center gap-3">
-                                    <div className="rounded-xl bg-blue-600/10 p-2.5 text-blue-600 dark:bg-blue-400/10 dark:text-blue-400">
-                                        <LifeBuoy className="h-6 w-6" />
+                        <DialogContent className="max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 text-slate-900 shadow-xl dark:border-white/10 dark:bg-[#0B192C] dark:text-white">
+                            <div className="relative overflow-hidden bg-gradient-to-br from-[#0b1c5c] to-[#23509A] px-6 py-8 text-white">
+                                <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/5 pointer-events-none" />
+                                <div className="relative flex items-center gap-3">
+                                    <div className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 text-white backdrop-blur-md">
+                                        <LifeBuoy className="h-5 w-5" />
                                     </div>
                                     <div>
-                                        <DialogTitle className="text-lg font-bold">
-                                            Admin System User Guide
+                                        <DialogTitle className="text-base font-bold">
+                                            Admin Quick Help Guide
                                         </DialogTitle>
-                                        <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-                                            Step-by-step guide on how to use
-                                            each page in the Admin Dashboard
+                                        <DialogDescription className="text-xs text-blue-200/80">
+                                            Access help topics, troubleshooting and support
                                         </DialogDescription>
                                     </div>
                                 </div>
-                            </DialogHeader>
+                            </div>
 
-                            <div className="mt-4 space-y-4 text-sm leading-relaxed">
-                                {/* 1. Dashboard Overview */}
-                                <div className="space-y-2 rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-white/5 dark:bg-white/5">
-                                    <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-blue-700 uppercase dark:text-blue-400">
-                                        <BookOpen className="h-4 w-4" />
-                                        <span>1. Main Dashboard</span>
+                            <div className="p-5 space-y-4">
+                                <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                                    Welcome to the OSAMS Administrator Support. Get quick help on key system modules or navigate to the full guidelines center for detailed manuals.
+                                </p>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-800/40">
+                                        <div className="mt-0.5 rounded-lg bg-blue-50 p-1.5 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+                                            <CheckCircle2 className="h-3.5 w-3.5" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-[11px] font-bold text-slate-800 dark:text-white">Attendance</h4>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal mt-0.5">QR scans and geofence tracking</p>
+                                        </div>
                                     </div>
-                                    <ul className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
-                                        <li>
-                                            • <strong>System Stats:</strong>{' '}
-                                            View total registered students,
-                                            active events, today's attendance
-                                            rates, and pending user approvals.
-                                        </li>
-                                        <li>
-                                            •{' '}
-                                            <strong>Quick Action Panel:</strong>{' '}
-                                            Access shortcuts to create new
-                                            events, register users, or view
-                                            recent activity logs.
-                                        </li>
-                                    </ul>
+
+                                    <div className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-800/40">
+                                        <div className="mt-0.5 rounded-lg bg-indigo-50 p-1.5 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
+                                            <Users className="h-3.5 w-3.5" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-[11px] font-bold text-slate-800 dark:text-white">Accounts</h4>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal mt-0.5">Approvals and bulk CSV imports</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-800/40">
+                                        <div className="mt-0.5 rounded-lg bg-purple-50 p-1.5 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400">
+                                            <BookOpen className="h-3.5 w-3.5" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-[11px] font-bold text-slate-800 dark:text-white">Evaluations</h4>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal mt-0.5">Seminars evaluation & ratings</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-800/40">
+                                        <div className="mt-0.5 rounded-lg bg-rose-50 p-1.5 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
+                                            <Shield className="h-3.5 w-3.5" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-[11px] font-bold text-slate-800 dark:text-white">Infractions</h4>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal mt-0.5">Violations & thermal slips</p>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                {/* 2. Attendance & QR Scanner */}
-                                <div className="space-y-2 rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-white/5 dark:bg-white/5">
-                                    <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-blue-700 uppercase dark:text-blue-400">
-                                        <CheckCircle2 className="h-4 w-4" />
-                                        <span>2. Attendance & QR Scanner</span>
-                                    </div>
-                                    <ul className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
-                                        <li>
-                                            • <strong>Select Event:</strong>{' '}
-                                            Pick an ongoing or upcoming event
-                                            from the dropdown to start
-                                            monitoring.
-                                        </li>
-                                        <li>
-                                            •{' '}
-                                            <strong>
-                                                Live Camera Scanner:
-                                            </strong>{' '}
-                                            Click "Start Scanner" to scan
-                                            student QR codes using your device
-                                            camera.
-                                        </li>
-                                        <li>
-                                            • <strong>Activate Portal:</strong>{' '}
-                                            Click "Activate Scanner Portal" to
-                                            allow assigned student scanners or
-                                            students to scan via their portal.
-                                        </li>
-                                        <li>
-                                            • <strong>Geofencing:</strong> Set
-                                            latitude, longitude, and radius (in
-                                            meters) to restrict check-ins
-                                            strictly within venue bounds.
-                                        </li>
-                                    </ul>
-                                </div>
-
-                                {/* 3. User Management */}
-                                <div className="space-y-2 rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-white/5 dark:bg-white/5">
-                                    <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-blue-700 uppercase dark:text-blue-400">
-                                        <Shield className="h-4 w-4" />
-                                        <span>3. Manage Users</span>
-                                    </div>
-                                    <ul className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
-                                        <li>
-                                            • <strong>Approve Students:</strong>{' '}
-                                            Review newly registered students
-                                            under the "Pending Approvals" tab
-                                            and approve or reject their
-                                            accounts.
-                                        </li>
-                                        <li>
-                                            •{' '}
-                                            <strong>Add / Bulk Import:</strong>{' '}
-                                            Create individual accounts or upload
-                                            CSV spreadsheets for batch student
-                                            registration.
-                                        </li>
-                                        <li>
-                                            •{' '}
-                                            <strong>
-                                                Program Heads & Admins:
-                                            </strong>{' '}
-                                            Assign Program Heads to specific
-                                            departments (e.g., Computer Science,
-                                            Engineering).
-                                        </li>
-                                    </ul>
-                                </div>
-
-                                {/* 4. Events & Evaluations */}
-                                <div className="space-y-2 rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-white/5 dark:bg-white/5">
-                                    <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-blue-700 uppercase dark:text-blue-400">
-                                        <BookOpen className="h-4 w-4" />
-                                        <span>
-                                            4. Events & Feedback Evaluations
-                                        </span>
-                                    </div>
-                                    <ul className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
-                                        <li>
-                                            • <strong>Create Event:</strong> Set
-                                            event title, date, time-in/out,
-                                            target courses, and year levels.
-                                        </li>
-                                        <li>
-                                            • <strong>Feedback Forms:</strong>{' '}
-                                            Create evaluation questionnaires
-                                            linked to events to collect student
-                                            feedback ratings & comments.
-                                        </li>
-                                    </ul>
-                                </div>
-
-                                {/* 5. Violations & Admission Slips */}
-                                <div className="space-y-2 rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-white/5 dark:bg-white/5">
-                                    <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-blue-700 uppercase dark:text-blue-400">
-                                        <Shield className="h-4 w-4" />
-                                        <span>
-                                            5. Incidents, Violations & Admission
-                                            Slips
-                                        </span>
-                                    </div>
-                                    <ul className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
-                                        <li>
-                                            • <strong>Record Violation:</strong>{' '}
-                                            Issue disciplinary reports to
-                                            students for infractions
-                                            (minor/major).
-                                        </li>
-                                        <li>
-                                            • <strong>Admission Slips:</strong>{' '}
-                                            Review admission slip requests,
-                                            approve student returns to class,
-                                            and print official slips.
-                                        </li>
-                                    </ul>
-                                </div>
-
-                                {/* Support Info */}
-                                <div className="space-y-1.5 rounded-xl border border-blue-100 bg-blue-50 p-4 dark:border-blue-900/40 dark:bg-blue-950/40">
-                                    <div className="flex items-center gap-2 text-xs font-semibold text-blue-800 dark:text-blue-300">
-                                        <Mail className="h-4 w-4" />
-                                        <span>System & Technical Support</span>
-                                    </div>
-                                    <p className="text-xs text-blue-900/80 dark:text-blue-300/80">
-                                        For database issues, system
-                                        configuration, or urgent support,
-                                        contact the Student Affairs Office at{' '}
-                                        <strong>dsa@srcb.edu.ph</strong>.
-                                    </p>
+                                <div className="border-t border-slate-100 pt-4 dark:border-slate-800">
+                                    <Link
+                                        href={adminHelp()}
+                                        onClick={() => setHelpOpen(false)}
+                                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/10 transition-all hover:bg-blue-700 hover:shadow-lg"
+                                    >
+                                        View Full System Guide & Docs
+                                        <ArrowRight className="h-3.5 w-3.5" />
+                                    </Link>
                                 </div>
                             </div>
                         </DialogContent>

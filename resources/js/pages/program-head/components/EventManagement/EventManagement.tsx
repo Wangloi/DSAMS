@@ -1,14 +1,19 @@
-import { Head, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import {
     Activity,
+    Calendar,
     CalendarDays,
     CheckCircle2,
     Clock,
+    FileText,
     MapPin,
+    Sparkles,
     Upload,
+    X,
     XCircle,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import Swal from 'sweetalert2';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -41,6 +46,10 @@ interface EventItem {
     event_date: string;
     event_time: string;
     status: EventStatus;
+    approval_status?: string;
+    activity_plan_path?: string;
+    requested_by?: string;
+    rejection_reason?: string;
     courses?: string[];
     year_levels?: string[];
     description?: string;
@@ -121,17 +130,56 @@ export default function EventManagement() {
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
 
+    const isOwnProgramEvent = useMemo(() => {
+        if (!selectedEvent) return false;
+        if (!program) return true; // If program head's program is not set, default to true
+        
+        const targetCourses = selectedEvent.courses ?? [];
+        if (targetCourses.length === 0) return true;
+        
+        const normProgram = program.trim().toUpperCase();
+        return targetCourses.some((c: string) => {
+            const normCourse = c.trim().toUpperCase();
+            return normCourse === normProgram || 
+                   normCourse.includes(normProgram) || 
+                   normProgram.includes(normCourse) ||
+                   normCourse === 'ALL';
+        });
+    }, [selectedEvent, program]);
+
     // Activity Plan Form State
     const [activityPlanTitle, setActivityPlanTitle] = useState('');
+    const [activityPlanLocation, setActivityPlanLocation] = useState('');
+    const [activityPlanDate, setActivityPlanDate] = useState('');
+    const [activityPlanTime, setActivityPlanTime] = useState('08:00');
     const [activityPlanDescription, setActivityPlanDescription] = useState('');
     const [activityPlanFile, setActivityPlanFile] = useState<File | null>(null);
+    const [isSubmittingPlan, setIsSubmittingPlan] = useState(false);
+
+    // Auto-select event from URL query params (e.g. from notifications)
+    useMemo(() => {
+        if (typeof window === 'undefined') return;
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlEventId = urlParams.get('event_id') || urlParams.get('eventId');
+        const urlStatus = urlParams.get('status');
+
+        if (urlEventId && !selectedEvent) {
+            const foundEvent = events.find((e: EventItem) => String(e.id) === String(urlEventId));
+            if (foundEvent) {
+                setSelectedEvent(foundEvent);
+            }
+        }
+        if (urlStatus && !statusFilter) {
+            setStatusFilter(urlStatus as EventStatus);
+        }
+    }, [events]);
 
     const summary = useMemo(() => {
         return {
             total: events.length,
-            upcoming: events.filter((e: EventItem) => e.status === 'upcoming')
+            upcoming: events.filter((e: EventItem) => e.status === 'upcoming' && e.approval_status !== 'pending' && e.approval_status !== 'rejected')
                 .length,
-            pending: events.filter((e: EventItem) => e.status === 'pending')
+            pending: events.filter((e: EventItem) => e.approval_status === 'pending' || e.status === 'pending')
                 .length,
             completed: events.filter((e: EventItem) => e.status === 'completed')
                 .length,
@@ -147,7 +195,11 @@ export default function EventManagement() {
                 e.location.toLowerCase().includes(q) ||
                 (e.organizer ?? '').toLowerCase().includes(q);
 
-            const matchesStatus = !statusFilter || e.status === statusFilter;
+            const effectiveStatus = (e.approval_status === 'pending' || e.approval_status === 'rejected')
+                ? e.approval_status
+                : e.status;
+
+            const matchesStatus = !statusFilter || effectiveStatus === statusFilter || e.status === statusFilter || e.approval_status === statusFilter;
 
             return matchesSearch && matchesStatus;
         });
@@ -191,31 +243,92 @@ export default function EventManagement() {
         };
     };
 
+    const handleDateSelect = (selectInfo: any) => {
+        const [datePart] = selectInfo.startStr.split('T');
+        setActivityPlanDate(datePart);
+        setShowActivityPlanModal(true);
+    };
+
     const handleActivityPlanSubmit = () => {
-        if (!activityPlanTitle.trim() || !activityPlanFile) {
-            alert('Please fill all required fields');
+        if (!activityPlanTitle.trim() || !activityPlanDate || !activityPlanLocation.trim()) {
+            Swal.fire({
+                title: 'Missing Required Fields',
+                text: 'Please provide event title, date, and venue location.',
+                icon: 'warning',
+                confirmButtonColor: '#1e40af',
+            });
             return;
         }
 
-        console.log('Activity Plan Submitted:', {
-            title: activityPlanTitle,
-            description: activityPlanDescription,
-            file: activityPlanFile,
-        });
+        setIsSubmittingPlan(true);
 
-        // Reset form
-        setActivityPlanTitle('');
-        setActivityPlanDescription('');
-        setActivityPlanFile(null);
-        setShowActivityPlanModal(false);
+        const formData = new FormData();
+        formData.append('event_name', activityPlanTitle);
+        formData.append('location', activityPlanLocation);
+        formData.append('event_date', activityPlanDate);
+        formData.append('event_time', activityPlanTime || '08:00');
+        formData.append('description', activityPlanDescription || '');
+
+        if (activityPlanFile) {
+            formData.append('activity_plan', activityPlanFile);
+        }
+
+        router.post('/program-head/calendar-events', formData, {
+            onSuccess: () => {
+                setIsSubmittingPlan(false);
+                Swal.fire({
+                    title: 'Schedule Request Submitted!',
+                    text: 'Your activity plan and proposed schedule have been submitted. System administrators have been notified for review and approval.',
+                    icon: 'success',
+                    confirmButtonColor: '#1e40af',
+                });
+                setActivityPlanTitle('');
+                setActivityPlanLocation('');
+                setActivityPlanDate('');
+                setActivityPlanTime('08:00');
+                setActivityPlanDescription('');
+                setActivityPlanFile(null);
+                setShowActivityPlanModal(false);
+            },
+            onError: () => {
+                setIsSubmittingPlan(false);
+                Swal.fire({
+                    title: 'Submission Failed',
+                    text: 'Please check your inputs and try again.',
+                    icon: 'error',
+                    confirmButtonColor: '#dc2626',
+                });
+            },
+        });
     };
+
+function formatToIsoStart(dateStr: string, timeStr: string): string {
+    if (!dateStr) return '';
+    const cleanDate = dateStr.split('T')[0];
+    if (!timeStr) return cleanDate;
+
+    let time = timeStr.trim().toUpperCase();
+    const isPM = time.includes('PM');
+    const isAM = time.includes('AM');
+    time = time.replace(/(AM|PM)/g, '').trim();
+
+    const parts = time.split(':');
+    let hours = parseInt(parts[0] || '0', 10);
+    const minutes = parts[1] ? parts[1].padStart(2, '0') : '00';
+
+    if (isPM && hours < 12) hours += 12;
+    if (isAM && hours === 12) hours = 0;
+
+    const formattedHours = String(hours).padStart(2, '0');
+    return `${cleanDate}T${formattedHours}:${minutes}:00`;
+}
 
     const calendarEvents = useMemo(
         () =>
             events.map((e: EventItem) => ({
                 id: e.id,
                 title: e.event_name,
-                start: `${e.event_date.split('T')[0]}T${e.event_time}`,
+                start: formatToIsoStart(e.event_date, e.event_time),
                 backgroundColor: getEventHexColor(e.courses ?? []),
                 borderColor: getEventHexColor(e.courses ?? []),
             })),
@@ -550,13 +663,20 @@ export default function EventManagement() {
                                         ))}
                                     </div>
                                 </div>
-                                <div className="p-6">
-                                    {/* FullCalendar Wrapper */}
-                                    <div className="mx-auto h-[650px] max-w-5xl rounded-xl border border-slate-100 bg-slate-50/50 p-2 dark:border-slate-800 dark:bg-slate-900/50">
+                                <div className="p-4">
+                                    <div className="h-[640px] rounded-2xl border border-slate-200/80 bg-white/70 p-2 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-[#0B192C]/40">
                                         <FullCalendarWrapper
                                             events={calendarEvents}
-                                            selectable={false}
+                                            selectable={true}
                                             editable={false}
+                                            onDateSelect={handleDateSelect}
+                                            onEventClick={(clickInfo) => {
+                                                const eventId = clickInfo.event.id;
+                                                const foundEvent = events.find((e: EventItem) => String(e.id) === String(eventId));
+                                                if (foundEvent) {
+                                                    setSelectedEvent(foundEvent);
+                                                }
+                                            }}
                                         />
                                     </div>
                                 </div>
@@ -721,12 +841,16 @@ export default function EventManagement() {
                                                                     className={cn(
                                                                         'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm',
                                                                         getStatusBadge(
-                                                                            event.status,
+                                                                            (event.approval_status === 'pending' || event.approval_status === 'rejected')
+                                                                                ? (event.approval_status as EventStatus)
+                                                                                : event.status,
                                                                         ),
                                                                     )}
                                                                 >
                                                                     {
-                                                                        event.status
+                                                                        (event.approval_status === 'pending' || event.approval_status === 'rejected')
+                                                                            ? event.approval_status
+                                                                            : event.status
                                                                     }
                                                                 </span>
                                                             </td>
@@ -745,71 +869,338 @@ export default function EventManagement() {
 
             {/* Upload Activity Plan Modal */}
             {showActivityPlanModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                    <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl dark:bg-slate-900">
-                        <div className="border-b border-slate-200 px-6 py-4 dark:border-slate-700">
-                            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                                Upload Activity Plan
-                            </h2>
-                        </div>
-                        <div className="space-y-4 p-6">
-                            <div>
-                                <label className="mb-2 block text-xs font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400">
-                                    Activity Plan Title
-                                </label>
-                                <Input
-                                    placeholder="Enter title"
-                                    value={activityPlanTitle}
-                                    onChange={(e) =>
-                                        setActivityPlanTitle(e.target.value)
-                                    }
-                                    className="h-9 border border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-800"
-                                />
-                            </div>
-                            <div>
-                                <label className="mb-2 block text-xs font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400">
-                                    Description
-                                </label>
-                                <textarea
-                                    placeholder="Enter description"
-                                    value={activityPlanDescription}
-                                    onChange={(e) =>
-                                        setActivityPlanDescription(
-                                            e.target.value,
-                                        )
-                                    }
-                                    className="h-20 w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-                                />
-                            </div>
-                            <div>
-                                <label className="mb-2 block text-xs font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400">
-                                    Document Upload (PDF, DOC, DOCX)
-                                </label>
-                                <input
-                                    type="file"
-                                    accept=".pdf,.doc,.docx"
-                                    onChange={(e) =>
-                                        setActivityPlanFile(
-                                            e.target.files?.[0] ?? null,
-                                        )
-                                    }
-                                    className="w-full text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-sm file:font-bold file:text-white hover:file:bg-blue-700 dark:text-slate-400"
-                                />
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-4 pt-16 sm:pt-20 pb-6 backdrop-blur-md transition-all duration-300 sm:p-6">
+                    <div className="mx-auto flex max-h-[82vh] w-full max-w-xl animate-in flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xl duration-200 zoom-in-95 dark:border-slate-800 dark:bg-slate-900">
+                        {/* Premium Header Banner */}
+                        <div className="relative shrink-0 overflow-hidden border-b border-blue-900/30 bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 px-6 py-4 text-white sm:px-8">
+                            <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl" />
+                            <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" />
+
+                            <div className="relative flex items-center justify-between">
+                                <div className="flex items-center gap-3.5">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-blue-400/30 bg-blue-500/20 text-blue-300 shadow-inner">
+                                        <FileText className="h-5 w-5" />
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <h2 className="text-base font-bold tracking-tight text-white sm:text-lg">
+                                                Submit Activity Plan
+                                            </h2>
+                                            <span className="inline-flex items-center rounded-full border border-blue-400/20 bg-blue-500/20 px-2.5 py-0.5 text-[11px] font-medium text-blue-300">
+                                                Schedule Proposal
+                                            </span>
+                                        </div>
+                                        <p className="mt-0.5 text-xs text-slate-300/90">
+                                            Submit event parameters and official proposal docs for Administrator review.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setShowActivityPlanModal(false)}
+                                    className="rounded-full p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
                             </div>
                         </div>
-                        <div className="flex justify-end gap-2 border-t border-slate-200 px-6 py-4 dark:border-slate-700">
+
+                        {/* Modal Body Form */}
+                        <div className="flex-1 overflow-y-auto min-h-0 space-y-4 p-5 sm:p-6 bg-slate-50/40 dark:bg-slate-900/40">
+                            <div className="rounded-xl border border-slate-200/80 bg-white p-4 space-y-4 shadow-sm dark:border-slate-800 dark:bg-slate-800/60">
+                                <div>
+                                    <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-black tracking-wider text-slate-500 uppercase dark:text-slate-400">
+                                        <Calendar className="h-3.5 w-3.5 text-blue-500" />
+                                        Event / Activity Title *
+                                    </label>
+                                    <Input
+                                        placeholder="e.g. IT Department Annual Tech Summit 2026"
+                                        value={activityPlanTitle}
+                                        onChange={(e) => setActivityPlanTitle(e.target.value)}
+                                        className="h-10 rounded-xl border border-slate-200 bg-white text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-black tracking-wider text-slate-500 uppercase dark:text-slate-400">
+                                        <MapPin className="h-3.5 w-3.5 text-blue-500" />
+                                        Proposed Venue / Location *
+                                    </label>
+                                    <Input
+                                        placeholder="e.g. Main Campus Gymnasium / AVR Hall 2"
+                                        value={activityPlanLocation}
+                                        onChange={(e) => setActivityPlanLocation(e.target.value)}
+                                        className="h-10 rounded-xl border border-slate-200 bg-white text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-black tracking-wider text-slate-500 uppercase dark:text-slate-400">
+                                            <Clock className="h-3.5 w-3.5 text-blue-500" />
+                                            Proposed Date *
+                                        </label>
+                                        <Input
+                                            type="date"
+                                            value={activityPlanDate}
+                                            onChange={(e) => setActivityPlanDate(e.target.value)}
+                                            className="h-10 rounded-xl border border-slate-200 bg-white text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-black tracking-wider text-slate-500 uppercase dark:text-slate-400">
+                                            <Clock className="h-3.5 w-3.5 text-blue-500" />
+                                            Start Time *
+                                        </label>
+                                        <Input
+                                            type="time"
+                                            value={activityPlanTime}
+                                            onChange={(e) => setActivityPlanTime(e.target.value)}
+                                            className="h-10 rounded-xl border border-slate-200 bg-white text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="mb-1.5 block text-[11px] font-black tracking-wider text-slate-500 uppercase dark:text-slate-400">
+                                        Description & Objectives
+                                    </label>
+                                    <textarea
+                                        placeholder="Briefly outline event objectives, schedule, or expected participants..."
+                                        value={activityPlanDescription}
+                                        onChange={(e) => setActivityPlanDescription(e.target.value)}
+                                        className="h-20 w-full resize-none rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-slate-500"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Document File Attachment Box */}
+                            <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-800/60">
+                                <label className="mb-2 block text-[11px] font-black tracking-wider text-slate-500 uppercase dark:text-slate-400">
+                                    Attach Official Activity Plan (PDF / Word / Image)
+                                </label>
+
+                                <div className="relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-4 transition-colors hover:border-blue-400 dark:border-slate-700 dark:bg-slate-900/50 dark:hover:border-blue-500">
+                                    <Upload className="mb-2 h-7 w-7 text-blue-500" />
+                                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                        {activityPlanFile ? activityPlanFile.name : 'Click to upload activity proposal document'}
+                                    </p>
+                                    <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
+                                        Supports PDF, DOC, DOCX, PNG, JPG (Max 10MB)
+                                    </p>
+                                    <input
+                                        type="file"
+                                        accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                                        onChange={(e) => setActivityPlanFile(e.target.files?.[0] ?? null)}
+                                        className="absolute inset-0 cursor-pointer opacity-0"
+                                    />
+                                </div>
+                                {activityPlanFile && (
+                                    <div className="mt-2.5 flex items-center justify-between rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60">
+                                        <span className="truncate">✓ {activityPlanFile.name} ({(activityPlanFile.size / 1024 / 1024).toFixed(2)} MB)</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setActivityPlanFile(null)}
+                                            className="text-xs font-bold hover:underline"
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Modal Footer Actions */}
+                        <div className="flex items-center justify-end gap-3 border-t border-slate-200/80 bg-slate-50 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/80">
                             <Button
                                 variant="outline"
                                 onClick={() => setShowActivityPlanModal(false)}
-                                className="border-slate-200 dark:border-slate-600"
+                                disabled={isSubmittingPlan}
+                                className="h-10 rounded-xl border-slate-300 font-semibold dark:border-slate-700"
                             >
                                 Cancel
                             </Button>
                             <Button
                                 onClick={handleActivityPlanSubmit}
-                                className="bg-blue-600 text-white hover:bg-blue-700"
+                                disabled={isSubmittingPlan}
+                                className="h-10 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 px-6 font-bold text-white shadow-lg shadow-blue-500/25 transition-all hover:from-blue-700 hover:to-indigo-700 hover:shadow-blue-500/35"
                             >
-                                Submit
+                                <Upload className="mr-2 h-4 w-4" />
+                                {isSubmittingPlan ? 'Submitting...' : 'Submit Request'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Event Details View Modal */}
+            {selectedEvent && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-4 pt-16 sm:pt-20 pb-6 backdrop-blur-md transition-all duration-300 sm:p-6">
+                    <div className="mx-auto flex max-h-[82vh] w-full max-w-xl animate-in flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xl duration-200 zoom-in-95 dark:border-slate-800 dark:bg-slate-900">
+                        {/* Header Banner */}
+                        <div className="relative shrink-0 overflow-hidden border-b border-blue-900/30 bg-gradient-to-r from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] px-6 py-5 text-white sm:px-8">
+                            <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl" />
+                            <div className="relative flex items-start justify-between gap-4">
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <Badge
+                                            className={cn(
+                                                'px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider',
+                                                selectedEvent.approval_status === 'pending'
+                                                    ? 'bg-amber-400/20 text-amber-300 border-amber-400/30'
+                                                    : selectedEvent.approval_status === 'rejected'
+                                                    ? 'bg-rose-400/20 text-rose-300 border-rose-400/30'
+                                                    : 'bg-emerald-400/20 text-emerald-300 border-emerald-400/30'
+                                            )}
+                                        >
+                                            {selectedEvent.approval_status === 'pending'
+                                                ? 'Pending Admin Approval'
+                                                : selectedEvent.approval_status === 'rejected'
+                                                ? 'Schedule Rejected'
+                                                : 'Approved Schedule'}
+                                        </Badge>
+                                    </div>
+                                    <h2 className="mt-2 text-xl font-bold tracking-tight text-white">
+                                        {selectedEvent.event_name}
+                                    </h2>
+                                    <p className="mt-1 text-xs text-blue-200/90">
+                                        Organized by: {selectedEvent.organizer || 'Program Head'}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedEvent(null)}
+                                    className="rounded-full p-2 text-blue-200 transition-colors hover:bg-white/10 hover:text-white"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Modal Body */}
+                        <div className="flex-1 overflow-y-auto min-h-0 space-y-4 p-5 sm:p-6 bg-slate-50/50 dark:bg-slate-900/50">
+                            {/* Status Alert Banner */}
+                            {selectedEvent.approval_status === 'pending' && isOwnProgramEvent && (
+                                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300">
+                                    <div className="flex items-start gap-3">
+                                        <Clock className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                                        <div>
+                                            <h4 className="text-xs font-bold">Schedule Request Pending Review</h4>
+                                            <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-400/90 leading-relaxed">
+                                                This event schedule and activity plan proposal have been submitted to Administrators for approval. Once approved, it will be officially published on campus calendars.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {selectedEvent.approval_status === 'rejected' && isOwnProgramEvent && (
+                                <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-300">
+                                    <div className="flex items-start gap-3">
+                                        <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-rose-600 dark:text-rose-400" />
+                                        <div>
+                                            <h4 className="text-xs font-bold">Schedule Request Rejected</h4>
+                                            {selectedEvent.rejection_reason && (
+                                                <p className="mt-1 text-xs text-rose-700 dark:text-rose-300 font-semibold bg-rose-100/60 p-2 rounded-lg dark:bg-rose-900/40">
+                                                    Reason: "{selectedEvent.rejection_reason}"
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Event Details Grid */}
+                            <div className="grid grid-cols-2 gap-4 rounded-xl border border-slate-200/80 bg-white p-4 dark:border-slate-800 dark:bg-slate-800/60">
+                                <div>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Date & Time</span>
+                                    <p className="mt-1 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                                        {new Date(selectedEvent.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at {selectedEvent.event_time}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Venue Location</span>
+                                    <p className="mt-1 text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+                                        <MapPin className="h-3.5 w-3.5 text-blue-500" />
+                                        {selectedEvent.location}
+                                    </p>
+                                </div>
+
+                                {selectedEvent.courses && selectedEvent.courses.length > 0 && (
+                                    <div>
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Target Programs</span>
+                                        <div className="mt-1 flex flex-wrap gap-1">
+                                            {selectedEvent.courses.map((c) => (
+                                                <Badge key={c} variant="secondary" className="text-[10px] px-2 py-0.5">
+                                                    {c}
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selectedEvent.year_levels && selectedEvent.year_levels.length > 0 && (
+                                    <div>
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Year Levels</span>
+                                        <div className="mt-1 flex flex-wrap gap-1">
+                                            {selectedEvent.year_levels.map((y) => (
+                                                <Badge key={y} variant="outline" className="text-[10px] px-2 py-0.5">
+                                                    {y}
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Description */}
+                            {selectedEvent.description && (
+                                <div className="rounded-xl border border-slate-200/80 bg-white p-4 dark:border-slate-800 dark:bg-slate-800/60">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Description & Objectives</span>
+                                    <p className="mt-1.5 text-xs text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">
+                                        {selectedEvent.description}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Attached Activity Plan Document Download */}
+                            {selectedEvent.activity_plan_path && isOwnProgramEvent && (
+                                <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4 dark:border-blue-900/40 dark:bg-blue-950/20">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white">
+                                                <FileText className="h-5 w-5" />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-xs font-bold text-slate-800 dark:text-white">Activity Plan Proposal Document</h4>
+                                                <p className="text-[11px] text-slate-500 dark:text-slate-400">Attached proposal file</p>
+                                            </div>
+                                        </div>
+                                        <a
+                                            href={selectedEvent.activity_plan_path}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            download
+                                            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-blue-700"
+                                        >
+                                            <Upload className="h-3.5 w-3.5 rotate-180" />
+                                            Download Document
+                                        </a>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="flex justify-end border-t border-slate-200/80 bg-slate-50 px-6 py-3 dark:border-slate-800 dark:bg-slate-900">
+                            <Button
+                                variant="outline"
+                                onClick={() => setSelectedEvent(null)}
+                                className="h-9 text-xs rounded-xl"
+                            >
+                                Close Details
                             </Button>
                         </div>
                     </div>

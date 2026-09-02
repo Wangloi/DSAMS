@@ -222,7 +222,7 @@ export default function EventAttendeesModal({
                                                 </Badge>
                                             </div>
                                             <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
-                                                <table className="w-full border-collapse text-left">
+                                                <table className="w-full min-w-max border-collapse text-left">
                                                     <thead className="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/40">
                                                         <tr>
                                                             <th className="w-[20%] px-4 py-3 text-xs font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400">

@@ -34,11 +34,31 @@ class UnifiedLoginController extends Controller
 
         // Try student guard first with student_id, then with email
         if (Auth::guard('student')->attempt(['student_id' => $identifier, 'password' => $password], $remember)) {
+            $user = Auth::guard('student')->user();
+            if ($user->verification_status !== 'approved' && $user->status !== 'approved') {
+                Auth::guard('student')->logout();
+                $msg = ($user->verification_status === 'rejected' || $user->status === 'rejected')
+                    ? 'Your registration has been rejected. Please contact the administrator.'
+                    : 'Your account is pending approval. Please wait for verification.';
+                throw ValidationException::withMessages([
+                    'identifier' => $msg,
+                ]);
+            }
             $request->session()->regenerate();
             $request->session()->flash('status', $successMessages['student']);
             return redirect()->intended($dashboardRoutes['student']);
         }
         if (Auth::guard('student')->attempt(['email' => $identifier, 'password' => $password], $remember)) {
+            $user = Auth::guard('student')->user();
+            if ($user->verification_status !== 'approved' && $user->status !== 'approved') {
+                Auth::guard('student')->logout();
+                $msg = ($user->verification_status === 'rejected' || $user->status === 'rejected')
+                    ? 'Your registration has been rejected. Please contact the administrator.'
+                    : 'Your account is pending approval. Please wait for verification.';
+                throw ValidationException::withMessages([
+                    'identifier' => $msg,
+                ]);
+            }
             $request->session()->regenerate();
             $request->session()->flash('status', $successMessages['student']);
             return redirect()->intended($dashboardRoutes['student']);
@@ -51,8 +71,18 @@ class UnifiedLoginController extends Controller
             return redirect()->intended($dashboardRoutes['admin']);
         }
 
-        // Try program_head guard with email (or username if they use username, but assuming email based on original code)
+        // Try program_head guard with email
         if (Auth::guard('program_head')->attempt(['email' => $identifier, 'password' => $password], $remember)) {
+            $user = Auth::guard('program_head')->user();
+            if ($user->verification_status !== 'approved') {
+                Auth::guard('program_head')->logout();
+                $msg = ($user->verification_status === 'rejected')
+                    ? 'Your registration has been rejected. Please contact the administrator.'
+                    : 'Your account is pending approval. Please wait for verification.';
+                throw ValidationException::withMessages([
+                    'identifier' => $msg,
+                ]);
+            }
             $request->session()->regenerate();
             $request->session()->flash('status', $successMessages['program_head']);
             return redirect()->intended($dashboardRoutes['program_head']);

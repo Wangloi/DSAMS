@@ -21,7 +21,7 @@ export default function LandingPage({ isAuthed, canRegister, stats }: Props) {
         <div>
             <LandingNavbar isAuthed={isAuthed} />
             <LandingHero canRegister={canRegister} />
-            <LandingAbout />
+            <LandingAbout stats={stats} />
             <LandingFeaturesCarousel />
             <LandingCta canRegister={canRegister} stats={stats} />
             <LandingFooter />

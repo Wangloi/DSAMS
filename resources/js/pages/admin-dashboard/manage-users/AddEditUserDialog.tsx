@@ -335,6 +335,7 @@ export default function AddEditUserDialog({
                                         setForm((p) => ({
                                             ...p,
                                             role: value,
+                                            officer_features: value === 'Student' ? [] : (p.officer_features ?? []),
                                         }))
                                     }
                                 >

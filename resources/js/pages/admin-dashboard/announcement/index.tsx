@@ -1048,7 +1048,7 @@ export default function AdminAnnouncementPage() {
                                 <CardContent className="pt-0">
                                     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
                                         <div className="overflow-x-auto">
-                                            <table className="w-full text-left text-sm">
+                                            <table className="w-full min-w-max text-left text-sm">
                                                 <thead className="bg-slate-100 text-slate-700">
                                                     <tr>
                                                         <th className="px-4 py-3 font-medium">

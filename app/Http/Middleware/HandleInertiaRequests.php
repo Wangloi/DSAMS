@@ -146,6 +146,20 @@ class HandleInertiaRequests extends Middleware
                         $subtitle = (string) ($data['subtitle'] ?? $data['message'] ?? '');
                     }
 
+                    if ($type === 'activity_plan_submitted_admin') {
+                        $eventName = (string) ($data['event_name'] ?? '');
+                        $requestedBy = (string) ($data['requested_by'] ?? '');
+                        $subtitle = trim(implode(' • ', array_filter([$eventName, $requestedBy])));
+                        $eventId = $data['event_id'] ?? null;
+                    }
+
+                    if ($type === 'activity_plan_status_updated') {
+                        $eventName = (string) ($data['event_name'] ?? '');
+                        $status = (string) ($data['approval_status'] ?? '');
+                        $subtitle = trim(implode(' • ', array_filter([$eventName, strtoupper($status)])));
+                        $eventId = $data['event_id'] ?? null;
+                    }
+
                     if ($type === 'incident_reported_student') {
                         $incidentType = (string) ($data['incident_type'] ?? '');
                         $subtitle = (string) ($data['subtitle'] ?? $data['message'] ?? '');

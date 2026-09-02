@@ -5,6 +5,7 @@ export const about = () => '/about';
 export const getStarted = () => '/get-started';
 export const dashboard = () => '/dashboard';
 export const studentDashboard = () => '/student-dashboard';
+export const studentHelp = () => '/student/help';
 export const studentNotifications = () => '/student/notifications';
 export const studentAttendanceScannerPortal = (eventId: number | string) =>
     `/student/attendance/scanner-portal/${eventId}`;
@@ -37,6 +38,7 @@ export const programHeadReportsAttendance = () => '/program-head/reports';
 export const programHeadReportsViolations = () => '/program-head/reports';
 export const programHeadCalendarEvents = () => '/program-head/calendar-events';
 export const programHeadActivityLog = () => '/program-head/activity-log';
+export const programHeadHelp = () => '/program-head/help';
 export const adminDashboard = () => '/admin-dashboard';
 export const adminNotifications = () => '/admin/notifications';
 export const adminEvents = () => '/admin/events';
@@ -154,6 +156,7 @@ export const adminAnnouncementUnarchive = (id: number | string) =>
     `/admin/announcement/${id}/unarchive`;
 export const adminAnalytics = () => '/admin/analytics';
 export const adminReports = () => '/admin/reports';
+export const adminHelp = () => '/admin/help';
 export const adminLostFound = () => '/admin/lost-found';
 export const adminLostFoundStore = () => '/admin/lost-found';
 export const adminLostFoundUpdate = (id: number | string) =>
@@ -221,6 +224,8 @@ export const studentLogin = () => '/student-login';
 export const programHeadLogin = () => '/program-head-login';
 
 export const forgotPassword = () => '/forgot-password';
+
+export const programHeadNotifications = () => '/program-head/notifications';
 
 // Aliases
 export const login = () => '/login';

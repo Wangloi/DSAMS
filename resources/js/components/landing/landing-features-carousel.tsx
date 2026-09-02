@@ -155,10 +155,13 @@ export default function LandingFeaturesCarousel() {
     };
 
     return (
-        <section id="features" className="relative overflow-hidden bg-[#FBFBFB] py-24 lg:py-32">
+        <section id="features" className="relative overflow-hidden bg-gradient-to-bl from-slate-50 via-blue-50/50 to-[#000D6A]/12 py-24 lg:py-32">
+            {/* Background grid mesh in soft blue */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#23509a0d_1px,transparent_1px),linear-gradient(to_bottom,#23509a0d_1px,transparent_1px)] bg-[size:20px_32px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_80%,transparent_100%)] pointer-events-none" />
+
             {/* Ambient background glows */}
-            <div className="absolute top-0 left-1/4 h-[500px] w-[500px] rounded-full bg-gradient-to-tr from-[#23509A]/5 to-[#000D6A]/5 blur-3xl pointer-events-none" />
-            <div className="absolute bottom-0 right-1/4 h-[500px] w-[500px] rounded-full bg-gradient-to-br from-[#23509A]/5 to-[#000D6A]/5 blur-3xl pointer-events-none" />
+            <div className="absolute top-0 left-1/4 h-[600px] w-[600px] rounded-full bg-gradient-to-tr from-blue-500/15 to-indigo-600/15 blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 right-1/4 h-[600px] w-[600px] rounded-full bg-gradient-to-br from-indigo-500/15 to-blue-600/15 blur-3xl pointer-events-none" />
 
             <div id="services" className="absolute -top-16" />
             <div className="relative mx-auto w-full max-w-7xl px-4 lg:px-8">

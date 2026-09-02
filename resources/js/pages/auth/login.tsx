@@ -1,5 +1,4 @@
 import InputError from '@/components/input-error';
-import RegistrationModal from '@/components/RegistrationModal';
 import TextLink from '@/components/text-link';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -28,12 +27,40 @@ type Props = {
     canRegister: boolean;
 };
 
+function AuthErrorAlert({
+    errors,
+}: {
+    errors: Record<string, string | undefined>;
+}) {
+    useEffect(() => {
+        if (errors && Object.keys(errors).length > 0) {
+            const firstError = Object.values(errors).find(
+                (err) => typeof err === 'string' && err.length > 0,
+            );
+            if (firstError) {
+                Swal.fire({
+                    title: 'Sign In Failed',
+                    text: firstError,
+                    icon: 'error',
+                    confirmButtonColor: '#1b2f8a',
+                    customClass: {
+                        popup: 'rounded-2xl p-6 shadow-2xl font-sans',
+                        title: 'text-2xl font-black text-slate-800',
+                        htmlContainer: 'text-sm text-slate-600 font-medium mt-2',
+                    },
+                });
+            }
+        }
+    }, [errors]);
+
+    return null;
+}
+
 export default function Login({
     status,
     canResetPassword,
     canRegister,
 }: Props) {
-    const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
@@ -59,7 +86,7 @@ export default function Login({
                 <div className="absolute inset-0 bg-white/45 backdrop-blur-[1px]" />
 
                 {/* Desktop Header Navigation */}
-                <div className="relative z-10 flex items-center justify-between p-8 lg:p-12">
+                <div className="relative z-10 flex flex-col gap-4 items-start lg:flex-row lg:items-center lg:justify-between p-8 lg:p-12">
                     <Link
                         href={landing()}
                         className="group inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-4 py-2 text-sm font-semibold text-[#1b2f8a] shadow-sm backdrop-blur-md transition-all hover:bg-white hover:text-[#162775]"
@@ -119,16 +146,16 @@ export default function Login({
                             <ArrowLeft className="h-3.5 w-3.5" />
                             Back
                         </Link>
-                        <div className="flex items-center gap-3 rounded-full bg-white/20 p-2 backdrop-blur-md">
+                        <div className="flex items-center gap-2 rounded-full bg-white/20 p-1.5 backdrop-blur-md">
                             <img
                                 src="/images/SRCB.png"
                                 alt="SRCB"
-                                className="h-10 w-10 object-contain"
+                                className="h-8 w-8 rounded-full bg-white object-contain p-0.5"
                             />
                             <img
                                 src="/images/OSA_Logo2.png"
                                 alt="OSA Logo"
-                                className="h-10 w-10 rounded-full"
+                                className="h-8 w-8 rounded-full bg-white object-contain p-0.5"
                             />
                         </div>
                     </div>
@@ -152,30 +179,9 @@ export default function Login({
                         className="space-y-5"
                     >
                         {({ processing, errors }) => {
-                            useEffect(() => {
-                                if (processing) {
-                                    Swal.fire({
-                                        title: 'Signing in...',
-                                        text: 'Please wait while we verify your credentials.',
-                                        allowOutsideClick: false,
-                                        allowEscapeKey: false,
-                                        didOpen: () => {
-                                            Swal.showLoading();
-                                        },
-                                    });
-                                } else {
-                                    if (
-                                        Swal.isVisible() &&
-                                        Swal.getTitle()?.textContent ===
-                                        'Signing in...'
-                                    ) {
-                                        Swal.close();
-                                    }
-                                }
-                            }, [processing]);
-
                             return (
                                 <>
+                                    <AuthErrorAlert errors={errors} />
                                     <div className="space-y-4">
                                         {/* Identifier Input */}
                                         <div className="space-y-2">
@@ -302,18 +308,13 @@ export default function Login({
                                         {canRegister && (
                                             <div className="pt-2 text-center text-xs text-slate-300/90">
                                                 Don&apos;t have an account?{' '}
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        setIsRegisterModalOpen(
-                                                            true,
-                                                        )
-                                                    }
+                                                <Link
+                                                    href="/register"
                                                     tabIndex={6}
                                                     className="ml-1 font-bold text-white underline underline-offset-4 hover:text-blue-200"
                                                 >
                                                     Register here
-                                                </button>
+                                                </Link>
                                             </div>
                                         )}
                                     </div>
@@ -332,11 +333,6 @@ export default function Login({
                     </Form>
                 </div>
             </div>
-
-            <RegistrationModal
-                isOpen={isRegisterModalOpen}
-                onClose={() => setIsRegisterModalOpen(false)}
-            />
         </div>
     );
 }

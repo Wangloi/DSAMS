@@ -22,6 +22,7 @@ import {
 import { useMemo } from 'react';
 import AdminLayout from '../admin-layout';
 import DisciplinaryActionPanel from './DisciplinaryActionPanel';
+import StudentCallingProcessFlow from './StudentCallingProcessFlow';
 import type {
     DisciplinaryActionRecord,
     DisciplinaryHistoryItem,
@@ -245,6 +246,13 @@ export default function DisciplinaryCaseDetailPage({
                                     </div>
                                 </CardContent>
                             </Card>
+
+                            {/* Card 1.5: Student Calling Process Tracker */}
+                            <StudentCallingProcessFlow
+                                currentPhase={incident.calling_phase ?? (incident.status === 'Resolved' ? 8 : (incident.status === 'Escalated' ? 7 : (incident.status === 'Ongoing' ? 4 : 1)))}
+                                incidentId={incident.id}
+                                editable={true}
+                            />
 
                             {/* Card 2: Statutory Reference */}
                             <Card className="rounded-2xl border-0 bg-white shadow-lg ring-1 ring-slate-200 dark:bg-[#0B192C]/50 dark:ring-slate-800">
@@ -880,8 +888,8 @@ export default function DisciplinaryCaseDetailPage({
                         Disciplinary Action & Status Log
                     </h3>
                     {disciplinaryActions.length > 0 ? (
-                        <div className="overflow-hidden rounded-xl border border-slate-200">
-                            <table className="w-full border-collapse text-left text-xs">
+                        <div className="overflow-x-auto rounded-xl border border-slate-200">
+                            <table className="w-full min-w-max border-collapse text-left text-xs">
                                 <thead className="border-b border-slate-200 bg-slate-50">
                                     <tr>
                                         <th className="p-3 font-bold text-slate-500 uppercase">

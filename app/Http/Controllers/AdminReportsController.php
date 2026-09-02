@@ -7,6 +7,7 @@ use App\Models\EvaluationResponse;
 use App\Models\FoundItem;
 use App\Models\Incident;
 use App\Models\LostReport;
+use App\Models\AdmissionSlip;
 use Illuminate\Http\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -24,6 +25,7 @@ class AdminReportsController extends Controller
             'case_record' => 0,
             'evaluation' => 0,
             'lost_found' => 0,
+            'admission_slip' => 0,
         ];
 
         if ($start && $end) {
@@ -47,6 +49,13 @@ class AdminReportsController extends Controller
                     ->count();
             }
 
+            if (Schema::hasTable('admission_slips')) {
+                $counts['admission_slip'] = AdmissionSlip::query()
+                    ->where('is_archived', false)
+                    ->whereBetween('date_issued', [$start->toDateString(), $end->toDateString()])
+                    ->count();
+            }
+
             $lostFoundCount = 0;
             if (Schema::hasTable('found_items')) {
                 $lostFoundCount += FoundItem::query()
@@ -66,6 +75,7 @@ class AdminReportsController extends Controller
             'case_record' => (string) $counts['case_record'] . ' Records',
             'evaluation' => (string) $counts['evaluation'] . ' Records',
             'lost_found' => (string) $counts['lost_found'] . ' Records',
+            'admission_slip' => (string) $counts['admission_slip'] . ' Records',
         ];
 
         return Inertia::render('admin-dashboard/reports/index', [
@@ -78,7 +88,7 @@ class AdminReportsController extends Controller
     public function exportCsv(Request $request)
     {
         $type = (string) $request->query('type', 'attendance');
-        if (!in_array($type, ['attendance', 'case_record', 'evaluation', 'lost_found'], true)) {
+        if (!in_array($type, ['attendance', 'case_record', 'evaluation', 'lost_found', 'admission_slip'], true)) {
             abort(404);
         }
 
@@ -109,7 +119,7 @@ class AdminReportsController extends Controller
     public function print(Request $request)
     {
         $type = (string) $request->query('type', 'attendance');
-        if (!in_array($type, ['attendance', 'case_record', 'evaluation', 'lost_found'], true)) {
+        if (!in_array($type, ['attendance', 'case_record', 'evaluation', 'lost_found', 'admission_slip'], true)) {
             abort(404);
         }
 
@@ -121,6 +131,7 @@ class AdminReportsController extends Controller
             'case_record' => 'Case Record Report',
             'evaluation' => 'Evaluation Report',
             'lost_found' => 'Lost and Found Report',
+            'admission_slip' => 'Admission Slip Report',
         ];
 
         return response()
@@ -271,6 +282,33 @@ class AdminReportsController extends Controller
                         (string) (optional($r->evaluation)->name ?? ''),
                         (string) (optional($r->student)->student_id ?? ''),
                         (string) (optional($r->student)->name ?? ''),
+                    ];
+                }
+            }
+            return ['header' => $header, 'rows' => $rows];
+        }
+
+        if ($type === 'admission_slip') {
+            $header = ['Date Issued', 'Student Name', 'Program & Year', 'Case Title', 'Reason', 'Valid Until', 'Status'];
+            $rows = [];
+            if (Schema::hasTable('admission_slips')) {
+                $items = AdmissionSlip::query()
+                    ->where('is_archived', false)
+                    ->whereBetween('date_issued', [$start->toDateString(), $end->toDateString()])
+                    ->orderByDesc('date_issued')
+                    ->orderByDesc('id')
+                    ->limit(2000)
+                    ->get();
+
+                foreach ($items as $s) {
+                    $rows[] = [
+                        $s->date_issued ? Carbon::parse($s->date_issued)->toDateString() : '',
+                        (string) ($s->student_name ?? ''),
+                        (string) ($s->program_year_level ?? ''),
+                        (string) ($s->case_text ?? ''),
+                        (string) ($s->reason_text ?? ''),
+                        $s->valid_until ? Carbon::parse($s->valid_until)->toDateString() : '',
+                        (string) ($s->status ?? ''),
                     ];
                 }
             }

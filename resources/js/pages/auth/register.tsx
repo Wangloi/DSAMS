@@ -1,5 +1,4 @@
 import InputError from '@/components/input-error';
-import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,6 +28,53 @@ export default function Register() {
         password_confirmation: '',
     });
 
+    const roleInfo = {
+        student: {
+            idLabel: 'Student ID',
+            idPlaceholder: 'Enter your student ID',
+            courseLabel: 'Course',
+            coursePlaceholder: 'Select your course',
+            courses: [
+                { value: 'BSIT', label: 'BSIT' },
+                { value: 'BSBA', label: 'BSBA' },
+                { value: 'BSED', label: 'BSED' },
+                { value: 'BEED', label: 'BEED' },
+            ]
+        },
+        program_head: {
+            idLabel: 'Employee ID',
+            idPlaceholder: 'Enter your employee ID',
+            courseLabel: 'Assigned Program / Department',
+            coursePlaceholder: 'Select your program',
+            courses: [
+                { value: 'BSIT', label: 'IT Department (BSIT)' },
+                { value: 'BSBA', label: 'Business Department (BSBA)' },
+                { value: 'BSED', label: 'Secondary Education (BSED)' },
+                { value: 'BEED', label: 'Elementary Education (BEED)' },
+            ]
+        },
+        admin: {
+            idLabel: 'Admin ID',
+            idPlaceholder: 'Enter your admin ID',
+            courseLabel: 'Office / Department',
+            coursePlaceholder: 'Select your office',
+            courses: [
+                { value: 'OSA', label: 'Office of Student Affairs (OSA)' },
+                { value: 'Admin', label: 'Administration Office' },
+            ]
+        }
+    };
+
+    const details = (form.data.role === 'student' || form.data.role === 'program_head' || form.data.role === 'admin')
+        ? roleInfo[form.data.role]
+        : {
+            idLabel: 'ID Number',
+            idPlaceholder: 'Select your role first',
+            courseLabel: 'Course / Department',
+            coursePlaceholder: 'Select your role first',
+            courses: []
+        };
+
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
         form.post('/register', {
@@ -37,291 +83,337 @@ export default function Register() {
     };
 
     return (
-        <div className="relative min-h-svh overflow-hidden">
-            <VideoBackground />
+        <div className="relative flex h-svh w-full flex-row overflow-hidden bg-slate-50 font-sans selection:bg-blue-500 selection:text-white">
+            <Head title="Register - Student Affairs Management System" />
 
-            <div className="absolute inset-0 bg-blue-900/50" />
-            <div className="flex min-h-svh items-center justify-center px-5 py-6">
-                <Head title="Register" />
+            {/* Left: Video Area with White Opacity Overlay (Same as Login Page) */}
+            <div className="relative hidden flex-1 flex-col justify-between overflow-hidden bg-slate-100 md:flex">
+                <VideoBackground />
+                {/* White Opacity Overlay */}
+                <div className="absolute inset-0 bg-white/45 backdrop-blur-[1px]" />
 
-                <div className="mx-auto w-full max-w-md">
-                    <div className="rounded-3xl bg-white/40 p-6 shadow-sm backdrop-blur">
-                        <div className="mb-4">
-                            <Link
-                                href={landing()}
-                                className="inline-flex items-center gap-2 text-slate-700 transition-colors hover:text-slate-900"
+                {/* Desktop Header Navigation */}
+                <div className="relative z-10 flex flex-col gap-4 items-start lg:flex-row lg:items-center lg:justify-between p-8 lg:p-12">
+                    <Link
+                        href={landing()}
+                        className="group inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-4 py-2 text-sm font-semibold text-[#1b2f8a] shadow-sm backdrop-blur-md transition-all hover:bg-white hover:text-[#162775]"
+                    >
+                        <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+                        <span>Back to Home</span>
+                    </Link>
+
+                    {/* Dual Institutional Logos Badge */}
+                    <div className="flex items-center gap-4 rounded-full border border-slate-200 bg-white/90 px-5 py-2.5 shadow-md backdrop-blur-md">
+                        <img
+                            src="/images/SRCB1.png"
+                            alt="SRCB Logo"
+                            className="h-12 w-12 object-contain transition-transform hover:scale-105"
+                        />
+                        <span className="h-7 w-px bg-slate-300" />
+                        <img
+                            src="/images/DSA.png"
+                            alt="OSA Logo"
+                            className="h-12 w-12 rounded-full object-cover ring-2 ring-slate-200 transition-transform hover:scale-105"
+                        />
+                    </div>
+                </div>
+
+                {/* Hero Caption */}
+                <div className="relative z-10 max-w-2xl p-8 lg:p-16">
+                    <div className="space-y-6">
+                        <h1 className="text-4xl leading-tight font-black tracking-tight text-[#1b2f8a] lg:text-6xl">
+                            <span className="sr-only">Student Affairs Management System</span>
+                            <img
+                                src="/images/OSA_BNR1.png"
+                                alt="Student Affairs Management System"
+                                className="h-auto w-full max-w-md object-contain transition-transform hover:scale-[1.01]"
+                            />
+                        </h1>
+
+                        <p className="max-w-lg text-base leading-relaxed font-semibold text-slate-700 lg:text-lg">
+                            Streamlining student services, activities, event
+                            management, and discipline tracking into one modern
+                            unified platform.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Right: Modern Form Panel (Same layout and styling as Login Page right panel) */}
+            <div className="relative z-10 flex h-svh w-full shrink-0 flex-col overflow-y-auto border-l border-white/10 bg-gradient-to-b from-[#1b2f8a] via-[#162775] to-[#101d5c] px-6 py-12 shadow-2xl sm:px-12 md:w-[480px] lg:w-[540px]">
+                <div className="my-auto w-full mx-auto max-w-sm space-y-6">
+                    
+
+
+                    {/* Title Header */}
+                    <div className="space-y-1 text-left">
+                        <h2 className="text-3xl font-extrabold tracking-tight text-white">
+                            Create Account
+                        </h2>
+                        <p className="text-sm text-slate-300/90">
+                            Get started with your OSAMS account.
+                        </p>
+                    </div>
+
+                    <form onSubmit={submit} className="space-y-4">
+                        {/* Role Selection (At the Top) */}
+                        <div className="space-y-2">
+                            <Label
+                                htmlFor="role"
+                                className="text-xs font-semibold tracking-wider text-slate-200 uppercase"
                             >
-                                <ArrowLeft className="h-5 w-5" />
+                                Register as
+                            </Label>
+                            <div className="relative group">
+                                <Users className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-300" />
+                                <select
+                                    id="role"
+                                    name="role"
+                                    required
+                                    tabIndex={1}
+                                    value={form.data.role}
+                                    onChange={(e) => {
+                                        const selectedRole = e.target.value;
+                                        form.setData((data) => ({
+                                            ...data,
+                                            role: selectedRole,
+                                            student_id: '',
+                                            course: '',
+                                        }));
+                                    }}
+                                    className="h-12 w-full rounded-xl border border-white/20 bg-white/10 pr-3 pl-11 text-sm text-white focus:border-blue-400 focus:bg-[#162775] focus:outline-none transition-all"
+                                >
+                                    <option value="" disabled className="bg-[#101d5c] text-slate-400">
+                                        Select your role
+                                    </option>
+                                    <option value="student" className="bg-[#101d5c] text-white">Student</option>
+                                    <option value="program_head" className="bg-[#101d5c] text-white">Program Head</option>
+                                    <option value="admin" className="bg-[#101d5c] text-white">Admin</option>
+                                </select>
+                            </div>
+                            <InputError message={form.errors.role} />
+                        </div>
+
+                        {/* Username */}
+                        <div className="space-y-2">
+                            <Label
+                                htmlFor="name"
+                                className="text-xs font-semibold tracking-wider text-slate-200 uppercase"
+                            >
+                                Username
+                            </Label>
+                            <div className="relative group">
+                                <User className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-300" />
+                                <Input
+                                    id="name"
+                                    type="text"
+                                    required
+                                    autoFocus
+                                    tabIndex={2}
+                                    autoComplete="name"
+                                    name="name"
+                                    value={form.data.name}
+                                    onChange={(e) =>
+                                        form.setData(
+                                            'name',
+                                            e.target.value,
+                                        )
+                                    }
+                                    placeholder="Enter your username"
+                                    className="h-12 rounded-xl border-white/20 bg-white/10 pl-11 text-white placeholder-slate-400 transition-all focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-400/30"
+                                />
+                            </div>
+                            <InputError message={form.errors.name} />
+                        </div>
+
+                        {/* ID Number */}
+                        <div className="space-y-2">
+                            <Label
+                                htmlFor="student_id"
+                                className="text-xs font-semibold tracking-wider text-slate-200 uppercase"
+                            >
+                                {details.idLabel}
+                            </Label>
+                            <div className="relative group">
+                                <IdCard className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-300" />
+                                <Input
+                                    id="student_id"
+                                    type="text"
+                                    required
+                                    tabIndex={3}
+                                    name="student_id"
+                                    value={form.data.student_id}
+                                    onChange={(e) =>
+                                        form.setData(
+                                            'student_id',
+                                            e.target.value,
+                                        )
+                                    }
+                                    placeholder={details.idPlaceholder}
+                                    className="h-12 rounded-xl border-white/20 bg-white/10 pl-11 text-white placeholder-slate-400 transition-all focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-400/30"
+                                />
+                            </div>
+                            <InputError message={form.errors.student_id} />
+                        </div>
+
+                        {/* School Email */}
+                        <div className="space-y-2">
+                            <Label
+                                htmlFor="email"
+                                className="text-xs font-semibold tracking-wider text-slate-200 uppercase"
+                            >
+                                School Email
+                            </Label>
+                            <div className="relative group">
+                                <Mail className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-300" />
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    required
+                                    tabIndex={4}
+                                    autoComplete="email"
+                                    name="email"
+                                    value={form.data.email}
+                                    onChange={(e) =>
+                                        form.setData(
+                                            'email',
+                                            e.target.value,
+                                        )
+                                    }
+                                    placeholder="yourname@srcb.edu.ph"
+                                    className="h-12 rounded-xl border-white/20 bg-white/10 pl-11 text-white placeholder-slate-400 transition-all focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-400/30"
+                                />
+                            </div>
+                            <InputError message={form.errors.email} />
+                        </div>
+
+                        {/* Course/Department */}
+                        <div className="space-y-2">
+                            <Label
+                                htmlFor="course"
+                                className="text-xs font-semibold tracking-wider text-slate-200 uppercase"
+                            >
+                                {details.courseLabel}
+                            </Label>
+                            <div className="relative group">
+                                <GraduationCap className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-300" />
+                                <select
+                                    id="course"
+                                    name="course"
+                                    required
+                                    tabIndex={5}
+                                    value={form.data.course}
+                                    onChange={(e) =>
+                                        form.setData(
+                                            'course',
+                                            e.target.value,
+                                        )
+                                    }
+                                    className="h-12 w-full rounded-xl border border-white/20 bg-white/10 pr-3 pl-11 text-sm text-white focus:border-blue-400 focus:bg-[#162775] focus:outline-none transition-all"
+                                >
+                                    <option value="" disabled className="bg-[#101d5c] text-slate-400">
+                                        {details.coursePlaceholder}
+                                    </option>
+                                    {details.courses.map((c) => (
+                                        <option key={c.value} value={c.value} className="bg-[#101d5c] text-white">
+                                            {c.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <InputError message={form.errors.course} />
+                        </div>
+
+                        {/* Password */}
+                        <div className="space-y-2">
+                            <Label
+                                htmlFor="password"
+                                className="text-xs font-semibold tracking-wider text-slate-200 uppercase"
+                            >
+                                Password
+                            </Label>
+                            <div className="relative group">
+                                <Lock className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-300" />
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    required
+                                    tabIndex={6}
+                                    autoComplete="new-password"
+                                    name="password"
+                                    value={form.data.password}
+                                    onChange={(e) =>
+                                        form.setData(
+                                            'password',
+                                            e.target.value,
+                                        )
+                                    }
+                                    placeholder="Enter your password"
+                                    className="h-12 rounded-xl border-white/20 bg-white/10 pl-11 text-white placeholder-slate-400 transition-all focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-400/30"
+                                />
+                            </div>
+                            <InputError message={form.errors.password} />
+                        </div>
+
+                        {/* Confirm Password */}
+                        <div className="space-y-2">
+                            <Label
+                                htmlFor="password_confirmation"
+                                className="text-xs font-semibold tracking-wider text-slate-200 uppercase"
+                            >
+                                Confirm Password
+                            </Label>
+                            <div className="relative group">
+                                <Lock className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-300" />
+                                <Input
+                                    id="password_confirmation"
+                                    type="password"
+                                    required
+                                    tabIndex={7}
+                                    autoComplete="new-password"
+                                    name="password_confirmation"
+                                    value={form.data.password_confirmation}
+                                    onChange={(e) =>
+                                        form.setData(
+                                            'password_confirmation',
+                                            e.target.value,
+                                        )
+                                    }
+                                    placeholder="Confirm password"
+                                    className="h-12 rounded-xl border-white/20 bg-white/10 pl-11 text-white placeholder-slate-400 transition-all focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-400/30"
+                                />
+                            </div>
+                            <InputError message={form.errors.password_confirmation} />
+                        </div>
+
+                        {/* Submit Button */}
+                        <Button
+                            type="submit"
+                            className="mt-6 h-12 w-full rounded-xl bg-blue-600 font-bold text-white shadow-lg transition-all duration-150 hover:-translate-y-0.5 hover:bg-blue-500 active:translate-y-0 shadow-blue-500/25"
+                            tabIndex={8}
+                            disabled={form.processing}
+                            data-test="register-user-button"
+                        >
+                            {form.processing ? (
+                                <Spinner />
+                            ) : (
+                                <UserPlus className="mr-2 h-5 w-5" />
+                            )}
+                            Create account
+                        </Button>
+
+                        {/* Redirect Link */}
+                        <div className="mt-4 text-center text-xs text-slate-300/90">
+                            Already have an account?{' '}
+                            <Link
+                                href={login()}
+                                tabIndex={9}
+                                className="font-bold text-white underline underline-offset-4 hover:text-blue-200"
+                            >
+                                Log in
                             </Link>
                         </div>
-
-                        <div className="overflow-hidden rounded-2xl bg-gradient-to-b from-[#1b2f8a] to-[#0b1c5c] px-4 py-4 text-center text-white shadow-sm">
-                            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white/15">
-                                <UserPlus className="h-7 w-7 text-white" />
-                            </div>
-                            <h1 className="mt-3 text-2xl font-semibold">
-                                Join
-                            </h1>
-                            <p className="text-2xl font-semibold">to OSAMS!</p>
-                            <p className="mt-1 text-xs text-white/90">
-                                Register to your OSAMS account!
-                            </p>
-                        </div>
-
-                        <form onSubmit={submit} className="mt-4">
-                            <div className="grid gap-3 md:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label
-                                        htmlFor="name"
-                                        className="text-sm text-slate-900"
-                                    >
-                                        Username
-                                    </Label>
-                                    <div className="relative">
-                                        <User className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-500" />
-                                        <Input
-                                            id="name"
-                                            type="text"
-                                            required
-                                            autoFocus
-                                            tabIndex={1}
-                                            autoComplete="name"
-                                            name="name"
-                                            value={form.data.name}
-                                            onChange={(e) =>
-                                                form.setData(
-                                                    'name',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            placeholder="Enter your username"
-                                            className="h-10 rounded-xl bg-slate-100 pl-10"
-                                        />
-                                    </div>
-                                    <InputError message={form.errors.name} />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label
-                                        htmlFor="student_id"
-                                        className="text-sm text-slate-900"
-                                    >
-                                        Student ID
-                                    </Label>
-                                    <div className="relative">
-                                        <IdCard className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-500" />
-                                        <Input
-                                            id="student_id"
-                                            type="text"
-                                            required
-                                            tabIndex={2}
-                                            name="student_id"
-                                            value={form.data.student_id}
-                                            onChange={(e) =>
-                                                form.setData(
-                                                    'student_id',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            placeholder="Enter your student ID"
-                                            className="h-10 rounded-xl bg-slate-100 pl-10"
-                                        />
-                                    </div>
-                                    <InputError
-                                        message={form.errors.student_id}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label
-                                        htmlFor="email"
-                                        className="text-sm text-slate-900"
-                                    >
-                                        School Email
-                                    </Label>
-                                    <div className="relative">
-                                        <Mail className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-500" />
-                                        <Input
-                                            id="email"
-                                            type="email"
-                                            required
-                                            tabIndex={3}
-                                            autoComplete="email"
-                                            name="email"
-                                            value={form.data.email}
-                                            onChange={(e) =>
-                                                form.setData(
-                                                    'email',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            placeholder="yourname@srcb.edu.ph"
-                                            className="h-10 rounded-xl bg-slate-100 pl-10"
-                                        />
-                                    </div>
-                                    <InputError message={form.errors.email} />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label
-                                        htmlFor="course"
-                                        className="text-sm text-slate-900"
-                                    >
-                                        Course
-                                    </Label>
-                                    <div className="relative">
-                                        <GraduationCap className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-500" />
-                                        <select
-                                            id="course"
-                                            name="course"
-                                            required
-                                            tabIndex={4}
-                                            value={form.data.course}
-                                            onChange={(e) =>
-                                                form.setData(
-                                                    'course',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            className="h-10 w-full rounded-xl bg-slate-100 pr-3 pl-10 text-sm text-slate-900"
-                                        >
-                                            <option value="" disabled>
-                                                Select your course
-                                            </option>
-                                            <option value="BSIT">BSIT</option>
-                                            <option value="BSBA">BSBA</option>
-                                            <option value="BSED">BSED</option>
-                                            <option value="BEED">BEED</option>
-                                        </select>
-                                    </div>
-                                    <InputError message={form.errors.course} />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label
-                                        htmlFor="password"
-                                        className="text-sm text-slate-900"
-                                    >
-                                        Password
-                                    </Label>
-                                    <div className="relative">
-                                        <Lock className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-500" />
-                                        <Input
-                                            id="password"
-                                            type="password"
-                                            required
-                                            tabIndex={6}
-                                            autoComplete="new-password"
-                                            name="password"
-                                            value={form.data.password}
-                                            onChange={(e) =>
-                                                form.setData(
-                                                    'password',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            placeholder="Enter your password"
-                                            className="h-10 rounded-xl bg-slate-100 pl-10"
-                                        />
-                                    </div>
-                                    <InputError
-                                        message={form.errors.password}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label
-                                        htmlFor="password_confirmation"
-                                        className="text-sm text-slate-900"
-                                    >
-                                        Confirm password
-                                    </Label>
-                                    <div className="relative">
-                                        <Lock className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-500" />
-                                        <Input
-                                            id="password_confirmation"
-                                            type="password"
-                                            required
-                                            tabIndex={7}
-                                            autoComplete="new-password"
-                                            name="password_confirmation"
-                                            value={
-                                                form.data.password_confirmation
-                                            }
-                                            onChange={(e) =>
-                                                form.setData(
-                                                    'password_confirmation',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            placeholder="Confirm password"
-                                            className="h-10 rounded-xl bg-slate-100 pl-10"
-                                        />
-                                    </div>
-                                    <InputError
-                                        message={
-                                            form.errors.password_confirmation
-                                        }
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label
-                                    htmlFor="role"
-                                    className="text-sm text-slate-900"
-                                >
-                                    Role
-                                </Label>
-                                <div className="relative">
-                                    <Users className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-500" />
-                                    <select
-                                        id="role"
-                                        name="role"
-                                        required
-                                        tabIndex={5}
-                                        value={form.data.role}
-                                        onChange={(e) =>
-                                            form.setData('role', e.target.value)
-                                        }
-                                        className="h-10 w-full rounded-xl bg-slate-100 pr-3 pl-10 text-sm text-slate-900"
-                                    >
-                                        <option value="" disabled>
-                                            Select your role
-                                        </option>
-                                        <option value="student">Student</option>
-                                        <option value="program_head">
-                                            Program Head
-                                        </option>
-                                        <option value="admin">Admin</option>
-                                    </select>
-                                </div>
-                                <InputError message={form.errors.role} />
-                            </div>
-
-                            <Button
-                                type="submit"
-                                className="mt-2 h-10 w-full rounded-xl bg-[#3b66d7] text-white transition-all duration-150 hover:-translate-y-0.5 hover:bg-[#335cc7] active:translate-y-0"
-                                tabIndex={8}
-                                disabled={form.processing}
-                                data-test="register-user-button"
-                            >
-                                {form.processing ? (
-                                    <Spinner />
-                                ) : (
-                                    <UserPlus className="mr-2 h-5 w-5" />
-                                )}
-                                Create account
-                            </Button>
-
-                            <div className="mt-3 text-center text-sm text-black">
-                                Already have an account?{' '}
-                                <TextLink href={login()} tabIndex={9}>
-                                    Log in
-                                </TextLink>
-                            </div>
-                        </form>
-                    </div>
+                    </form>
                 </div>
             </div>
         </div>

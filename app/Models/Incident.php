@@ -19,6 +19,7 @@ class Incident extends Model
         'evidence_paths',
         'classification',
         'status',
+        'calling_phase',
         'received_by',
         'is_archived',
     ];
@@ -26,7 +27,7 @@ class Incident extends Model
     protected $casts = [
         'students_involved' => 'array',
         'evidence_paths' => 'array',
-        'incident_date' => 'date',
+        'incident_date' => 'date:Y-m-d',
     ];
 
     public function violation()

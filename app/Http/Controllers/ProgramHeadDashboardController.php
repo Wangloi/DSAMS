@@ -71,13 +71,50 @@ class ProgramHeadDashboardController extends Controller
                 });
             }
 
-            $columns = ['id', 'student_id', 'name', 'course', 'year_level', 'status'];
-            if (Schema::hasColumn('students', 'is_active')) {
-                $columns[] = 'is_active';
-            }
-            if (Schema::hasColumn('students', 'verification_status')) {
-                $columns[] = 'verification_status';
-            }
+            $columns = [
+                'id',
+                'student_id',
+                'first_name',
+                'middle_name',
+                'last_name',
+                'name',
+                'email',
+                'course',
+                'year_level',
+                'role',
+                'is_active',
+                'status',
+                'verification_status',
+                'qr_code_path',
+                'entry_status',
+                'program',
+                'major',
+                'home_address',
+                'birthday',
+                'place_of_birth',
+                'religion',
+                'gender',
+                'contact_no',
+                'nationality',
+                'elementary_school',
+                'elementary_year_graduated',
+                'junior_high_school',
+                'junior_high_year_graduated',
+                'senior_high_school',
+                'senior_high_year_graduated',
+                'mother_name',
+                'mother_contact',
+                'father_name',
+                'father_contact',
+                'guardian_name',
+                'guardian_relation',
+                'guardian_contact',
+                'is_archived',
+                'created_at',
+                'updated_at',
+            ];
+
+            $columns = array_values(array_filter($columns, fn ($col) => Schema::hasColumn('students', $col)));
 
             $students = $studentsQuery
                 ->orderBy('year_level')
@@ -85,15 +122,15 @@ class ProgramHeadDashboardController extends Controller
                 ->orderBy('first_name')
                 ->get($columns)
                 ->map(function ($student) {
-                    return [
-                        'id' => (string) $student->id,
-                        'student_id' => (string) ($student->student_id ?? ''),
-                        'name' => (string) ($student->name ?? ''),
-                        'course' => (string) ($student->course ?? ''),
-                        'year_level' => (string) ($student->year_level ?? ''),
-                        'is_active' => (bool) ($student->is_active ?? true),
-                        'status' => (string) ($student->verification_status ?? $student->status ?? 'pending'),
-                    ];
+                    $row = $student->toArray();
+                    $row['id'] = (string) $student->id;
+                    $row['student_id'] = (string) ($student->student_id ?? '');
+                    $row['name'] = (string) ($student->name ?? '');
+                    $row['course'] = (string) ($student->course ?? '');
+                    $row['year_level'] = (string) ($student->year_level ?? '');
+                    $row['is_active'] = (bool) ($student->is_active ?? true);
+                    $row['status'] = (string) ($student->verification_status ?? $student->status ?? 'pending');
+                    return $row;
                 })
                 ->all();
         }
@@ -132,10 +169,18 @@ class ProgramHeadDashboardController extends Controller
             return redirect()->back()->with('error', 'No program assigned to you.');
         }
 
+        $updateData = [];
         if (Schema::hasColumn('students', 'verification_status')) {
+            $updateData['verification_status'] = $status;
+        }
+        if (Schema::hasColumn('students', 'status')) {
+            $updateData['status'] = $status;
+        }
+
+        if (!empty($updateData)) {
             Student::where('course', $program)
                 ->whereIn('id', $validated['ids'])
-                ->update(['verification_status' => $status]);
+                ->update($updateData);
         }
 
         if (Schema::hasTable('activity_logs')) {

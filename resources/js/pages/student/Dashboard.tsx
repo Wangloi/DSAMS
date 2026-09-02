@@ -1,9 +1,7 @@
-import StudentLayout from './components/StudentLayout';
 import StudentProfileCompletionModal from '@/components/StudentProfileCompletionModal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -15,6 +13,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Swal from 'sweetalert2';
+import StudentLayout from './components/StudentLayout';
 
 import {
     Select,
@@ -44,29 +43,22 @@ import QRCode from 'qrcode';
 import {
     Activity,
     AlertTriangle,
-    ArrowRight,
     Award,
     Calendar,
     Check,
     ChevronRight,
     ClipboardList,
     Clock,
-    FileCheck,
     FileText,
     GraduationCap,
-    Info,
     MapPin,
     QrCode,
     ScanLine,
-    TrendingUp,
-    UserRoundCog,
+    ShieldCheck,
     Users,
     X,
-    ShieldCheck,
-    Sparkles,
-    Bookmark,
 } from 'lucide-react';
-import React, { useMemo, useRef, useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { StudentDashboardFooter } from './components/StudentDashboardFooter';
 
@@ -209,7 +201,9 @@ export default function StudentDashboard({
                 },
             })
                 .then((url: string) => setQrCodeUrl(url))
-                .catch((err: any) => console.error('Error generating QR:', err));
+                .catch((err: any) =>
+                    console.error('Error generating QR:', err),
+                );
         }
     }, [studentId]);
 
@@ -1555,10 +1549,10 @@ export default function StudentDashboard({
             <div className="mx-auto max-w-7xl px-3 pt-6 pb-8 sm:px-6 lg:px-8">
                 <div className="space-y-6 sm:space-y-10">
                     {/* PREMIUM HERO BANNER */}
-                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#0b2d66] via-[#0d3478] to-[#1e40af] p-6 sm:p-8 md:p-10 shadow-2xl border border-white/10 text-left">
+                    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#0b2d66] via-[#0d3478] to-[#1e40af] p-6 text-left shadow-2xl sm:p-8 md:p-10">
                         {/* Interactive glow effect */}
-                        <div className="absolute top-0 right-0 h-[500px] w-[500px] translate-x-1/3 -translate-y-1/3 rounded-full bg-gradient-to-br from-blue-400/20 to-transparent blur-3xl transition-transform duration-1000 pointer-events-none" />
-                        <div className="absolute bottom-0 left-0 h-64 w-64 -translate-x-1/4 translate-y-1/3 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
+                        <div className="pointer-events-none absolute top-0 right-0 h-[500px] w-[500px] translate-x-1/3 -translate-y-1/3 rounded-full bg-gradient-to-br from-blue-400/20 to-transparent blur-3xl transition-transform duration-1000" />
+                        <div className="pointer-events-none absolute bottom-0 left-0 h-64 w-64 -translate-x-1/4 translate-y-1/3 rounded-full bg-indigo-500/10 blur-3xl" />
 
                         <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
                             {/* Left side: Student details */}
@@ -1576,7 +1570,7 @@ export default function StudentDashboard({
                                         </AvatarFallback>
                                     </Avatar>
                                     <div
-                                        className="absolute -right-1 -bottom-1 h-5 w-5 rounded-full border-4 border-[#0b2d66] bg-emerald-500 shadow-lg animate-pulse"
+                                        className="absolute -right-1 -bottom-1 h-5 w-5 animate-pulse rounded-full border-4 border-[#0b2d66] bg-emerald-500 shadow-lg"
                                         title="Active Portal Session"
                                     />
                                 </div>
@@ -1593,11 +1587,14 @@ export default function StudentDashboard({
                                             </span>
                                             ! 👋
                                         </h1>
-                                        <p className="text-xs font-semibold text-blue-100/70 max-w-lg leading-relaxed">
-                                            Your academic standing is active and all attendance modules are up-to-date. Below is your current standing today.
+                                        <p className="max-w-lg text-xs leading-relaxed font-semibold text-blue-100/70">
+                                            Your academic standing is active and
+                                            all attendance modules are
+                                            up-to-date. Below is your current
+                                            standing today.
                                         </p>
                                     </div>
-                                    
+
                                     <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
                                         <Badge
                                             variant="outline"
@@ -1617,28 +1614,16 @@ export default function StudentDashboard({
                                 </div>
                             </div>
 
-                            {/* Right side: Academic year and QR Check-in */}
-                            <div className="flex flex-col items-center gap-4 sm:flex-row md:items-end md:flex-col lg:flex-row lg:items-center">
-                                {/* Check-in QR code */}
-                                <div className="flex items-center gap-3 bg-white/5 border border-white/10 p-2.5 rounded-2xl backdrop-blur-md shadow-lg shrink-0">
-                                    <div className="bg-white p-1 rounded-xl shadow">
-                                        {qrCodeUrl ? (
-                                            <img src={qrCodeUrl} alt="Quick Check-in QR" className="h-14 w-14" />
-                                        ) : (
-                                            <div className="h-14 w-14 bg-slate-200 animate-pulse rounded-lg" />
-                                        )}
-                                    </div>
-                                    <div className="text-left space-y-0.5 pr-2">
-                                        <p className="text-[9px] font-black tracking-wider text-blue-200 uppercase">Check-in QR</p>
-                                        <p className="text-[8px] text-white/55 font-medium leading-tight max-w-[100px]">Scan at scan portals for quick session attendance.</p>
-                                    </div>
-                                </div>
-
-                                <div className="w-full sm:w-48 shrink-0">
-                                    <label className="mb-1 block text-[8px] font-black tracking-[0.25em] text-blue-200/45 uppercase text-center sm:text-left md:text-right lg:text-left">
+                            {/* Right side: Academic year select */}
+                            <div className="flex shrink-0 flex-col items-center justify-center md:items-end">
+                                <div className="w-full sm:w-48">
+                                    <label className="mb-1 block text-center text-[8px] font-black tracking-[0.25em] text-blue-200/40 uppercase sm:text-left md:text-right">
                                         Academic Session
                                     </label>
-                                    <Select value={academicYear} onValueChange={setAcademicYear}>
+                                    <Select
+                                        value={academicYear}
+                                        onValueChange={setAcademicYear}
+                                    >
                                         <SelectTrigger className="h-10 w-full rounded-xl border-white/10 bg-white/5 text-white shadow-xl backdrop-blur-xl transition-all duration-300 hover:bg-white/10">
                                             <div className="flex items-center gap-2">
                                                 <Calendar className="h-3.5 w-3.5 text-blue-300" />
@@ -1646,8 +1631,18 @@ export default function StudentDashboard({
                                             </div>
                                         </SelectTrigger>
                                         <SelectContent className="rounded-xl border-white/10 bg-[#0b2d66] text-white backdrop-blur-2xl">
-                                            <SelectItem value="2024 - 2025" className="text-xs focus:bg-white/10 focus:text-white">AY 2024 - 2025</SelectItem>
-                                            <SelectItem value="2023 - 2024" className="text-xs focus:bg-white/10 focus:text-white">AY 2023 - 2024</SelectItem>
+                                            <SelectItem
+                                                value="2024 - 2025"
+                                                className="text-xs focus:bg-white/10 focus:text-white"
+                                            >
+                                                AY 2024 - 2025
+                                            </SelectItem>
+                                            <SelectItem
+                                                value="2023 - 2024"
+                                                className="text-xs focus:bg-white/10 focus:text-white"
+                                            >
+                                                AY 2023 - 2024
+                                            </SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -1656,61 +1651,142 @@ export default function StudentDashboard({
                     </div>
 
                     {/* THREE CIRCULAR STATS CARDS */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                         {/* Card 1: Attendance Rate */}
-                        <div className="relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 shadow-lg backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/30 flex items-center justify-between text-left group">
+                        <div className="group relative flex items-center justify-between overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 text-left shadow-lg backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/30">
                             <div className="space-y-1.5 font-sans">
-                                <span className="block text-[9px] font-black tracking-widest uppercase text-slate-400 dark:text-slate-500">Attendance Rate</span>
+                                <span className="block text-[9px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
+                                    Attendance Rate
+                                </span>
                                 <h3 className="text-2xl font-black text-slate-900 dark:text-white">
-                                    {events.length > 0 ? Math.round(((serverStats?.event_attendance ?? 0) / events.length) * 100) : 0}%
+                                    {events.length > 0
+                                        ? Math.round(
+                                              ((serverStats?.event_attendance ??
+                                                  0) /
+                                                  events.length) *
+                                                  100,
+                                          )
+                                        : 0}
+                                    %
                                 </h3>
                                 <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                                    Attended {serverStats?.event_attendance ?? 0} out of {events.length} events
+                                    Attended{' '}
+                                    {serverStats?.event_attendance ?? 0} out of{' '}
+                                    {events.length} events
                                 </p>
                             </div>
-                            <div className="relative flex items-center justify-center shrink-0">
-                                <svg className="w-18 h-18 transform -rotate-90">
-                                    <circle cx="36" cy="36" r="32" className="stroke-slate-100 dark:stroke-slate-800" strokeWidth="6.5" fill="transparent" />
-                                    <circle 
-                                        cx="36" cy="36" r="32" 
-                                        className="stroke-blue-500 transition-all duration-1000 ease-out" 
-                                        strokeWidth="6.5" fill="transparent"
+                            <div className="relative flex shrink-0 items-center justify-center">
+                                <svg className="h-18 w-18 -rotate-90 transform">
+                                    <circle
+                                        cx="36"
+                                        cy="36"
+                                        r="32"
+                                        className="stroke-slate-100 dark:stroke-slate-800"
+                                        strokeWidth="6.5"
+                                        fill="transparent"
+                                    />
+                                    <circle
+                                        cx="36"
+                                        cy="36"
+                                        r="32"
+                                        className="stroke-blue-500 transition-all duration-1000 ease-out"
+                                        strokeWidth="6.5"
+                                        fill="transparent"
                                         strokeDasharray={2 * Math.PI * 32}
-                                        strokeDashoffset={2 * Math.PI * 32 - (Math.min(100, events.length > 0 ? Math.round(((serverStats?.event_attendance ?? 0) / events.length) * 100) : 0) / 100) * (2 * Math.PI * 32)}
+                                        strokeDashoffset={
+                                            2 * Math.PI * 32 -
+                                            (Math.min(
+                                                100,
+                                                events.length > 0
+                                                    ? Math.round(
+                                                          ((serverStats?.event_attendance ??
+                                                              0) /
+                                                              events.length) *
+                                                              100,
+                                                      )
+                                                    : 0,
+                                            ) /
+                                                100) *
+                                                (2 * Math.PI * 32)
+                                        }
                                         strokeLinecap="round"
                                     />
                                 </svg>
-                                <div className="absolute flex items-center justify-center text-blue-500 bg-blue-500/5 p-2 rounded-full">
+                                <div className="absolute flex items-center justify-center rounded-full bg-blue-500/5 p-2 text-blue-500">
                                     <QrCode className="h-5 w-5" />
                                 </div>
                             </div>
                         </div>
 
                         {/* Card 2: Conduct Standing */}
-                        <div className="relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 shadow-lg backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/30 flex items-center justify-between text-left group">
+                        <div className="group relative flex items-center justify-between overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 text-left shadow-lg backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/30">
                             <div className="space-y-1.5 font-sans">
-                                <span className="block text-[9px] font-black tracking-widest uppercase text-slate-400 dark:text-slate-500">Conduct Standing</span>
-                                <h3 className={cn("text-2xl font-black uppercase tracking-wide", (serverStats?.active_incidents ?? 0) === 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-450")}>
-                                    {(serverStats?.active_incidents ?? 0) === 0 ? "Good" : "Warning"}
+                                <span className="block text-[9px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
+                                    Conduct Standing
+                                </span>
+                                <h3
+                                    className={cn(
+                                        'text-2xl font-black tracking-wide uppercase',
+                                        (serverStats?.active_incidents ?? 0) ===
+                                            0
+                                            ? 'text-emerald-600 dark:text-emerald-400'
+                                            : 'dark:text-rose-450 text-rose-600',
+                                    )}
+                                >
+                                    {(serverStats?.active_incidents ?? 0) === 0
+                                        ? 'Good'
+                                        : 'Warning'}
                                 </h3>
                                 <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                                    {(serverStats?.active_incidents ?? 0) === 0 ? "No active disciplinary reports" : `${serverStats?.active_incidents} active incident report(s)`}
+                                    {(serverStats?.active_incidents ?? 0) === 0
+                                        ? 'No active disciplinary reports'
+                                        : `${serverStats?.active_incidents} active incident report(s)`}
                                 </p>
                             </div>
-                            <div className="relative flex items-center justify-center shrink-0">
-                                <svg className="w-18 h-18 transform -rotate-90">
-                                    <circle cx="36" cy="36" r="32" className="stroke-slate-100 dark:stroke-slate-800" strokeWidth="6.5" fill="transparent" />
-                                    <circle 
-                                        cx="36" cy="36" r="32" 
-                                        className={cn("transition-all duration-1000 ease-out", (serverStats?.active_incidents ?? 0) === 0 ? "stroke-emerald-500" : "stroke-rose-500")}
-                                        strokeWidth="6.5" fill="transparent"
+                            <div className="relative flex shrink-0 items-center justify-center">
+                                <svg className="h-18 w-18 -rotate-90 transform">
+                                    <circle
+                                        cx="36"
+                                        cy="36"
+                                        r="32"
+                                        className="stroke-slate-100 dark:stroke-slate-800"
+                                        strokeWidth="6.5"
+                                        fill="transparent"
+                                    />
+                                    <circle
+                                        cx="36"
+                                        cy="36"
+                                        r="32"
+                                        className={cn(
+                                            'transition-all duration-1000 ease-out',
+                                            (serverStats?.active_incidents ??
+                                                0) === 0
+                                                ? 'stroke-emerald-500'
+                                                : 'stroke-rose-500',
+                                        )}
+                                        strokeWidth="6.5"
+                                        fill="transparent"
                                         strokeDasharray={2 * Math.PI * 32}
-                                        strokeDashoffset={(serverStats?.active_incidents ?? 0) === 0 ? 0 : 0.7 * (2 * Math.PI * 32)}
+                                        strokeDashoffset={
+                                            (serverStats?.active_incidents ??
+                                                0) === 0
+                                                ? 0
+                                                : 0.7 * (2 * Math.PI * 32)
+                                        }
                                         strokeLinecap="round"
                                     />
                                 </svg>
-                                <div className={cn("absolute flex items-center justify-center bg-opacity-5 p-2 rounded-full", (serverStats?.active_incidents ?? 0) === 0 ? "text-emerald-500 bg-emerald-500/5" : "text-rose-500 bg-rose-500/5")}>
-                                    {(serverStats?.active_incidents ?? 0) === 0 ? (
+                                <div
+                                    className={cn(
+                                        'bg-opacity-5 absolute flex items-center justify-center rounded-full p-2',
+                                        (serverStats?.active_incidents ?? 0) ===
+                                            0
+                                            ? 'bg-emerald-500/5 text-emerald-500'
+                                            : 'bg-rose-500/5 text-rose-500',
+                                    )}
+                                >
+                                    {(serverStats?.active_incidents ?? 0) ===
+                                    0 ? (
                                         <ShieldCheck className="h-5 w-5" />
                                     ) : (
                                         <AlertTriangle className="h-5 w-5 animate-pulse" />
@@ -1720,9 +1796,11 @@ export default function StudentDashboard({
                         </div>
 
                         {/* Card 3: Campus Events */}
-                        <div className="relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 shadow-lg backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/30 flex items-center justify-between text-left group">
+                        <div className="group relative flex items-center justify-between overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 text-left shadow-lg backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/30">
                             <div className="space-y-1.5 font-sans">
-                                <span className="block text-[9px] font-black tracking-widest uppercase text-slate-400 dark:text-slate-500">Scheduled Events</span>
+                                <span className="block text-[9px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
+                                    Scheduled Events
+                                </span>
                                 <h3 className="text-2xl font-black text-slate-900 dark:text-white">
                                     {events.length} Events
                                 </h3>
@@ -1730,338 +1808,397 @@ export default function StudentDashboard({
                                     View and check schedule of school events
                                 </p>
                             </div>
-                            <div className="relative flex items-center justify-center shrink-0">
-                                <svg className="w-18 h-18 transform -rotate-90">
-                                    <circle cx="36" cy="36" r="32" className="stroke-slate-100 dark:stroke-slate-800" strokeWidth="6.5" fill="transparent" />
-                                    <circle 
-                                        cx="36" cy="36" r="32" 
-                                        className="stroke-indigo-500" 
-                                        strokeWidth="6.5" fill="transparent"
+                            <div className="relative flex shrink-0 items-center justify-center">
+                                <svg className="h-18 w-18 -rotate-90 transform">
+                                    <circle
+                                        cx="36"
+                                        cy="36"
+                                        r="32"
+                                        className="stroke-slate-100 dark:stroke-slate-800"
+                                        strokeWidth="6.5"
+                                        fill="transparent"
+                                    />
+                                    <circle
+                                        cx="36"
+                                        cy="36"
+                                        r="32"
+                                        className="stroke-indigo-500"
+                                        strokeWidth="6.5"
+                                        fill="transparent"
                                         strokeDasharray={2 * Math.PI * 32}
-                                        strokeDashoffset={0.4 * (2 * Math.PI * 32)}
+                                        strokeDashoffset={
+                                            0.4 * (2 * Math.PI * 32)
+                                        }
                                         strokeLinecap="round"
                                     />
                                 </svg>
-                                <div className="absolute flex items-center justify-center text-indigo-500 bg-indigo-500/5 p-2 rounded-full">
+                                <div className="absolute flex items-center justify-center rounded-full bg-indigo-500/5 p-2 text-indigo-500">
                                     <Calendar className="h-5 w-5" />
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                        {/* MODERN QUICK ACTIONS GRID */}
-                        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                            {/* ACTION: SCAN ATTENDANCE */}
-                            <div
-                                onClick={() => {
-                                    if (activeEvents.length > 0) {
-                                        router.visit(studentAttendanceDynamicQrScan(activeEvents[0].id));
-                                    } else {
-                                        Swal.fire({
-                                            icon: 'info',
-                                            title: 'No Active Sessions',
-                                            text: 'There are no active attendance sessions at the moment.',
-                                            confirmButtonColor: '#0b2d66',
-                                        });
-                                    }
-                                }}
-                                className="group relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 shadow-lg backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-violet-500/15 cursor-pointer active:scale-[0.98] dark:border-slate-800/40 dark:bg-slate-900/30 text-left"
-                            >
-                                <div className="absolute top-0 right-0 -mt-10 -mr-10 h-24 w-24 rounded-full bg-violet-500/5 blur-xl pointer-events-none" />
-                                <div className="flex flex-col items-start gap-4 h-full justify-between">
-                                    <div className="flex items-center justify-between w-full">
-                                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-50 text-violet-600 shadow-inner transition-transform duration-500 group-hover:scale-108 dark:bg-violet-500/10 dark:text-violet-400">
-                                            <ScanLine className="h-6 w-6" />
+                    {/* CAMPUS SCHEDULE SECTION */}
+                    <div className="space-y-5">
+                        <div className="flex items-center justify-between px-0.5 sm:px-1">
+                            <div className="flex items-center gap-2 sm:gap-3">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-blue-600/20 bg-blue-600/10 shadow-inner">
+                                    <Calendar className="h-4.5 w-4.5 text-blue-600" />
+                                </div>
+                                <div className="text-left">
+                                    <h2 className="text-sm font-black tracking-wider text-slate-900 uppercase sm:text-base dark:text-white">
+                                        Campus Schedule
+                                    </h2>
+                                    <p className="mt-0.5 text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase dark:text-slate-500">
+                                        Co-Curricular & Academic Timeline
+                                    </p>
+                                </div>
+                            </div>
+                            <Badge className="rounded-lg border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[10px] font-black tracking-widest text-blue-600 uppercase dark:bg-blue-500/20 dark:text-blue-400">
+                                {events.length} Events Total
+                            </Badge>
+                        </div>
+
+                        <div className="relative overflow-hidden rounded-3xl border border-slate-200/60 bg-white/70 p-6 shadow-xl backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/40">
+                            {/* Timeline vertical track */}
+                            {events.length > 0 && (
+                                <div className="border-slate-350 pointer-events-none absolute top-8 bottom-8 left-[38px] w-0.5 border-l border-dashed dark:border-slate-800" />
+                            )}
+
+                            <div className="space-y-8">
+                                {events.map((event) => {
+                                    const isOngoing =
+                                        event.scanner_portal_active;
+                                    return (
+                                        <div
+                                            key={event.id}
+                                            className="group relative flex items-start gap-4 text-left md:gap-6"
+                                        >
+                                            {/* Timeline Node Circle */}
+                                            <div className="relative z-10 flex items-center justify-center">
+                                                <div
+                                                    className={cn(
+                                                        'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg transition-transform duration-500 group-hover:scale-108',
+                                                        isOngoing
+                                                            ? 'animate-pulse bg-gradient-to-br from-emerald-400 to-teal-500 ring-4 shadow-emerald-500/30 ring-emerald-500/20'
+                                                            : 'bg-gradient-to-br from-blue-600 to-indigo-700',
+                                                    )}
+                                                >
+                                                    <Calendar className="h-5 w-5" />
+                                                </div>
+                                            </div>
+
+                                            {/* Timeline Card Content */}
+                                            <div className="flex-1 rounded-2xl border border-slate-100 bg-slate-50/40 p-4 transition-all duration-300 hover:border-blue-500/20 hover:bg-slate-50 dark:border-slate-800/40 dark:bg-slate-900/20 dark:hover:bg-slate-900/40">
+                                                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                                    <div className="space-y-1">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <h3 className="text-sm font-black tracking-tight text-slate-900 sm:text-base dark:text-white">
+                                                                {event.title}
+                                                            </h3>
+                                                            <Badge
+                                                                className={cn(
+                                                                    'rounded-lg border px-2.5 py-0.5 text-[8px] font-black tracking-[0.25em] uppercase',
+                                                                    isOngoing
+                                                                        ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                                                        : 'border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400',
+                                                                )}
+                                                            >
+                                                                {isOngoing
+                                                                    ? 'Ongoing'
+                                                                    : event.status ||
+                                                                      'Upcoming'}
+                                                            </Badge>
+                                                        </div>
+                                                        <div className="text-slate-505 flex flex-wrap items-center gap-x-3.5 gap-y-1 text-xs font-semibold dark:text-slate-400">
+                                                            <span className="flex items-center gap-1">
+                                                                <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                                                                {event.date}
+                                                            </span>
+                                                            {event.time && (
+                                                                <span className="flex items-center gap-1">
+                                                                    <Clock className="h-3.5 w-3.5 text-slate-400" />
+                                                                    {event.time}
+                                                                </span>
+                                                            )}
+                                                            {event.location && (
+                                                                <span className="flex items-center gap-1">
+                                                                    <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                                                                    {
+                                                                        event.location
+                                                                    }
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {event.description && (
+                                                            <p className="mt-2 max-w-2xl text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                                                                {
+                                                                    event.description
+                                                                }
+                                                            </p>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex items-center justify-end">
+                                                        {isOngoing && (
+                                                            <Button
+                                                                className="h-8.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-4 text-[9px] font-black tracking-widest text-white uppercase shadow-lg shadow-emerald-500/20 transition-all hover:scale-105 active:scale-95"
+                                                                onClick={() =>
+                                                                    router.visit(
+                                                                        studentAttendanceDynamicQrScan(
+                                                                            event.id,
+                                                                        ),
+                                                                    )
+                                                                }
+                                                            >
+                                                                Scan
+                                                                <QrCode className="ml-1.5 h-3.5 w-3.5" />
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase">Self Check-in</span>
-                                    </div>
-                                    
-                                    <div className="space-y-1 mt-2">
-                                        <h3 className="text-sm font-black tracking-tight text-slate-900 uppercase dark:text-white">
-                                            Scan QR Code
+                                    );
+                                })}
+
+                                {events.length === 0 && (
+                                    <div className="py-16 text-center">
+                                        <Calendar className="mx-auto h-12 w-12 animate-pulse text-slate-300 dark:text-slate-600" />
+                                        <h3 className="mt-4 text-sm font-black tracking-wider text-slate-900 uppercase dark:text-white">
+                                            No Scheduled Events
                                         </h3>
-                                        <p className="text-[11px] leading-relaxed font-semibold text-slate-500 dark:text-slate-400">
-                                            Check-in to an active school event using your camera.
+                                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                            Keep checking back for future school
+                                            events and announcements.
                                         </p>
                                     </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
 
-                                    <Button
-                                        className="w-full mt-3 h-8.5 rounded-xl border border-violet-600 bg-violet-600 px-3 text-[9px] font-black tracking-widest text-white uppercase transition-all duration-300 hover:bg-violet-700 hover:shadow-[0_0_12px_rgba(139,92,246,0.5)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-                                        disabled={activeEvents.length === 0}
+                    {/* PENDING EVALUATIONS SECTION */}
+                    {evaluationRows.length > 0 && (
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-amber-600/20 bg-amber-600/10 shadow-inner">
+                                    <ClipboardList className="h-4 w-4 text-amber-500" />
+                                </div>
+                                <div className="text-left">
+                                    <h2 className="text-sm font-black tracking-wider text-slate-900 uppercase sm:text-base dark:text-white">
+                                        Action Required: Pending Evaluations
+                                    </h2>
+                                    <p className="mt-0.5 text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase dark:text-slate-500">
+                                        Complete these forms to support campus
+                                        improvements
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                {evaluationRows.map((evaluation) => (
+                                    <div
+                                        key={evaluation.id}
+                                        className="relative flex items-center justify-between overflow-hidden rounded-2xl border border-amber-200/50 bg-amber-500/[0.02] p-5 backdrop-blur-xl transition-all duration-300 hover:border-amber-500/40 hover:shadow-lg dark:border-amber-500/20 dark:bg-amber-500/[0.02]"
                                     >
-                                        {activeEvents.length > 0 ? 'Scan Now' : 'No Active Session'}
-                                        {activeEvents.length > 0 && (
-                                            <ChevronRight className="ml-1 h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                                        )}
-                                    </Button>
-                                </div>
-                            </div>
-
-                            {/* ACTION: REPORT INCIDENT */}
-                            <div
-                                onClick={() => setReportIncidentOpen(true)}
-                                className="group relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 shadow-lg backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-rose-500/15 cursor-pointer active:scale-[0.98] dark:border-slate-800/40 dark:bg-slate-900/30 text-left"
-                            >
-                                <div className="absolute top-0 right-0 -mt-10 -mr-10 h-24 w-24 rounded-full bg-rose-500/5 blur-xl pointer-events-none" />
-                                <div className="flex flex-col items-start gap-4 h-full justify-between">
-                                    <div className="flex items-center justify-between w-full">
-                                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-50 text-rose-600 shadow-inner transition-transform duration-500 group-hover:scale-108 dark:bg-rose-500/10 dark:text-rose-400">
-                                            <AlertTriangle className="h-6 w-6" />
+                                        <div className="pointer-events-none absolute top-0 right-0 -mt-10 -mr-10 h-24 w-24 rounded-full bg-amber-500/5 blur-xl" />
+                                        <div className="flex-1 space-y-1.5 pr-4 text-left">
+                                            <div className="flex items-center gap-2">
+                                                <span className="h-2 w-2 animate-ping rounded-full bg-amber-500" />
+                                                <h3 className="max-w-[280px] truncate text-sm font-black text-slate-800 dark:text-slate-200">
+                                                    {evaluation.title}
+                                                </h3>
+                                            </div>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                Event Date:{' '}
+                                                <span className="font-semibold">
+                                                    {evaluation.date || 'N/A'}
+                                                </span>
+                                            </p>
                                         </div>
-                                        <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase font-mono">Anonymous</span>
+                                        <Button
+                                            onClick={() =>
+                                                router.get(
+                                                    studentEvaluationShow(
+                                                        evaluation.id,
+                                                    ),
+                                                )
+                                            }
+                                            className="h-9 shrink-0 rounded-xl bg-amber-500 px-4 text-xs font-black text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:scale-105 hover:bg-amber-600 active:scale-95"
+                                        >
+                                            Start
+                                        </Button>
                                     </div>
-                                    
-                                    <div className="space-y-1 mt-2">
-                                        <h3 className="text-sm font-black tracking-tight text-slate-900 uppercase dark:text-white">
-                                            Report Incident
-                                        </h3>
-                                        <p className="text-[11px] leading-relaxed font-semibold text-slate-500 dark:text-slate-400">
-                                            Submit safety or security incidents to student affairs.
-                                        </p>
-                                    </div>
-
-                                    <Button className="w-full mt-3 h-8.5 rounded-xl border border-rose-600 bg-rose-600 px-3 text-[9px] font-black tracking-widest text-white uppercase transition-all duration-300 hover:bg-rose-700 hover:shadow-[0_0_12px_rgba(239,68,68,0.5)] active:scale-95">
-                                        Begin Report
-                                        <ChevronRight className="ml-1 h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                                    </Button>
-                                </div>
+                                ))}
                             </div>
+                        </div>
+                    )}
 
-                            {/* ACTION: ADMISSION SLIP */}
-                            <div
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    setAdmissionSlipOpen(true);
-                                }}
-                                className="group relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 shadow-lg backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-blue-500/15 cursor-pointer active:scale-[0.98] dark:border-slate-800/40 dark:bg-slate-900/30 text-left"
-                            >
-                                <div className="absolute top-0 right-0 -mt-10 -mr-10 h-24 w-24 rounded-full bg-blue-500/5 blur-xl pointer-events-none" />
-                                <div className="flex flex-col items-start gap-4 h-full justify-between">
-                                    <div className="flex items-center justify-between w-full">
-                                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600 shadow-inner transition-transform duration-500 group-hover:scale-108 dark:bg-blue-500/10 dark:text-blue-400">
-                                            <ClipboardList className="h-6 w-6" />
-                                        </div>
-                                        <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase">Requests</span>
+                    {/* MODERN QUICK ACTIONS GRID */}
+                    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                        {/* ACTION: SCAN ATTENDANCE */}
+                        <div
+                            onClick={() => {
+                                if (activeEvents.length > 0) {
+                                    router.visit(
+                                        studentAttendanceDynamicQrScan(
+                                            activeEvents[0].id,
+                                        ),
+                                    );
+                                } else {
+                                    Swal.fire({
+                                        icon: 'info',
+                                        title: 'No Active Sessions',
+                                        text: 'There are no active attendance sessions at the moment.',
+                                        confirmButtonColor: '#0b2d66',
+                                    });
+                                }
+                            }}
+                            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 text-left shadow-lg backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-violet-500/15 active:scale-[0.98] dark:border-slate-800/40 dark:bg-slate-900/30"
+                        >
+                            <div className="pointer-events-none absolute top-0 right-0 -mt-10 -mr-10 h-24 w-24 rounded-full bg-violet-500/5 blur-xl" />
+                            <div className="flex h-full flex-col items-start justify-between gap-4">
+                                <div className="flex w-full items-center justify-between">
+                                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-50 text-violet-600 shadow-inner transition-transform duration-500 group-hover:scale-108 dark:bg-violet-500/10 dark:text-violet-400">
+                                        <ScanLine className="h-6 w-6" />
                                     </div>
-                                    
-                                    <div className="space-y-1 mt-2">
-                                        <h3 className="text-sm font-black tracking-tight text-slate-900 uppercase dark:text-white">
-                                            Admission Slip
-                                        </h3>
-                                        <p className="text-[11px] leading-relaxed font-semibold text-slate-500 dark:text-slate-400">
-                                            Request an official admission slip for class entry.
-                                        </p>
-                                    </div>
-
-                                    <Button className="w-full mt-3 h-8.5 rounded-xl border border-blue-600 bg-blue-600 px-3 text-[9px] font-black tracking-widest text-white uppercase transition-all duration-300 hover:bg-blue-700 hover:shadow-[0_0_12px_rgba(59,130,246,0.5)] active:scale-95">
-                                        Request Slip
-                                        <ChevronRight className="ml-1 h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                                    </Button>
+                                    <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase">
+                                        Self Check-in
+                                    </span>
                                 </div>
-                            </div>
 
-                            {/* ACTION: E-CERTIFICATES */}
-                            <div
-                                onClick={() => router.visit(studentCertificates())}
-                                className="group relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 shadow-lg backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-emerald-500/15 cursor-pointer active:scale-[0.98] dark:border-slate-800/40 dark:bg-slate-900/30 text-left"
-                            >
-                                <div className="absolute top-0 right-0 -mt-10 -mr-10 h-24 w-24 rounded-full bg-emerald-500/5 blur-xl pointer-events-none" />
-                                <div className="flex flex-col items-start gap-4 h-full justify-between">
-                                    <div className="flex items-center justify-between w-full">
-                                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 shadow-inner transition-transform duration-500 group-hover:scale-108 dark:bg-emerald-500/10 dark:text-emerald-400">
-                                            <Award className="h-6 w-6" />
-                                        </div>
-                                        <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase">Certificates</span>
-                                    </div>
-                                    
-                                    <div className="space-y-1 mt-2">
-                                        <h3 className="text-sm font-black tracking-tight text-slate-900 uppercase dark:text-white">
-                                            E-Certificates
-                                        </h3>
-                                        <p className="text-[11px] leading-relaxed font-semibold text-slate-500 dark:text-slate-400">
-                                            View and download official event participation awards.
-                                        </p>
-                                    </div>
-
-                                    <Button className="w-full mt-3 h-8.5 rounded-xl border border-emerald-600 bg-emerald-600 px-3 text-[9px] font-black tracking-widest text-white uppercase transition-all duration-300 hover:bg-emerald-700 hover:shadow-[0_0_12px_rgba(16,185,129,0.5)] active:scale-95">
-                                        View Awards
-                                        <ChevronRight className="ml-1 h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                                    </Button>
+                                <div className="mt-2 space-y-1">
+                                    <h3 className="text-sm font-black tracking-tight text-slate-900 uppercase dark:text-white">
+                                        Scan QR Code
+                                    </h3>
+                                    <p className="text-[11px] leading-relaxed font-semibold text-slate-500 dark:text-slate-400">
+                                        Check-in to an active school event using
+                                        your camera.
+                                    </p>
                                 </div>
+
+                                <Button
+                                    className="mt-3 h-8.5 w-full rounded-xl border border-violet-600 bg-violet-600 px-3 text-[9px] font-black tracking-widest text-white uppercase transition-all duration-300 hover:bg-violet-700 hover:shadow-[0_0_12px_rgba(139,92,246,0.5)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                                    disabled={activeEvents.length === 0}
+                                >
+                                    {activeEvents.length > 0
+                                        ? 'Scan Now'
+                                        : 'No Active Session'}
+                                    {activeEvents.length > 0 && (
+                                        <ChevronRight className="ml-1 h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                                    )}
+                                </Button>
                             </div>
                         </div>
 
-                        {/* PENDING EVALUATIONS SECTION */}
-                        {evaluationRows.length > 0 && (
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-amber-600/20 bg-amber-600/10 shadow-inner">
-                                        <ClipboardList className="h-4 w-4 text-amber-500" />
+                        {/* ACTION: REPORT INCIDENT */}
+                        <div
+                            onClick={() => setReportIncidentOpen(true)}
+                            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 text-left shadow-lg backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-rose-500/15 active:scale-[0.98] dark:border-slate-800/40 dark:bg-slate-900/30"
+                        >
+                            <div className="pointer-events-none absolute top-0 right-0 -mt-10 -mr-10 h-24 w-24 rounded-full bg-rose-500/5 blur-xl" />
+                            <div className="flex h-full flex-col items-start justify-between gap-4">
+                                <div className="flex w-full items-center justify-between">
+                                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-50 text-rose-600 shadow-inner transition-transform duration-500 group-hover:scale-105 dark:bg-rose-500/10 dark:text-rose-400">
+                                        <AlertTriangle className="h-6 w-6" />
                                     </div>
-                                    <div className="text-left">
-                                        <h2 className="text-sm font-black tracking-wider text-slate-900 uppercase sm:text-base dark:text-white">
-                                            Action Required: Pending Evaluations
-                                        </h2>
-                                        <p className="mt-0.5 text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase dark:text-slate-500">
-                                            Complete these forms to support campus improvements
-                                        </p>
-                                    </div>
+                                    <span className="font-mono text-[8px] font-black tracking-widest text-slate-400 uppercase">
+                                        Anonymous
+                                    </span>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {evaluationRows.map((evaluation) => (
-                                        <div
-                                            key={evaluation.id}
-                                            className="relative overflow-hidden rounded-2xl border border-amber-200/50 bg-amber-500/[0.02] p-5 backdrop-blur-xl dark:border-amber-500/20 dark:bg-amber-500/[0.02] hover:border-amber-500/40 hover:shadow-lg transition-all duration-300 flex items-center justify-between"
-                                        >
-                                            <div className="absolute top-0 right-0 -mt-10 -mr-10 h-24 w-24 rounded-full bg-amber-500/5 blur-xl pointer-events-none" />
-                                            <div className="space-y-1.5 flex-1 pr-4 text-left">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping" />
-                                                    <h3 className="text-sm font-black text-slate-800 dark:text-slate-200 truncate max-w-[280px]">
-                                                        {evaluation.title}
-                                                    </h3>
-                                                </div>
-                                                <p className="text-xs text-slate-500 dark:text-slate-400">
-                                                    Event Date: <span className="font-semibold">{evaluation.date || 'N/A'}</span>
-                                                </p>
-                                            </div>
-                                            <Button
-                                                onClick={() => router.get(studentEvaluationShow(evaluation.id))}
-                                                className="h-9 shrink-0 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs px-4 shadow-lg shadow-amber-500/20 transition-all hover:scale-105 active:scale-95"
-                                            >
-                                                Start
-                                            </Button>
-                                        </div>
-                                    ))}
+                                <div className="mt-2 space-y-1">
+                                    <h3 className="text-sm font-black tracking-tight text-slate-900 uppercase dark:text-white">
+                                        Report Incident
+                                    </h3>
+                                    <p className="text-[11px] leading-relaxed font-semibold text-slate-500 dark:text-slate-400">
+                                        Submit safety or security incidents to
+                                        student affairs.
+                                    </p>
                                 </div>
+
+                                <Button className="mt-3 h-8.5 w-full rounded-xl border border-rose-600 bg-rose-600 px-3 text-[9px] font-black tracking-widest text-white uppercase transition-all duration-300 hover:bg-rose-700 hover:shadow-[0_0_12px_rgba(239,68,68,0.5)] active:scale-95">
+                                    Begin Report
+                                    <ChevronRight className="ml-1 h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                                </Button>
                             </div>
-                        )}
+                        </div>
 
-                        {/* CAMPUS SCHEDULE SECTION */}
-                        <div className="space-y-5">
-                            <div className="flex items-center justify-between px-0.5 sm:px-1">
-                                <div className="flex items-center gap-2 sm:gap-3">
-                                    <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-blue-600/20 bg-blue-600/10 shadow-inner">
-                                        <Calendar className="h-4.5 w-4.5 text-blue-600" />
+                        {/* ACTION: ADMISSION SLIP */}
+                        <div
+                            onClick={(e) => {
+                                e.preventDefault();
+                                setAdmissionSlipOpen(true);
+                            }}
+                            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 text-left shadow-lg backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-blue-500/15 active:scale-[0.98] dark:border-slate-800/40 dark:bg-slate-900/30"
+                        >
+                            <div className="pointer-events-none absolute top-0 right-0 -mt-10 -mr-10 h-24 w-24 rounded-full bg-blue-500/5 blur-xl" />
+                            <div className="flex h-full flex-col items-start justify-between gap-4">
+                                <div className="flex w-full items-center justify-between">
+                                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600 shadow-inner transition-transform duration-500 group-hover:scale-108 dark:bg-blue-500/10 dark:text-blue-400">
+                                        <ClipboardList className="h-6 w-6" />
                                     </div>
-                                    <div className="text-left">
-                                        <h2 className="text-sm font-black tracking-wider text-slate-900 uppercase sm:text-base dark:text-white">
-                                            Campus Schedule
-                                        </h2>
-                                        <p className="mt-0.5 text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase dark:text-slate-500">
-                                            Co-Curricular & Academic Timeline
-                                        </p>
-                                    </div>
+                                    <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase">
+                                        Requests
+                                    </span>
                                 </div>
-                                <Badge className="rounded-lg border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[10px] font-black tracking-widest text-blue-600 uppercase dark:bg-blue-500/20 dark:text-blue-400">
-                                    {events.length} Events Total
-                                </Badge>
+
+                                <div className="mt-2 space-y-1">
+                                    <h3 className="text-sm font-black tracking-tight text-slate-900 uppercase dark:text-white">
+                                        Admission Slip
+                                    </h3>
+                                    <p className="text-[11px] leading-relaxed font-semibold text-slate-500 dark:text-slate-400">
+                                        Request an official admission slip for
+                                        class entry.
+                                    </p>
+                                </div>
+
+                                <Button className="mt-3 h-8.5 w-full rounded-xl border border-blue-600 bg-blue-600 px-3 text-[9px] font-black tracking-widest text-white uppercase transition-all duration-300 hover:bg-blue-700 hover:shadow-[0_0_12px_rgba(59,130,246,0.5)] active:scale-95">
+                                    Request Slip
+                                    <ChevronRight className="ml-1 h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                                </Button>
                             </div>
+                        </div>
 
-                            <div className="relative overflow-hidden rounded-3xl border border-slate-200/60 bg-white/70 p-6 shadow-xl backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/40">
-                                {/* Timeline vertical track */}
-                                {events.length > 0 && (
-                                    <div className="absolute left-[38px] top-8 bottom-8 w-0.5 border-l border-dashed border-slate-350 dark:border-slate-800 pointer-events-none" />
-                                )}
-
-                                <div className="space-y-8">
-                                    {events.map((event) => {
-                                        const isOngoing = event.scanner_portal_active;
-                                        return (
-                                            <div
-                                                key={event.id}
-                                                className="relative flex items-start gap-4 md:gap-6 group text-left"
-                                            >
-                                                {/* Timeline Node Circle */}
-                                                <div className="relative z-10 flex items-center justify-center">
-                                                    <div className={cn(
-                                                        "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg transition-transform duration-500 group-hover:scale-108",
-                                                        isOngoing
-                                                            ? "bg-gradient-to-br from-emerald-400 to-teal-500 ring-4 ring-emerald-500/20 shadow-emerald-500/30 animate-pulse"
-                                                            : "bg-gradient-to-br from-blue-600 to-indigo-700"
-                                                    )}>
-                                                        <Calendar className="h-5 w-5" />
-                                                    </div>
-                                                </div>
-
-                                                {/* Timeline Card Content */}
-                                                <div className="flex-1 rounded-2xl border border-slate-100 bg-slate-50/40 p-4 transition-all duration-300 hover:border-blue-500/20 hover:bg-slate-50 dark:border-slate-800/40 dark:bg-slate-900/20 dark:hover:bg-slate-900/40">
-                                                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                                                        <div className="space-y-1">
-                                                            <div className="flex flex-wrap items-center gap-2">
-                                                                <h3 className="text-sm font-black tracking-tight text-slate-900 dark:text-white sm:text-base">
-                                                                    {event.title}
-                                                                </h3>
-                                                                <Badge className={cn(
-                                                                    "rounded-lg border px-2.5 py-0.5 text-[8px] font-black tracking-[0.25em] uppercase",
-                                                                    isOngoing
-                                                                        ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                                                                        : "border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                                                                )}>
-                                                                    {isOngoing ? "Ongoing" : (event.status || "Upcoming")}
-                                                                </Badge>
-                                                            </div>
-                                                            <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-xs font-semibold text-slate-505 dark:text-slate-400">
-                                                                <span className="flex items-center gap-1">
-                                                                    <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                                                                    {event.date}
-                                                                </span>
-                                                                {event.time && (
-                                                                    <span className="flex items-center gap-1">
-                                                                        <Clock className="h-3.5 w-3.5 text-slate-400" />
-                                                                        {event.time}
-                                                                    </span>
-                                                                )}
-                                                                {event.location && (
-                                                                    <span className="flex items-center gap-1">
-                                                                        <MapPin className="h-3.5 w-3.5 text-slate-400" />
-                                                                        {event.location}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            {event.description && (
-                                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 max-w-2xl leading-relaxed">
-                                                                    {event.description}
-                                                                </p>
-                                                            )}
-                                                        </div>
-
-                                                        <div className="flex items-center justify-end">
-                                                            {isOngoing && (
-                                                                <Button
-                                                                    className="h-8.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-4 text-[9px] font-black tracking-widest text-white uppercase shadow-lg shadow-emerald-500/20 transition-all hover:scale-105 active:scale-95"
-                                                                    onClick={() => router.visit(studentAttendanceDynamicQrScan(event.id))}
-                                                                >
-                                                                    Scan
-                                                                    <QrCode className="ml-1.5 h-3.5 w-3.5" />
-                                                                </Button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-
-                                    {events.length === 0 && (
-                                        <div className="py-16 text-center">
-                                            <Calendar className="mx-auto h-12 w-12 text-slate-300 dark:text-slate-600 animate-pulse" />
-                                            <h3 className="mt-4 text-sm font-black tracking-wider text-slate-900 uppercase dark:text-white">
-                                                No Scheduled Events
-                                            </h3>
-                                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                                Keep checking back for future school events and announcements.
-                                            </p>
-                                        </div>
-                                    )}
+                        {/* ACTION: E-CERTIFICATES */}
+                        <div
+                            onClick={() => router.visit(studentCertificates())}
+                            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 text-left shadow-lg backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-emerald-500/15 active:scale-[0.98] dark:border-slate-800/40 dark:bg-slate-900/30"
+                        >
+                            <div className="pointer-events-none absolute top-0 right-0 -mt-10 -mr-10 h-24 w-24 rounded-full bg-emerald-500/5 blur-xl" />
+                            <div className="flex h-full flex-col items-start justify-between gap-4">
+                                <div className="flex w-full items-center justify-between">
+                                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 shadow-inner transition-transform duration-500 group-hover:scale-108 dark:bg-emerald-500/10 dark:text-emerald-400">
+                                        <Award className="h-6 w-6" />
+                                    </div>
+                                    <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase">
+                                        Certificates
+                                    </span>
                                 </div>
+
+                                <div className="mt-2 space-y-1">
+                                    <h3 className="text-sm font-black tracking-tight text-slate-900 uppercase dark:text-white">
+                                        E-Certificates
+                                    </h3>
+                                    <p className="text-[11px] leading-relaxed font-semibold text-slate-500 dark:text-slate-400">
+                                        View and download official event
+                                        participation awards.
+                                    </p>
+                                </div>
+
+                                <Button className="mt-3 h-8.5 w-full rounded-xl border border-emerald-600 bg-emerald-600 px-3 text-[9px] font-black tracking-widest text-white uppercase transition-all duration-300 hover:bg-emerald-700 hover:shadow-[0_0_12px_rgba(16,185,129,0.5)] active:scale-95">
+                                    View Awards
+                                    <ChevronRight className="ml-1 h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                                </Button>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <StudentDashboardFooter />
+            <StudentDashboardFooter />
         </StudentLayout>
     );
 }

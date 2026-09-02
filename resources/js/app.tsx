@@ -53,7 +53,10 @@ function GlobalAppWrapper({ App, props }: { App: any; props: any }) {
                 } else if (
                     pathname.includes('/login') ||
                     pathname.includes('/admin-login') ||
-                    pathname.includes('/program-head-login')
+                    pathname.includes('/program-head-login') ||
+                    pathname.includes('/student-login') ||
+                    pathname.includes('/two-factor-challenge') ||
+                    pathname.includes('/register')
                 ) {
                     setLoadingState({ visible: true, state: 'signing-in' });
                 }

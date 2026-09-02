@@ -186,7 +186,7 @@ export default function AttendanceTable({
 
             <CardContent className="p-0">
                 <div className="overflow-x-auto">
-                    <table className="w-full border-collapse text-left text-sm">
+                    <table className="w-full min-w-max border-collapse text-left text-sm">
                         <thead className="dark:border-slate-850 border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-400 uppercase dark:bg-slate-900/30 dark:text-slate-500">
                             <tr>
                                 <th

@@ -27,7 +27,7 @@ class Certificate extends Model
     ];
 
     protected $casts = [
-        'issue_date' => 'date',
+        'issue_date' => 'date:Y-m-d',
         'is_generated' => 'boolean',
         'is_downloaded' => 'boolean',
         'generated_at' => 'datetime',

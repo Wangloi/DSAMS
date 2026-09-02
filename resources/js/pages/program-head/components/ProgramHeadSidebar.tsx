@@ -47,7 +47,7 @@ const programHeadNavItems: NavItemWithChildren[] = [
         icon: Users,
     },
     {
-        title: 'Violations',
+        title: 'Incidents & Violations',
         href: programHeadViolations(),
         icon: ShieldAlert,
     },

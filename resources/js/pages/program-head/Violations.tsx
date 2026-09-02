@@ -14,6 +14,7 @@ import {
 import { cn } from '@/lib/utils';
 import IncidentReportDialog from '@/pages/admin-dashboard/incidents-violations/IncidentReportDialog';
 import Pagination from '@/pages/admin-dashboard/incidents-violations/Pagination';
+import StudentCallingProcessFlow from '@/pages/admin-dashboard/incidents-violations/StudentCallingProcessFlow';
 import type {
     IncidentReportPayload,
     IncidentRow,
@@ -325,6 +326,8 @@ export default function Violations() {
                             </div>
                         ))}
                     </div>
+
+                    <StudentCallingProcessFlow compact />
 
                     <Card className="border-0 bg-white shadow-lg dark:bg-[#0B192C]/50">
                         <CardHeader className="pb-3">

@@ -47,6 +47,10 @@ class NotificationController extends Controller
                     $subtitle = (string) ($data['subtitle'] ?? $data['message'] ?? '');
                 }
 
+                if (in_array($type, ['activity_plan_submitted_admin', 'activity_plan_status_updated'])) {
+                    $eventId = $data['event_id'] ?? null;
+                }
+
                 $slipId = $data['slip_id'] ?? null;
                 $incidentId = $data['incident_id'] ?? $data['id'] ?? null;
 
@@ -125,6 +129,70 @@ class NotificationController extends Controller
             });
 
         return Inertia::render('student/notifications/index', [
+            'paginatedNotifications' => $notifications
+        ]);
+    }
+
+    public function programHeadIndex()
+    {
+        $user = auth('program_head')->user();
+        if (!$user) {
+            abort(403);
+        }
+
+        $notifications = $user->notifications()
+            ->orderByDesc('created_at')
+            ->paginate(20)
+            ->through(function (DatabaseNotification $notification) {
+                $data = $notification->data;
+                $type = (string) ($data['type'] ?? '');
+                $title = (string) ($data['title'] ?? $data['message'] ?? 'Notification');
+                $subtitle = (string) ($data['subtitle'] ?? '');
+                $eventId = null;
+                $evaluationId = null;
+
+                if (in_array($type, ['activity_plan_submitted_admin', 'activity_plan_status_updated'])) {
+                    $eventId = $data['event_id'] ?? null;
+                    $eventName = (string) ($data['event_name'] ?? '');
+                    $status = (string) ($data['approval_status'] ?? '');
+                    $subtitle = (string) ($data['message'] ?? trim(implode(' • ', array_filter([$eventName, strtoupper($status)]))));
+                }
+
+                if (in_array($type, ['admission_slip_requested', 'admission_slip_status_updated'])) {
+                    $status = (string) ($data['status'] ?? ($type === 'admission_slip_requested' ? 'PENDING' : ''));
+                    $slipId = (string) ($data['slip_id'] ?? '');
+                    $studentName = (string) ($data['student_name'] ?? '');
+                    $subtitle = trim(implode(' • ', array_filter([
+                        $slipId !== '' ? "Admission Slip #{$slipId}" : '',
+                        $studentName,
+                        $status,
+                    ])));
+                }
+
+                if ($type === 'incident_reported_program_head' || $type === 'incident_reported_admin') {
+                    $incidentType = (string) ($data['incident_type'] ?? '');
+                    $subtitle = (string) ($data['subtitle'] ?? $data['message'] ?? '');
+                }
+
+                $slipId = $data['slip_id'] ?? null;
+                $incidentId = $data['incident_id'] ?? $data['id'] ?? null;
+
+                return [
+                    'id' => $notification->id,
+                    'type' => $type,
+                    'eventId' => $eventId,
+                    'evaluationId' => $evaluationId,
+                    'slipId' => $slipId,
+                    'incidentId' => $incidentId,
+                    'title' => $title,
+                    'subtitle' => $subtitle,
+                    'timeAgo' => $notification->created_at?->diffForHumans() ?? '',
+                    'is_read' => $notification->read_at !== null,
+                    'created_at' => $notification->created_at?->toDateTimeString(),
+                ];
+            });
+
+        return Inertia::render('program-head/notifications/index', [
             'paginatedNotifications' => $notifications
         ]);
     }

@@ -47,6 +47,7 @@ import {
     Eye,
     GraduationCap,
     KeyRound,
+    Layers,
     Pencil,
     Plus,
     Search,
@@ -63,6 +64,7 @@ import AdminLayout from '../admin-layout';
 import AddEditUserDialog from './AddEditUserDialog';
 import AddProgramHeadDialog from './AddProgramHeadDialog';
 import BulkAddUsersDialog from './BulkAddUsersDialog';
+import BulkActionsModal from './BulkActionsModal';
 import type { PageProps } from './types';
 import { useManageUsers } from './useManageUsers';
 import ViewStudentDialog from './ViewStudentDialog';
@@ -194,6 +196,9 @@ export default function AdminManageUsersPage() {
         approveStudent,
         rejectStudent,
         setPendingStudent,
+        approveProgramHead,
+        rejectProgramHead,
+        setPendingProgramHead,
     } = useManageUsers(errors);
 
     const [activeById, setActiveById] = useState<Record<number, boolean>>({});
@@ -207,7 +212,7 @@ export default function AdminManageUsersPage() {
     const [roleFilter, setRoleFilter] = useState<string>('all');
     const [statusFilter, setStatusFilter] = useState<
         'active' | 'inactive' | 'all'
-    >('active');
+    >('all');
     const [courseFilter, setCourseFilter] = useState<'all' | string>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [pageIndex, setPageIndex] = useState(1);
@@ -217,6 +222,10 @@ export default function AdminManageUsersPage() {
     >(null);
     const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
     const [bulkAddOpen, setBulkAddOpen] = useState(false);
+    const [bulkModalOpen, setBulkModalOpen] = useState(false);
+    const [bulkYearLevelOpen, setBulkYearLevelOpen] = useState(false);
+    const [targetYearLevel, setTargetYearLevel] = useState<string>('3rd Year');
+    const [isUpdatingYearLevel, setIsUpdatingYearLevel] = useState(false);
 
     const handleSelectAll = (checked: boolean) => {
         const pageIds = pagedStudents
@@ -612,6 +621,13 @@ export default function AdminManageUsersPage() {
                                                     <GraduationCap className="h-4.5 w-4.5 text-[#1e3a8a]" />
                                                     Add Program Head
                                                 </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={() => setBulkModalOpen(true)}
+                                                    className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-900"
+                                                >
+                                                    <Layers className="h-4.5 w-4.5 text-blue-600" />
+                                                    Bulk Actions Manager
+                                                </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
 
@@ -644,6 +660,104 @@ export default function AdminManageUsersPage() {
                                             open={bulkAddOpen}
                                             onOpenChange={setBulkAddOpen}
                                         />
+                                        <BulkActionsModal
+                                            open={bulkModalOpen}
+                                            onOpenChange={setBulkModalOpen}
+                                            users={students as any}
+                                            selectedUserIds={selectedUserIds}
+                                            setSelectedUserIds={setSelectedUserIds}
+                                            availablePrograms={availableCourses}
+                                            onSuccess={() => setSelectedUserIds([])}
+                                        />
+                                        <Dialog
+                                            open={bulkYearLevelOpen}
+                                            onOpenChange={setBulkYearLevelOpen}
+                                        >
+                                            <DialogContent className="sm:max-w-md">
+                                                <DialogHeader>
+                                                    <DialogTitle className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
+                                                        <GraduationCap className="h-5 w-5 text-amber-600" />
+                                                        Change Year Level
+                                                    </DialogTitle>
+                                                    <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+                                                        Update the year level for{' '}
+                                                        <span className="font-bold text-slate-900 dark:text-white">
+                                                            {selectedUserIds.length}
+                                                        </span>{' '}
+                                                        selected student(s) (e.g., promote 2nd Year to 3rd Year).
+                                                    </DialogDescription>
+                                                </DialogHeader>
+
+                                                <div className="space-y-4 py-3">
+                                                    <div className="space-y-2">
+                                                        <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                                            Target Year Level
+                                                        </Label>
+                                                        <Select
+                                                            value={targetYearLevel}
+                                                            onValueChange={setTargetYearLevel}
+                                                        >
+                                                            <SelectTrigger className="w-full">
+                                                                <SelectValue placeholder="Select Year Level" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="1st Year">1st Year</SelectItem>
+                                                                <SelectItem value="2nd Year">2nd Year</SelectItem>
+                                                                <SelectItem value="3rd Year">3rd Year</SelectItem>
+                                                                <SelectItem value="4th Year">4th Year</SelectItem>
+                                                                <SelectItem value="Irregular">Irregular</SelectItem>
+                                                                <SelectItem value="Graduated">Graduated</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                </div>
+
+                                                <DialogFooter className="gap-2 sm:gap-0">
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        onClick={() => setBulkYearLevelOpen(false)}
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        className="bg-[#1e3a8a] text-white hover:bg-blue-900"
+                                                        disabled={isUpdatingYearLevel}
+                                                        onClick={() => {
+                                                            setIsUpdatingYearLevel(true);
+                                                            router.post(
+                                                                '/admin/manage-users/bulk/year-level',
+                                                                {
+                                                                    ids: selectedUserIds,
+                                                                    year_level: targetYearLevel,
+                                                                },
+                                                                {
+                                                                    preserveScroll: true,
+                                                                    onSuccess: () => {
+                                                                        setSelectedUserIds([]);
+                                                                        setBulkYearLevelOpen(false);
+                                                                        setIsUpdatingYearLevel(false);
+                                                                        Swal.fire({
+                                                                            icon: 'success',
+                                                                            title: 'Year Level Updated',
+                                                                            text: `Successfully updated student(s) to ${targetYearLevel}.`,
+                                                                            timer: 2000,
+                                                                            showConfirmButton: false,
+                                                                        });
+                                                                    },
+                                                                    onError: () => {
+                                                                        setIsUpdatingYearLevel(false);
+                                                                    },
+                                                                },
+                                                            );
+                                                        }}
+                                                    >
+                                                        {isUpdatingYearLevel ? 'Updating...' : 'Update Year Level'}
+                                                    </Button>
+                                                </DialogFooter>
+                                            </DialogContent>
+                                        </Dialog>
                                     </div>
                                 ) : activeTab === 'programs' ? (
                                     <Button
@@ -781,92 +895,81 @@ export default function AdminManageUsersPage() {
                                                 />
                                             </div>
 
-                                            <Select
-                                                value={roleFilter}
-                                                onValueChange={(v) => {
-                                                    setRoleFilter(v as any);
-                                                    setPageIndex(1);
-                                                }}
-                                            >
-                                                <SelectTrigger className="h-8.5 w-[140px] border border-slate-200 bg-white text-xs dark:border-slate-600 dark:bg-slate-800">
-                                                    <SelectValue placeholder="All Users" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="all">
-                                                        All Users
-                                                    </SelectItem>
-                                                    <SelectItem value="students">
-                                                        Students
-                                                    </SelectItem>
-                                                    <SelectItem value="program">
-                                                        Program Heads
-                                                    </SelectItem>
-                                                    <SelectItem value="1st Year">
-                                                        1st Year
-                                                    </SelectItem>
-                                                    <SelectItem value="2nd Year">
-                                                        2nd Year
-                                                    </SelectItem>
-                                                    <SelectItem value="3rd Year">
-                                                        3rd Year
-                                                    </SelectItem>
-                                                    <SelectItem value="4th Year">
-                                                        4th Year
-                                                    </SelectItem>
-                                                    <SelectItem value="Irregular">
-                                                        Irregular
-                                                    </SelectItem>
-                                                </SelectContent>
-                                            </Select>
+                                             <Select
+                                                 value={roleFilter}
+                                                 onValueChange={(v) => {
+                                                     setRoleFilter(v as any);
+                                                     setPageIndex(1);
+                                                 }}
+                                             >
+                                                 <SelectTrigger className="h-8.5 w-[140px] border border-slate-200 bg-white text-xs dark:border-slate-600 dark:bg-slate-800">
+                                                     <SelectValue placeholder="All Users" />
+                                                 </SelectTrigger>
+                                                 <SelectContent>
+                                                     <SelectItem value="all">
+                                                         All Users
+                                                     </SelectItem>
+                                                     <SelectItem value="students">
+                                                         Students
+                                                     </SelectItem>
+                                                     <SelectItem value="program">
+                                                         Program Heads
+                                                     </SelectItem>
+                                                     <SelectItem value="1st Year">
+                                                         1st Year
+                                                     </SelectItem>
+                                                     <SelectItem value="2nd Year">
+                                                         2nd Year
+                                                     </SelectItem>
+                                                     <SelectItem value="3rd Year">
+                                                         3rd Year
+                                                     </SelectItem>
+                                                     <SelectItem value="4th Year">
+                                                         4th Year
+                                                     </SelectItem>
+                                                     <SelectItem value="Irregular">
+                                                         Irregular
+                                                     </SelectItem>
+                                                 </SelectContent>
+                                             </Select>
 
-                                            <Select
-                                                value={courseFilter}
-                                                onValueChange={(v) => {
-                                                    setCourseFilter(v);
-                                                    setPageIndex(1);
-                                                }}
-                                            >
-                                                <SelectTrigger className="h-8.5 w-[130px] border border-slate-200 bg-white text-xs dark:border-slate-600 dark:bg-slate-800">
-                                                    <SelectValue placeholder="All Courses" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="all">
-                                                        All Courses
-                                                    </SelectItem>
-                                                    {availableCourses.map(
-                                                        (c) => (
-                                                            <SelectItem
-                                                                key={c}
-                                                                value={c}
-                                                            >
-                                                                {c}
-                                                            </SelectItem>
-                                                        ),
-                                                    )}
-                                                </SelectContent>
-                                            </Select>
+                                             <Select
+                                                 value={courseFilter}
+                                                 onValueChange={(v) => {
+                                                     setCourseFilter(v);
+                                                     setPageIndex(1);
+                                                 }}
+                                             >
+                                                 <SelectTrigger className="h-8.5 w-[130px] border border-slate-200 bg-white text-xs dark:border-slate-600 dark:bg-slate-800">
+                                                     <SelectValue placeholder="All Courses" />
+                                                 </SelectTrigger>
+                                                 <SelectContent>
+                                                     <SelectItem value="all">
+                                                         All Courses
+                                                     </SelectItem>
+                                                     {availableCourses.map(
+                                                         (c) => (
+                                                             <SelectItem
+                                                                 key={c}
+                                                                 value={c}
+                                                             >
+                                                                 {c}
+                                                             </SelectItem>
+                                                         ),
+                                                     )}
+                                                 </SelectContent>
+                                             </Select>
 
-                                            <Select
-                                                value={statusFilter}
-                                                onValueChange={(v) =>
-                                                    setStatusFilter(v as any)
-                                                }
-                                            >
-                                                <SelectTrigger className="h-8.5 w-[130px] border border-slate-200 bg-white text-xs dark:border-slate-600 dark:bg-slate-800">
-                                                    <SelectValue placeholder="Status: Active" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="all">
-                                                        Status: All
-                                                    </SelectItem>
-                                                    <SelectItem value="active">
-                                                        Status: Active
-                                                    </SelectItem>
-                                                    <SelectItem value="inactive">
-                                                        Status: Inactive
-                                                    </SelectItem>
-                                                </SelectContent>
-                                            </Select>
+                                             <Button
+                                                 type="button"
+                                                 className="h-8.5 bg-[#1e3a8a] text-white hover:bg-blue-900 font-bold text-xs shadow-sm gap-1.5"
+                                                 onClick={() => setBulkModalOpen(true)}
+                                             >
+                                                 <Layers className="h-4 w-4" />
+                                                 Bulk Actions
+                                             </Button>
+
+
                                         </div>
                                     </div>
                                 </CardHeader>
@@ -877,178 +980,14 @@ export default function AdminManageUsersPage() {
                                             selected
                                         </div>
                                         <div>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="ml-auto bg-white dark:bg-slate-800"
-                                                    >
-                                                        Bulk Actions{' '}
-                                                        <ChevronDown className="ml-2 h-4 w-4 text-slate-500" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent
-                                                    align="end"
-                                                    className="w-48"
-                                                >
-                                                    <DropdownMenuLabel className="text-xs text-slate-500 uppercase">
-                                                        Verification
-                                                    </DropdownMenuLabel>
-                                                    <DropdownMenuItem
-                                                        className="cursor-pointer font-medium text-emerald-600 focus:bg-emerald-50 focus:text-emerald-700 dark:focus:bg-emerald-950"
-                                                        onClick={() => {
-                                                            Swal.fire({
-                                                                title: 'Approve Selected?',
-                                                                text: 'This will approve the verification status of the selected users.',
-                                                                icon: 'question',
-                                                                showCancelButton: true,
-                                                                confirmButtonColor:
-                                                                    '#059669',
-                                                                confirmButtonText:
-                                                                    'Yes, approve them',
-                                                            }).then((res) => {
-                                                                if (
-                                                                    res.isConfirmed
-                                                                ) {
-                                                                    router.post(
-                                                                        '/admin/manage-users/bulk/verification/approve',
-                                                                        {
-                                                                            ids: selectedUserIds,
-                                                                        },
-                                                                        {
-                                                                            preserveScroll: true,
-                                                                            onSuccess:
-                                                                                () =>
-                                                                                    setSelectedUserIds(
-                                                                                        [],
-                                                                                    ),
-                                                                        },
-                                                                    );
-                                                                }
-                                                            });
-                                                        }}
-                                                    >
-                                                        <CheckCircle className="mr-2 h-4 w-4" />{' '}
-                                                        Approve
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        className="cursor-pointer font-medium text-red-600 focus:bg-red-50 focus:text-red-700 dark:focus:bg-red-950"
-                                                        onClick={() => {
-                                                            Swal.fire({
-                                                                title: 'Reject Selected?',
-                                                                text: 'This will reject the verification status of the selected users.',
-                                                                icon: 'warning',
-                                                                showCancelButton: true,
-                                                                confirmButtonColor:
-                                                                    '#dc2626',
-                                                                confirmButtonText:
-                                                                    'Yes, reject them',
-                                                            }).then((res) => {
-                                                                if (
-                                                                    res.isConfirmed
-                                                                ) {
-                                                                    router.post(
-                                                                        '/admin/manage-users/bulk/verification/reject',
-                                                                        {
-                                                                            ids: selectedUserIds,
-                                                                        },
-                                                                        {
-                                                                            preserveScroll: true,
-                                                                            onSuccess:
-                                                                                () =>
-                                                                                    setSelectedUserIds(
-                                                                                        [],
-                                                                                    ),
-                                                                        },
-                                                                    );
-                                                                }
-                                                            });
-                                                        }}
-                                                    >
-                                                        <XCircle className="mr-2 h-4 w-4" />{' '}
-                                                        Reject
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuLabel className="text-xs text-slate-500 uppercase">
-                                                        Account Status
-                                                    </DropdownMenuLabel>
-                                                    <DropdownMenuItem
-                                                        className="cursor-pointer font-medium text-blue-600 focus:bg-blue-50 focus:text-blue-700 dark:focus:bg-blue-950"
-                                                        onClick={() => {
-                                                            Swal.fire({
-                                                                title: 'Activate Selected?',
-                                                                text: 'This will set the account status of the selected users to Active.',
-                                                                icon: 'question',
-                                                                showCancelButton: true,
-                                                                confirmButtonColor:
-                                                                    '#2563eb',
-                                                                confirmButtonText:
-                                                                    'Yes, activate them',
-                                                            }).then((res) => {
-                                                                if (
-                                                                    res.isConfirmed
-                                                                ) {
-                                                                    router.post(
-                                                                        '/admin/manage-users/bulk/status/activate',
-                                                                        {
-                                                                            ids: selectedUserIds,
-                                                                        },
-                                                                        {
-                                                                            preserveScroll: true,
-                                                                            onSuccess:
-                                                                                () =>
-                                                                                    setSelectedUserIds(
-                                                                                        [],
-                                                                                    ),
-                                                                        },
-                                                                    );
-                                                                }
-                                                            });
-                                                        }}
-                                                    >
-                                                        <UserCheck className="mr-2 h-4 w-4" />{' '}
-                                                        Activate
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem
-                                                        className="cursor-pointer font-medium text-slate-700 focus:bg-slate-100 focus:text-slate-900 dark:text-slate-300 dark:focus:bg-slate-800"
-                                                        onClick={() => {
-                                                            Swal.fire({
-                                                                title: 'Deactivate Selected?',
-                                                                text: 'This will set the account status of the selected users to Inactive.',
-                                                                icon: 'warning',
-                                                                showCancelButton: true,
-                                                                confirmButtonColor:
-                                                                    '#475569',
-                                                                confirmButtonText:
-                                                                    'Yes, deactivate them',
-                                                            }).then((res) => {
-                                                                if (
-                                                                    res.isConfirmed
-                                                                ) {
-                                                                    router.post(
-                                                                        '/admin/manage-users/bulk/status/deactivate',
-                                                                        {
-                                                                            ids: selectedUserIds,
-                                                                        },
-                                                                        {
-                                                                            preserveScroll: true,
-                                                                            onSuccess:
-                                                                                () =>
-                                                                                    setSelectedUserIds(
-                                                                                        [],
-                                                                                    ),
-                                                                        },
-                                                                    );
-                                                                }
-                                                            });
-                                                        }}
-                                                    >
-                                                        <UserX className="mr-2 h-4 w-4" />{' '}
-                                                        Deactivate
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                             <Button
+                                                 type="button"
+                                                 className="bg-gradient-to-r from-[#0B192C] via-[#1E3E62] to-[#1e3a8a] text-white hover:opacity-95 font-bold shadow-md shadow-slate-950/20 text-xs px-4"
+                                                 onClick={() => setBulkModalOpen(true)}
+                                             >
+                                                 <Layers className="mr-2 h-4 w-4 text-amber-400" />
+                                                 Bulk Actions
+                                             </Button>
                                         </div>
                                     </div>
                                 )}
@@ -1059,7 +998,7 @@ export default function AdminManageUsersPage() {
                                 >
                                     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#0B192C]/50">
                                         <div className="overflow-x-auto">
-                                            <table className="w-full border-collapse text-left text-sm">
+                                            <table className="w-full min-w-max border-collapse text-left text-sm">
                                                 <thead className="border-b border-slate-100 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
                                                     <tr>
                                                         <th className="w-20 px-6 py-4">
@@ -1162,13 +1101,10 @@ export default function AdminManageUsersPage() {
                                                             Role
                                                         </th>
                                                         <th className="px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
+                                                            Year Level
+                                                        </th>
+                                                        <th className="px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
                                                             Department / Program
-                                                        </th>
-                                                        <th className="px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
-                                                            Account Status
-                                                        </th>
-                                                        <th className="px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
-                                                            Verification Status
                                                         </th>
                                                         <th className="px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
                                                             Action
@@ -1274,13 +1210,22 @@ export default function AdminManageUsersPage() {
                                                                                             .includes(
                                                                                                 'program',
                                                                                             )
-                                                                                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                                                                                      : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                                                                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                                                                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                                                                             }`}
                                                                         >
                                                                             {u.role ??
                                                                                 'Student'}
                                                                         </span>
+                                                                    </td>
+                                                                    <td className="px-6 py-4">
+                                                                        {u.year_level ? (
+                                                                            <span className="inline-flex items-center rounded-md bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 border border-amber-200/80 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/40">
+                                                                                {u.year_level}
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="text-slate-400 text-xs">—</span>
+                                                                        )}
                                                                     </td>
                                                                     <td className="px-6 py-4 font-medium text-slate-600 dark:text-slate-400">
                                                                         <div className="font-semibold text-slate-800 dark:text-slate-200">
@@ -1290,203 +1235,6 @@ export default function AdminManageUsersPage() {
                                                                             ).trim() ||
                                                                                 '—'}
                                                                         </div>
-                                                                    </td>
-
-                                                                    <td className="px-4 py-3">
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => {
-                                                                                const id =
-                                                                                    Number(
-                                                                                        (
-                                                                                            u as any
-                                                                                        )
-                                                                                            ?.id,
-                                                                                    );
-                                                                                if (
-                                                                                    isProgramHeadRow(
-                                                                                        u,
-                                                                                    )
-                                                                                ) {
-                                                                                    Swal.fire(
-                                                                                        {
-                                                                                            icon: 'info',
-                                                                                            title: 'Not available',
-                                                                                            text: 'Status toggle is not yet supported for Program Head accounts.',
-                                                                                        },
-                                                                                    );
-                                                                                    return;
-                                                                                }
-                                                                                if (
-                                                                                    isAdminRow(
-                                                                                        u,
-                                                                                    )
-                                                                                ) {
-                                                                                    Swal.fire(
-                                                                                        {
-                                                                                            icon: 'info',
-                                                                                            title: 'Not available',
-                                                                                            text: 'Status toggle is not yet supported for Administrator accounts.',
-                                                                                        },
-                                                                                    );
-                                                                                    return;
-                                                                                }
-                                                                                if (
-                                                                                    !id ||
-                                                                                    Number.isNaN(
-                                                                                        id,
-                                                                                    )
-                                                                                ) {
-                                                                                    Swal.fire(
-                                                                                        {
-                                                                                            icon: 'error',
-                                                                                            title: 'Update failed',
-                                                                                            text: 'Missing user id. Please refresh the page and try again.',
-                                                                                        },
-                                                                                    );
-                                                                                    return;
-                                                                                }
-
-                                                                                const nextActive =
-                                                                                    !isActive(
-                                                                                        u.id,
-                                                                                    );
-                                                                                setActiveById(
-                                                                                    (
-                                                                                        p,
-                                                                                    ) => ({
-                                                                                        ...p,
-                                                                                        [u.id]: nextActive,
-                                                                                    }),
-                                                                                );
-
-                                                                                router.post(
-                                                                                    `/admin/manage-users/${id}/status`,
-                                                                                    {
-                                                                                        is_active:
-                                                                                            nextActive,
-                                                                                    },
-                                                                                    {
-                                                                                        preserveScroll: true,
-                                                                                        onError:
-                                                                                            () => {
-                                                                                                setActiveById(
-                                                                                                    (
-                                                                                                        p,
-                                                                                                    ) => ({
-                                                                                                        ...p,
-                                                                                                        [u.id]: !nextActive,
-                                                                                                    }),
-                                                                                                );
-                                                                                                Swal.fire(
-                                                                                                    {
-                                                                                                        icon: 'error',
-                                                                                                        title: 'Update failed',
-                                                                                                        text: 'Unable to update student status. Please try again.',
-                                                                                                    },
-                                                                                                );
-                                                                                            },
-                                                                                    },
-                                                                                );
-                                                                            }}
-                                                                            aria-pressed={isActive(
-                                                                                u.id,
-                                                                            )}
-                                                                            className={
-                                                                                'relative inline-flex h-6 w-11 items-center rounded-full border transition-colors focus-visible:ring-2 focus-visible:ring-[#1e40af] focus-visible:ring-offset-2 focus-visible:outline-none ' +
-                                                                                (isActive(
-                                                                                    u.id,
-                                                                                )
-                                                                                    ? 'border-emerald-600 bg-emerald-600'
-                                                                                    : 'border-slate-300 bg-slate-200')
-                                                                            }
-                                                                        >
-                                                                            <span
-                                                                                className={
-                                                                                    'inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ' +
-                                                                                    (isActive(
-                                                                                        u.id,
-                                                                                    )
-                                                                                        ? 'translate-x-5'
-                                                                                        : 'translate-x-0.5')
-                                                                                }
-                                                                            />
-                                                                        </button>
-                                                                    </td>
-
-                                                                    <td className="space-x-2 px-4 py-3">
-                                                                        {!isProgramHeadRow(
-                                                                            u,
-                                                                        ) &&
-                                                                            !isAdminRow(
-                                                                                u,
-                                                                            ) && (
-                                                                                <>
-                                                                                    <Select
-                                                                                        value={
-                                                                                            u.status ??
-                                                                                            'pending'
-                                                                                        }
-                                                                                        onValueChange={(
-                                                                                            value,
-                                                                                        ) => {
-                                                                                            const id =
-                                                                                                Number(
-                                                                                                    (
-                                                                                                        u as any
-                                                                                                    )
-                                                                                                        ?.id,
-                                                                                                );
-                                                                                            if (
-                                                                                                !id ||
-                                                                                                Number.isNaN(
-                                                                                                    id,
-                                                                                                )
-                                                                                            )
-                                                                                                return;
-
-                                                                                            // Map status to the appropriate action
-                                                                                            if (
-                                                                                                value ===
-                                                                                                'approved'
-                                                                                            ) {
-                                                                                                approveStudent(
-                                                                                                    id,
-                                                                                                );
-                                                                                            } else if (
-                                                                                                value ===
-                                                                                                'rejected'
-                                                                                            ) {
-                                                                                                rejectStudent(
-                                                                                                    id,
-                                                                                                );
-                                                                                            } else if (
-                                                                                                value ===
-                                                                                                'pending'
-                                                                                            ) {
-                                                                                                setPendingStudent(
-                                                                                                    id,
-                                                                                                );
-                                                                                            }
-                                                                                        }}
-                                                                                    >
-                                                                                        <SelectTrigger className="border-slate-300 dark:border-slate-600">
-                                                                                            <SelectValue placeholder="Status" />
-                                                                                        </SelectTrigger>
-                                                                                        <SelectContent>
-                                                                                            <SelectItem value="pending">
-                                                                                                Pending
-                                                                                            </SelectItem>
-                                                                                            <SelectItem value="approved">
-                                                                                                Approved
-                                                                                            </SelectItem>
-                                                                                            <SelectItem value="rejected">
-                                                                                                Rejected
-                                                                                            </SelectItem>
-                                                                                        </SelectContent>
-                                                                                    </Select>
-                                                                                </>
-                                                                            )}
                                                                     </td>
 
                                                                     <td className="px-4 py-3">
@@ -1542,123 +1290,6 @@ export default function AdminManageUsersPage() {
                                                                             >
                                                                                 <Pencil className="h-4 w-4 text-slate-600 dark:text-slate-400" />
                                                                             </Button>
-                                                                            {!isProgramHeadRow(
-                                                                                u,
-                                                                            ) &&
-                                                                                !isAdminRow(
-                                                                                    u,
-                                                                                ) && (
-                                                                                    <button
-                                                                                        type="button"
-                                                                                        className="text-amber-600 transition-colors hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
-                                                                                        aria-label="Archive user"
-                                                                                        onClick={() => {
-                                                                                            if (
-                                                                                                isProgramHeadRow(
-                                                                                                    u,
-                                                                                                )
-                                                                                            ) {
-                                                                                                Swal.fire(
-                                                                                                    {
-                                                                                                        icon: 'info',
-                                                                                                        title: 'Not available',
-                                                                                                        text: 'Archiving is not yet supported for Program Head accounts.',
-                                                                                                    },
-                                                                                                );
-                                                                                            } else if (
-                                                                                                isAdminRow(
-                                                                                                    u,
-                                                                                                )
-                                                                                            ) {
-                                                                                                Swal.fire(
-                                                                                                    {
-                                                                                                        icon: 'info',
-                                                                                                        title: 'Not available',
-                                                                                                        text: 'Archiving is not yet supported for Administrator accounts.',
-                                                                                                    },
-                                                                                                );
-                                                                                            } else {
-                                                                                                Swal.fire(
-                                                                                                    {
-                                                                                                        title: 'Archive account?',
-                                                                                                        text: `This will move ${u.name} to the archive. You can restore the account later from the Archive page.`,
-                                                                                                        icon: 'question',
-                                                                                                        showCancelButton: true,
-                                                                                                        confirmButtonColor:
-                                                                                                            '#f59e0b',
-                                                                                                        cancelButtonColor:
-                                                                                                            '#d33',
-                                                                                                        confirmButtonText:
-                                                                                                            'Archive',
-                                                                                                        cancelButtonText:
-                                                                                                            'Cancel',
-                                                                                                    },
-                                                                                                ).then(
-                                                                                                    (
-                                                                                                        result,
-                                                                                                    ) => {
-                                                                                                        if (
-                                                                                                            result.isConfirmed
-                                                                                                        ) {
-                                                                                                            const id =
-                                                                                                                Number(
-                                                                                                                    (
-                                                                                                                        u as any
-                                                                                                                    )
-                                                                                                                        ?.id,
-                                                                                                                );
-                                                                                                            if (
-                                                                                                                !id ||
-                                                                                                                Number.isNaN(
-                                                                                                                    id,
-                                                                                                                )
-                                                                                                            ) {
-                                                                                                                Swal.fire(
-                                                                                                                    {
-                                                                                                                        icon: 'error',
-                                                                                                                        title: 'Archive failed',
-                                                                                                                        text: 'Missing user id. Please refresh the page and try again.',
-                                                                                                                    },
-                                                                                                                );
-                                                                                                                return;
-                                                                                                            }
-
-                                                                                                            router.post(
-                                                                                                                `/admin/manage-users/${id}/archive`,
-                                                                                                                {},
-                                                                                                                {
-                                                                                                                    preserveScroll: true,
-                                                                                                                    onSuccess:
-                                                                                                                        () => {
-                                                                                                                            router.reload(
-                                                                                                                                {
-                                                                                                                                    only: [
-                                                                                                                                        'students',
-                                                                                                                                    ],
-                                                                                                                                },
-                                                                                                                            );
-                                                                                                                        },
-                                                                                                                    onError:
-                                                                                                                        () => {
-                                                                                                                            Swal.fire(
-                                                                                                                                {
-                                                                                                                                    icon: 'error',
-                                                                                                                                    title: 'Archive failed',
-                                                                                                                                    text: 'Unable to archive the account. Please try again.',
-                                                                                                                                },
-                                                                                                                            );
-                                                                                                                        },
-                                                                                                                },
-                                                                                                            );
-                                                                                                        }
-                                                                                                    },
-                                                                                                );
-                                                                                            }
-                                                                                        }}
-                                                                                    >
-                                                                                        <Archive className="h-4 w-4" />
-                                                                                    </button>
-                                                                                )}
                                                                         </div>
                                                                     </td>
                                                                 </tr>
@@ -1910,30 +1541,7 @@ export default function AdminManageUsersPage() {
                                         <CardTitle className="text-sm text-slate-800 dark:text-white">
                                             All Programs
                                         </CardTitle>
-                                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center">
-                                            <Select
-                                                value={progStatusFilter}
-                                                onValueChange={(v) =>
-                                                    setProgStatusFilter(
-                                                        v as any,
-                                                    )
-                                                }
-                                            >
-                                                <SelectTrigger className="h-9 bg-white dark:bg-slate-700">
-                                                    <SelectValue placeholder="All Status" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="all">
-                                                        All Status
-                                                    </SelectItem>
-                                                    <SelectItem value="active">
-                                                        Active
-                                                    </SelectItem>
-                                                    <SelectItem value="inactive">
-                                                        Inactive
-                                                    </SelectItem>
-                                                </SelectContent>
-                                            </Select>
+                                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:items-center">
                                             <Select
                                                 value={progDeptFilter}
                                                 onValueChange={(v) =>
@@ -2257,7 +1865,7 @@ export default function AdminManageUsersPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
-                                    <table className="w-full text-left text-sm text-slate-600 dark:text-slate-400">
+                                    <table className="w-full min-w-max text-left text-sm text-slate-600 dark:text-slate-400">
                                         <thead className="bg-slate-50 text-xs tracking-wider text-slate-500 uppercase dark:bg-slate-800 dark:text-slate-400">
                                             <tr>
                                                 <th className="px-4 py-3 font-medium">

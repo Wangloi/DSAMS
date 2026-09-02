@@ -1,5 +1,4 @@
 import InputError from '@/components/input-error';
-import RegistrationModal from '@/components/RegistrationModal';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -20,14 +19,41 @@ type Props = {
     loginBlockedUntil?: string | null;
 };
 
+function AuthErrorAlert({
+    errors,
+}: {
+    errors: Record<string, string | undefined>;
+}) {
+    useEffect(() => {
+        if (errors && Object.keys(errors).length > 0) {
+            const firstError = Object.values(errors).find(
+                (err) => typeof err === 'string' && err.length > 0,
+            );
+            if (firstError) {
+                Swal.fire({
+                    title: 'Sign In Failed',
+                    text: firstError,
+                    icon: 'error',
+                    confirmButtonColor: '#1b2f8a',
+                    customClass: {
+                        popup: 'rounded-2xl p-6 shadow-2xl font-sans',
+                        title: 'text-2xl font-black text-slate-800',
+                        htmlContainer: 'text-sm text-slate-600 font-medium mt-2',
+                    },
+                });
+            }
+        }
+    }, [errors]);
+
+    return null;
+}
+
 export default function ProgramHeadLogin({
     status,
     canResetPassword,
     canRegister,
     loginBlockedUntil,
 }: Props) {
-    const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
-
     const [remainingSeconds, setRemainingSeconds] = useState<number | null>(
         () => {
             if (loginBlockedUntil) {
@@ -175,31 +201,9 @@ export default function ProgramHeadLogin({
                                             string | undefined
                                         >;
                                     }) => {
-                                        useEffect(() => {
-                                            if (processing) {
-                                                Swal.fire({
-                                                    title: 'Signing in...',
-                                                    text: 'Please wait while we verify your credentials.',
-                                                    allowOutsideClick: false,
-                                                    allowEscapeKey: false,
-                                                    didOpen: () => {
-                                                        Swal.showLoading();
-                                                    },
-                                                });
-                                            } else {
-                                                if (
-                                                    Swal.isVisible() &&
-                                                    Swal.getTitle()
-                                                        ?.textContent ===
-                                                        'Signing in...'
-                                                ) {
-                                                    Swal.close();
-                                                }
-                                            }
-                                        }, [processing]);
-
                                         return (
                                             <>
+                                                <AuthErrorAlert errors={errors} />
                                                 <div className="space-y-5">
                                                     <div className="space-y-2">
                                                         <Label
@@ -333,18 +337,13 @@ export default function ProgramHeadLogin({
                                                         <div className="text-center text-sm text-slate-600">
                                                             Don&apos;t have an
                                                             account?{' '}
-                                                            <button
-                                                                type="button"
-                                                                onClick={() =>
-                                                                    setIsRegisterModalOpen(
-                                                                        true,
-                                                                    )
-                                                                }
+                                                            <Link
+                                                                href="/register"
                                                                 tabIndex={6}
                                                                 className="font-medium text-blue-700 hover:text-blue-600"
                                                             >
                                                                 Register here
-                                                            </button>
+                                                            </Link>
                                                         </div>
                                                     )}
                                                 </div>
@@ -363,11 +362,6 @@ export default function ProgramHeadLogin({
                     </div>
                 </div>
             </div>
-
-            <RegistrationModal
-                isOpen={isRegisterModalOpen}
-                onClose={() => setIsRegisterModalOpen(false)}
-            />
         </div>
     );
 }

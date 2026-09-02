@@ -31,10 +31,23 @@ class Event extends Model
         'geofence_radius_m',
         'qr_code',
         'attendance_type',
+        'approval_status',
+        'activity_plan_path',
+        'requested_by',
+        'rejection_reason',
     ];
 
+    protected $appends = [
+        'activity_plan_url',
+    ];
+
+    public function getActivityPlanUrlAttribute(): ?string
+    {
+        return $this->activity_plan_path ? \Illuminate\Support\Facades\Storage::url($this->activity_plan_path) : null;
+    }
+
     protected $casts = [
-        'event_date' => 'date',
+        'event_date' => 'date:Y-m-d',
         'expected_attendees' => 'integer',
         'total_attendees' => 'integer',
         'present_count' => 'integer',
@@ -91,6 +104,70 @@ class Event extends Model
     }
 
     /**
+     * Find existing schedule conflict (same venue, same date, overlapping time).
+     */
+    public static function findScheduleConflict(string $eventDate, string $location, string $eventTime, $ignoreEventId = null): ?Event
+    {
+        if (empty($eventDate) || empty($location)) {
+            return null;
+        }
+
+        try {
+            $formattedDate = Carbon::parse($eventDate)->format('Y-m-d');
+        } catch (\Throwable) {
+            return null;
+        }
+
+        $cleanLocation = trim(strtolower($location));
+
+        $query = static::whereNull('archived_at')
+            ->where('approval_status', '!=', 'rejected')
+            ->whereDate('event_date', '=', $formattedDate);
+
+        if ($ignoreEventId) {
+            $query->where('id', '!=', $ignoreEventId);
+        }
+
+        $sameDayEvents = $query->get();
+
+        foreach ($sameDayEvents as $existingEvent) {
+            $existingLocation = trim(strtolower($existingEvent->location ?? ''));
+            if ($existingLocation === $cleanLocation || str_contains($existingLocation, $cleanLocation) || str_contains($cleanLocation, $existingLocation)) {
+                if (static::isTimeOverlapping($eventTime, (string) $existingEvent->event_time)) {
+                    return $existingEvent;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public static function isTimeOverlapping(?string $time1, ?string $time2): bool
+    {
+        if (empty($time1) || empty($time2)) {
+            return true;
+        }
+
+        $t1 = trim(strtolower($time1));
+        $t2 = trim(strtolower($time2));
+
+        if ($t1 === $t2) {
+            return true;
+        }
+
+        try {
+            $start1 = Carbon::parse($t1);
+            $start2 = Carbon::parse($t2);
+            $end1 = (clone $start1)->addHours(2);
+            $end2 = (clone $start2)->addHours(2);
+
+            return ($start1 < $end2 && $end1 > $start2);
+        } catch (\Throwable) {
+            return true;
+        }
+    }
+
+    /**
      * Status always follows the event date (not a manually persisted workflow).
      *
      * @param  mixed  $value
@@ -112,9 +189,16 @@ class Event extends Model
      */
     public function getDateTimeAttribute(): string
     {
-        $datePart = isset($this->attributes['event_date']) && $this->attributes['event_date'] !== null
-            ? $this->event_date->format('Y-m-d')
-            : '';
+        $rawDate = $this->attributes['event_date'] ?? null;
+        if (! empty($rawDate)) {
+            try {
+                $datePart = Carbon::parse($rawDate)->format('Y-m-d');
+            } catch (\Throwable) {
+                $datePart = (string) $rawDate;
+            }
+        } else {
+            $datePart = '';
+        }
 
         return trim($datePart . ' ' . (string) ($this->event_time ?? ''));
     }

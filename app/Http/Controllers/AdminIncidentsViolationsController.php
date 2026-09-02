@@ -34,6 +34,14 @@ class AdminIncidentsViolationsController extends Controller
                 $firstStudentName = count($studentsNormalized) > 0 ? $studentsNormalized[0]['name'] : '—';
                 $firstStudentId   = count($studentsNormalized) > 0 ? $studentsNormalized[0]['id'] : '';
 
+                $callingPhase = $incident->calling_phase ?? (
+                    $incident->status === 'Resolved' ? 8 : (
+                        $incident->status === 'Escalated' ? 7 : (
+                            $incident->status === 'Ongoing' ? 4 : 1
+                        )
+                    )
+                );
+
                 return [
                     'id' => $incident->id,
                     'caseId' => $date ? ($date->format('Y').'-'.str_pad((string) $incident->id, 3, '0', STR_PAD_LEFT)) : (string) $incident->id,
@@ -43,6 +51,7 @@ class AdminIncidentsViolationsController extends Controller
                     'classification' => $incident->classification,
                     'dateTime' => $dateTime,
                     'status' => $incident->status,
+                    'calling_phase' => $callingPhase,
                     'violation_id' => $incident->violation_id,
                     'disciplinary_actions' => $incident->disciplinaryActions,
                     'raw' => [
@@ -56,6 +65,7 @@ class AdminIncidentsViolationsController extends Controller
                         'immediateAction' => $incident->immediate_action,
                         'classification' => $incident->classification,
                         'status' => $incident->status,
+                        'calling_phase' => $callingPhase,
                         'receivedBy' => $incident->received_by,
                         'evidencePaths' => $incident->evidence_paths ?? [],
                     ],
@@ -177,6 +187,36 @@ class AdminIncidentsViolationsController extends Controller
         }
 
         return redirect()->back()->with('success', 'Status updated to '.$validated['status'].'.');
+    }
+
+    public function updateCallingPhase(Request $request, Incident $incident): RedirectResponse
+    {
+        $validated = $request->validate([
+            'calling_phase' => ['required', 'integer', 'min:1', 'max:8'],
+        ]);
+
+        $phase = (int) $validated['calling_phase'];
+
+        $newStatus = $incident->status;
+        if ($phase === 8) {
+            $newStatus = 'Resolved';
+        } elseif ($phase >= 4 && $phase <= 6 && $incident->status === 'Pending') {
+            $newStatus = 'Ongoing';
+        } elseif ($phase === 7 && $incident->status !== 'Resolved') {
+            $newStatus = 'Escalated';
+        }
+
+        $incident->update([
+            'calling_phase' => $phase,
+            'status' => $newStatus,
+        ]);
+
+        if (Schema::hasTable('activity_logs')) {
+            $admin = auth()->guard('admin')->user();
+            ActivityLog::logForUser($admin, 'Incidents', 'Phase Updated', 'Changed calling phase for incident #'.(string) $incident->id.' to Phase '.$phase);
+        }
+
+        return redirect()->back()->with('success', 'Student calling phase updated to Phase '.$phase.'.');
     }
 
     public function updatePost(Request $request, Incident $incident): RedirectResponse

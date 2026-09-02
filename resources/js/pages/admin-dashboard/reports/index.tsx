@@ -29,11 +29,12 @@ type Props = {
         attendance?: string;
         case_record?: string;
         evaluation?: string;
+        admission_slip?: string;
     };
 };
 
 type ReportCardItem = {
-    key: 'attendance' | 'case_record' | 'evaluation';
+    key: 'attendance' | 'case_record' | 'evaluation' | 'admission_slip';
     title: string;
     description: string;
     icon: ComponentType<{ className?: string }>;
@@ -92,12 +93,22 @@ export default function AdminReportsPage(props: Props) {
                 periodLabel,
                 recordsLabel: recordsLabelByKey.evaluation ?? '0 Records',
             },
+            {
+                key: 'admission_slip',
+                title: 'Admission Slip Report',
+                description:
+                    'Summary and detailed records of student admission slips.',
+                icon: ClipboardList,
+                periodLabel,
+                recordsLabel: recordsLabelByKey.admission_slip ?? '0 Records',
+            },
         ],
         [
             periodLabel,
             recordsLabelByKey.attendance,
             recordsLabelByKey.case_record,
             recordsLabelByKey.evaluation,
+            recordsLabelByKey.admission_slip,
         ],
     );
 
