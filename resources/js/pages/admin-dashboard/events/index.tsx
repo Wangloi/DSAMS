@@ -237,6 +237,9 @@ export default function AdminEventsIndex() {
     };
 
     const getEventLifecycleStatus = (event: Event): string => {
+        if (event.status === 'completed') {
+            return 'completed';
+        }
         if (event.event_date) {
             const dateStr = String(event.event_date).split('T')[0];
             const todayStr = new Date().toISOString().split('T')[0];
@@ -400,7 +403,7 @@ export default function AdminEventsIndex() {
     };
 
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
-    const [statusFilter, setStatusFilter] = useState(filters.status || '');
+    const [statusFilter, setStatusFilter] = useState(filters.status || 'active');
     const [courseFilter, setCourseFilter] = useState(filters.course || '');
     const [yearLevelFilter, setYearLevelFilter] = useState(
         filters.year_level || '',
@@ -572,13 +575,15 @@ export default function AdminEventsIndex() {
                     .includes(searchTerm.toLowerCase());
 
             const matchesStatus =
-                !statusFilter || statusFilter === 'all'
-                    ? true
-                    : statusFilter === 'pending'
-                      ? event.approval_status === 'pending'
-                      : statusFilter === 'rejected'
-                        ? event.approval_status === 'rejected'
-                        : getEventLifecycleStatus(event) === statusFilter;
+                !statusFilter || statusFilter === 'active'
+                    ? getEventLifecycleStatus(event) !== 'completed'
+                    : statusFilter === 'all'
+                      ? true
+                      : statusFilter === 'pending'
+                        ? event.approval_status === 'pending'
+                        : statusFilter === 'rejected'
+                          ? event.approval_status === 'rejected'
+                          : getEventLifecycleStatus(event) === statusFilter;
             const matchesCourse =
                 !courseFilter || event.courses.includes(courseFilter);
             const matchesYearLevel =
@@ -620,14 +625,13 @@ export default function AdminEventsIndex() {
 
     // Sync filters with router when select filters change
     const handleStatusFilterChange = (val: string) => {
-        const newStatus = val === 'all' ? '' : val;
-        setStatusFilter(newStatus);
+        setStatusFilter(val);
         setPageIndex(1);
         router.get(
             adminEvents(),
             {
                 search: searchTerm,
-                status: newStatus,
+                status: val,
                 course: courseFilter,
                 year_level: yearLevelFilter,
                 page: 1,
@@ -870,20 +874,25 @@ export default function AdminEventsIndex() {
                     {/* ── KPI Cards ── */}
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                         <div
-                            onClick={() => handleStatusFilterChange('all')}
+                            onClick={() => handleStatusFilterChange('active')}
                             className="group relative cursor-pointer overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800"
                         >
                             <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-blue-500/5" />
                             <div className="flex items-start justify-between gap-3">
                                 <div>
                                     <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
-                                        Total Events
+                                        Active Events
                                     </p>
                                     <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
-                                        {pagination.total}
+                                        {
+                                            allEvents.filter(
+                                                (e: Event) =>
+                                                    getEventLifecycleStatus(e) !== 'completed',
+                                            ).length
+                                        }
                                     </p>
                                     <p className="mt-1 text-xs font-semibold text-blue-600 dark:text-blue-400">
-                                        All Campus Events
+                                        Upcoming & Ongoing
                                     </p>
                                 </div>
                                 <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-500/10 text-blue-600 ring-1 ring-blue-200/50 transition-transform duration-300 group-hover:scale-110 dark:bg-blue-500/20 dark:text-blue-400 dark:ring-blue-900/30">
@@ -1162,32 +1171,35 @@ export default function AdminEventsIndex() {
                                             />
                                         </div>
                                         <Select
-                                            value={statusFilter || 'all'}
+                                            value={statusFilter || 'active'}
                                             onValueChange={
                                                 handleStatusFilterChange
                                             }
                                         >
-                                            <SelectTrigger className="h-9 w-32 rounded-xl border-slate-200 bg-slate-50 text-xs font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-white">
-                                                <SelectValue placeholder="All Status" />
+                                            <SelectTrigger className="h-9 w-44 rounded-xl border-slate-200 bg-slate-50 text-xs font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                                                <SelectValue placeholder="Active Events" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="all">
-                                                    All Status
-                                                </SelectItem>
-                                                <SelectItem value="pending">
-                                                    Pending Approval
+                                                <SelectItem value="active">
+                                                    Active Events
                                                 </SelectItem>
                                                 <SelectItem value="upcoming">
                                                     Upcoming
                                                 </SelectItem>
                                                 <SelectItem value="ongoing">
-                                                    Ongoing
+                                                    Ongoing (Live)
+                                                </SelectItem>
+                                                <SelectItem value="pending">
+                                                    Pending Approval
                                                 </SelectItem>
                                                 <SelectItem value="completed">
-                                                    Completed
+                                                    Completed / Past Events
                                                 </SelectItem>
                                                 <SelectItem value="rejected">
                                                     Schedule Rejected
+                                                </SelectItem>
+                                                <SelectItem value="all">
+                                                    All Events (Include Past)
                                                 </SelectItem>
                                             </SelectContent>
                                         </Select>

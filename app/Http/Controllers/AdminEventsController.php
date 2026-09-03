@@ -18,25 +18,47 @@ class AdminEventsController extends Controller
 {
     public function index(Request $request)
     {
+        $today = now()->toDateString();
+        $status = $request->input('status', 'active');
+
         $query = Event::with(['attendances.student'])
             ->when($request->search, function ($q, $search) {
-                $q->where('event_name', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%")
-                    ->orWhere('location', 'like', "%{$search}%");
+                $q->where(function ($sub) use ($search) {
+                    $sub->where('event_name', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhere('location', 'like', "%{$search}%")
+                        ->orWhere('organizer', 'like', "%{$search}%");
+                });
             })
-            ->when($request->status, function ($q, $status) {
-                $today = now()->toDateString();
+            ->when($status, function ($q, $status) use ($today) {
                 if ($status === 'pending') {
-                    $q->where('approval_status', 'pending');
+                    $q->where('approval_status', 'pending')
+                      ->where('status', '!=', 'completed')
+                      ->whereDate('event_date', '>=', $today);
                 } elseif ($status === 'rejected') {
                     $q->where('approval_status', 'rejected');
                 } elseif ($status === 'upcoming') {
-                    $q->whereDate('event_date', '>', $today);
+                    $q->whereDate('event_date', '>', $today)
+                      ->where('status', '!=', 'completed');
                 } elseif ($status === 'ongoing') {
-                    $q->whereDate('event_date', '=', $today);
+                    $q->whereDate('event_date', '=', $today)
+                      ->where('status', '!=', 'completed');
                 } elseif ($status === 'completed') {
-                    $q->whereDate('event_date', '<', $today);
+                    $q->where(function ($sq) use ($today) {
+                        $sq->where('status', 'completed')
+                           ->orWhereDate('event_date', '<', $today);
+                    });
+                } elseif ($status === 'all') {
+                    // Include all non-archived events (active and past)
+                } elseif ($status === 'active') {
+                    // Default active view: only upcoming, ongoing, and pending active events (hide completed/done)
+                    $q->where('status', '!=', 'completed')
+                      ->whereDate('event_date', '>=', $today);
                 }
+            }, function ($q) use ($today) {
+                // Default fallback: Hide completed/done events
+                $q->where('status', '!=', 'completed')
+                  ->whereDate('event_date', '>=', $today);
             })
             ->when($request->course, function ($q, $course) {
                 $q->whereJsonContains('courses', $course);
@@ -45,9 +67,13 @@ class AdminEventsController extends Controller
                 $q->whereJsonContains('year_levels', $yearLevel);
             })
             // Only include active (non-archived) events
-            ->whereNull('archived_at')
-            ->orderBy('event_date', 'desc')
-            ->orderBy('event_time', 'desc');
+            ->whereNull('archived_at');
+
+        if ($status === 'completed') {
+            $query->orderBy('event_date', 'desc')->orderBy('event_time', 'desc');
+        } else {
+            $query->orderBy('event_date', 'asc')->orderBy('event_time', 'asc');
+        }
 
         $events = $query->paginate(10);
 
