@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { connectSocket, getSocketInstance, disconnectSocket } from '@/services/socket';
+import { playNotificationSound } from '@/services/notification-sound';
 import type { AppNotificationItem, NotificationResponse } from '@/types/notification';
 
 export interface UseNotificationsOptions {
@@ -59,6 +60,9 @@ export function useNotifications({
         if (!incoming.is_read) {
             setUnreadCount((count) => count + 1);
         }
+
+        // Play Howler.js notification sound
+        playNotificationSound();
 
         // Trigger floating popup toast
         setPopupNotification(incoming);
