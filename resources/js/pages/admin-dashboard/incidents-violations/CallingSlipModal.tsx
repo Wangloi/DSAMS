@@ -112,7 +112,7 @@ export default function CallingSlipModal({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 overlayClassName="z-[90]"
-                className="z-[95] max-w-3xl overflow-y-auto max-h-[90vh] p-0 bg-slate-100 dark:bg-slate-950 border-0 shadow-2xl"
+                className="z-[95] max-w-4xl sm:max-w-4xl md:max-w-5xl w-[95vw] overflow-y-auto max-h-[90vh] p-0 bg-slate-100 dark:bg-slate-950 border-0 shadow-2xl"
             >
                 <DialogHeader className="sr-only">
                     <DialogTitle>Official Calling Slip Notice - Case #{caseId}</DialogTitle>

@@ -196,7 +196,7 @@ export default function DisciplinaryResolutionModal({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 overlayClassName="z-[90]"
-                className="z-[95] max-w-4xl overflow-y-auto max-h-[92vh] p-0 bg-slate-100 dark:bg-slate-950 border-0 shadow-2xl"
+                className="z-[95] max-w-5xl sm:max-w-5xl md:max-w-6xl w-[95vw] overflow-y-auto max-h-[92vh] p-0 bg-slate-100 dark:bg-slate-950 border-0 shadow-2xl"
             >
                 <DialogHeader className="sr-only">
                     <DialogTitle>Disciplinary Resolution & Decision - Case #{caseId}</DialogTitle>

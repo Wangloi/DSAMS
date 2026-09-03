@@ -163,7 +163,7 @@ export default function InvestigationDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 overlayClassName="z-[90]"
-                className="z-[95] max-h-[92vh] w-[95vw] max-w-4xl gap-0 overflow-y-auto border-slate-200 bg-slate-50 p-0 shadow-2xl md:w-[80vw] dark:border-slate-800 dark:bg-[#0B192C]"
+                className="z-[95] max-h-[92vh] w-[95vw] sm:max-w-4xl md:max-w-5xl gap-0 overflow-y-auto border-slate-200 bg-slate-50 p-0 shadow-2xl dark:border-slate-800 dark:bg-[#0B192C]"
             >
                 <DialogHeader className="sr-only">
                     <DialogTitle>Step 2: Investigation & Fact-Finding</DialogTitle>
