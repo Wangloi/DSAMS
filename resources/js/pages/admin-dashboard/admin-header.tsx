@@ -79,14 +79,16 @@ export function AdminHeader() {
         : [];
 
     // Merge initial server-rendered notifications with live realtime notifications
-    const notificationsToRender = realtimeList.length > 0 ? realtimeList : (recentNotifications as Array<{
-        id: any;
+    const notificationsToRender = (realtimeList.length > 0 ? realtimeList : recentNotifications) as Array<{
+        id: string | number;
         type?: string;
         title: string;
         subtitle?: string;
+        message?: string;
         timeAgo?: string;
+        created_at?: string;
         is_read?: boolean;
-    }>);
+    }>;
 
     const unreadNotifications = realtimeList.length > 0
         ? realtimeUnread
@@ -412,7 +414,9 @@ export function AdminHeader() {
                                     notificationsToRender.map((n) => {
                                         const isRead =
                                             n.is_read ||
-                                            locallyRead.includes(n.id);
+                                            locallyRead.includes(String(n.id));
+                                        const displaySubtitle = n.subtitle || n.message;
+                                        const displayTime = n.timeAgo || (n.created_at ? 'Just now' : undefined);
                                         return (
                                             <div
                                                 key={n.id}
@@ -437,14 +441,14 @@ export function AdminHeader() {
                                                     >
                                                         {n.title}
                                                     </p>
-                                                    {n.subtitle && (
+                                                    {displaySubtitle && (
                                                         <p className="mt-1 text-xs leading-normal text-slate-600 dark:text-slate-400">
-                                                            {n.subtitle}
+                                                            {displaySubtitle}
                                                         </p>
                                                     )}
-                                                    {n.timeAgo && (
+                                                    {displayTime && (
                                                         <p className="mt-1.5 text-[10px] font-semibold text-slate-400 dark:text-slate-500">
-                                                            {n.timeAgo}
+                                                            {displayTime}
                                                         </p>
                                                     )}
                                                 </div>

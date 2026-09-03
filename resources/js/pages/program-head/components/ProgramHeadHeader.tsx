@@ -45,7 +45,10 @@ import {
     Users,
     X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useNotifications } from '@/hooks/useNotifications';
+import NotificationPopup from '@/components/notifications/NotificationPopup';
+import { playNotificationSound } from '@/services/notification-sound';
 
 export function ProgramHeadHeader() {
     const page = usePage<SharedData>();
@@ -56,29 +59,69 @@ export function ProgramHeadHeader() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [helpOpen, setHelpOpen] = useState(false);
 
+    // Real-time notification hook powered by Node.js + Socket.IO
+    const {
+        notifications: realtimeList,
+        unreadCount: realtimeUnread,
+        popupNotification,
+        markAsRead: rtMarkAsRead,
+        markAllAsRead: rtMarkAllAsRead,
+        clearPopup,
+    } = useNotifications({
+        userId: auth?.user?.id,
+        role: 'program_head',
+        autoConnect: Boolean(auth?.user?.id),
+    });
+
     const recentNotifications = Array.isArray(
         (page.props as any)?.recentNotifications,
     )
         ? ((page.props as any).recentNotifications ?? [])
         : [];
 
-    const notificationsToRender = recentNotifications as Array<{
-        id: string;
+    const serverNotifications = recentNotifications as Array<{
+        id: string | number;
         type?: string;
         title: string;
         subtitle?: string;
+        message?: string;
         timeAgo?: string;
+        created_at?: string;
         is_read?: boolean;
         slipId?: number | string;
         incidentId?: number | string;
         eventId?: number | string;
     }>;
 
-    const unreadNotifications = bellClicked
-        ? 0
-        : notificationsToRender.filter(
-              (n) => !n.is_read && !locallyRead.includes(n.id),
-          ).length;
+    const notificationsToRender = (realtimeList.length > 0 ? realtimeList : serverNotifications) as Array<{
+        id: string | number;
+        type?: string;
+        title: string;
+        subtitle?: string;
+        message?: string;
+        timeAgo?: string;
+        created_at?: string;
+        is_read?: boolean;
+        slipId?: number | string;
+        incidentId?: number | string;
+        eventId?: number | string;
+    }>;
+
+    const unreadNotifications = realtimeList.length > 0
+        ? realtimeUnread
+        : (bellClicked
+            ? 0
+            : serverNotifications.filter(
+                  (n) => !n.is_read && !locallyRead.includes(String(n.id)),
+              ).length);
+
+    const lastUnreadCount = useRef(unreadNotifications);
+    useEffect(() => {
+        if (unreadNotifications > lastUnreadCount.current) {
+            playNotificationSound();
+        }
+        lastUnreadCount.current = unreadNotifications;
+    }, [unreadNotifications]);
 
     const handleNotificationBellClick = () => {
         setBellClicked(true);
@@ -114,10 +157,14 @@ export function ProgramHeadHeader() {
     };
 
     const handleNotificationClick = (n: any) => {
-        const isRead = n.is_read || locallyRead.includes(n.id);
+        const isRead = n.is_read || locallyRead.includes(String(n.id));
         if (!isRead) {
-            setLocallyRead((prev) => [...prev, n.id]);
-            axios.post(`/notifications/${n.id}/mark-read`).catch(console.error);
+            setLocallyRead((prev) => [...prev, String(n.id)]);
+            if (typeof n.id === 'number') {
+                rtMarkAsRead(n.id);
+            } else {
+                axios.post(`/notifications/${n.id}/mark-read`).catch(console.error);
+            }
         }
 
         const href = getNotificationHref(n);
@@ -127,16 +174,9 @@ export function ProgramHeadHeader() {
     };
 
     const handleMarkAllAsRead = () => {
-        const allIds = notificationsToRender.map((n) => n.id);
+        const allIds = notificationsToRender.map((n) => String(n.id));
         setLocallyRead(allIds);
-        axios
-            .post('/notifications/mark-all-read')
-            .then(() => {
-                router.reload({
-                    only: ['recentNotifications', 'unreadNotifications'],
-                });
-            })
-            .catch(console.error);
+        rtMarkAllAsRead();
     };
 
     const propsAny = page.props as unknown as Record<string, any>;
@@ -395,7 +435,9 @@ export function ProgramHeadHeader() {
                                     notificationsToRender.map((n) => {
                                         const isRead =
                                             n.is_read ||
-                                            locallyRead.includes(n.id);
+                                            locallyRead.includes(String(n.id));
+                                        const displaySubtitle = n.subtitle || n.message;
+                                        const displayTime = n.timeAgo || (n.created_at ? 'Just now' : undefined);
                                         return (
                                             <div
                                                 key={n.id}
@@ -420,14 +462,14 @@ export function ProgramHeadHeader() {
                                                     >
                                                         {n.title}
                                                     </p>
-                                                    {n.subtitle && (
+                                                    {displaySubtitle && (
                                                         <p className="mt-1 text-xs leading-normal text-slate-600 dark:text-slate-400">
-                                                            {n.subtitle}
+                                                            {displaySubtitle}
                                                         </p>
                                                     )}
-                                                    {n.timeAgo && (
+                                                    {displayTime && (
                                                         <p className="mt-1.5 text-[10px] font-semibold text-slate-400 dark:text-slate-500">
-                                                            {n.timeAgo}
+                                                            {displayTime}
                                                         </p>
                                                     )}
                                                 </div>
@@ -485,6 +527,16 @@ export function ProgramHeadHeader() {
                     </DropdownMenu>
                 </div>
             </div>
+
+            {/* Real-time Notification Popup Toast */}
+            <NotificationPopup
+                notification={popupNotification}
+                onClose={clearPopup}
+                onView={(n) => {
+                    const href = getNotificationHref(n);
+                    if (href) router.visit(href);
+                }}
+            />
         </div>
     );
 }

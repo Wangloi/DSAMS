@@ -25,7 +25,7 @@ import {
     studentHelp,
 } from '@/routes';
 import type { SharedData } from '@/types';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import axios from 'axios';
 import {
     ArrowRight,
@@ -39,7 +39,10 @@ import {
     Shield,
     Users,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useNotifications } from '@/hooks/useNotifications';
+import NotificationPopup from '@/components/notifications/NotificationPopup';
+import { playNotificationSound } from '@/services/notification-sound';
 
 export function StudentHeader() {
     const page = usePage<SharedData>();
@@ -49,6 +52,20 @@ export function StudentHeader() {
     const [locallyRead, setLocallyRead] = useState<string[]>([]);
     const [bellClicked, setBellClicked] = useState(false);
     const [helpOpen, setHelpOpen] = useState(false);
+
+    // Real-time notification hook powered by Node.js + Socket.IO
+    const {
+        notifications: realtimeList,
+        unreadCount: realtimeUnread,
+        popupNotification,
+        markAsRead,
+        markAllAsRead,
+        clearPopup,
+    } = useNotifications({
+        userId: auth?.user?.id,
+        role: 'student',
+        autoConnect: Boolean(auth?.user?.id),
+    });
 
     const recentNotifications = ((page.props as any)?.recentNotifications ??
         []) as Array<{
@@ -74,15 +91,51 @@ export function StudentHeader() {
         is_read?: boolean;
     }>;
 
-    const notificationsToRender =
+    const serverNotifications = (
         recentNotifications.length > 0
             ? recentNotifications
-            : dashboardNotifications;
-    const unreadNotifications = bellClicked
-        ? 0
-        : notificationsToRender.filter(
-              (n) => !n.is_read && !locallyRead.includes(n.id),
-          ).length;
+            : dashboardNotifications
+    ) as Array<{
+        id: string | number;
+        type?: string;
+        eventId?: number | string | null;
+        evaluationId?: number | string | null;
+        title: string;
+        subtitle?: string;
+        message?: string;
+        timeAgo?: string;
+        created_at?: string;
+        is_read?: boolean;
+    }>;
+
+    const notificationsToRender = (realtimeList.length > 0 ? realtimeList : serverNotifications) as Array<{
+        id: string | number;
+        type?: string;
+        eventId?: number | string | null;
+        evaluationId?: number | string | null;
+        title: string;
+        subtitle?: string;
+        message?: string;
+        timeAgo?: string;
+        created_at?: string;
+        is_read?: boolean;
+    }>;
+
+    const unreadNotifications = realtimeList.length > 0
+        ? realtimeUnread
+        : (bellClicked
+            ? 0
+            : serverNotifications.filter(
+                  (n) => !n.is_read && !locallyRead.includes(String(n.id)),
+              ).length);
+
+    const lastUnreadCount = useRef(unreadNotifications);
+    useEffect(() => {
+        if (unreadNotifications > lastUnreadCount.current) {
+            playNotificationSound();
+        }
+        lastUnreadCount.current = unreadNotifications;
+    }, [unreadNotifications]);
 
     const handleNotificationBellClick = () => {
         setBellClicked(true);
@@ -288,13 +341,15 @@ export function StudentHeader() {
                                     notificationsToRender.map((n) => {
                                         const isRead =
                                             n.is_read ||
-                                            locallyRead.includes(n.id);
+                                            locallyRead.includes(String(n.id));
+                                        const displaySubtitle = n.subtitle || n.message;
+                                        const displayTime = n.timeAgo || (n.created_at ? 'Just now' : undefined);
                                         return (
                                             <div
                                                 key={n.id}
                                                 onClick={(e) =>
                                                     !isRead &&
-                                                    markSingleAsRead(n.id, e)
+                                                    markSingleAsRead(String(n.id), e)
                                                 }
                                                 className={cn(
                                                     'group border-b border-slate-50 px-5 py-4 transition-colors dark:border-white/5',
@@ -314,15 +369,15 @@ export function StudentHeader() {
                                                     >
                                                         {n.title}
                                                     </p>
-                                                    {n.subtitle && (
+                                                    {displaySubtitle && (
                                                         <p className="text-xs leading-relaxed font-medium text-slate-500 dark:text-white/60">
-                                                            {n.subtitle}
+                                                            {displaySubtitle}
                                                         </p>
                                                     )}
                                                     <div className="mt-2 flex items-center justify-between">
-                                                        {n.timeAgo && (
+                                                        {displayTime && (
                                                             <p className="text-[10px] font-bold tracking-tight text-slate-400 uppercase dark:text-white/40">
-                                                                {n.timeAgo}
+                                                                {displayTime}
                                                             </p>
                                                         )}
 
@@ -421,6 +476,12 @@ export function StudentHeader() {
                     </DropdownMenu>
                 </div>
             </div>
+
+            {/* Real-time Notification Popup Toast */}
+            <NotificationPopup
+                notification={popupNotification}
+                onClose={clearPopup}
+            />
         </header>
     );
 }
