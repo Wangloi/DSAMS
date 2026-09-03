@@ -1,5 +1,7 @@
 import { Button } from '@/components/ui/button';
-import { CalendarDays, PlusCircle, ShieldAlert } from 'lucide-react';
+import { adminHelp } from '@/routes';
+import { Link } from '@inertiajs/react';
+import { BookOpen, CalendarDays, PlusCircle, ShieldAlert } from 'lucide-react';
 
 type Props = {
     onNewIncident: () => void;
@@ -28,6 +30,14 @@ export default function IncidentTableHeader({ onNewIncident }: Props) {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
+                    <Link
+                        href={adminHelp()}
+                        className="hidden items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-3.5 py-2.5 text-xs font-semibold text-white ring-1 ring-white/20 backdrop-blur-md transition-all hover:bg-white/20 sm:inline-flex"
+                    >
+                        <BookOpen className="h-4 w-4 text-blue-200" />
+                        Help & Protocol
+                    </Link>
+
                     <div className="hidden items-center gap-3 rounded-xl border border-white/10 bg-white/10 px-4 py-2.5 text-white ring-1 ring-white/20 backdrop-blur-md md:flex">
                         <CalendarDays className="h-4 w-4 text-blue-200" />
                         <div className="text-xs font-semibold tracking-wide text-white/90 uppercase">

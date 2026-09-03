@@ -13,12 +13,9 @@ import type { BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import {
     AlertTriangle,
-    ArrowUpRight,
     CheckCircle2,
     ChevronRight,
-    Layers,
     RotateCcw,
-    Zap,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import Swal from 'sweetalert2';
@@ -31,9 +28,7 @@ import Pagination from './Pagination';
 import CallingSlipModal from './CallingSlipModal';
 import InvestigationDialog from './InvestigationDialog';
 import DisciplinaryResolutionModal from './DisciplinaryResolutionModal';
-import StudentCallingProcessFlow, {
-    STUDENT_CALLING_PHASES,
-} from './StudentCallingProcessFlow';
+import { STUDENT_CALLING_PHASES } from './StudentCallingProcessFlow';
 import type {
     IncidentRow,
     IncidentStats,
@@ -113,47 +108,6 @@ export default function AdminIncidentsViolationsPage() {
             (i: IncidentRow) => i.status === 'Escalated',
         ).length;
         return { total, pending, ongoing, resolved, escalated };
-    }, [incidents]);
-
-    const phaseCounts = useMemo(() => {
-        const counts: Record<number, number> = {
-            1: 0,
-            2: 0,
-            3: 0,
-            4: 0,
-            5: 0,
-        };
-        incidents.forEach((inc) => {
-            const phase =
-                inc.calling_phase ??
-                (inc.status === 'Resolved'
-                    ? 5
-                    : inc.status === 'Escalated'
-                      ? 4
-                      : inc.status === 'Ongoing'
-                        ? 3
-                        : 1);
-            if (counts[phase] !== undefined) {
-                counts[phase]++;
-            }
-        });
-        return counts;
-    }, [incidents]);
-
-    /** #3: Compute overdue counts (cases stuck > 7 days in current phase) */
-    const overdueCount = useMemo(() => {
-        return incidents.filter((inc) => {
-            if (inc.status === 'Resolved') return false;
-            let lastDate: string | undefined;
-            if (inc.calling_phase_history && inc.calling_phase_history.length > 0) {
-                lastDate = inc.calling_phase_history[inc.calling_phase_history.length - 1].at;
-            } else if (inc.updated_at) {
-                lastDate = inc.updated_at;
-            }
-            if (!lastDate) return false;
-            const days = Math.floor((Date.now() - new Date(lastDate).getTime()) / (1000 * 60 * 60 * 24));
-            return days > 7;
-        }).length;
     }, [incidents]);
 
     const filteredRows = useMemo(() => {
@@ -326,10 +280,11 @@ export default function AdminIncidentsViolationsPage() {
         const currentPhase = row.calling_phase ?? 1;
         const nextPhase = Math.min(currentPhase + 1, 5);
         const nextItem = STUDENT_CALLING_PHASES[nextPhase - 1];
+        const phaseName = nextItem?.shortLabel ?? `Phase ${nextPhase}`;
 
         Swal.fire({
             title: `Advance to Phase ${nextPhase}?`,
-            text: `Move Case #${row.caseId} to "${nextItem.shortLabel}"? Status will auto-sync.`,
+            text: `Move Case #${row.caseId} to "${phaseName}"? Status will auto-sync.`,
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#0B192C',
@@ -448,34 +403,19 @@ export default function AdminIncidentsViolationsPage() {
         },
     ];
 
-    const activeBreadcrumbs = useMemo((): BreadcrumbItem[] => {
-        const base: BreadcrumbItem[] = [
-            {
-                title: 'Admin Dashboard',
-                href: adminDashboard(),
-            },
-            {
-                title: 'Violation Registry & History',
-                href: adminIncidentsViolations(),
-            },
-        ];
-        if (phaseFilter !== 'all') {
-            const p = STUDENT_CALLING_PHASES[phaseFilter - 1];
-            if (p) {
-                base.push({
-                    title: `Phase ${phaseFilter}: ${p.shortLabel}`,
-                    href: '#',
-                });
-            }
-        }
-        return base;
-    }, [phaseFilter]);
-
-    /** #10: Phase distribution mini-chart */
-    const maxPhaseCount = Math.max(...Object.values(phaseCounts), 1);
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'Admin Dashboard',
+            href: adminDashboard(),
+        },
+        {
+            title: 'Violation Registry & History',
+            href: adminIncidentsViolations(),
+        },
+    ];
 
     return (
-        <AdminLayout breadcrumbs={activeBreadcrumbs}>
+        <AdminLayout breadcrumbs={breadcrumbs}>
             <Head title="Incidents & Violations" />
             <div className="min-h-[calc(100vh-4rem)] bg-slate-100 dark:bg-slate-900">
                 <div className="flex w-full flex-col gap-6 px-6 py-6">
@@ -488,181 +428,7 @@ export default function AdminIncidentsViolationsPage() {
                         ))}
                     </div>
 
-                    {/* #6: Phase-Aware Insights Row */}
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                        {/* Awaiting Action */}
-                        <div className="flex items-center gap-3 rounded-xl border border-amber-200/80 bg-gradient-to-r from-amber-50 to-orange-50/40 p-3.5 shadow-sm dark:border-amber-900/40 dark:from-amber-950/30 dark:to-orange-950/10">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500 text-white shadow-sm">
-                                <Zap className="h-4 w-4" />
-                            </div>
-                            <div>
-                                <div className="text-[10px] font-bold tracking-wider text-amber-700 uppercase dark:text-amber-400">
-                                    Awaiting Action
-                                </div>
-                                <div className="text-lg font-black text-amber-900 dark:text-amber-100">
-                                    {phaseCounts[2] + phaseCounts[3]}
-                                    <span className="ml-1.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
-                                        cases in Phase 2–3
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Pending Decision */}
-                        <div className="flex items-center gap-3 rounded-xl border border-blue-200/80 bg-gradient-to-r from-blue-50 to-indigo-50/40 p-3.5 shadow-sm dark:border-blue-900/40 dark:from-blue-950/30 dark:to-indigo-950/10">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
-                                <ArrowUpRight className="h-4 w-4" />
-                            </div>
-                            <div>
-                                <div className="text-[10px] font-bold tracking-wider text-blue-700 uppercase dark:text-blue-400">
-                                    Pending Decision
-                                </div>
-                                <div className="text-lg font-black text-blue-900 dark:text-blue-100">
-                                    {phaseCounts[4] + phaseCounts[5]}
-                                    <span className="ml-1.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400">
-                                        cases in Phase 4–5
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Overdue */}
-                        <div className="flex items-center gap-3 rounded-xl border border-rose-200/80 bg-gradient-to-r from-rose-50 to-red-50/40 p-3.5 shadow-sm dark:border-rose-900/40 dark:from-rose-950/30 dark:to-red-950/10">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-rose-600 text-white shadow-sm">
-                                <AlertTriangle className="h-4 w-4" />
-                            </div>
-                            <div>
-                                <div className="text-[10px] font-bold tracking-wider text-rose-700 uppercase dark:text-rose-400">
-                                    Overdue (&gt; 7 days)
-                                </div>
-                                <div className="text-lg font-black text-rose-900 dark:text-rose-100">
-                                    {overdueCount}
-                                    <span className="ml-1.5 text-[10px] font-semibold text-rose-600 dark:text-rose-400">
-                                        cases stuck
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* #10: Phase Distribution Mini-Chart */}
-                    <div className="rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
-                        <div className="mb-3 flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-xs font-extrabold tracking-wider text-slate-700 uppercase dark:text-slate-300">
-                                <Layers className="h-3.5 w-3.5" />
-                                Phase Distribution
-                            </div>
-                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
-                                {incidents.length} total across 5 steps
-                            </span>
-                        </div>
-                        <div className="flex items-end gap-1.5">
-                            {STUDENT_CALLING_PHASES.map((p) => {
-                                const count = phaseCounts[p.phase] ?? 0;
-                                const pct = (count / maxPhaseCount) * 100;
-                                const isActive = phaseFilter === p.phase;
-                                return (
-                                    <button
-                                        key={p.phase}
-                                        type="button"
-                                        onClick={() => {
-                                            setPhaseFilter(isActive ? 'all' : p.phase);
-                                            setPageIndex(1);
-                                        }}
-                                        className="group flex flex-1 flex-col items-center gap-1"
-                                        title={`Step ${p.phase}: ${p.shortLabel} (${count})`}
-                                    >
-                                        <span className="text-[9px] font-black text-slate-600 dark:text-slate-400">
-                                            {count}
-                                        </span>
-                                        <div
-                                            className={`w-full rounded-t-md transition-all duration-300 ${
-                                                isActive
-                                                    ? 'bg-[#0B192C] ring-2 ring-amber-400 dark:bg-blue-600'
-                                                    : count > 0
-                                                      ? 'bg-blue-500/70 group-hover:bg-blue-600 dark:bg-blue-700/60'
-                                                      : 'bg-slate-200 dark:bg-slate-700'
-                                            }`}
-                                            style={{ height: `${Math.max(pct, 8)}%`, minHeight: '6px', maxHeight: '48px' }}
-                                        />
-                                        <span className={`text-[8px] font-bold ${
-                                            isActive
-                                                ? 'text-[#0B192C] dark:text-blue-300'
-                                                : 'text-slate-500 dark:text-slate-400'
-                                        }`}>
-                                            P{p.phase}
-                                        </span>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    <StudentCallingProcessFlow
-                        compact
-                        selectedPhaseFilter={phaseFilter}
-                        onSelectPhaseFilter={(p) => {
-                            setPhaseFilter(p);
-                            setPageIndex(1);
-                        }}
-                        phaseCounts={phaseCounts}
-                        totalCount={incidents.length}
-                        onCallStudent={() => {
-                            if (filteredRows.length > 0) {
-                                setCallingSlipIncident(filteredRows[0]);
-                            } else if (incidents.length > 0) {
-                                setCallingSlipIncident(incidents[0]);
-                            }
-                        }}
-                        onOpenInvestigation={() => {
-                            if (filteredRows.length > 0) {
-                                setInvestigationIncident(filteredRows[0]);
-                            } else if (incidents.length > 0) {
-                                setInvestigationIncident(incidents[0]);
-                            }
-                        }}
-                        onOpenDecision={() => {
-                            if (filteredRows.length > 0) {
-                                setDecisionIncident(filteredRows[0]);
-                            } else if (incidents.length > 0) {
-                                setDecisionIncident(incidents[0]);
-                            }
-                        }}
-                    />
-
-                    {phaseFilter !== 'all' && (
-                        <div className="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-2.5 text-xs font-semibold text-amber-900 shadow-sm dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
-                            <div className="flex items-center gap-2">
-                                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 text-xs font-black text-[#0B192C]">
-                                    {phaseFilter}
-                                </span>
-                                <span>
-                                    Filtered by Calling Step:{' '}
-                                    <span className="font-extrabold">
-                                        Step {phaseFilter} –{' '}
-                                        {STUDENT_CALLING_PHASES[phaseFilter - 1]?.shortLabel}
-                                    </span>{' '}
-                                    ({filteredRows.length}{' '}
-                                    {filteredRows.length === 1
-                                        ? 'record'
-                                        : 'records'}{' '}
-                                    found)
-                                </span>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setPhaseFilter('all');
-                                    setPageIndex(1);
-                                }}
-                                className="cursor-pointer font-bold text-amber-800 hover:text-amber-950 underline underline-offset-2 dark:text-amber-300 dark:hover:text-amber-100"
-                            >
-                                Reset to All Phases
-                            </button>
-                        </div>
-                    )}
-
-                    {/* #5: Batch Action Bar */}
+                    {/* Batch Action Bar */}
                     {selectedIds.size > 0 && (
                         <div className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-300 bg-blue-50/95 px-4 py-3 shadow-md backdrop-blur-sm dark:border-blue-800 dark:bg-blue-950/80">
                             <div className="flex items-center gap-2 text-xs font-bold text-blue-900 dark:text-blue-200">

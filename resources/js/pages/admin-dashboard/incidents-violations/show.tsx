@@ -13,7 +13,6 @@ import {
     ExternalLink,
     FileText,
     Gavel,
-    HeartHandshake,
     MapPin,
     Paperclip,
     Printer,
@@ -283,80 +282,119 @@ export default function DisciplinaryCaseDetailPage({
                         </div>
                     </div>
 
+                    {/* ── Unified Case & Student Information Banner ── */}
+                    <div className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-[#0B192C]/50">
+                        <div className={`absolute top-0 left-0 bottom-0 w-1.5 ${isMajor ? 'bg-rose-500' : 'bg-blue-600'}`} />
+
+                        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                            {/* Left Side: Case Overview & Metadata */}
+                            <div className="flex-1 space-y-3">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-xs font-bold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
+                                        CASE_ID: #{caseId}
+                                    </span>
+                                    <span
+                                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-black tracking-wider uppercase ${severityColor}`}
+                                    >
+                                        <AlertTriangle className="mr-1 h-3 w-3" />
+                                        {severityText}
+                                    </span>
+                                    <Badge
+                                        variant="outline"
+                                        className="rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300"
+                                    >
+                                        {incident.classification}
+                                    </Badge>
+                                </div>
+
+                                <div>
+                                    <h3 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                                        {incidentTitle}
+                                    </h3>
+                                    <p className="mt-1 text-xs leading-relaxed font-medium text-slate-600 dark:text-slate-300 max-w-2xl">
+                                        {incidentDescription}
+                                    </p>
+                                </div>
+
+                                {/* Key Metadata Pills */}
+                                <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Investigation Status:</span>
+                                        <div className="flex items-center gap-1.5">
+                                            <span
+                                                className={`h-2 w-2 rounded-full ${
+                                                    investigationStatus === 'Resolved'
+                                                        ? 'bg-emerald-500'
+                                                        : investigationStatus === 'Pending'
+                                                          ? 'bg-amber-500'
+                                                          : investigationStatus === 'Ongoing'
+                                                            ? 'bg-blue-500'
+                                                            : 'bg-rose-500'
+                                                }`}
+                                            />
+                                            <span className="font-bold">{investigationStatus}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="hidden sm:block h-3.5 w-px bg-slate-200 dark:bg-slate-700" />
+
+                                    <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Assigned Officer:</span>
+                                        <UserCheck className="h-3.5 w-3.5 text-slate-400" />
+                                        <span className="font-bold">{assignedOfficer}</span>
+                                    </div>
+
+                                    <div className="hidden sm:block h-3.5 w-px bg-slate-200 dark:bg-slate-700" />
+
+                                    <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Location & Date:</span>
+                                        <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                                        <span>{location} ({dateTime.split(' ')[0]})</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right Side: Embedded Student Profile Card */}
+                            <div className="shrink-0 w-full lg:w-80 rounded-xl border border-slate-200/80 bg-slate-50/80 p-4 shadow-xs dark:border-slate-800 dark:bg-[#0B192C]">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-sm font-black text-white shadow-inner">
+                                        {studentInitials}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <h4 className="truncate text-sm font-extrabold text-slate-900 dark:text-white">
+                                            {studentName}
+                                        </h4>
+                                        <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                            ID: {studentId}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-3 grid grid-cols-2 gap-2 border-t border-slate-200/80 pt-2.5 dark:border-slate-800">
+                                    <div>
+                                        <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                                            Year Level & Course
+                                        </span>
+                                        <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200 truncate block">
+                                            {yearLevelMock} ({courseMock})
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                                            Academic Status
+                                        </span>
+                                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                            Good Standing
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                         {/* LEFT COLUMN - CASE DETAILS (Col-span 2) */}
                         <div className="space-y-6 lg:col-span-2">
-                            {/* Card 1: Main Case Information */}
-                            <Card className="overflow-hidden rounded-2xl border-0 border-l-4 border-l-rose-500 bg-white shadow-lg ring-1 ring-slate-200 dark:border-l-rose-600 dark:bg-[#0B192C]/50 dark:ring-slate-800">
-                                <CardContent className="p-6">
-                                    <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                                        <span className="text-xs font-bold tracking-wider text-slate-500 dark:text-slate-400">
-                                            CASE_ID: #{caseId}
-                                        </span>
-                                        <span
-                                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-black tracking-wider uppercase ${severityColor}`}
-                                        >
-                                            <AlertTriangle className="mr-1 h-3 w-3" />
-                                            {severityText}
-                                        </span>
-                                    </div>
-
-                                    <h3 className="mb-4 text-xl leading-snug font-extrabold tracking-tight text-slate-900 dark:text-white">
-                                        {incidentTitle}
-                                    </h3>
-
-                                    <p className="mb-6 text-xs leading-relaxed font-medium text-slate-600 dark:text-slate-300">
-                                        {incidentDescription}
-                                    </p>
-
-                                    <div className="grid grid-cols-1 gap-4 border-t border-slate-100 pt-4 sm:grid-cols-3 dark:border-slate-800">
-                                        <div>
-                                            <span className="mb-1 block text-[10px] font-bold tracking-wider text-slate-400 uppercase">
-                                                Investigation Status
-                                            </span>
-                                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                <span
-                                                    className={`h-2 w-2 rounded-full ${investigationStatus ===
-                                                            'Resolved'
-                                                            ? 'bg-emerald-500'
-                                                            : investigationStatus ===
-                                                                'Pending'
-                                                                ? 'bg-amber-500'
-                                                                : investigationStatus ===
-                                                                    'Ongoing'
-                                                                    ? 'bg-blue-500'
-                                                                    : 'bg-rose-500'
-                                                        }`}
-                                                />
-                                                <span>
-                                                    {investigationStatus}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <span className="mb-1 block text-[10px] font-bold tracking-wider text-slate-400 uppercase">
-                                                Assigned Officer
-                                            </span>
-                                            <span className="flex items-center gap-1 text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                <UserCheck className="h-3.5 w-3.5 text-slate-400" />
-                                                {assignedOfficer}
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <span className="mb-1 block text-[10px] font-bold tracking-wider text-slate-400 uppercase">
-                                                Location & Date
-                                            </span>
-                                            <span className="flex items-center gap-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
-                                                <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                                                <span className="truncate">
-                                                    {location} (
-                                                    {dateTime.split(' ')[0]})
-                                                </span>
-                                            </span>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
 
                             {/* Quick Action Bar for Calling Phase Progression */}
                             <div className="rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 via-indigo-50 to-white p-4 shadow-sm dark:border-blue-900/50 dark:from-slate-900 dark:via-blue-950/30 dark:to-slate-900">
@@ -501,37 +539,8 @@ export default function DisciplinaryCaseDetailPage({
                             />
                         </div>
 
-                        {/* RIGHT COLUMN - STUDENT PROFILE & HISTORY (Col-span 1) */}
+                        {/* RIGHT COLUMN - DISCIPLINARY HISTORY (Col-span 1) */}
                         <div className="space-y-6">
-                            {/* Card 1: Student Profile Card */}
-                            <Card className="overflow-hidden rounded-2xl border-0 bg-white shadow-lg ring-1 ring-slate-200 dark:bg-[#0B192C]/60 dark:ring-slate-800">
-                                <CardContent className="p-6">
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 text-base font-black text-[#1e40af] shadow-sm dark:from-blue-500/20 dark:to-indigo-500/20 dark:text-blue-300">
-                                            {studentInitials}
-                                        </div>
-                                        <div>
-                                            <h4 className="text-base leading-tight font-extrabold tracking-tight text-slate-900 dark:text-white">
-                                                {studentName}
-                                            </h4>
-                                            <p className="mt-0.5 text-[10px] font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
-                                                ID: {studentId}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-6 grid grid-cols-1 gap-4 border-t border-slate-100 pt-4 dark:border-slate-800">
-                                        <div>
-                                            <span className="mb-0.5 block text-[9px] font-bold tracking-wider text-slate-400 uppercase dark:text-slate-500">
-                                                Year Level & Course
-                                            </span>
-                                            <span className="text-xs font-bold text-slate-900 dark:text-white">
-                                                {yearLevelMock} ({courseMock})
-                                            </span>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
 
                             {/* Card 2: Disciplinary History */}
                             <Card className="rounded-2xl border-0 bg-white shadow-lg ring-1 ring-slate-200 dark:bg-[#0B192C]/50 dark:ring-slate-800">
@@ -618,34 +627,6 @@ export default function DisciplinaryCaseDetailPage({
                                             No prior disciplinary history.
                                         </div>
                                     )}
-                                </CardContent>
-                            </Card>
-
-                            {/* Card 3: Counseling Status */}
-                            <Card className="rounded-2xl border border-amber-200 bg-amber-50/50 text-slate-800 shadow-sm dark:border-amber-900/30 dark:bg-amber-950/10 dark:text-amber-200">
-                                <CardContent className="p-6">
-                                    <h4 className="mb-4 text-xs font-black tracking-wider text-amber-900 uppercase dark:text-amber-400">
-                                        Counseling Status
-                                    </h4>
-
-                                    <div className="mb-2 flex items-center justify-between text-xs font-extrabold">
-                                        <span>Program Progress</span>
-                                        <span>40%</span>
-                                    </div>
-                                    <div className="mb-4 h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-                                        <div
-                                            className="h-full rounded-full bg-[#E6A15C]"
-                                            style={{ width: '40%' }}
-                                        />
-                                    </div>
-
-                                    <p className="flex items-center gap-1.5 text-[10px] leading-relaxed font-bold text-amber-800/80 dark:text-amber-400">
-                                        <HeartHandshake className="h-4 w-4 shrink-0 text-[#E6A15C]" />
-                                        <span>
-                                            Mandatory 10 sessions. 4 completed
-                                            with Dr. S. Thorne
-                                        </span>
-                                    </p>
                                 </CardContent>
                             </Card>
                         </div>
