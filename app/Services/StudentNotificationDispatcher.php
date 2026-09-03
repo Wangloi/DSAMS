@@ -271,6 +271,85 @@ class StudentNotificationDispatcher
         return $query->pluck('id');
     }
 
+    public function callingNoticeIssued(Incident $incident, array $customDetails = []): void
+    {
+        $studentIds = $this->studentIdsForIncident($incident);
+
+        if ($studentIds->isEmpty() && !empty($customDetails['student_id'])) {
+            $student = Student::where('student_id', $customDetails['student_id'])
+                ->orWhere('id', $customDetails['student_id'])
+                ->first();
+            if ($student) {
+                $studentIds = collect([$student->id]);
+            }
+        }
+
+        $date = $incident->incident_date ? \Illuminate\Support\Carbon::parse($incident->incident_date) : null;
+        $caseNumber = $date ? ($date->format('Y').'-'.str_pad((string) $incident->id, 3, '0', STR_PAD_LEFT)) : ('#'.$incident->id);
+        $venue = $customDetails['venue'] ?? $incident->location ?? 'Office of the Dean of Student Affairs (ODSA)';
+        $schedule = $customDetails['appearance_schedule'] ?? 'Next business day during office hours (8:00 AM - 5:00 PM)';
+        $instructions = $customDetails['instructions'] ?? 'You are officially summoned to appear at the Office of Student Affairs & Discipline for Step 3: Meeting / Hearing.';
+
+        $title = 'Official Notice to Appear: Case '.$caseNumber;
+        $message = "You have been issued an official Calling Notice regarding {$incident->incident_type}. Venue: {$venue}. Schedule: {$schedule}. Please report promptly.";
+
+        $this->notifyStudents(
+            $studentIds,
+            'calling_notice',
+            $title,
+            $message,
+            [
+                ...$this->incidentPayload($incident),
+                'case_id' => $caseNumber,
+                'venue' => $venue,
+                'appearance_schedule' => $schedule,
+                'instructions' => $instructions,
+                'issued_at' => now()->toISOString(),
+            ],
+            'calling-notice-'.$incident->id.'-'.now()->timestamp,
+            true,
+        );
+    }
+
+    public function disciplinaryDecisionIssued(Incident $incident, array $decisionDetails = []): void
+    {
+        $studentIds = $this->studentIdsForIncident($incident);
+
+        if ($studentIds->isEmpty() && !empty($decisionDetails['student_id'])) {
+            $student = Student::where('student_id', $decisionDetails['student_id'])
+                ->orWhere('id', $decisionDetails['student_id'])
+                ->first();
+            if ($student) {
+                $studentIds = collect([$student->id]);
+            }
+        }
+
+        $date = $incident->incident_date ? \Illuminate\Support\Carbon::parse($incident->incident_date) : null;
+        $caseNumber = $date ? ($date->format('Y').'-'.str_pad((string) $incident->id, 3, '0', STR_PAD_LEFT)) : ('#'.$incident->id);
+        $sanction = $decisionDetails['sanction'] ?? $decisionDetails['sanction_type'] ?? 'Warning';
+        $penalty = $decisionDetails['specific_penalty'] ?? $sanction;
+
+        $title = "Official Disciplinary Resolution: Case {$caseNumber}";
+        $message = "A formal Notice of Decision has been issued regarding {$incident->incident_type}. Sanction: {$sanction} ({$penalty}). Check your dashboard for official terms and resolution.";
+
+        $this->notifyStudents(
+            $studentIds,
+            'disciplinary_decision',
+            $title,
+            $message,
+            [
+                ...$this->incidentPayload($incident),
+                'case_id' => $caseNumber,
+                'sanction' => $sanction,
+                'specific_penalty' => $penalty,
+                'decision_details' => $decisionDetails,
+                'served_at' => now()->toISOString(),
+            ],
+            'disciplinary-decision-'.$incident->id.'-'.now()->timestamp,
+            true,
+        );
+    }
+
     private function studentIdsForIncident(Incident $incident): Collection
     {
         $values = is_array($incident->students_involved) ? $incident->students_involved : [];
@@ -282,6 +361,21 @@ class StudentNotificationDispatcher
         return Student::query()
             ->where(function (Builder $query) use ($values): void {
                 foreach ($values as $value) {
+                    if (is_array($value)) {
+                        $sid = isset($value['id']) ? trim((string) $value['id']) : '';
+                        $sname = isset($value['name']) ? trim((string) $value['name']) : '';
+                        if ($sid !== '') {
+                            $query->orWhere('student_id', $sid);
+                            if (ctype_digit($sid)) {
+                                $query->orWhereKey((int) $sid);
+                            }
+                        }
+                        if ($sname !== '') {
+                            $query->orWhere('name', $sname);
+                        }
+                        continue;
+                    }
+
                     $value = trim((string) $value);
                     if ($value === '') {
                         continue;

@@ -8,9 +8,11 @@ import {
     AlertTriangle,
     ArrowLeft,
     BookOpen,
+    CheckCircle2,
     Clock,
     ExternalLink,
     FileText,
+    Gavel,
     HeartHandshake,
     MapPin,
     Paperclip,
@@ -19,9 +21,11 @@ import {
     ShieldAlert,
     UserCheck,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import AdminLayout from '../admin-layout';
 import CallingSlipModal from './CallingSlipModal';
+import InvestigationDialog from './InvestigationDialog';
+import DisciplinaryResolutionModal from './DisciplinaryResolutionModal';
 import DisciplinaryActionPanel from './DisciplinaryActionPanel';
 import StudentCallingProcessFlow, { STUDENT_CALLING_PHASES } from './StudentCallingProcessFlow';
 import { router } from '@inertiajs/react';
@@ -84,6 +88,8 @@ export default function DisciplinaryCaseDetailPage({
         ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50'
         : 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-200 dark:border-blue-900/50';
 
+    const [investigationOpen, setInvestigationOpen] = useState(false);
+
     const caseId = incident.caseId;
     const incidentTitle = incident.type;
     const incidentDescription =
@@ -113,26 +119,28 @@ export default function DisciplinaryCaseDetailPage({
         studentDetails?.yearLevel ||
         (incident.id % 2 === 0 ? '3rd Year' : '4th Year');
     const [callingSlipOpen, setCallingSlipOpen] = useState(false);
+    const [decisionOpen, setDecisionOpen] = useState(false);
     const [isAdvancingPhase, setIsAdvancingPhase] = useState(false);
+    const [slipAutoPrompted, setSlipAutoPrompted] = useState(false);
 
     const currentPhase = incident.calling_phase ?? (
-        incident.status === 'Resolved' ? 8 : (
-            incident.status === 'Escalated' ? 7 : (
-                incident.status === 'Ongoing' ? 4 : 1
+        incident.status === 'Resolved' ? 5 : (
+            incident.status === 'Escalated' ? 4 : (
+                incident.status === 'Ongoing' ? 3 : 1
             )
         )
     );
 
-    const nextPhase = currentPhase < 8 ? currentPhase + 1 : 8;
+    const nextPhase = currentPhase < 5 ? currentPhase + 1 : 5;
     const currentPhaseItem = STUDENT_CALLING_PHASES.find(p => p.phase === currentPhase) || STUDENT_CALLING_PHASES[0];
-    const nextPhaseItem = STUDENT_CALLING_PHASES.find(p => p.phase === nextPhase) || STUDENT_CALLING_PHASES[7];
+    const nextPhaseItem = STUDENT_CALLING_PHASES.find(p => p.phase === nextPhase) || STUDENT_CALLING_PHASES[4];
 
     const handleAdvancePhase = () => {
-        if (currentPhase >= 8) {
+        if (currentPhase >= 5) {
             Swal.fire({
                 icon: 'info',
                 title: 'Case Completed',
-                text: 'This case is already at the final Phase 8 (Record is Updated / Resolved).',
+                text: 'This case is already at the final Step 5: Appeal (If Applicable) / Resolution.',
                 confirmButtonColor: '#0b2d66',
             });
             return;
@@ -170,6 +178,41 @@ export default function DisciplinaryCaseDetailPage({
             }
         });
     };
+
+    /** #7: Auto-prompt calling slip at Phase 3 */
+    useEffect(() => {
+        if (currentPhase === 3 && !slipAutoPrompted) {
+            setSlipAutoPrompted(true);
+            Swal.fire({
+                title: 'Print Calling Slip?',
+                text: 'This case is at Phase 3 (Call/Notice Created). Would you like to print the Calling Slip now?',
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonColor: '#0b2d66',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Yes, open Calling Slip',
+                cancelButtonText: 'Later',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    setCallingSlipOpen(true);
+                }
+            });
+        }
+    }, [currentPhase]);
+
+    /** #8: Phase-specific guidance map */
+    const phaseGuidance: Record<number, { action: string; detail: string; icon: string }> = {
+        1: { action: 'Review the reported incident', detail: 'Verify the incident details, date, location, and students involved are accurate. Confirm the violation classification.', icon: '📋' },
+        2: { action: 'Verify student identity', detail: "Cross-check the student's ID, enrollment status, and prior disciplinary history before proceeding.", icon: '🔍' },
+        3: { action: 'Create and print the calling slip', detail: 'Prepare the official notice for the student to report to the office. Print the calling slip using the button above.', icon: '📝' },
+        4: { action: 'Deliver notice to student', detail: 'Send the calling slip through the appropriate channel (email, SMS, or hand-delivered). Confirm the student received it.', icon: '📤' },
+        5: { action: 'Record student appearance', detail: 'Document when the student reports to the office. Note the date, time, and attending officer.', icon: '🏢' },
+        6: { action: 'Conduct the discussion', detail: 'Explain the violation to the student, listen to their explanation, and document the meeting notes in the compliance section below.', icon: '💬' },
+        7: { action: 'Determine the action', detail: 'Review all evidence and decide the appropriate disciplinary action. Submit your recommendation through the Disciplinary Action Panel below.', icon: '⚖️' },
+        8: { action: 'Case resolved and documented', detail: 'All actions have been recorded. The case file is complete and ready for archival.', icon: '✅' },
+    };
+
+    const guidance = phaseGuidance[currentPhase] || phaseGuidance[1];
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -273,18 +316,17 @@ export default function DisciplinaryCaseDetailPage({
                                             </span>
                                             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
                                                 <span
-                                                    className={`h-2 w-2 rounded-full ${
-                                                        investigationStatus ===
-                                                        'Resolved'
+                                                    className={`h-2 w-2 rounded-full ${investigationStatus ===
+                                                            'Resolved'
                                                             ? 'bg-emerald-500'
                                                             : investigationStatus ===
                                                                 'Pending'
-                                                              ? 'bg-amber-500'
-                                                              : investigationStatus ===
-                                                                  'Ongoing'
-                                                                ? 'bg-blue-500'
-                                                                : 'bg-rose-500'
-                                                    }`}
+                                                                ? 'bg-amber-500'
+                                                                : investigationStatus ===
+                                                                    'Ongoing'
+                                                                    ? 'bg-blue-500'
+                                                                    : 'bg-rose-500'
+                                                        }`}
                                                 />
                                                 <span>
                                                     {investigationStatus}
@@ -329,7 +371,7 @@ export default function DisciplinaryCaseDetailPage({
                                                     Calling Workflow
                                                 </span>
                                                 <Badge className="bg-amber-400 text-[#0B192C] text-[10px] font-extrabold px-2 py-0.5">
-                                                    Step {currentPhase} of 8
+                                                    Step {currentPhase} of 5
                                                 </Badge>
                                             </div>
                                             <p className="text-xs font-bold text-slate-900 dark:text-white mt-0.5">
@@ -350,7 +392,7 @@ export default function DisciplinaryCaseDetailPage({
                                             Calling Slip
                                         </Button>
 
-                                        {currentPhase < 8 ? (
+                                        {currentPhase < 5 ? (
                                             <Button
                                                 type="button"
                                                 size="sm"
@@ -363,351 +405,91 @@ export default function DisciplinaryCaseDetailPage({
                                             </Button>
                                         ) : (
                                             <Badge className="h-9 px-4 bg-emerald-600 text-white font-bold text-xs gap-1.5">
-                                                <span>✓ Case Resolved & Updated</span>
+                                                <span>✓ Case Resolved & Closed</span>
                                             </Badge>
                                         )}
                                     </div>
                                 </div>
                             </div>
 
+                            {/* #8: Phase-Specific Guidance Card */}
+                            <div className="rounded-2xl border-2 border-dashed border-indigo-300 bg-gradient-to-r from-indigo-50/80 via-blue-50/60 to-white p-4 shadow-sm dark:border-indigo-800/50 dark:from-indigo-950/30 dark:via-blue-950/20 dark:to-slate-900">
+                                <div className="flex items-start gap-3">
+                                    <span className="text-2xl">{guidance.icon}</span>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-black tracking-wider text-indigo-700 uppercase dark:text-indigo-400">
+                                                What to do now
+                                            </span>
+                                            <Badge className="bg-indigo-100 text-indigo-700 text-[9px] font-bold px-1.5 py-0 dark:bg-indigo-900/40 dark:text-indigo-300">
+                                                Step {currentPhase}
+                                            </Badge>
+                                        </div>
+                                        <p className="mt-1 text-sm font-bold text-slate-900 dark:text-white">
+                                            {guidance.action}
+                                        </p>
+                                        <p className="mt-0.5 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+                                            {guidance.detail}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
                             {/* Card 1.5: Student Calling Process Tracker */}
                             <StudentCallingProcessFlow
-                                currentPhase={incident.calling_phase ?? (incident.status === 'Resolved' ? 8 : (incident.status === 'Escalated' ? 7 : (incident.status === 'Ongoing' ? 4 : 1)))}
+                                currentPhase={incident.calling_phase ?? (incident.status === 'Resolved' ? 5 : (incident.status === 'Escalated' ? 4 : (incident.status === 'Ongoing' ? 3 : 1)))}
                                 incidentId={incident.id}
                                 editable={true}
+                                onCallStudent={() => setCallingSlipOpen(true)}
+                                onOpenInvestigation={() => setInvestigationOpen(true)}
+                                onOpenDecision={() => setDecisionOpen(true)}
                             />
 
-                            {/* Card 2: Statutory Reference */}
-                            <Card className="rounded-2xl border-0 bg-white shadow-lg ring-1 ring-slate-200 dark:bg-[#0B192C]/50 dark:ring-slate-800">
-                                <CardContent className="p-6">
-                                    <div className="mb-4 flex items-center gap-2">
-                                        <BookOpen className="h-5 w-5 text-slate-700 dark:text-slate-300" />
-                                        <h4 className="text-sm font-black tracking-wider text-slate-900 uppercase dark:text-white">
-                                            Statutory Reference
-                                        </h4>
-                                    </div>
-
-                                    {(() => {
-                                        const violation = violations.find(
-                                            (v) =>
-                                                v.id === incident.violation_id,
-                                        );
-                                        if (violation) {
-                                            return (
-                                                <div className="space-y-4">
-                                                    <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-[#1E3A5F]/20">
-                                                        <span className="block text-sm font-extrabold text-slate-900 dark:text-white">
-                                                            {violation.section}:{' '}
-                                                            {violation.name}
-                                                        </span>
-                                                        <span className="mt-0.5 block text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                                                            Student Handbook,
-                                                            Chapter on Student
-                                                            Conduct
-                                                        </span>
-                                                    </div>
-                                                    {violation.description && (
-                                                        <ul className="space-y-2">
-                                                            <li className="flex items-start gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
-                                                                <span className="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
-                                                                <span>
-                                                                    {
-                                                                        violation.description
-                                                                    }
-                                                                </span>
-                                                            </li>
-                                                        </ul>
-                                                    )}
-                                                </div>
-                                            );
-                                        }
-                                        // Fallback if no violation selected
-                                        return (
-                                            <div className="space-y-4">
-                                                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-[#1E3A5F]/20">
-                                                    <span className="block text-sm font-extrabold text-slate-900 dark:text-white">
-                                                        General Code of Conduct
-                                                    </span>
-                                                    <span className="mt-0.5 block text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                                                        Student Handbook,
-                                                        Chapter 3: Student
-                                                        Conduct & Disciplinary
-                                                        Action
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        );
-                                    })()}
-                                </CardContent>
-                            </Card>
-
-                            {/* Card 3: Imposed Effects */}
-                            <Card className="rounded-2xl border-0 bg-white shadow-lg ring-1 ring-slate-200 dark:bg-[#0B192C]/50 dark:ring-slate-800">
-                                <CardContent className="p-6">
-                                    <div className="mb-4 flex items-center gap-2">
-                                        <Scale className="h-5 w-5 text-slate-700 dark:text-slate-300" />
-                                        <h4 className="text-sm font-black tracking-wider text-slate-900 uppercase dark:text-white">
-                                            Imposed Effects
-                                        </h4>
-                                    </div>
-
-                                    <div className="space-y-2.5">
-                                        {/* First show immediate action from incident */}
-                                        {incident.raw?.immediateAction && (
-                                            <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3 text-xs font-bold text-slate-700 dark:border-slate-800 dark:bg-slate-800/30 dark:text-slate-200">
-                                                <Clock className="h-4 w-4 shrink-0" />
-                                                <span>
-                                                    Immediate Action:{' '}
-                                                    {
-                                                        incident.raw
-                                                            .immediateAction
-                                                    }
-                                                </span>
-                                            </div>
-                                        )}
-
-                                        {/* Show final actions from approved disciplinary actions */}
-                                        {disciplinaryActions
-                                            .filter((da) =>
-                                                [
-                                                    'Approved',
-                                                    'Modified',
-                                                    'Overridden',
-                                                ].includes(da.status),
-                                            )
-                                            .map((action) => (
-                                                <div
-                                                    key={action.id}
-                                                    className="flex items-center gap-3 rounded-xl border border-blue-100 bg-blue-50 p-3 text-xs font-bold text-blue-800 dark:border-blue-900/30 dark:bg-blue-950/20 dark:text-blue-300"
-                                                >
-                                                    <ShieldAlert className="h-4 w-4 shrink-0" />
-                                                    <span>
-                                                        {action.final_action ||
-                                                            action.recommended_action}
-                                                        :{' '}
-                                                        {action.final_action_reason ||
-                                                            action.recommendation_reason ||
-                                                            'Disciplinary action recorded'}
-                                                    </span>
-                                                </div>
-                                            ))}
-
-                                        {/* Fallback if no actions yet */}
-                                        {!incident.raw?.immediateAction &&
-                                            disciplinaryActions.filter((da) =>
-                                                [
-                                                    'Approved',
-                                                    'Modified',
-                                                    'Overridden',
-                                                ].includes(da.status),
-                                            ).length === 0 && (
-                                                <div className="py-2 text-center text-xs font-medium text-slate-500 dark:text-slate-400">
-                                                    No disciplinary actions have
-                                                    been imposed yet.
-                                                </div>
-                                            )}
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-                            {/* Card 3.5: Evidence Attachments */}
-                            {(() => {
-                                const evidencePaths =
-                                    (incident.raw as any)?.evidencePaths || [];
-                                if (evidencePaths.length === 0) return null;
-                                return (
-                                    <Card className="rounded-2xl border-0 bg-white shadow-lg ring-1 ring-slate-200 dark:bg-[#0B192C]/50 dark:ring-slate-800">
-                                        <CardContent className="p-6">
-                                            <div className="mb-4 flex items-center gap-2">
-                                                <Paperclip className="h-5 w-5 text-slate-700 dark:text-slate-300" />
-                                                <h4 className="text-sm font-black tracking-wider text-slate-900 uppercase dark:text-white">
-                                                    Evidence Attachments
-                                                </h4>
-                                            </div>
-                                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                                {evidencePaths.map(
-                                                    (
-                                                        path: string,
-                                                        i: number,
-                                                    ) => {
-                                                        const url = `/storage/${path}`;
-                                                        const name =
-                                                            path
-                                                                .split('/')
-                                                                .pop() ||
-                                                            `evidence-${i + 1}`;
-                                                        const isImage =
-                                                            /\.(jpg|jpeg|png|webp|gif)$/i.test(
-                                                                path,
-                                                            );
-                                                        return (
-                                                            <div
-                                                                key={path}
-                                                                className="group relative flex flex-col overflow-hidden rounded-xl border border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-950/20"
-                                                            >
-                                                                {isImage ? (
-                                                                    <div className="relative aspect-video w-full overflow-hidden bg-slate-200 dark:bg-slate-900">
-                                                                        <img
-                                                                            src={
-                                                                                url
-                                                                            }
-                                                                            alt={
-                                                                                name
-                                                                            }
-                                                                            className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
-                                                                        />
-                                                                    </div>
-                                                                ) : (
-                                                                    <div className="bg-slate-150 dark:text-slate-650 flex aspect-video w-full items-center justify-center text-slate-400 dark:bg-slate-900">
-                                                                        <FileText className="h-10 w-10" />
-                                                                    </div>
-                                                                )}
-                                                                <div className="flex items-center justify-between p-3">
-                                                                    <span className="max-w-[150px] truncate text-[10px] font-bold text-slate-600 dark:text-slate-400">
-                                                                        {name}
-                                                                    </span>
-                                                                    <a
-                                                                        href={
-                                                                            url
-                                                                        }
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-white text-slate-500 shadow-sm transition-colors hover:text-blue-600 dark:bg-slate-800 dark:text-slate-400"
-                                                                    >
-                                                                        <ExternalLink className="h-3.5 w-3.5" />
-                                                                    </a>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    },
-                                                )}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                );
-                            })()}
-
-                            {/* Card 4: Notes & Compliance Tracking */}
-                            <Card className="rounded-2xl border-0 bg-white shadow-lg ring-1 ring-slate-200 dark:bg-[#0B192C]/50 dark:ring-slate-800">
-                                <CardContent className="p-6">
-                                    <div className="mb-6 flex items-center justify-between gap-2">
-                                        <div className="flex items-center gap-2">
-                                            <FileText className="h-5 w-5 text-slate-700 dark:text-slate-300" />
+                            {/* #2: Phase Transition History Timeline */}
+                            {incident.calling_phase_history && (incident as any).calling_phase_history && (incident as any).calling_phase_history.length > 0 && (
+                                <Card className="rounded-2xl border-0 bg-white shadow-lg ring-1 ring-slate-200 dark:bg-[#0B192C]/50 dark:ring-slate-800">
+                                    <CardContent className="p-6">
+                                        <div className="mb-4 flex items-center gap-2">
+                                            <Clock className="h-5 w-5 text-slate-700 dark:text-slate-300" />
                                             <h4 className="text-sm font-black tracking-wider text-slate-900 uppercase dark:text-white">
-                                                Notes & Compliance Tracking
+                                                Phase Transition History
                                             </h4>
                                         </div>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        {/* Show immediate action as first entry */}
-                                        {incident.raw?.immediateAction && (
-                                            <div className="flex items-start gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/40">
-                                                <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-[#1E3A5F]/40 dark:text-blue-400">
-                                                    <FileText className="h-4 w-4" />
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-                                                        <span className="text-xs font-black text-slate-900 dark:text-white">
-                                                            Initial Action
+                                        <div className="relative space-y-3 border-l-2 border-slate-200 pl-5 dark:border-slate-700">
+                                            {((incident as any).calling_phase_history as Array<{ phase: number; at: string; by: string; trigger: string }>).map((entry, idx) => {
+                                                const phaseItem = STUDENT_CALLING_PHASES.find(p => p.phase === entry.phase) || STUDENT_CALLING_PHASES[0];
+                                                const date = new Date(entry.at);
+                                                return (
+                                                    <div key={idx} className="relative">
+                                                        <span className={`absolute -left-[25px] top-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-black ring-4 ring-white dark:ring-[#0B192C] ${idx === ((incident as any).calling_phase_history as any[]).length - 1
+                                                                ? 'bg-blue-600 text-white'
+                                                                : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                                                            }`}>
+                                                            {entry.phase}
                                                         </span>
-                                                        <span className="text-[10px] font-bold tracking-tight text-slate-400 uppercase dark:text-slate-500">
-                                                            {incident.dateTime
-                                                                .split(' ')[0]
-                                                                .toUpperCase()}
-                                                        </span>
-                                                    </div>
-                                                    <p className="mt-1 text-[11px] leading-relaxed font-medium text-slate-600 dark:text-slate-300">
-                                                        {
-                                                            incident.raw
-                                                                .immediateAction
-                                                        }
-                                                    </p>
-                                                    <div className="mt-2 flex items-center gap-2">
-                                                        <Badge className="rounded border-0 bg-slate-100 px-1.5 py-0 text-[9px] font-black tracking-wide text-slate-700 dark:bg-slate-900 dark:text-slate-300">
-                                                            LOGGED
-                                                        </Badge>
-                                                        {incident.raw
-                                                            ?.receivedBy && (
-                                                            <span className="text-[9px] font-bold text-slate-400 uppercase dark:text-slate-500">
-                                                                Officer:{' '}
-                                                                {
-                                                                    incident.raw
-                                                                        .receivedBy
-                                                                }
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Show remarks from disciplinary actions */}
-                                        {disciplinaryActions
-                                            .filter((da) => da.remarks)
-                                            .map((action) => (
-                                                <div
-                                                    key={action.id}
-                                                    className="flex items-start gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/40"
-                                                >
-                                                    <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
-                                                        <FileText className="h-4 w-4" />
-                                                    </div>
-                                                    <div className="min-w-0 flex-1">
-                                                        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-                                                            <span className="text-xs font-black text-slate-900 dark:text-white">
-                                                                Disciplinary
-                                                                Note
-                                                            </span>
-                                                            <span className="text-[10px] font-bold tracking-tight text-slate-400 uppercase dark:text-slate-500">
-                                                                {action.created_at
-                                                                    ? new Date(
-                                                                          action.created_at,
-                                                                      )
-                                                                          .toLocaleDateString(
-                                                                              'en-US',
-                                                                              {
-                                                                                  month: 'short',
-                                                                                  day: 'numeric',
-                                                                                  year: 'numeric',
-                                                                              },
-                                                                          )
-                                                                          .toUpperCase()
-                                                                    : ''}
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <div>
+                                                                <span className="text-xs font-bold text-slate-900 dark:text-white">
+                                                                    Phase {entry.phase}: {phaseItem.shortLabel}
+                                                                </span>
+                                                                <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400">
+                                                                    <span>by {entry.by}</span>
+                                                                    <span>•</span>
+                                                                    <span>{entry.trigger === 'status_change' ? 'Auto-synced from status' : entry.trigger === 'batch' ? 'Batch update' : 'Manual'}</span>
+                                                                </div>
+                                                            </div>
+                                                            <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+                                                                {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} {date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                                                             </span>
                                                         </div>
-                                                        <p className="mt-1 text-[11px] leading-relaxed font-medium text-slate-600 dark:text-slate-300">
-                                                            {action.remarks}
-                                                        </p>
-                                                        <div className="mt-2 flex items-center gap-2">
-                                                            <Badge
-                                                                className={`rounded border-0 px-1.5 py-0 text-[9px] font-black tracking-wide ${
-                                                                    action.status ===
-                                                                    'Approved'
-                                                                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
-                                                                        : 'bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-300'
-                                                                }`}
-                                                            >
-                                                                {action.status.toUpperCase()}
-                                                            </Badge>
-                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
 
-                                        {/* Fallback if no notes */}
-                                        {!incident.raw?.immediateAction &&
-                                            disciplinaryActions.filter(
-                                                (da) => da.remarks,
-                                            ).length === 0 && (
-                                                <div className="py-4 text-center text-xs font-medium text-slate-500 dark:text-slate-400">
-                                                    No compliance notes have
-                                                    been recorded yet.
-                                                </div>
-                                            )}
-                                    </div>
-                                </CardContent>
-                            </Card>
 
                             {/* Disciplinary Action Panel (Interactive) */}
                             <DisciplinaryActionPanel
@@ -784,32 +566,29 @@ export default function DisciplinaryCaseDetailPage({
                                                         className="relative"
                                                     >
                                                         <span
-                                                            className={`absolute top-0.5 -left-[31px] flex h-4.5 w-4.5 items-center justify-center rounded-full ring-4 ring-white dark:ring-[#0B192C] ${
-                                                                historyItem.is_current
+                                                            className={`absolute top-0.5 -left-[31px] flex h-4.5 w-4.5 items-center justify-center rounded-full ring-4 ring-white dark:ring-[#0B192C] ${historyItem.is_current
                                                                     ? 'bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400'
                                                                     : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
-                                                            }`}
+                                                                }`}
                                                         >
                                                             <AlertTriangle className="h-2.5 w-2.5" />
                                                         </span>
                                                         <div className="flex items-center justify-between gap-2">
                                                             <span
-                                                                className={`text-xs font-black ${
-                                                                    historyItem.is_current
+                                                                className={`text-xs font-black ${historyItem.is_current
                                                                         ? 'text-rose-700 dark:text-rose-400'
                                                                         : 'text-slate-900 dark:text-white'
-                                                                }`}
+                                                                    }`}
                                                             >
                                                                 {historyItem.is_current
                                                                     ? `Current: ${historyItem.displayLabel}`
                                                                     : historyItem.displayLabel}
                                                             </span>
                                                             <span
-                                                                className={`text-[9px] font-bold uppercase ${
-                                                                    historyItem.is_current
+                                                                className={`text-[9px] font-bold uppercase ${historyItem.is_current
                                                                         ? 'text-rose-500 dark:text-rose-400'
                                                                         : 'text-slate-400 dark:text-slate-500'
-                                                                }`}
+                                                                    }`}
                                                             >
                                                                 {
                                                                     historyItem.date
@@ -979,6 +758,39 @@ export default function DisciplinaryCaseDetailPage({
                     </div>
                 </div>
 
+                {/* Calling Process Status */}
+                <div className="mb-6">
+                    <h3 className="mb-3 border-b border-slate-200 pb-1.5 text-xs font-black tracking-wider text-slate-900 uppercase">
+                        Calling Process Status (8-Phase Standard Flow)
+                    </h3>
+                    <div className="rounded-xl border border-slate-200/60 bg-slate-50 p-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-bold text-slate-900">
+                                Current: Phase {currentPhase} – {currentPhaseItem.title}
+                            </span>
+                            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                                Status: {investigationStatus}
+                            </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 mb-3">
+                            {currentPhaseItem.description}
+                        </p>
+                        {incident.calling_phase_history && (incident as any).calling_phase_history && (incident as any).calling_phase_history.length > 0 && (
+                            <div className="border-t border-slate-200 pt-2 space-y-1">
+                                <span className="text-[9px] font-bold uppercase text-slate-400 block mb-1">
+                                    Transition Log
+                                </span>
+                                {((incident as any).calling_phase_history as Array<{ phase: number; at: string; by: string; trigger: string }>).map((h, i) => (
+                                    <div key={i} className="flex justify-between text-[10px] text-slate-600">
+                                        <span>Phase {h.phase} ({STUDENT_CALLING_PHASES[h.phase - 1]?.shortLabel}) — by {h.by}</span>
+                                        <span>{new Date(h.at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} {new Date(h.at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
                 {/* Narrative Case Summary */}
                 <div className="mb-6">
                     <h3 className="mb-3 border-b border-slate-200 pb-1.5 text-xs font-black tracking-wider text-slate-900 uppercase">
@@ -1087,6 +899,22 @@ export default function DisciplinaryCaseDetailPage({
             <CallingSlipModal
                 open={callingSlipOpen}
                 onOpenChange={setCallingSlipOpen}
+                incident={incident}
+                studentDetails={studentDetails}
+            />
+
+            {/* Step 2: Investigation & Fact-Finding Modal */}
+            <InvestigationDialog
+                open={investigationOpen}
+                onOpenChange={setInvestigationOpen}
+                incident={incident}
+                studentDetails={studentDetails}
+            />
+
+            {/* Step 4: Disciplinary Resolution & Decision Modal */}
+            <DisciplinaryResolutionModal
+                open={decisionOpen}
+                onOpenChange={setDecisionOpen}
                 incident={incident}
                 studentDetails={studentDetails}
             />

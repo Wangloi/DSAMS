@@ -20,6 +20,10 @@ class Incident extends Model
         'classification',
         'status',
         'calling_phase',
+        'calling_phase_history',
+        'investigation_details',
+        'calling_notice_sent_at',
+        'calling_notice_details',
         'received_by',
         'is_archived',
     ];
@@ -27,6 +31,10 @@ class Incident extends Model
     protected $casts = [
         'students_involved' => 'array',
         'evidence_paths' => 'array',
+        'calling_phase_history' => 'array',
+        'investigation_details' => 'array',
+        'calling_notice_sent_at' => 'datetime',
+        'calling_notice_details' => 'array',
         'incident_date' => 'date:Y-m-d',
     ];
 

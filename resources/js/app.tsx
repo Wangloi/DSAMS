@@ -1,5 +1,4 @@
 import { createInertiaApp, router } from '@inertiajs/react';
-import { configureEcho } from '@laravel/echo-react';
 import axios from 'axios';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { StrictMode, useEffect, useState } from 'react';
@@ -13,24 +12,6 @@ import { initializeTheme } from './hooks/use-appearance';
 axios.defaults.withCredentials = true;
 axios.defaults.withXSRFToken = true;
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-
-const isHttps =
-    typeof window !== 'undefined' && window.location.protocol === 'https:';
-
-configureEcho({
-    broadcaster: 'reverb',
-    key: import.meta.env.VITE_REVERB_APP_KEY,
-    wsHost:
-        typeof window !== 'undefined' ? window.location.hostname : 'localhost',
-    wsPort: import.meta.env.VITE_REVERB_PORT
-        ? Number(import.meta.env.VITE_REVERB_PORT)
-        : 8080,
-    wssPort: import.meta.env.VITE_REVERB_PORT
-        ? Number(import.meta.env.VITE_REVERB_PORT)
-        : 8080,
-    forceTLS: isHttps,
-    enabledTransports: ['ws', 'wss'],
-});
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 

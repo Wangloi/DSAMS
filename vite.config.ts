@@ -16,10 +16,11 @@ function getLanIp(): string {
         }
         for (const iface of interfaces[name] ?? []) {
             if (iface.family === 'IPv4' && !iface.internal) {
-                // Exclude APIPA (169.254.x.x) and VirtualBox host-only (192.168.56.x) subnets
+                // Exclude APIPA (169.254.x.x), VirtualBox host-only (192.168.56.x), and Windows Mobile Hotspot (192.168.137.x) subnets
                 if (
                     !iface.address.startsWith('169.254.') &&
-                    !iface.address.startsWith('192.168.56.')
+                    !iface.address.startsWith('192.168.56.') &&
+                    !iface.address.startsWith('192.168.137.')
                 ) {
                     return iface.address;
                 }

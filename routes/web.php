@@ -453,6 +453,10 @@ Route::match(['put', 'post'], '/admin/incidents-violations/{incident}', [AdminIn
 Route::delete('/admin/incidents-violations/{incident}', [AdminIncidentsViolationsController::class, 'destroy'])->middleware('auth:admin')->name('admin.incidents-violations.destroy');
 Route::match(['put', 'post'], '/admin/incidents-violations/{incident}/archive', [AdminIncidentsViolationsController::class, 'archive'])->middleware('auth:admin')->name('admin.incidents-violations.archive');
 Route::put('/admin/incidents-violations/{incident}/unarchive', [AdminIncidentsViolationsController::class, 'unarchive'])->middleware('auth:admin')->name('admin.incidents-violations.unarchive');
+Route::post('/admin/incidents-violations-batch', [AdminIncidentsViolationsController::class, 'batchUpdate'])->middleware('auth:admin')->name('admin.incidents-violations.batch');
+Route::post('/admin/incidents-violations/{incident}/investigation', [AdminIncidentsViolationsController::class, 'saveInvestigation'])->middleware('auth:admin')->name('admin.incidents-violations.investigation.save');
+Route::post('/admin/incidents-violations/{incident}/send-calling-notice', [AdminIncidentsViolationsController::class, 'sendCallingNotice'])->middleware('auth:admin')->name('admin.incidents-violations.send-calling-notice');
+Route::post('/admin/incidents-violations/{incident}/serve-decision', [AdminIncidentsViolationsController::class, 'serveDecision'])->middleware('auth:admin')->name('admin.incidents-violations.serve-decision');
 
 // Disciplinary action routes (from case detail page)
 Route::post('/admin/incidents-violations/{incident}/disciplinary-action', [AdminIncidentsViolationsController::class, 'storeDisciplinaryAction'])->middleware('auth:admin')->name('admin.incidents-violations.disciplinary-action.store');

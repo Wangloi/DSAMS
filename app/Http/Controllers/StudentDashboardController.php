@@ -162,9 +162,9 @@ class StudentDashboardController extends Controller
                 $date = $incident->incident_date ? Carbon::parse($incident->incident_date) : null;
                 $time = $incident->incident_time ? Carbon::parse($incident->incident_time) : null;
                 $callingPhase = $incident->calling_phase ?? (
-                    $incident->status === 'Resolved' ? 8 : (
-                        $incident->status === 'Escalated' ? 7 : (
-                            $incident->status === 'Ongoing' ? 4 : 1
+                    $incident->status === 'Resolved' ? 5 : (
+                        $incident->status === 'Escalated' ? 4 : (
+                            $incident->status === 'Ongoing' ? 3 : 1
                         )
                     )
                 );
@@ -179,7 +179,10 @@ class StudentDashboardController extends Controller
                     'location' => $incident->location ?? 'Office of the Dean of Student Affairs',
                     'status' => $incident->status,
                     'calling_phase' => $callingPhase,
-                    'statusLabel' => $incident->status === 'Resolved' ? 'Resolved' : ($callingPhase >= 4 ? 'Under Review / Hearing' : 'Notice to Appear Issued'),
+                    'statusLabel' => $incident->status === 'Resolved' ? 'Resolved' : ($callingPhase >= 4 ? 'Outcome / Sanction' : ($callingPhase === 3 ? 'Meeting / Hearing' : ($callingPhase === 2 ? 'Investigation' : 'Notice to Appear Issued'))),
+                    'calling_notice_sent_at' => $incident->calling_notice_sent_at ? (\Illuminate\Support\Carbon::parse($incident->calling_notice_sent_at)->toISOString()) : null,
+                    'calling_notice_details' => $incident->calling_notice_details ?? null,
+                    'action_data' => $incident->action_data ?? null,
                     'reported_by' => $incident->reported_by,
                     'description' => $incident->description,
                 ];

@@ -100,6 +100,10 @@ export const adminIncidentsViolationsArchivePost = (id: number | string) =>
     `/admin/incidents-violations/${id}/archive`;
 export const adminIncidentsViolationsUnarchive = (id: number | string) =>
     `/admin/incidents-violations/${id}/unarchive`;
+export const adminIncidentsViolationsUpdatePhase = (id: number | string) =>
+    `/admin/incidents-violations/${id}/phase`;
+export const adminIncidentsViolationsBatch = () =>
+    '/admin/incidents-violations-batch';
 export const adminAttendance = () => '/admin/attendance';
 export const adminAttendanceActivateScannerPortal = (
     eventId: number | string,

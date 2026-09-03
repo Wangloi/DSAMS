@@ -10,7 +10,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { Archive, Gavel, Search } from 'lucide-react';
+import { Archive, ChevronRight, Clock, Gavel, Printer, Search } from 'lucide-react';
+import { STUDENT_CALLING_PHASES } from './StudentCallingProcessFlow';
 import type { IncidentRow, StatusFilter, TypeFilter } from './types';
 
 type Props = {
@@ -26,9 +27,14 @@ type Props = {
         incident: IncidentRow,
         newStatus: IncidentRow['status'],
     ) => void;
+    onAdvancePhase?: (incident: IncidentRow) => void;
+    onCallStudent?: (incident: IncidentRow) => void;
     onTypeFilterChange: (value: TypeFilter) => void;
     onStatusFilterChange: (value: StatusFilter) => void;
     onSearchChange: (value: string) => void;
+    selectedIds?: Set<number>;
+    onToggleSelect?: (id: number) => void;
+    onToggleSelectAll?: () => void;
 };
 
 const getStatusColor = (status: IncidentRow['status']) => {
@@ -46,6 +52,35 @@ const getStatusColor = (status: IncidentRow['status']) => {
     }
 };
 
+/** Compute days since last phase transition or last update (#3: aging indicator) */
+function getDaysInPhase(row: IncidentRow): { days: number; color: string; label: string } {
+    let lastDate: string | undefined;
+
+    // Use the latest phase history entry if available
+    if (row.calling_phase_history && row.calling_phase_history.length > 0) {
+        lastDate = row.calling_phase_history[row.calling_phase_history.length - 1].at;
+    } else if (row.updated_at) {
+        lastDate = row.updated_at;
+    }
+
+    if (!lastDate) return { days: 0, color: 'text-slate-400', label: 'N/A' };
+
+    const diffMs = Date.now() - new Date(lastDate).getTime();
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (row.status === 'Resolved') {
+        return { days, color: 'text-emerald-600 dark:text-emerald-400', label: 'Done' };
+    }
+
+    if (days <= 2) {
+        return { days, color: 'text-emerald-600 dark:text-emerald-400', label: `${days}d` };
+    } else if (days <= 7) {
+        return { days, color: 'text-amber-600 dark:text-amber-400', label: `${days}d` };
+    } else {
+        return { days, color: 'text-rose-600 dark:text-rose-400', label: `${days}d` };
+    }
+}
+
 export default function IncidentTable({
     incidents,
     typeFilter,
@@ -56,10 +91,18 @@ export default function IncidentTable({
     onEdit,
     onArchive,
     onStatusChange,
+    onAdvancePhase,
+    onCallStudent,
     onTypeFilterChange,
     onStatusFilterChange,
     onSearchChange,
+    selectedIds,
+    onToggleSelect,
+    onToggleSelectAll,
 }: Props) {
+    const hasBatch = Boolean(onToggleSelect && selectedIds);
+    const allSelected = hasBatch && incidents.length > 0 && incidents.every((r) => selectedIds!.has(r.id));
+
     return (
         <Card className="border-0 bg-white shadow-lg dark:bg-[#0B192C]/50">
             <CardHeader className="pb-3">
@@ -139,6 +182,16 @@ export default function IncidentTable({
                     <table className="w-full min-w-max border-collapse">
                         <thead className="border-b border-slate-100 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
                             <tr>
+                                {hasBatch && (
+                                    <th className="w-10 px-3 py-4 text-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={allSelected}
+                                            onChange={() => onToggleSelectAll?.()}
+                                            className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600"
+                                        />
+                                    </th>
+                                )}
                                 <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
                                     #
                                 </th>
@@ -155,6 +208,13 @@ export default function IncidentTable({
                                     Classification
                                 </th>
                                 <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
+                                    Calling Phase
+                                </th>
+                                <th className="px-4 py-4 text-center text-[10px] font-bold tracking-wider uppercase">
+                                    <Clock className="inline h-3 w-3 mr-0.5 -mt-0.5" />
+                                    Age
+                                </th>
+                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
                                     Status
                                 </th>
                                 <th className="px-6 py-4 text-right text-[10px] font-bold tracking-wider uppercase">
@@ -166,7 +226,7 @@ export default function IncidentTable({
                             {incidents.length === 0 ? (
                                 <tr>
                                     <td
-                                        colSpan={7}
+                                        colSpan={hasBatch ? 10 : 9}
                                         className="px-6 py-16 text-center"
                                     >
                                         <div className="mx-auto flex max-w-sm flex-col items-center justify-center text-center">
@@ -194,12 +254,45 @@ export default function IncidentTable({
                                         .slice(0, 2)
                                         .toUpperCase();
 
+                                    const phaseNum =
+                                        row.calling_phase ??
+                                        (row.status === 'Resolved'
+                                            ? 5
+                                            : row.status === 'Escalated'
+                                              ? 4
+                                              : row.status === 'Ongoing'
+                                                ? 3
+                                                : 1);
+                                    const phaseItem =
+                                        STUDENT_CALLING_PHASES.find(
+                                            (p) => p.phase === phaseNum,
+                                        ) || STUDENT_CALLING_PHASES[0];
+
+                                    const aging = getDaysInPhase(row);
+                                    const canAdvance = phaseNum < 5 && row.status !== 'Resolved';
+
                                     return (
                                         <tr
                                             key={row.id}
                                             onClick={() => onViewDetail?.(row)}
-                                            className="cursor-pointer transition-colors duration-150 hover:bg-blue-50/50 dark:hover:bg-blue-950/15"
+                                            className={cn(
+                                                "cursor-pointer transition-colors duration-150 hover:bg-blue-50/50 dark:hover:bg-blue-950/15",
+                                                hasBatch && selectedIds!.has(row.id) && "bg-blue-50/70 dark:bg-blue-950/20"
+                                            )}
                                         >
+                                            {hasBatch && (
+                                                <td
+                                                    className="w-10 px-3 py-4 text-center"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedIds!.has(row.id)}
+                                                        onChange={() => onToggleSelect?.(row.id)}
+                                                        className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600"
+                                                    />
+                                                </td>
+                                            )}
                                             <td className="px-6 py-4 text-sm font-medium text-slate-500 dark:text-slate-400">
                                                 {index + 1}
                                             </td>
@@ -235,6 +328,29 @@ export default function IncidentTable({
                                                 >
                                                     {row.classification}
                                                 </Badge>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span
+                                                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-bold shadow-xs ${phaseItem.badgeColor}`}
+                                                    title={`Phase ${phaseNum}: ${phaseItem.title}`}
+                                                >
+                                                    <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-current/15 text-[9px] font-black">
+                                                        {phaseNum}
+                                                    </span>
+                                                    <span className="truncate max-w-[110px]">
+                                                        {phaseItem.shortLabel}
+                                                    </span>
+                                                </span>
+                                            </td>
+                                            {/* #3: Days-in-phase aging indicator */}
+                                            <td className="px-4 py-4 text-center">
+                                                <span
+                                                    className={`inline-flex items-center gap-1 text-[10px] font-black ${aging.color}`}
+                                                    title={`${aging.days} day(s) in current phase`}
+                                                >
+                                                    <Clock className="h-3 w-3" />
+                                                    {aging.label}
+                                                </span>
                                             </td>
                                             <td
                                                 className="px-6 py-4"
@@ -288,6 +404,37 @@ export default function IncidentTable({
                                                 }
                                             >
                                                 <div className="ml-auto flex w-fit items-center justify-end gap-1 rounded-lg border border-slate-100/50 bg-slate-50/50 p-1 shadow-sm dark:border-slate-800 dark:bg-slate-800/40">
+                                                    {/* #4: Quick phase advance button */}
+                                                    {canAdvance && onAdvancePhase && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 rounded-md text-blue-600 transition-all duration-200 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/30 dark:hover:text-blue-300"
+                                                            onClick={() =>
+                                                                onAdvancePhase(row)
+                                                            }
+                                                            aria-label={`Advance to Phase ${phaseNum + 1}`}
+                                                            title={`Advance to Phase ${phaseNum + 1}: ${STUDENT_CALLING_PHASES[phaseNum]?.shortLabel ?? 'Next'}`}
+                                                        >
+                                                            <ChevronRight className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                    {onCallStudent && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 rounded-md text-indigo-600 transition-all duration-200 hover:bg-indigo-50 hover:text-indigo-700 dark:text-indigo-400 dark:hover:bg-indigo-950/30 dark:hover:text-indigo-300"
+                                                            onClick={() =>
+                                                                onCallStudent(row)
+                                                            }
+                                                            aria-label="Call Student (Calling Slip)"
+                                                            title="Call Student (Generate Calling Slip)"
+                                                        >
+                                                            <Printer className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
                                                     {onViewDetail && (
                                                         <Button
                                                             type="button"
