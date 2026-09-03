@@ -53,6 +53,14 @@ export default function AdminHelpPage() {
         {
             q: "How can I bulk import multiple students into the system?",
             a: "Navigate to Manage Users, click 'Bulk Add Students', download the CSV template, fill in the student records (Student ID, Name, Program, Year), and upload the spreadsheet."
+        },
+        {
+            q: "What do the 'Awaiting Action', 'Pending Decision', and 'Overdue' cards indicate in Incidents & Violations?",
+            a: "'Awaiting Action' tracks active cases in Investigation/Hearing (Phases 2–3) needing officer response. 'Pending Decision' tracks cases in Sanction/Appeal deliberation (Phases 4–5). 'Overdue (> 7 days)' flags cases stalled in their current step for more than a week to protect student due process."
+        },
+        {
+            q: "How does the 5-Step SRCB Protocol work for student calling and case resolution?",
+            a: "It follows the official SRCB 5-step SOP: 1) Report Incident (log violation), 2) Investigation (gather facts within 24-48h), 3) Meeting/Hearing (issue calling slips and summon student/parents), 4) Outcome/Sanction (determine handbook penalty), and 5) Appeal/Closure (reconsideration & final case archiving)."
         }
     ];
 
@@ -251,26 +259,70 @@ export default function AdminHelpPage() {
                                             <Shield className="h-5 w-5" />
                                         </div>
                                         <div>
-                                            <CardTitle className="text-base font-bold">5. Disciplinary Incidents & Admission Slips</CardTitle>
-                                            <CardDescription className="text-xs">Incident tracking, cases, and class entry permissions</CardDescription>
+                                            <CardTitle className="text-base font-bold">5. Disciplinary Incidents, 5-Step SRCB Protocol & Admission Slips</CardTitle>
+                                            <CardDescription className="text-xs">Incident tracking, due process calling workflow, and class entry permissions</CardDescription>
                                         </div>
                                     </CardHeader>
-                                    <CardContent className="pt-6 space-y-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                                    <CardContent className="pt-6 space-y-5 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
                                         <p>
-                                            Oversee student disciplinary records and class admission slip approvals.
+                                            Oversee student disciplinary records, facilitate fair due process through the 5-Step SRCB Protocol, and manage class admission slips.
                                         </p>
-                                        <div className="space-y-2">
+
+                                        {/* Triage & Metric Cards */}
+                                        <div className="rounded-xl border border-slate-200/80 bg-slate-50/60 p-3.5 dark:border-slate-800 dark:bg-slate-950/40">
+                                            <h4 className="font-bold text-slate-900 dark:text-white text-xs mb-2">Phase Insights & Triage Cards:</h4>
+                                            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                                                <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-2.5 dark:border-amber-900/40 dark:bg-amber-950/30">
+                                                    <div className="font-bold text-amber-900 dark:text-amber-300">Awaiting Action (Phase 2–3)</div>
+                                                    <div className="mt-0.5 text-[11px] text-amber-800/80 dark:text-amber-400">Active cases in Investigation or Hearing stages requiring staff action.</div>
+                                                </div>
+                                                <div className="rounded-lg border border-blue-200 bg-blue-50/70 p-2.5 dark:border-blue-900/40 dark:bg-blue-950/30">
+                                                    <div className="font-bold text-blue-900 dark:text-blue-300">Pending Decision (Phase 4–5)</div>
+                                                    <div className="mt-0.5 text-[11px] text-blue-800/80 dark:text-blue-400">Cases under deliberation for formal sanctions or appeal evaluation.</div>
+                                                </div>
+                                                <div className="rounded-lg border border-rose-200 bg-rose-50/70 p-2.5 dark:border-rose-900/40 dark:bg-rose-950/30">
+                                                    <div className="font-bold text-rose-900 dark:text-rose-300">Overdue (&gt; 7 Days)</div>
+                                                    <div className="mt-0.5 text-[11px] text-rose-800/80 dark:text-rose-400">SLA warning flagging cases stuck in a phase for over a week.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* 5-Step SRCB Protocol */}
+                                        <div className="space-y-3">
+                                            <h4 className="font-bold text-slate-900 dark:text-white text-xs">5-Step SRCB Protocol ("If a Concern Arises"):</h4>
+                                            <div className="space-y-2">
+                                                <div className="flex gap-2">
+                                                    <strong className="text-slate-900 dark:text-white min-w-[140px]">Step 1 (Report / Incident):</strong>
+                                                    <span>Officially documents the violation, time/location, involved students, and initial evidence.</span>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <strong className="text-slate-900 dark:text-white min-w-[140px]">Step 2 (Investigation):</strong>
+                                                    <span>SAO/Discipline officers review prior infractions, interview witnesses, and evaluate handbook rules (24–48h).</span>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <strong className="text-slate-900 dark:text-white min-w-[140px]">Step 3 (Meeting / Hearing):</strong>
+                                                    <span>Issues official Calling Slips / Summons to student & parents, and convenes the hearing conference (3–5 days).</span>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <strong className="text-slate-900 dark:text-white min-w-[140px]">Step 4 (Outcome / Sanction):</strong>
+                                                    <span>Disciplinary board deliberates and issues formal sanction notice (Warning, Suspension, Exclusion, Expulsion).</span>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <strong className="text-slate-900 dark:text-white min-w-[140px]">Step 5 (Appeal / Closure):</strong>
+                                                    <span>Handles reconsideration petitions, verifies penalty compliance, and archives the case as Resolved.</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Other tools */}
+                                        <div className="space-y-2 pt-1 border-t border-slate-100 dark:border-slate-800">
                                             <div className="flex gap-2">
-                                                <strong className="text-slate-900 dark:text-white min-w-[120px]">Record Incident:</strong>
-                                                <span>Log major or minor disciplinary infractions, listing student IDs involved, incident details, location, and dates.</span>
+                                                <strong className="text-slate-900 dark:text-white min-w-[140px]">Admission Slips:</strong>
+                                                <span>Review, approve, and issue official class entry permission slips for students returning after infractions or absences.</span>
                                             </div>
                                             <div className="flex gap-2">
-                                                <strong className="text-slate-900 dark:text-white min-w-[120px]">Admission Slips:</strong>
-                                                <span>Students returning to class after violations or absences submit admission slip requests. Review, approve, and print the official slip.</span>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <strong className="text-slate-900 dark:text-white min-w-[120px]">Thermal Printing:</strong>
-                                                <span>Official admission slips can be printed instantly to standard 80mm thermal receipt roll printers for student convenience.</span>
+                                                <strong className="text-slate-900 dark:text-white min-w-[140px]">Thermal Printing:</strong>
+                                                <span>Print admission slips instantly to standard 80mm thermal receipt roll printers.</span>
                                             </div>
                                         </div>
                                     </CardContent>

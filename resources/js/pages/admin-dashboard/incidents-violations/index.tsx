@@ -500,9 +500,9 @@ export default function AdminIncidentsViolationsPage() {
                                     Awaiting Action
                                 </div>
                                 <div className="text-lg font-black text-amber-900 dark:text-amber-100">
-                                    {phaseCounts[3] + phaseCounts[4] + phaseCounts[5]}
+                                    {phaseCounts[2] + phaseCounts[3]}
                                     <span className="ml-1.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
-                                        cases in Phase 3–5
+                                        cases in Phase 2–3
                                     </span>
                                 </div>
                             </div>
@@ -518,9 +518,9 @@ export default function AdminIncidentsViolationsPage() {
                                     Pending Decision
                                 </div>
                                 <div className="text-lg font-black text-blue-900 dark:text-blue-100">
-                                    {phaseCounts[6] + phaseCounts[7]}
+                                    {phaseCounts[4] + phaseCounts[5]}
                                     <span className="ml-1.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400">
-                                        cases in Phase 6–7
+                                        cases in Phase 4–5
                                     </span>
                                 </div>
                             </div>
