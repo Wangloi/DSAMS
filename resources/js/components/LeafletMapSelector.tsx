@@ -1,8 +1,25 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useEffect, useRef, useState } from 'react';
+import {
+    Check,
+    Compass,
+    Copy,
+    Crosshair,
+    Layers,
+    LocateFixed,
+    MapPin,
+    Maximize2,
+    Minimize2,
+    Navigation,
+    Radio,
+    RefreshCw,
+    Search,
+    Shield,
+    X,
+} from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
 
-// Fix Leaflet default icon issue with webpack
+// Fix Leaflet marker icon asset path issues
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
     iconRetinaUrl:
@@ -13,198 +30,228 @@ L.Icon.Default.mergeOptions({
         'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
-type Location = { lat: number; lng: number; name?: string } | null;
+// Custom animated SVG pulse pin icon for Leaflet
+const createCustomMarkerIcon = (color: string = '#2563eb') => {
+    return L.divIcon({
+        className: 'custom-leaflet-marker',
+        html: `
+            <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; transform: translate(-18px, -36px);">
+                <div style="position: absolute; width: 36px; height: 36px; border-radius: 9999px; background-color: ${color}; opacity: 0.25; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+                <div style="position: relative; width: 28px; height: 28px; background-color: ${color}; border-radius: 9999px 9999px 0 9999px; transform: rotate(45deg); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); border: 2.5px solid #ffffff; display: flex; align-items: center; justify-content: center;">
+                    <div style="width: 8px; height: 8px; background-color: #ffffff; border-radius: 9999px; transform: rotate(-45deg);"></div>
+                </div>
+            </div>
+        `,
+        iconSize: [36, 36],
+        iconAnchor: [18, 36],
+        popupAnchor: [0, -36],
+    });
+};
 
-interface LeafletMapSelectorProps {
-    onLocationSelect: (lat: number, lng: number, name?: string) => void;
-    initialLocation?: Location;
+export interface Location {
+    lat: number;
+    lng: number;
+    name?: string;
+    radius_m?: number;
 }
+
+export interface LeafletMapSelectorProps {
+    onLocationSelect: (
+        lat: number,
+        lng: number,
+        name?: string,
+        radius?: number,
+    ) => void;
+    initialLocation?: Location | null;
+    initialRadius?: number;
+    className?: string;
+    height?: string;
+    showRadiusControl?: boolean;
+    showPresets?: boolean;
+}
+
+// Campus Landmarks for St. Rita's College of Balingasag (SRCB)
+const CAMPUS_PRESETS = [
+    {
+        name: "St. Rita's College of Balingasag (Full Campus)",
+        lat: 8.74307,
+        lng: 124.7745,
+        category: 'Campus Center',
+    },
+    {
+        name: 'Main Gate & Entrance',
+        lat: 8.74275,
+        lng: 124.77445,
+        category: 'Entrance',
+    },
+    {
+        name: 'College Gymnasium',
+        lat: 8.7428,
+        lng: 124.7742,
+        category: 'Sports & Events',
+    },
+    {
+        name: 'Central Quadrangle / Inner Ground',
+        lat: 8.74317,
+        lng: 124.77437,
+        category: 'Assembly Area',
+    },
+    {
+        name: 'St. Rita Building (Dean of Student Affairs / Administration)',
+        lat: 8.74248,
+        lng: 124.77467,
+        category: 'Administration',
+    },
+    {
+        name: 'Audio-Visual Room (AVR / Room 204)',
+        lat: 8.74258,
+        lng: 124.77448,
+        category: 'Academic',
+    },
+    {
+        name: 'Mother Ignacia Building',
+        lat: 8.7432,
+        lng: 124.77428,
+        category: 'Academic',
+    },
+    {
+        name: 'College Cafeteria',
+        lat: 8.74316,
+        lng: 124.77436,
+        category: 'Facilities',
+    },
+    {
+        name: 'Outer Campus Ground & Parking',
+        lat: 8.7427,
+        lng: 124.7744,
+        category: 'Parking',
+    },
+];
 
 export default function LeafletMapSelector({
     onLocationSelect,
     initialLocation,
+    initialRadius = 50,
+    className = '',
+    height = '420px',
+    showRadiusControl = true,
+    showPresets = true,
 }: LeafletMapSelectorProps) {
-    const mapRef = useRef<HTMLDivElement>(null);
+    const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<L.Map | null>(null);
     const markerRef = useRef<L.Marker | null>(null);
-    const [searchInput, setSearchInput] = useState('');
-    const [selectedLocationName, setSelectedLocationName] = useState(
-        initialLocation?.name ?? '',
+    const circleRef = useRef<L.Circle | null>(null);
+    const accuracyCircleRef = useRef<L.Circle | null>(null);
+
+    // Map Center: Default to St. Rita's College of Balingasag
+    const defaultCenter: [number, number] = [
+        initialLocation?.lat || 8.74307,
+        initialLocation?.lng || 124.7745,
+    ];
+
+    const [currentLat, setCurrentLat] = useState<number>(defaultCenter[0]);
+    const [currentLng, setCurrentLng] = useState<number>(defaultCenter[1]);
+    const [locationName, setLocationName] = useState<string>(
+        initialLocation?.name || "St. Rita's College of Balingasag",
     );
-    const [isMapLoaded, setIsMapLoaded] = useState(false);
-    const [error, setError] = useState('');
-    const [showAdvanced, setShowAdvanced] = useState(false);
-    const [manualLat, setManualLat] = useState(
-        initialLocation?.lat?.toFixed(6) ?? '12.8797',
+    const [radius, setRadius] = useState<number>(
+        initialLocation?.radius_m || initialRadius || 50,
     );
-    const [manualLng, setManualLng] = useState(
-        initialLocation?.lng?.toFixed(6) ?? '121.7740',
-    );
+    const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('streets');
+    const [isMapReady, setIsMapReady] = useState<boolean>(false);
+    const [gpsLoading, setGpsLoading] = useState<boolean>(false);
+    const [gpsError, setGpsError] = useState<string | null>(null);
+    const [copied, setCopied] = useState<boolean>(false);
+    const [searchQuery, setSearchQuery] = useState<string>('');
+    const [isSearching, setIsSearching] = useState<boolean>(false);
     const [searchResults, setSearchResults] = useState<
         Array<{ name: string; lat: number; lng: number }>
     >([]);
-    const [showSearchResults, setShowSearchResults] = useState(false);
+    const [showResultsDropdown, setShowResultsDropdown] =
+        useState<boolean>(false);
+    const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
-    // Predefined Philippine locations
-    const philippineLocations = [
-        // Major Cities
-        { name: 'Manila', lat: 14.5995, lng: 120.9842 },
-        { name: 'Quezon City', lat: 14.676, lng: 121.0437 },
-        { name: 'Cebu City', lat: 10.3157, lng: 123.8854 },
-        { name: 'Davao City', lat: 7.0731, lng: 125.6128 },
-        { name: 'Makati', lat: 14.5547, lng: 121.0244 },
-        { name: 'Pasig', lat: 14.5764, lng: 121.0851 },
-        { name: 'Taguig', lat: 14.5176, lng: 121.0538 },
-        { name: 'Pasay', lat: 14.5378, lng: 121.0017 },
-        { name: 'Mandaluyong', lat: 14.5794, lng: 121.0344 },
-        { name: 'Caloocan', lat: 14.6507, lng: 120.9704 },
-        { name: 'Baguio', lat: 16.4023, lng: 120.596 },
-        { name: 'Angeles', lat: 15.1474, lng: 120.5899 },
-        { name: 'Iloilo City', lat: 10.7202, lng: 122.5621 },
-        { name: 'Bacolod', lat: 10.6605, lng: 122.951 },
-        { name: 'Zamboanga', lat: 6.9214, lng: 122.079 },
+    // Tile layers definitions
+    const streetLayerRef = useRef<L.TileLayer | null>(null);
+    const satelliteLayerRef = useRef<L.TileLayer | null>(null);
 
-        // Universities
-        { name: 'UP Diliman', lat: 14.6533, lng: 121.0683 },
-        { name: 'Ateneo de Manila', lat: 14.6398, lng: 121.0758 },
-        { name: 'De La Salle', lat: 14.5642, lng: 120.993 },
-        { name: 'UST', lat: 14.612, lng: 120.9969 },
-        { name: 'MIT', lat: 14.5605, lng: 120.9935 },
-        { name: 'FEU', lat: 14.6081, lng: 120.9838 },
-        { name: 'Adamson', lat: 14.6049, lng: 120.9899 },
-        { name: 'CEU', lat: 14.6202, lng: 120.983 },
-        { name: 'San Beda', lat: 14.6039, lng: 120.9868 },
-        { name: 'Trinity', lat: 14.6156, lng: 121.0429 },
-        { name: 'Miriam', lat: 14.6415, lng: 121.0693 },
-        { name: 'St. Scholastica', lat: 14.6274, lng: 121.0429 },
-    ];
-
-    // Search functionality
-    const handleSearch = (query: string) => {
-        setSearchInput(query);
-        if (query.length < 2) {
-            setSearchResults([]);
-            setShowSearchResults(false);
-            return;
-        }
-
-        const filtered = philippineLocations
-            .filter((location) =>
-                location.name.toLowerCase().includes(query.toLowerCase()),
-            )
-            .slice(0, 8); // Limit to 8 results
-
-        setSearchResults(filtered);
-        setShowSearchResults(true);
-    };
-
-    const selectLocation = (location: {
-        name: string;
-        lat: number;
-        lng: number;
-    }) => {
-        setSearchInput(location.name);
-        setShowSearchResults(false);
-        setSearchResults([]);
-
-        // Update map and marker
-        if (mapInstanceRef.current && markerRef.current) {
-            markerRef.current.setLatLng([location.lat, location.lng]);
-            mapInstanceRef.current.setView([location.lat, location.lng], 15);
-        }
-
-        // Update form data
-        onLocationSelect(location.lat, location.lng, location.name);
-        setSelectedLocationName(location.name);
-        setManualLat(location.lat.toFixed(6));
-        setManualLng(location.lng.toFixed(6));
-    };
-
-    // Close search results when clicking outside
+    // Initialize Leaflet map
     useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            const target = event.target as Element;
-            if (!target.closest('.search-container')) {
-                setShowSearchResults(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () =>
-            document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    // Initialize map
-    useEffect(() => {
-        if (!mapRef.current || mapInstanceRef.current) return;
+        if (!mapContainerRef.current || mapInstanceRef.current) return;
 
         try {
-            setIsMapLoaded(false);
-
-            // Initialize map
-            const map = L.map(mapRef.current, {
-                center: initialLocation
-                    ? [initialLocation.lat, initialLocation.lng]
-                    : [12.8797, 121.774],
-                zoom: 6,
+            const map = L.map(mapContainerRef.current, {
+                center: defaultCenter,
+                zoom: 18,
                 zoomControl: true,
+                maxZoom: 20,
+                minZoom: 4,
             });
 
-            // Add OpenStreetMap tiles (free, no API key needed)
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors',
-                maxZoom: 19,
+            // Street tile layer (OpenStreetMap)
+            streetLayerRef.current = L.tileLayer(
+                'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                {
+                    attribution:
+                        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                    maxZoom: 19,
+                },
+            );
+
+            // Satellite tile layer (Esri World Imagery)
+            satelliteLayerRef.current = L.tileLayer(
+                'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                {
+                    attribution:
+                        'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+                    maxZoom: 19,
+                },
+            );
+
+            // Add default street layer
+            streetLayerRef.current.addTo(map);
+
+            // Add interactive draggable marker
+            const marker = L.marker(defaultCenter, {
+                draggable: true,
+                icon: createCustomMarkerIcon('#2563eb'),
+                title: 'Drag to adjust geotagged position',
             }).addTo(map);
 
-            // Add marker
-            const marker = L.marker(
-                initialLocation
-                    ? [initialLocation.lat, initialLocation.lng]
-                    : [12.8797, 121.774],
-                {
-                    draggable: true,
-                    title: 'Event Location',
-                },
-            ).addTo(map);
+            // Add Geofence circle
+            const circle = L.circle(defaultCenter, {
+                radius: radius,
+                color: '#2563eb',
+                weight: 2,
+                opacity: 0.8,
+                fillColor: '#3b82f6',
+                fillOpacity: 0.18,
+                dashArray: '4, 6',
+            }).addTo(map);
 
-            // Handle marker drag
+            // Marker Drag End Listener
             marker.on('dragend', () => {
-                const position = marker.getLatLng();
-                const lat = position.lat;
-                const lng = position.lng;
-                const name =
-                    selectedLocationName ||
-                    `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-                onLocationSelect(lat, lng, name);
-                setSelectedLocationName(name);
-                setManualLat(lat.toFixed(6));
-                setManualLng(lng.toFixed(6));
+                const pos = marker.getLatLng();
+                updatePosition(pos.lat, pos.lng, false);
             });
 
-            // Handle map click
+            // Map Click Listener to place pin anywhere
             map.on('click', (e: L.LeafletMouseEvent) => {
-                const lat = e.latlng.lat;
-                const lng = e.latlng.lng;
-                marker.setLatLng([lat, lng]);
-                const name = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-                onLocationSelect(lat, lng, name);
-                setSelectedLocationName(name);
-                setManualLat(lat.toFixed(6));
-                setManualLng(lng.toFixed(6));
-                setSearchInput('');
+                updatePosition(e.latlng.lat, e.latlng.lng, false);
             });
 
             mapInstanceRef.current = map;
             markerRef.current = marker;
+            circleRef.current = circle;
 
-            // Small delay to ensure map is fully loaded
+            setIsMapReady(true);
+
+            // Trigger size calculation after layout mounts
             setTimeout(() => {
-                setIsMapLoaded(true);
-            }, 100);
-        } catch (err) {
-            console.error('Failed to initialize Leaflet map:', err);
-            setError('Failed to load map. Using manual entry mode.');
-            setIsMapLoaded(false);
+                map.invalidateSize();
+            }, 250);
+        } catch (error) {
+            console.error('[LeafletMapSelector] Error initializing map:', error);
         }
 
         return () => {
@@ -212,218 +259,442 @@ export default function LeafletMapSelector({
                 mapInstanceRef.current.remove();
                 mapInstanceRef.current = null;
                 markerRef.current = null;
-                setIsMapLoaded(false);
+                circleRef.current = null;
+                setIsMapReady(false);
             }
         };
-    }, []); // Empty dependency array to prevent re-initialization
+    }, []);
 
-    // Update map when initialLocation changes (but don't re-initialize)
-    useEffect(() => {
-        if (mapInstanceRef.current && markerRef.current && initialLocation) {
-            const currentLatLng = markerRef.current.getLatLng();
-            // Only update if the location actually changed
-            if (
-                Math.abs(currentLatLng.lat - initialLocation.lat) > 0.0001 ||
-                Math.abs(currentLatLng.lng - initialLocation.lng) > 0.0001
-            ) {
-                markerRef.current.setLatLng([
-                    initialLocation.lat,
-                    initialLocation.lng,
-                ]);
-                mapInstanceRef.current.setView(
-                    [initialLocation.lat, initialLocation.lng],
-                    16,
-                );
-                setSelectedLocationName(
-                    initialLocation.name ||
-                        `${initialLocation.lat.toFixed(6)}, ${initialLocation.lng.toFixed(6)}`,
-                );
-            }
+    // Switch Tile Layer (Streets / Satellite)
+    const handleToggleMapStyle = (style: 'streets' | 'satellite') => {
+        if (!mapInstanceRef.current) return;
+        setMapStyle(style);
+
+        if (style === 'satellite') {
+            if (streetLayerRef.current)
+                mapInstanceRef.current.removeLayer(streetLayerRef.current);
+            if (satelliteLayerRef.current)
+                satelliteLayerRef.current.addTo(mapInstanceRef.current);
+        } else {
+            if (satelliteLayerRef.current)
+                mapInstanceRef.current.removeLayer(satelliteLayerRef.current);
+            if (streetLayerRef.current)
+                streetLayerRef.current.addTo(mapInstanceRef.current);
         }
-    }, [initialLocation]);
+    };
 
-    const handleManualSubmit = () => {
-        const lat = parseFloat(manualLat);
-        const lng = parseFloat(manualLng);
-        if (
-            isNaN(lat) ||
-            isNaN(lng) ||
-            lat < -90 ||
-            lat > 90 ||
-            lng < -180 ||
-            lng > 180
-        ) {
-            setError(
-                'Invalid coordinates. Enter valid latitude (-90 to 90) and longitude (-180 to 180).',
-            );
+    // Update position helper
+    const updatePosition = (
+        lat: number,
+        lng: number,
+        panMap: boolean = true,
+        customName?: string,
+    ) => {
+        const roundedLat = parseFloat(lat.toFixed(6));
+        const roundedLng = parseFloat(lng.toFixed(6));
+        setCurrentLat(roundedLat);
+        setCurrentLng(roundedLng);
+
+        const name = customName || locationName || `${roundedLat}, ${roundedLng}`;
+        setLocationName(name);
+
+        if (markerRef.current) {
+            markerRef.current.setLatLng([roundedLat, roundedLng]);
+        }
+
+        if (circleRef.current) {
+            circleRef.current.setLatLng([roundedLat, roundedLng]);
+        }
+
+        if (panMap && mapInstanceRef.current) {
+            mapInstanceRef.current.setView([roundedLat, roundedLng], 18, {
+                animate: true,
+            });
+        }
+
+        // Notify parent form component
+        onLocationSelect(roundedLat, roundedLng, name, radius);
+    };
+
+    // Update Geofence Radius
+    const handleRadiusChange = (newRadius: number) => {
+        const r = Math.max(10, Math.min(1000, newRadius));
+        setRadius(r);
+
+        if (circleRef.current) {
+            circleRef.current.setRadius(r);
+        }
+
+        onLocationSelect(currentLat, currentLng, locationName, r);
+    };
+
+    // Use Device Geolocation ("Locate Me")
+    const handleLocateMe = () => {
+        if (!navigator.geolocation) {
+            setGpsError('Geolocation is not supported by your browser.');
             return;
         }
-        const name = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-        onLocationSelect(lat, lng, name);
-        setSelectedLocationName(name);
-        if (mapInstanceRef.current && markerRef.current) {
-            markerRef.current.setLatLng([lat, lng]);
-            mapInstanceRef.current.setView([lat, lng], 16);
+
+        setGpsLoading(true);
+        setGpsError(null);
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                setGpsLoading(false);
+                const { latitude, longitude, accuracy } = pos.coords;
+
+                updatePosition(latitude, longitude, true, 'Current GPS Location');
+
+                // Draw user accuracy indicator
+                if (mapInstanceRef.current) {
+                    if (accuracyCircleRef.current) {
+                        mapInstanceRef.current.removeLayer(accuracyCircleRef.current);
+                    }
+                    accuracyCircleRef.current = L.circle([latitude, longitude], {
+                        radius: accuracy,
+                        color: '#10b981',
+                        weight: 1,
+                        fillColor: '#10b981',
+                        fillOpacity: 0.1,
+                    }).addTo(mapInstanceRef.current);
+                }
+            },
+            (err) => {
+                setGpsLoading(false);
+                setGpsError(err.message || 'Unable to retrieve your location.');
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0,
+            },
+        );
+    };
+
+    // Search OpenStreetMap Nominatim or Presets
+    const handleSearch = async (query: string) => {
+        setSearchQuery(query);
+        if (!query.trim()) {
+            setSearchResults([]);
+            setShowResultsDropdown(false);
+            return;
         }
-        setError('');
+
+        // Check local campus presets first
+        const matchedPresets = CAMPUS_PRESETS.filter((p) =>
+            p.name.toLowerCase().includes(query.toLowerCase()),
+        ).map((p) => ({ name: p.name, lat: p.lat, lng: p.lng }));
+
+        setSearchResults(matchedPresets);
+        setShowResultsDropdown(true);
+
+        // If query is longer, query OpenStreetMap Nominatim for Philippines
+        if (query.trim().length > 3) {
+            setIsSearching(true);
+            try {
+                const res = await fetch(
+                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+                        query + ', Philippines',
+                    )}&limit=5`,
+                );
+                const data = await res.json();
+                const remoteResults = (data || []).map((item: any) => ({
+                    name: item.display_name,
+                    lat: parseFloat(item.lat),
+                    lng: parseFloat(item.lon),
+                }));
+
+                setSearchResults([...matchedPresets, ...remoteResults]);
+            } catch (err) {
+                console.warn('[LeafletMapSelector] Nominatim search failed:', err);
+            } finally {
+                setIsSearching(false);
+            }
+        }
+    };
+
+    const handleSelectSearchResult = (result: {
+        name: string;
+        lat: number;
+        lng: number;
+    }) => {
+        setSearchQuery(result.name);
+        setShowResultsDropdown(false);
+        updatePosition(result.lat, result.lng, true, result.name);
+    };
+
+    const copyCoords = () => {
+        navigator.clipboard.writeText(`${currentLat}, ${currentLng}`);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
     };
 
     return (
-        <div className="space-y-3">
-            <div className="search-container">
-                <label className="block text-sm font-medium text-slate-700">
-                    Search location
-                </label>
-                <div className="relative">
+        <div
+            className={`flex flex-col gap-3 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-[#0B192C] ${className}`}
+        >
+            {/* Header Controls Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
+                        <MapPin className="h-5 w-5" />
+                    </div>
+                    <div>
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                            Leaflet Geotagging & Geofence
+                        </h4>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                            Click or drag marker to set GPS attendance radius
+                        </p>
+                    </div>
+                </div>
+
+                {/* Right Action Tools */}
+                <div className="flex items-center gap-1.5">
+                    {/* Layer Switcher */}
+                    <div className="flex rounded-xl border border-slate-200 bg-slate-100 p-0.5 dark:border-slate-700 dark:bg-slate-800">
+                        <button
+                            type="button"
+                            onClick={() => handleToggleMapStyle('streets')}
+                            className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${
+                                mapStyle === 'streets'
+                                    ? 'bg-white text-blue-600 shadow-xs dark:bg-slate-700 dark:text-white'
+                                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400'
+                            }`}
+                        >
+                            Streets
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleToggleMapStyle('satellite')}
+                            className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${
+                                mapStyle === 'satellite'
+                                    ? 'bg-white text-blue-600 shadow-xs dark:bg-slate-700 dark:text-white'
+                                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-400'
+                            }`}
+                        >
+                            Satellite
+                        </button>
+                    </div>
+
+                    {/* Locate Me */}
+                    <button
+                        type="button"
+                        onClick={handleLocateMe}
+                        disabled={gpsLoading}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-700 shadow-2xs hover:bg-emerald-100 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300 cursor-pointer"
+                        title="Locate my GPS position"
+                    >
+                        <LocateFixed
+                            className={`h-3.5 w-3.5 ${gpsLoading ? 'animate-spin' : ''}`}
+                        />
+                        <span>{gpsLoading ? 'Locating...' : 'GPS'}</span>
+                    </button>
+                </div>
+            </div>
+
+            {/* Search Bar & Autocomplete */}
+            <div className="relative">
+                <div className="relative flex items-center">
+                    <Search className="absolute left-3.5 h-4 w-4 text-slate-400" />
                     <input
                         type="text"
-                        className="mt-1 block w-full rounded-md border-slate-300 shadow-sm"
-                        placeholder="e.g., Manila, Quezon City, UP Diliman"
-                        value={searchInput}
+                        value={searchQuery}
                         onChange={(e) => handleSearch(e.target.value)}
-                        disabled={!isMapLoaded}
+                        placeholder="Search landmark (e.g., Gymnasium, Quadrangle, Balingasag)..."
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/80 py-2 pr-9 pl-10 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:outline-hidden dark:border-slate-700 dark:bg-slate-900/60 dark:text-white dark:focus:border-blue-400"
                     />
-                    {showSearchResults && searchResults.length > 0 && (
-                        <div className="search-dropdown z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-md border border-slate-300 bg-white shadow-lg">
-                            {searchResults.map((location, index) => (
+                    {searchQuery && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setSearchQuery('');
+                                setShowResultsDropdown(false);
+                            }}
+                            className="absolute right-3 text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    )}
+                </div>
+
+                {/* Search Results Dropdown */}
+                {showResultsDropdown && searchResults.length > 0 && (
+                    <div className="absolute top-full left-0 z-50 mt-1 max-h-52 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white p-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                        {searchResults.map((result, idx) => (
+                            <button
+                                key={idx}
+                                type="button"
+                                onClick={() => handleSelectSearchResult(result)}
+                                className="flex w-full items-start gap-2.5 rounded-lg px-3 py-2 text-left text-xs text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-blue-400 cursor-pointer"
+                            >
+                                <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-500" />
+                                <div className="min-w-0 flex-1">
+                                    <div className="font-bold truncate">
+                                        {result.name}
+                                    </div>
+                                    <div className="text-[10px] text-slate-400">
+                                        {result.lat.toFixed(5)},{' '}
+                                        {result.lng.toFixed(5)}
+                                    </div>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Error Banner */}
+            {gpsError && (
+                <div className="flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300">
+                    <span>{gpsError}</span>
+                    <button
+                        type="button"
+                        onClick={() => setGpsError(null)}
+                        className="text-rose-500 hover:text-rose-700"
+                    >
+                        <X className="h-3.5 w-3.5" />
+                    </button>
+                </div>
+            )}
+
+            {/* Interactive Leaflet Map Container */}
+            <div
+                className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 shadow-inner dark:border-slate-800 dark:bg-slate-950"
+                style={{ height }}
+            >
+                <div
+                    ref={mapContainerRef}
+                    className="h-full w-full z-10"
+                    style={{ minHeight: height }}
+                />
+
+                {/* Floating Geofence Badge Overlay */}
+                <div className="absolute top-3 left-3 z-[400] flex items-center gap-2 rounded-xl border border-white/40 bg-white/90 px-3 py-1.5 shadow-md backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/90">
+                    <Radio className="h-4 w-4 text-blue-600 animate-pulse dark:text-blue-400" />
+                    <div className="text-[11px] font-black text-slate-800 dark:text-white">
+                        Geofence: <span className="text-blue-600 dark:text-blue-400">{radius}m</span> Radius
+                    </div>
+                </div>
+            </div>
+
+            {/* Radius & Coordinate Controls */}
+            {showRadiusControl && (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 rounded-xl border border-slate-100 bg-slate-50/70 p-3 dark:border-slate-800/80 dark:bg-slate-900/40">
+                    {/* Geofence Radius Selector */}
+                    <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                Geofence Radius
+                            </label>
+                            <span className="rounded-md bg-blue-100 px-2 py-0.5 text-[11px] font-black text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                                {radius} meters
+                            </span>
+                        </div>
+                        <input
+                            type="range"
+                            min={15}
+                            max={300}
+                            step={5}
+                            value={radius}
+                            onChange={(e) =>
+                                handleRadiusChange(parseInt(e.target.value, 10))
+                            }
+                            className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 accent-blue-600 dark:bg-slate-700"
+                        />
+                        <div className="mt-1.5 flex justify-between gap-1">
+                            {[25, 50, 100, 150, 200].map((r) => (
                                 <button
-                                    key={index}
+                                    key={r}
                                     type="button"
-                                    className="w-full border-b border-slate-100 px-3 py-2 text-left text-sm last:border-b-0 hover:bg-slate-100 focus:bg-slate-100 focus:outline-none"
-                                    onClick={() => selectLocation(location)}
+                                    onClick={() => handleRadiusChange(r)}
+                                    className={`rounded-md px-2 py-0.5 text-[10px] font-bold transition-all cursor-pointer ${
+                                        radius === r
+                                            ? 'bg-blue-600 text-white'
+                                            : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+                                    }`}
                                 >
-                                    <div className="font-medium text-slate-900">
-                                        {location.name}
-                                    </div>
-                                    <div className="text-xs text-slate-500">
-                                        {location.lat.toFixed(4)},{' '}
-                                        {location.lng.toFixed(4)}
-                                    </div>
+                                    {r}m
                                 </button>
                             ))}
                         </div>
-                    )}
-                </div>
-                <p className="mt-1 text-xs text-slate-500">
-                    Search Philippine cities and universities
-                </p>
-            </div>
-
-            {selectedLocationName && (
-                <div className="text-sm text-slate-600">
-                    Selected:{' '}
-                    <span className="font-semibold">
-                        {selectedLocationName}
-                    </span>
-                </div>
-            )}
-
-            <div
-                className="map-wrapper overflow-hidden rounded-lg border border-slate-300 bg-slate-100"
-                style={{
-                    height: '400px',
-                    position: 'relative',
-                    minHeight: '400px',
-                }}
-            >
-                {!isMapLoaded && !error && (
-                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-100">
-                        <div className="text-center">
-                            <div className="mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
-                            <p className="text-sm text-slate-600">
-                                Loading Philippines map...
-                            </p>
-                        </div>
                     </div>
-                )}
-                {error && (
-                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-amber-50">
-                        <div className="p-4 text-center">
-                            <p className="mb-2 text-sm text-amber-700">
-                                Map unavailable - using manual entry
-                            </p>
-                            <p className="text-xs text-slate-500">{error}</p>
+
+                    {/* Coordinates Readout & Copy */}
+                    <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                Pin Coordinates
+                            </span>
+                            <button
+                                type="button"
+                                onClick={copyCoords}
+                                className="flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 cursor-pointer"
+                            >
+                                {copied ? (
+                                    <>
+                                        <Check className="h-3 w-3 text-emerald-500" />
+                                        <span className="text-emerald-600">Copied</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Copy className="h-3 w-3" />
+                                        <span>Copy</span>
+                                    </>
+                                )}
+                            </button>
                         </div>
-                    </div>
-                )}
-                <div
-                    ref={mapRef}
-                    className="leaflet-container h-full w-full"
-                    style={{
-                        display: isMapLoaded && !error ? 'block' : 'none',
-                        visibility:
-                            isMapLoaded && !error ? 'visible' : 'hidden',
-                        minHeight: '400px',
-                    }}
-                />
-            </div>
-
-            {!selectedLocationName && !error && isMapLoaded && (
-                <p className="text-xs text-amber-600">
-                    Click on the map to set the event location
-                </p>
-            )}
-
-            <div>
-                <button
-                    type="button"
-                    onClick={() => setShowAdvanced(!showAdvanced)}
-                    className="text-xs text-slate-500 underline"
-                >
-                    {showAdvanced ? 'Hide' : 'Show'} Manual Entry{' '}
-                    {error && '(Map unavailable - use this)'}
-                </button>
-                {(showAdvanced || error) && (
-                    <div className="mt-2 space-y-2 rounded-md bg-slate-50 p-3">
-                        <p className="mb-2 text-xs text-slate-600">
-                            Enter coordinates manually:
-                        </p>
-                        <div className="grid grid-cols-2 gap-2">
-                            <div>
-                                <label className="block text-xs font-medium text-slate-700">
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="rounded-lg border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-800">
+                                <span className="block text-[10px] font-bold text-slate-400">
                                     Latitude
-                                </label>
-                                <input
-                                    type="text"
-                                    className="mt-1 block w-full rounded-md border-slate-300 text-xs"
-                                    value={manualLat}
-                                    onChange={(e) =>
-                                        setManualLat(e.target.value)
-                                    }
-                                    placeholder="14.5995 (Luzon)"
-                                />
+                                </span>
+                                <span className="font-mono font-bold text-slate-800 dark:text-white">
+                                    {currentLat.toFixed(6)}
+                                </span>
                             </div>
-                            <div>
-                                <label className="block text-xs font-medium text-slate-700">
+                            <div className="rounded-lg border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-800">
+                                <span className="block text-[10px] font-bold text-slate-400">
                                     Longitude
-                                </label>
-                                <input
-                                    type="text"
-                                    className="mt-1 block w-full rounded-md border-slate-300 text-xs"
-                                    value={manualLng}
-                                    onChange={(e) =>
-                                        setManualLng(e.target.value)
-                                    }
-                                    placeholder="120.9842 (Manila)"
-                                />
+                                </span>
+                                <span className="font-mono font-bold text-slate-800 dark:text-white">
+                                    {currentLng.toFixed(6)}
+                                </span>
                             </div>
                         </div>
-                        <button
-                            type="button"
-                            onClick={handleManualSubmit}
-                            className="rounded bg-slate-600 px-3 py-1 text-xs text-white hover:bg-slate-700"
-                        >
-                            Set Location
-                        </button>
-                        {error && (
-                            <p className="mt-2 text-xs text-slate-500">
-                                Map is unavailable due to loading issues. Use
-                                manual entry to continue testing geotagging.
-                            </p>
-                        )}
                     </div>
-                )}
-            </div>
+                </div>
+            )}
+
+            {/* Campus Landmark Preset Quick Buttons */}
+            {showPresets && (
+                <div className="space-y-1.5 pt-1">
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                        <Compass className="h-3.5 w-3.5" />
+                        <span>SRCB Campus Quick Landmarks:</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                        {CAMPUS_PRESETS.slice(0, 6).map((preset, idx) => (
+                            <button
+                                key={idx}
+                                type="button"
+                                onClick={() =>
+                                    updatePosition(
+                                        preset.lat,
+                                        preset.lng,
+                                        true,
+                                        preset.name,
+                                    )
+                                }
+                                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-700 shadow-2xs transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200 dark:hover:border-blue-500 dark:hover:bg-slate-800 cursor-pointer"
+                            >
+                                <MapPin className="h-3 w-3 text-blue-500" />
+                                <span>{preset.name.split('(')[0].trim()}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

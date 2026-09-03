@@ -1,6 +1,7 @@
 import { usePage } from '@inertiajs/react';
 import {
     Check,
+    Compass,
     Copy,
     Crosshair,
     LocateFixed,
@@ -12,6 +13,7 @@ import {
     ZoomOut,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import LeafletMapSelector from '@/components/LeafletMapSelector';
 
 interface Location {
     latitude: number;
@@ -77,6 +79,7 @@ export function SchoolMapSelector({
     const [gpsError, setGpsError] = useState<string | null>(null);
     const [mapPinOnly, setMapPinOnly] = useState(false);
     const [zoomLevel, setZoomLevel] = useState(1);
+    const [mapMode, setMapMode] = useState<'leaflet' | 'blueprint'>('leaflet');
     const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
     const [isPanning, setIsPanning] = useState(false);
     const [lastPanPoint, setLastPanPoint] = useState({ x: 0, y: 0 });
@@ -1088,19 +1091,71 @@ export function SchoolMapSelector({
     // For now, I'll create a placeholder SVG that represents a school layout
     return (
         <div
-            className={`relative rounded-lg border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-800 ${className} ${isFullScreen ? 'fixed inset-0 z-50 h-full w-full overflow-auto' : ''}`}
+            className={`relative rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800 ${className} ${isFullScreen ? 'fixed inset-0 z-50 h-full w-full overflow-auto p-4' : ''}`}
         >
-            <div className="mt-1 p-4 text-sm text-gray-600 dark:text-slate-400">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    School Location Map
+            <div className="p-4 pb-2 text-sm text-gray-600 dark:text-slate-400">
+                <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                    Event Geotagging & Campus Map
                 </h3>
-                <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">
-                    The map is for campus visualization. Geofence checks use
-                    real GPS coordinates stored per event.
+                <p className="mt-0.5 text-xs text-gray-500 dark:text-slate-400">
+                    Set event attendance coordinates and geofence radius for automated student check-in.
                 </p>
             </div>
-            <div className="p-4">
-                <div className="mb-3 flex flex-wrap gap-2">
+
+            {/* Mode Switcher Tabs */}
+            <div className="px-4 pb-2">
+                <div className="flex rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-700 dark:bg-slate-900">
+                    <button
+                        type="button"
+                        onClick={() => setMapMode('leaflet')}
+                        className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-xs font-bold transition-all cursor-pointer ${
+                            mapMode === 'leaflet'
+                                ? 'bg-blue-600 text-white shadow-xs'
+                                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                        }`}
+                    >
+                        <MapPin className="h-4 w-4" />
+                        <span>Leaflet.js Real-World Geotagging Map (Recommended)</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setMapMode('blueprint')}
+                        className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-xs font-bold transition-all cursor-pointer ${
+                            mapMode === 'blueprint'
+                                ? 'bg-blue-600 text-white shadow-xs'
+                                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                        }`}
+                    >
+                        <Compass className="h-4 w-4" />
+                        <span>2D Campus Schematic Blueprint</span>
+                    </button>
+                </div>
+            </div>
+
+            {mapMode === 'leaflet' ? (
+                <div className="p-4 pt-1">
+                    <LeafletMapSelector
+                        onLocationSelect={(lat, lng, name) =>
+                            onLocationSelect(lat, lng, name)
+                        }
+                        initialLocation={
+                            selectedLocation
+                                ? {
+                                      lat: selectedLocation.latitude,
+                                      lng: selectedLocation.longitude,
+                                      name: selectedLocation.name,
+                                  }
+                                : {
+                                      lat: campusCenter.lat,
+                                      lng: campusCenter.lng,
+                                      name: "St. Rita's College of Balingasag",
+                                  }
+                        }
+                    />
+                </div>
+            ) : (
+                <div className="p-4">
+                    <div className="mb-3 flex flex-wrap gap-2">
                     <button
                         type="button"
                         onClick={() => void useDeviceGps()}
@@ -1491,6 +1546,7 @@ export function SchoolMapSelector({
                     </p>
                 </div>
             </div>
+            )}
         </div>
     );
 }
