@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'socket_server' => [
+        'url' => env('SOCKET_SERVER_URL', 'http://127.0.0.1:3001'),
+        'secret' => env('SOCKET_SERVER_SECRET', 'dsams_realtime_secret_key_change_in_production'),
+    ],
+
 ];

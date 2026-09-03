@@ -45,6 +45,8 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { MobileNavigation } from './mobile-navigation';
+import { useNotifications } from '@/hooks/useNotifications';
+import NotificationPopup from '@/components/notifications/NotificationPopup';
 
 const playNotificationSound = () => {
     try {
@@ -89,26 +91,43 @@ export function AdminHeader() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [helpOpen, setHelpOpen] = useState(false);
 
+    // Real-time notification hook powered by Node.js + Socket.IO
+    const {
+        notifications: realtimeList,
+        unreadCount: realtimeUnread,
+        popupNotification,
+        markAsRead,
+        markAllAsRead,
+        clearPopup,
+    } = useNotifications({
+        userId: auth?.user?.id,
+        role: (auth?.user as any)?.role || 'admin',
+        autoConnect: Boolean(auth?.user?.id),
+    });
+
     const recentNotifications = Array.isArray(
         (page.props as any)?.recentNotifications,
     )
         ? ((page.props as any).recentNotifications ?? [])
         : [];
 
-    const notificationsToRender = recentNotifications as Array<{
-        id: string;
+    // Merge initial server-rendered notifications with live realtime notifications
+    const notificationsToRender = realtimeList.length > 0 ? realtimeList : (recentNotifications as Array<{
+        id: any;
         type?: string;
         title: string;
         subtitle?: string;
         timeAgo?: string;
         is_read?: boolean;
-    }>;
+    }>);
 
-    const unreadNotifications = bellClicked
-        ? 0
-        : notificationsToRender.filter(
-              (n) => !n.is_read && !locallyRead.includes(n.id),
-          ).length;
+    const unreadNotifications = realtimeList.length > 0
+        ? realtimeUnread
+        : (bellClicked
+            ? 0
+            : notificationsToRender.filter(
+                  (n) => !n.is_read && !locallyRead.includes(String(n.id)),
+              ).length);
 
     const lastUnreadCount = useRef(unreadNotifications);
     useEffect(() => {
@@ -153,10 +172,14 @@ export function AdminHeader() {
     };
 
     const handleNotificationClick = (n: any) => {
-        const isRead = n.is_read || locallyRead.includes(n.id);
+        const isRead = n.is_read || locallyRead.includes(String(n.id));
         if (!isRead) {
-            setLocallyRead((prev) => [...prev, n.id]);
-            axios.post(`/notifications/${n.id}/mark-read`).catch(console.error);
+            setLocallyRead((prev) => [...prev, String(n.id)]);
+            if (typeof n.id === 'number') {
+                markAsRead(n.id);
+            } else {
+                axios.post(`/notifications/${n.id}/mark-read`).catch(console.error);
+            }
         }
 
         const href = getNotificationHref(n);
@@ -166,16 +189,9 @@ export function AdminHeader() {
     };
 
     const handleMarkAllAsRead = () => {
-        const allIds = notificationsToRender.map((n) => n.id);
+        const allIds = notificationsToRender.map((n) => String(n.id));
         setLocallyRead(allIds);
-        axios
-            .post('/notifications/mark-all-read')
-            .then(() => {
-                router.reload({
-                    only: ['recentNotifications', 'unreadNotifications'],
-                });
-            })
-            .catch(console.error);
+        markAllAsRead();
     };
 
     const propsAny = page.props as unknown as Record<string, any>;
@@ -529,6 +545,16 @@ export function AdminHeader() {
                     </DropdownMenu>
                 </div>
             </div>
+
+            {/* Real-time Notification Popup Toast */}
+            <NotificationPopup
+                notification={popupNotification}
+                onClose={clearPopup}
+                onView={(n) => {
+                    const href = getNotificationHref(n);
+                    if (href) router.visit(href);
+                }}
+            />
         </div>
     );
 }

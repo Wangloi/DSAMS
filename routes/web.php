@@ -657,6 +657,16 @@ Route::get('/api/auth/status/scanner-block', [\App\Http\Controllers\AuthStatusCo
 Route::get('/api/security-alerts', [SecurityAlertController::class, 'index'])->middleware('web');
 
 use App\Http\Controllers\NotificationController;
-Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
-Route::post('/notifications/{id}/mark-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
+
+Route::middleware(['web'])->group(function () {
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+    Route::patch('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+    Route::post('/notifications/{id}/mark-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
+    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+    Route::post('/notifications/test', [NotificationController::class, 'testNotification'])->name('notifications.test');
+});
+
 require __DIR__.'/settings.php';
+

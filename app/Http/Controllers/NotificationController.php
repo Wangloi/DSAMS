@@ -2,220 +2,139 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AppNotification;
+use App\Services\RealtimeNotificationService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Facades\Auth;
 
 class NotificationController extends Controller
 {
-    public function index()
+    protected RealtimeNotificationService $realtimeService;
+
+    public function __construct(RealtimeNotificationService $realtimeService)
     {
-        $user = auth('admin')->user();
-        if (!$user) {
-            abort(403);
+        $this->realtimeService = $realtimeService;
+    }
+
+    /**
+     * Get user's notifications + unread count
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $userId = $user?->id ?? $request->query('user_id');
+
+        if (!$userId) {
+            return response()->json([
+                'notifications' => [],
+                'unread_count' => 0,
+            ]);
         }
 
-        $notifications = $user->notifications()
-            ->orderByDesc('created_at')
-            ->paginate(20)
-            ->through(function (DatabaseNotification $notification) {
-                // Formatting logic similar to HandleInertiaRequests
-                $data = $notification->data;
-                $type = (string) ($data['type'] ?? '');
-                $title = (string) ($data['title'] ?? $data['message'] ?? 'Notification');
-                $subtitle = (string) ($data['subtitle'] ?? '');
-                $eventId = null;
-                $evaluationId = null;
-                
-                if (in_array($type, ['admission_slip_requested', 'admission_slip_status_updated'])) {
-                    $status = (string) ($data['status'] ?? ($type === 'admission_slip_requested' ? 'PENDING' : ''));
-                    $slipId = (string) ($data['slip_id'] ?? '');
-                    if ($type === 'admission_slip_requested') {
-                        $studentName = (string) ($data['student_name'] ?? '');
-                        $subtitle = trim(implode(' • ', array_filter([
-                            $slipId !== '' ? "Admission Slip #{$slipId}" : '',
-                            $studentName,
-                            $status,
-                        ])));
-                    } else {
-                        $subtitle = trim("Admission Slip #{$slipId} • {$status}");
-                    }
-                }
+        $notifications = AppNotification::forRecipient($userId)
+            ->orderBy('created_at', 'desc')
+            ->limit(30)
+            ->get();
 
-                if ($type === 'incident_reported_admin') {
-                    $incidentType = (string) ($data['incident_type'] ?? '');
-                    $subtitle = (string) ($data['subtitle'] ?? $data['message'] ?? '');
-                }
+        $unreadCount = AppNotification::forRecipient($userId)
+            ->unread()
+            ->count();
 
-                if (in_array($type, ['activity_plan_submitted_admin', 'activity_plan_status_updated'])) {
-                    $eventId = $data['event_id'] ?? null;
-                }
-
-                $slipId = $data['slip_id'] ?? null;
-                $incidentId = $data['incident_id'] ?? $data['id'] ?? null;
-
-                return [
-                    'id' => $notification->id,
-                    'type' => $type,
-                    'eventId' => $eventId,
-                    'evaluationId' => $evaluationId,
-                    'slipId' => $slipId,
-                    'incidentId' => $incidentId,
-                    'title' => $title,
-                    'subtitle' => $subtitle,
-                    'timeAgo' => $notification->created_at?->diffForHumans() ?? '',
-                    'is_read' => $notification->read_at !== null,
-                    'created_at' => $notification->created_at?->toDateTimeString(),
-                ];
-            });
-
-        return Inertia::render('admin-dashboard/notifications/index', [
-            'paginatedNotifications' => $notifications
+        return response()->json([
+            'notifications' => $notifications,
+            'unread_count'  => $unreadCount,
         ]);
     }
 
-    public function studentIndex()
+    /**
+     * Mark a single notification as read
+     */
+    public function markAsRead(int $id): JsonResponse
     {
-        $user = auth('student')->user();
-        if (!$user) {
-            abort(403);
+        $user = Auth::user();
+        $notification = AppNotification::find($id);
+
+        if (!$notification) {
+            return response()->json(['error' => 'Notification not found'], 404);
         }
 
-        $notifications = $user->notifications()
-            ->orderByDesc('created_at')
-            ->paginate(20)
-            ->through(function (DatabaseNotification $notification) {
-                // Formatting logic similar to HandleInertiaRequests
-                $data = $notification->data;
-                $type = (string) ($data['type'] ?? '');
-                $title = (string) ($data['title'] ?? $data['message'] ?? 'Notification');
-                $subtitle = (string) ($data['subtitle'] ?? '');
-                $eventId = null;
-                $evaluationId = null;
+        // Check ownership if user_id is set
+        if ($notification->user_id && $user && $notification->user_id !== $user->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
 
-                if ($type === 'scanner_portal_access_granted') {
-                    $eventId = $data['event_id'] ?? null;
-                    $subtitle = (string) ($data['message'] ?? $subtitle);
-                }
+        $notification->update(['is_read' => true]);
 
-                if ($type === 'evaluation_available') {
-                    $evaluationId = $data['evaluation_id'] ?? null;
-                    $eventId = $data['event_id'] ?? null;
-                    $subtitle = (string) ($data['message'] ?? $subtitle);
-                }
-
-                if (in_array($type, ['admission_slip_status_updated'])) {
-                    $status = (string) ($data['status'] ?? '');
-                    $slipId = (string) ($data['slip_id'] ?? '');
-                    $subtitle = trim("Admission Slip #{$slipId} • {$status}");
-                }
-
-                if ($type === 'incident_reported_student') {
-                    $incidentType = (string) ($data['incident_type'] ?? '');
-                    $subtitle = (string) ($data['subtitle'] ?? $data['message'] ?? '');
-                }
-
-                return [
-                    'id' => $notification->id,
-                    'type' => $type,
-                    'eventId' => $eventId,
-                    'evaluationId' => $evaluationId,
-                    'title' => $title,
-                    'subtitle' => $subtitle,
-                    'timeAgo' => $notification->created_at?->diffForHumans() ?? '',
-                    'is_read' => $notification->read_at !== null,
-                    'created_at' => $notification->created_at?->toDateTimeString(),
-                ];
-            });
-
-        return Inertia::render('student/notifications/index', [
-            'paginatedNotifications' => $notifications
+        return response()->json([
+            'success'      => true,
+            'notification' => $notification,
         ]);
     }
 
-    public function programHeadIndex()
+    /**
+     * Mark all notifications for the current user as read
+     */
+    public function markAllAsRead(Request $request): JsonResponse
     {
-        $user = auth('program_head')->user();
-        if (!$user) {
-            abort(403);
+        $user = Auth::user();
+        $userId = $user?->id ?? $request->input('user_id');
+
+        if (!$userId) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        $notifications = $user->notifications()
-            ->orderByDesc('created_at')
-            ->paginate(20)
-            ->through(function (DatabaseNotification $notification) {
-                $data = $notification->data;
-                $type = (string) ($data['type'] ?? '');
-                $title = (string) ($data['title'] ?? $data['message'] ?? 'Notification');
-                $subtitle = (string) ($data['subtitle'] ?? '');
-                $eventId = null;
-                $evaluationId = null;
+        AppNotification::forRecipient($userId)
+            ->unread()
+            ->update(['is_read' => true]);
 
-                if (in_array($type, ['activity_plan_submitted_admin', 'activity_plan_status_updated'])) {
-                    $eventId = $data['event_id'] ?? null;
-                    $eventName = (string) ($data['event_name'] ?? '');
-                    $status = (string) ($data['approval_status'] ?? '');
-                    $subtitle = (string) ($data['message'] ?? trim(implode(' • ', array_filter([$eventName, strtoupper($status)]))));
-                }
-
-                if (in_array($type, ['admission_slip_requested', 'admission_slip_status_updated'])) {
-                    $status = (string) ($data['status'] ?? ($type === 'admission_slip_requested' ? 'PENDING' : ''));
-                    $slipId = (string) ($data['slip_id'] ?? '');
-                    $studentName = (string) ($data['student_name'] ?? '');
-                    $subtitle = trim(implode(' • ', array_filter([
-                        $slipId !== '' ? "Admission Slip #{$slipId}" : '',
-                        $studentName,
-                        $status,
-                    ])));
-                }
-
-                if ($type === 'incident_reported_program_head' || $type === 'incident_reported_admin') {
-                    $incidentType = (string) ($data['incident_type'] ?? '');
-                    $subtitle = (string) ($data['subtitle'] ?? $data['message'] ?? '');
-                }
-
-                $slipId = $data['slip_id'] ?? null;
-                $incidentId = $data['incident_id'] ?? $data['id'] ?? null;
-
-                return [
-                    'id' => $notification->id,
-                    'type' => $type,
-                    'eventId' => $eventId,
-                    'evaluationId' => $evaluationId,
-                    'slipId' => $slipId,
-                    'incidentId' => $incidentId,
-                    'title' => $title,
-                    'subtitle' => $subtitle,
-                    'timeAgo' => $notification->created_at?->diffForHumans() ?? '',
-                    'is_read' => $notification->read_at !== null,
-                    'created_at' => $notification->created_at?->toDateTimeString(),
-                ];
-            });
-
-        return Inertia::render('program-head/notifications/index', [
-            'paginatedNotifications' => $notifications
+        return response()->json([
+            'success' => true,
+            'message' => 'All notifications marked as read',
         ]);
     }
-    public function markAsRead($id)
+
+    /**
+     * Delete a notification
+     */
+    public function destroy(int $id): JsonResponse
     {
-        $user = auth('admin')->user() ?? auth('student')->user() ?? auth('program_head')->user() ?? auth('dsa')->user();
-        if ($user && method_exists($user, 'notifications')) {
-            $notification = $user->notifications()->find($id);
-            if ($notification) {
-                $notification->markAsRead();
-            }
+        $user = Auth::user();
+        $notification = AppNotification::find($id);
+
+        if (!$notification) {
+            return response()->json(['error' => 'Notification not found'], 404);
         }
-        
+
+        if ($notification->user_id && $user && $notification->user_id !== $user->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $notification->delete();
+
         return response()->json(['success' => true]);
     }
-    
-    public function markAllAsRead()
+
+    /**
+     * Helper test endpoint to verify real-time dispatch
+     */
+    public function testNotification(Request $request): JsonResponse
     {
-        $user = auth('admin')->user() ?? auth('student')->user() ?? auth('program_head')->user() ?? auth('dsa')->user();
-        if ($user && method_exists($user, 'unreadNotifications')) {
-            $user->unreadNotifications->markAsRead();
-        }
-        
-        return response()->json(['success' => true]);
+        $user = Auth::user();
+        $userId = $request->input('user_id', $user?->id ?? 1);
+
+        $notification = $this->realtimeService->sendToUser($userId, [
+            'type'         => $request->input('type', 'system_alert'),
+            'title'        => $request->input('title', '🔔 Test Real-Time Notification'),
+            'message'      => $request->input('message', 'This is a live test notification delivered via Node.js + Socket.IO!'),
+            'related_id'   => $request->input('related_id', 'TEST-001'),
+            'related_type' => 'test',
+        ]);
+
+        return response()->json([
+            'success'      => (bool) $notification,
+            'notification' => $notification,
+            'message'      => 'Notification event dispatched to Node.js Socket.IO server',
+        ]);
     }
 }

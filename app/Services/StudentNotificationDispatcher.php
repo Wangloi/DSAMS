@@ -34,15 +34,30 @@ class StudentNotificationDispatcher
             return;
         }
 
-        $dispatch = fn () => event(new StudentNotificationRequested(
-            studentIds: $ids,
-            type: $type,
-            title: $title,
-            message: $message,
-            data: $data,
-            dedupeKey: $dedupeKey,
-            allowMail: $allowMail,
-        ));
+        $dispatch = function () use ($ids, $type, $title, $message, $data, $dedupeKey, $allowMail) {
+            event(new StudentNotificationRequested(
+                studentIds: $ids,
+                type: $type,
+                title: $title,
+                message: $message,
+                data: $data,
+                dedupeKey: $dedupeKey,
+                allowMail: $allowMail,
+            ));
+
+            // Real-Time Socket.IO delivery
+            $realtimeService = app(\App\Services\RealtimeNotificationService::class);
+            foreach ($ids as $studentId) {
+                $realtimeService->sendToUser($studentId, [
+                    'type'         => $type,
+                    'title'        => $title,
+                    'message'      => $message,
+                    'related_id'   => $data['id'] ?? null,
+                    'related_type' => $type,
+                    'meta_data'    => $data,
+                ], 'App\\Models\\Student');
+            }
+        };
 
         DB::transactionLevel() > 0 ? DB::afterCommit($dispatch) : $dispatch();
     }
