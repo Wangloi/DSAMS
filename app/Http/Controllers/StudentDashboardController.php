@@ -20,57 +20,25 @@ use Inertia\Inertia;
 class StudentDashboardController extends Controller
 {
     /**
-     * @return \Inertia\Response
+     * Display the student dashboard.
      */
-    public function index()
+    public function index(): \Inertia\Response
     {
         /** @var Student|\App\Models\User|null $user */
         $user = Auth::guard('student')->user() ?: auth()->user();
         
-        $stats = [
-            'active_incidents' => $this->getActiveIncidentsCount($user),
-            'event_attendance' => $this->getEventAttendanceCount($user),
-            'pending_evaluations' => $user instanceof Student
-                ? self::pendingEvaluationsForStudent($user)->count()
-                : 0,
-        ];
-
-        $pendingEvaluations = $user instanceof Student
-            ? $this->getFormattedPendingEvaluations($user)
-            : collect();
-
+        $stats = $this->getStats($user);
+        $pendingEvaluations = $this->getFormattedPendingEvaluations($user);
         $incidents = $this->getFormattedIncidents($user);
-
-        $notifications = $user instanceof Student
-            ? StudentNotificationPresenter::recentForStudent($user, 5)
-            : [];
-
+        $notifications = $this->getNotifications($user);
         $events = $this->getFormattedEvents($user);
-
+        $violations = $this->getViolationsList();
+        $programs = $this->getProgramsList();
 
         Log::info('[StudentDashboardController] computed notifications', [
             'student_id' => $user instanceof Student ? $user->id : null,
-            'notifications_count' => is_array($notifications) ? count($notifications) : 0,
-            'notifications_first' => is_array($notifications) && count($notifications) > 0 ? array_intersect_key((array) $notifications[0], array_flip(['id','type','title','subtitle','eventId','evaluationId'])) : null,
-            'notifications_raw_first_type' => is_array($notifications) && count($notifications) > 0 ? ($notifications[0]['type'] ?? null) : null,
+            'notifications_count' => count($notifications),
         ]);
-
-        \App\Models\Violation::ensureDefaultViolations();
-        $violations = \App\Models\Violation::all();
-        
-        // Fetch active programs for admission slip form (grouped by department)
-        $programs = Schema::hasTable('programs')
-            ? Program::where('is_active', true)
-                ->orderBy('department')
-                ->orderBy('name')
-                ->get(['id', 'name', 'code', 'department'])
-                ->map(fn ($p) => [
-                    'id'         => $p->id,
-                    'name'       => $p->name,
-                    'code'       => $p->code,
-                    'department' => $p->department ?? 'General',
-                ])
-            : collect();
 
         return Inertia::render('student/Dashboard', [
             'user' => $user,
@@ -83,6 +51,63 @@ class StudentDashboardController extends Controller
             'violations' => $violations,
             'programs' => $programs,
         ]);
+    }
+
+    /**
+     * @param mixed $user
+     * @return array<string, int>
+     */
+    private function getStats($user): array
+    {
+        return [
+            'active_incidents' => $this->getActiveIncidentsCount($user),
+            'event_attendance' => $this->getEventAttendanceCount($user),
+            'pending_evaluations' => $user instanceof Student
+                ? self::pendingEvaluationsForStudent($user)->count()
+                : 0,
+        ];
+    }
+
+    /**
+     * @param mixed $user
+     * @return array<int, mixed>
+     */
+    private function getNotifications($user): array
+    {
+        if ($user instanceof Student) {
+            return StudentNotificationPresenter::recentForStudent($user, 5);
+        }
+        return [];
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, mixed>
+     */
+    private function getViolationsList(): \Illuminate\Support\Collection
+    {
+        \App\Models\Violation::ensureDefaultViolations();
+        return \App\Models\Violation::all();
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    private function getProgramsList(): \Illuminate\Support\Collection
+    {
+        if (!Schema::hasTable('programs')) {
+            return collect();
+        }
+
+        return Program::where('is_active', true)
+            ->orderBy('department')
+            ->orderBy('name')
+            ->get(['id', 'name', 'code', 'department'])
+            ->map(fn ($p) => [
+                'id'         => $p->id,
+                'name'       => $p->name,
+                'code'       => $p->code,
+                'department' => $p->department ?? 'General',
+            ]);
     }
 
     private function getActiveIncidentsCount($user): int
@@ -116,8 +141,16 @@ class StudentDashboardController extends Controller
         return Attendance::where('student_id', $user->id)->count();
     }
 
-    private function getFormattedPendingEvaluations(Student $user)
+    /**
+     * @param mixed $user
+     * @return \Illuminate\Support\Collection<int, array<string, string>>
+     */
+    private function getFormattedPendingEvaluations($user): \Illuminate\Support\Collection
     {
+        if (!($user instanceof Student)) {
+            return collect();
+        }
+
         return self::pendingEvaluationsForStudent($user)
             ->take(5)
             ->map(function ($evaluation) {
@@ -136,7 +169,11 @@ class StudentDashboardController extends Controller
             ->values();
     }
 
-    private function getFormattedIncidents($user)
+    /**
+     * @param mixed $user
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    private function getFormattedIncidents($user): \Illuminate\Support\Collection
     {
         if (!Schema::hasTable('incidents') || !$user) {
             return collect();
@@ -189,7 +226,11 @@ class StudentDashboardController extends Controller
             });
     }
 
-    private function getFormattedEvents($user = null)
+    /**
+     * @param mixed $user
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    private function getFormattedEvents($user = null): \Illuminate\Support\Collection
     {
         if (!Schema::hasTable('events')) {
             return collect();
