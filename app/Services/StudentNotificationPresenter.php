@@ -26,6 +26,8 @@ class StudentNotificationPresenter
         'attendance_scan_issue',
         'disciplinary_record_added',
         'disciplinary_status_updated',
+        'calling_notice',
+        'disciplinary_decision',
         'evaluation_available',
         'admission_slip_status_updated',
         'admission_slip_submitted',
@@ -114,13 +116,28 @@ class StudentNotificationPresenter
             $subtitle = (string) ($data['subtitle'] ?? $data['message'] ?? '');
         }
 
+        if ($type === 'calling_notice') {
+            $caseId = (string) ($data['case_id'] ?? '');
+            $venue = (string) ($data['venue'] ?? '');
+            $schedule = (string) ($data['appearance_schedule'] ?? '');
+            $subtitle = trim(implode(' • ', array_filter([$caseId, $venue, $schedule])));
+        }
+
+        if ($type === 'disciplinary_decision') {
+            $caseId = (string) ($data['case_id'] ?? '');
+            $sanction = (string) ($data['sanction'] ?? '');
+            $subtitle = trim(implode(' • ', array_filter([$caseId, $sanction])));
+        }
+
         if ($type === 'scanner_portal_access_granted') {
             $eventName = (string) ($data['event_name'] ?? '');
             $eventDate = (string) ($data['event_date'] ?? '');
-            $subtitle = trim(implode(' • ', array_filter([$eventName, $eventDate])));
+            $eventTime = (string) ($data['event_time'] ?? '');
+            $location = (string) ($data['location'] ?? '');
+            $subtitle = (string) ($data['subtitle'] ?? trim(implode(' • ', array_filter([$eventName, $eventDate, $eventTime, $location]))));
             // Be tolerant about key casing coming from different dispatchers/tests
             $eventId = $data['event_id'] ?? $data['eventId'] ?? null;
-            $title = $title !== 'Notification' ? $title : 'Scanner portal access';
+            $title = !empty($data['title']) ? (string) $data['title'] : ($title !== 'Notification' ? $title : 'Assigned as Attendance Scanner');
         }
 
         if (in_array($type, ['event_upcoming', 'event_reminder', 'event_updated', 'event_announcement', 'attendance_scanner_available', 'attendance_recorded', 'attendance_scan_issue'], true)) {
@@ -187,6 +204,8 @@ class StudentNotificationPresenter
             'admission_slip_status_updated' => true,
             'admission_slip_submitted' => true,
             'incident_reported_student' => true,
+            'calling_notice' => true,
+            'disciplinary_decision' => true,
             'event_upcoming',
             'event_reminder',
             'event_updated',
@@ -241,17 +260,6 @@ class StudentNotificationPresenter
         }
 
         if ((string) ($event->status ?? '') === 'completed') {
-            return false;
-        }
-
-        $courses = is_array($event->courses) ? $event->courses : [];
-        $yearLevels = is_array($event->year_levels) ? $event->year_levels : [];
-
-        if (! empty($courses) && ! in_array($student->course, $courses, true)) {
-            return false;
-        }
-
-        if (! empty($yearLevels) && ! in_array($student->year_level, $yearLevels, true)) {
             return false;
         }
 

@@ -99,6 +99,7 @@ type EventRecord = {
     description: string;
     status: string;
     attendance_type?: string;
+    is_scanner_assigned?: boolean;
     scanner_portal_active?: boolean;
     geofence_enabled?: boolean;
     geofence_latitude?: number | null;
@@ -2230,6 +2231,11 @@ export default function StudentDashboard({
                                                             {isGpsAttendance(event) && (
                                                                 <Badge className="rounded-lg border border-violet-500/20 bg-violet-500/10 px-2.5 py-0.5 text-[8px] font-black tracking-[0.2em] text-violet-600 uppercase dark:text-violet-400">
                                                                     📍 Geofenced ({event.geofence_radius_m || 50}m)
+                                                                </Badge>
+                                                            )}
+                                                            {event.is_scanner_assigned && (
+                                                                <Badge className="rounded-lg border border-indigo-500/20 bg-indigo-500/10 px-2.5 py-0.5 text-[8px] font-black tracking-[0.2em] text-indigo-600 uppercase dark:text-indigo-400">
+                                                                    🛡️ Assigned Scanner
                                                                 </Badge>
                                                             )}
                                                         </div>

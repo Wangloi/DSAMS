@@ -142,37 +142,48 @@ class StudentNotificationDispatcher
 
     public function scannerAccessGranted(Event $event, array $studentNumbers): void
     {
-        // IMPORTANT: this notification must only reach students that match the event filters.
-        // If $studentNumbers is empty, it means "no specific student grant"; in this case,
-        // we fall back to the event's eligible student pool.
-        $eventCourses = is_array($event->courses) ? $event->courses : [];
-        $eventYearLevels = is_array($event->year_levels) ? $event->year_levels : [];
-
-        $query = Student::query()->where('is_active', true)->where('status', 'approved');
-        if (! empty($eventCourses)) {
-            $query->whereIn('course', $eventCourses);
-        }
-        if (! empty($eventYearLevels)) {
-            $query->whereIn('year_level', $eventYearLevels);
-        }
-
         $studentNumbers = array_values(array_filter(array_map(fn ($v) => trim((string) $v), $studentNumbers), fn ($v) => $v !== ''));
 
-        if (! empty($studentNumbers)) {
-            // Restrict to explicitly granted student numbers.
-            $query->whereIn('student_id', $studentNumbers);
+        if (empty($studentNumbers)) {
+            return;
         }
+
+        $query = Student::query()->where('is_active', true)->where('status', 'approved');
+
+        $query->where(function (Builder $q) use ($studentNumbers) {
+            $q->whereIn('student_id', $studentNumbers)
+              ->orWhereIn('id', array_filter($studentNumbers, 'is_numeric'));
+        });
 
         $studentIds = $query->pluck('id');
 
+        if ($studentIds->isEmpty()) {
+            return;
+        }
+
+        $eventDateStr = optional($event->event_date)->format('M d, Y') ?? (string) $event->event_date;
+        $eventTimeStr = (string) ($event->event_time ?? '');
+        $venueStr = (string) ($event->location ?? '');
+
+        $title = 'Assigned to Attendance: ' . (string) $event->event_name;
+        $details = array_filter([$eventDateStr, $eventTimeStr, $venueStr]);
+        $detailsStr = !empty($details) ? ' (' . implode(' • ', $details) . ')' : '';
+        $message = 'You have been assigned as an attendance scanner for ' . (string) $event->event_name . $detailsStr . '. You can now access the attendance scanner portal.';
+
         $this->notifyStudents(
             $studentIds,
-            // Keep the existing type for compatibility.
             'scanner_portal_access_granted',
-            'Attendance Scanner Available',
-            'You are now allowed to scan attendance for '.(string) $event->event_name.'.',
-            $this->eventPayload($event),
-            'scanner-access-'.$event->id,
+            $title,
+            $message,
+            [
+                ...$this->eventPayload($event),
+                'assigned_as' => 'attendance_scanner',
+                'event_name' => (string) $event->event_name,
+                'event_date' => $eventDateStr,
+                'event_time' => $eventTimeStr,
+                'location' => $venueStr,
+            ],
+            'scanner-access-' . $event->id . '-' . implode('-', $studentIds->all()) . '-' . now()->timestamp,
         );
     }
 
