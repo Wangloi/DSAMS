@@ -5,15 +5,22 @@ import EvaluationFormActions from './EvaluationFormActions';
 import EvaluationFormDetails from './EvaluationFormDetails';
 import EvaluationFormHeader from './EvaluationFormHeader';
 import EvaluationQuestionsSection from './EvaluationQuestionsSection';
-import type { EvaluationForm, EventOption, FormState, Question } from './types';
+import {
+    DEFAULT_STATIC_QUESTIONS,
+    type EvaluationForm,
+    type EventOption,
+    type FormState,
+    type Question,
+} from './types';
 
 const emptyForm: FormState = {
-    name: '',
-    description: '',
+    name: 'Seminar/Training Evaluation Form',
+    description:
+        'Standard institutional evaluation form assessing the presenter, presentation objectives, and participant feedback.',
     eventId: '',
     is_active: false,
     form_data: {
-        questions: [],
+        questions: DEFAULT_STATIC_QUESTIONS,
     },
 };
 
@@ -281,6 +288,16 @@ export default function EvaluationFormDialog({
         }));
     };
 
+    const resetToStandard = () => {
+        setForm((p) => ({
+            ...p,
+            form_data: {
+                ...p.form_data,
+                questions: DEFAULT_STATIC_QUESTIONS,
+            },
+        }));
+    };
+
     return (
         <div className="space-y-5">
             {/* Page Header */}
@@ -310,6 +327,7 @@ export default function EvaluationFormDialog({
                 updateOption={updateOption}
                 addOption={addOption}
                 removeOption={removeOption}
+                resetToStandard={resetToStandard}
             />
 
             {/* Form Actions */}

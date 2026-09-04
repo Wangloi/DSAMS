@@ -16,6 +16,7 @@ class StudentNotificationPresenter
     private const ALLOWED_TYPES = [
         'scanner_portal_access_granted',
         'event_upcoming',
+        'event_reminder',
         'event_updated',
         'event_announcement',
         'student_announcement',
@@ -122,10 +123,12 @@ class StudentNotificationPresenter
             $title = $title !== 'Notification' ? $title : 'Scanner portal access';
         }
 
-        if (in_array($type, ['event_upcoming', 'event_updated', 'event_announcement', 'attendance_scanner_available', 'attendance_recorded', 'attendance_scan_issue'], true)) {
+        if (in_array($type, ['event_upcoming', 'event_reminder', 'event_updated', 'event_announcement', 'attendance_scanner_available', 'attendance_recorded', 'attendance_scan_issue'], true)) {
             $eventName = (string) ($data['event_name'] ?? '');
             $eventDate = (string) ($data['event_date'] ?? '');
-            $subtitle = trim(implode(' • ', array_filter([$eventName, $eventDate])));
+            $eventTime = (string) ($data['event_time'] ?? '');
+            $location = (string) ($data['location'] ?? '');
+            $subtitle = trim(implode(' • ', array_filter([$eventName, $eventDate, $eventTime, $location])));
 
             // Be tolerant about key casing coming from different dispatchers/tests
             $eventId = $data['event_id'] ?? $data['eventId'] ?? null;
@@ -185,6 +188,7 @@ class StudentNotificationPresenter
             'admission_slip_submitted' => true,
             'incident_reported_student' => true,
             'event_upcoming',
+            'event_reminder',
             'event_updated',
             'event_announcement',
             'student_announcement',
@@ -251,24 +255,7 @@ class StudentNotificationPresenter
             return false;
         }
 
-        $allowed = $event->scanner_student_ids;
-        if (! is_array($allowed)) {
-            $allowed = [];
-        }
-
-        $legacy = trim((string) ($event->scanner_student_id ?? ''));
-        if ($legacy !== '' && ! in_array($legacy, $allowed, true)) {
-            $allowed[] = $legacy;
-        }
-
-        if (! empty($allowed)) {
-            $studentId = trim((string) ($student->student_id ?? ''));
-            if ($studentId === '' || ! in_array($studentId, $allowed, true)) {
-                return false;
-            }
-        }
-
-        return true;
+        return self::studentIsAllowedScanner($student, $event);
     }
 
     private static function isActiveEvaluationForStudent(Student $student, array $notification): bool
@@ -299,11 +286,6 @@ class StudentNotificationPresenter
 
     public static function studentIsAllowedScanner(Student $student, Event $event): bool
     {
-        $studentId = trim((string) ($student->student_id ?? ''));
-        if ($studentId === '') {
-            return false;
-        }
-
         $allowed = $event->scanner_student_ids;
         if (! is_array($allowed)) {
             $allowed = [];
@@ -314,7 +296,15 @@ class StudentNotificationPresenter
             $allowed[] = $legacy;
         }
 
-        return in_array($studentId, $allowed, true);
+        if (empty($allowed)) {
+            return false;
+        }
+
+        $studentId = trim((string) ($student->student_id ?? ''));
+        $dbId = trim((string) ($student->id ?? ''));
+
+        return ($studentId !== '' && in_array($studentId, $allowed, true))
+            || ($dbId !== '' && in_array($dbId, $allowed, true));
     }
 
     private static function decodeData(mixed $data): array

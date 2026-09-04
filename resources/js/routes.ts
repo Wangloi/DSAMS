@@ -9,6 +9,13 @@ export const studentHelp = () => '/student/help';
 export const studentNotifications = () => '/student/notifications';
 export const studentAttendanceScannerPortal = (eventId: number | string) =>
     `/student/attendance/scanner-portal/${eventId}`;
+export const studentAttendanceLogs = (
+    eventId: number | string,
+    limit?: number,
+) => {
+    const baseUrl = `/student/attendance/${eventId}/logs`;
+    return limit ? `${baseUrl}?limit=${limit}` : baseUrl;
+};
 export const studentAttendanceScan = (eventId: number | string) =>
     `/student/attendance/${eventId}/scan`;
 export const studentAttendanceDynamicQrScan = (eventId: number | string) =>

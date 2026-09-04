@@ -9,6 +9,7 @@ import {
     BarChart3,
     Eye,
     Pencil,
+    PlusCircle,
     Search,
     Send,
     XCircle,
@@ -25,6 +26,8 @@ interface EvaluationTableProps {
     handlePreviewEvaluation: (evaluation: EvaluationForm) => void;
     handleEditEvaluation: (evaluation: EvaluationForm) => void;
     handleArchiveEvaluation: (evaluation: EvaluationForm) => void;
+    handleQuickCreateEvaluation?: (event: EventOption) => void;
+    handleOpenCreateForEvent?: (event: EventOption) => void;
 }
 
 export default function EvaluationTable({
@@ -35,6 +38,8 @@ export default function EvaluationTable({
     handlePreviewEvaluation,
     handleEditEvaluation,
     handleArchiveEvaluation,
+    handleQuickCreateEvaluation,
+    handleOpenCreateForEvent,
 }: EvaluationTableProps) {
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -86,7 +91,7 @@ export default function EvaluationTable({
                                     scope="col"
                                     className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase"
                                 >
-                                    Evaluation Form
+                                    Evaluation
                                 </th>
                                 <th
                                     scope="col"
@@ -157,8 +162,13 @@ export default function EvaluationTable({
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
-                                                {evaluation?.name ||
-                                                    'No Evaluation Form'}
+                                                {evaluation?.name ? (
+                                                    evaluation.name
+                                                ) : (
+                                                    <span className="italic text-slate-400 dark:text-slate-500">
+                                                        No Evaluation Set
+                                                    </span>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
                                                 {event.date} {event.time}
@@ -175,8 +185,8 @@ export default function EvaluationTable({
                                                         </Badge>
                                                     )
                                                 ) : (
-                                                    <Badge className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400">
-                                                        No Form
+                                                    <Badge className="bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                                                        Not Set
                                                     </Badge>
                                                 )}
                                             </td>
@@ -287,15 +297,39 @@ export default function EvaluationTable({
                                                             </Button>
                                                         </>
                                                     ) : (
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-8 w-8 cursor-not-allowed rounded-md text-slate-300"
-                                                            disabled
-                                                        >
-                                                            <BarChart3 className="h-4 w-4" />
-                                                        </Button>
+                                                        <div className="flex items-center gap-1">
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                className="h-7 gap-1 rounded-md bg-blue-600 px-2.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-blue-700 active:scale-95 dark:bg-blue-600 dark:hover:bg-blue-700"
+                                                                onClick={() =>
+                                                                    handleQuickCreateEvaluation?.(
+                                                                        event,
+                                                                    )
+                                                                }
+                                                                title="Generate standard evaluation for this event"
+                                                            >
+                                                                <PlusCircle className="h-3.5 w-3.5" />
+                                                                <span>Generate</span>
+                                                            </Button>
+                                                            {handleOpenCreateForEvent && (
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-7 w-7 rounded-md text-slate-500 transition-all duration-200 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
+                                                                    onClick={() =>
+                                                                        handleOpenCreateForEvent(
+                                                                            event,
+                                                                        )
+                                                                    }
+                                                                    title="Configure Evaluation"
+                                                                    aria-label="Configure Evaluation"
+                                                                >
+                                                                    <Pencil className="h-3.5 w-3.5" />
+                                                                </Button>
+                                                            )}
+                                                        </div>
                                                     )}
                                                 </div>
                                             </td>

@@ -103,6 +103,43 @@ class StudentNotificationDispatcher
         );
     }
 
+    public function eventReminder(Event $event, string $timeframe = 'today', ?string $customMessage = null): void
+    {
+        $eventDateStr = optional($event->event_date)->format('F d, Y') ?? (string) $event->event_date;
+        $eventTimeStr = (string) ($event->event_time ?? '');
+        $venueStr = (string) ($event->location ?? 'Campus');
+
+        $title = match ($timeframe) {
+            'today' => 'Event Reminder: Today\'s Event',
+            'tomorrow' => 'Event Reminder: Event Tomorrow',
+            'soon' => 'Upcoming Event Reminder',
+            default => 'Event Reminder: '.(string) $event->event_name,
+        };
+
+        $message = $customMessage ?? match ($timeframe) {
+            'today' => "Reminder: \"{$event->event_name}\" is happening TODAY at {$eventTimeStr} at {$venueStr}. Don't forget to attend and scan your attendance.",
+            'tomorrow' => "Reminder: \"{$event->event_name}\" is scheduled for TOMORROW ({$eventDateStr}) at {$eventTimeStr} at {$venueStr}.",
+            'soon' => "Reminder: \"{$event->event_name}\" will take place on {$eventDateStr} at {$eventTimeStr} ({$venueStr}).",
+            default => "Reminder: \"{$event->event_name}\" is scheduled on {$eventDateStr} at {$eventTimeStr} at {$venueStr}.",
+        };
+
+        $dedupeKey = 'event-reminder-'.$timeframe.'-'.$event->id.'-'.date('Y-m-d');
+
+        $this->notifyStudents(
+            $this->targetStudentIdsForEvent($event),
+            'event_reminder',
+            $title,
+            $message,
+            [
+                ...$this->eventPayload($event),
+                'timeframe' => $timeframe,
+            ],
+            $dedupeKey,
+            true,
+        );
+    }
+
+
     public function scannerAccessGranted(Event $event, array $studentNumbers): void
     {
         // IMPORTANT: this notification must only reach students that match the event filters.

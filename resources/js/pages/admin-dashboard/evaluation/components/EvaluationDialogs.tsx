@@ -9,7 +9,7 @@ interface EvaluationDialogsProps {
     autoUploadOpen: boolean;
     setAutoUploadOpen: (open: boolean) => void;
     events: EventOption[];
-    onAutoUploadSuccess: (data: any, eventId: number) => void;
+    onAutoUploadSuccess: (data: any, eventId: string | number) => void;
 }
 
 export default function EvaluationDialogs({

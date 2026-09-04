@@ -126,6 +126,10 @@ Route::get('/student/attendance/scanner-portal/{event}', [StudentAttendanceContr
     ->middleware(['auth:student', 'approved'])
     ->name('student.attendance.scanner-portal');
 
+Route::get('/student/attendance/{event}/logs', [StudentAttendanceController::class, 'logs'])
+    ->middleware(['auth:student', 'approved'])
+    ->name('student.attendance.logs');
+
 Route::post('/student/attendance/{event}/scan', [StudentAttendanceController::class, 'scanAttendance'])
     ->middleware(['auth:student', 'approved'])
     ->name('student.attendance.scan');
@@ -352,6 +356,7 @@ Route::get('/admin/events/{event}/qr-code', [\App\Http\Controllers\AdminEventsCo
 Route::get('/admin/events/{event}/participant-monitoring', [\App\Http\Controllers\AdminEventsController::class, 'participantMonitoring'])->middleware('auth:admin')->name('admin.events.participant-monitoring');
 Route::get('/admin/events/{event}/attendance-assignment', [\App\Http\Controllers\AdminEventsController::class, 'attendanceAssignment'])->middleware('auth:admin')->name('admin.events.attendance-assignment');
 Route::post('/admin/events/{event}/attendance-assignment', [\App\Http\Controllers\AdminEventsController::class, 'storeAttendanceAssignment'])->middleware('auth:admin')->name('admin.events.attendance-assignment.store');
+Route::post('/admin/events/{event}/send-reminder', [\App\Http\Controllers\AdminEventsController::class, 'sendReminder'])->middleware('auth:admin')->name('admin.events.send-reminder');
 Route::post('/admin/events/{event}/approve-schedule', [\App\Http\Controllers\AdminEventsController::class, 'approveSchedule'])->middleware('auth:admin')->name('admin.events.approve-schedule');
 Route::post('/admin/events/{event}/reject-schedule', [\App\Http\Controllers\AdminEventsController::class, 'rejectSchedule'])->middleware('auth:admin')->name('admin.events.reject-schedule');
 

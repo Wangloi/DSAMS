@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Bell, X, ExternalLink, CheckCircle2, AlertTriangle, Info } from 'lucide-react';
+import { Bell, X, ExternalLink, CheckCircle2, AlertTriangle, Info, Calendar, Clock } from 'lucide-react';
 import type { AppNotificationItem } from '@/types/notification';
 
 interface NotificationPopupProps {
@@ -60,6 +60,11 @@ export default function NotificationPopup({
 
     const getIcon = () => {
         switch (notification.type) {
+            case 'event_reminder':
+            case 'event_upcoming':
+            case 'event_updated':
+            case 'event_announcement':
+                return <Calendar className="h-5 w-5 text-blue-500 dark:text-blue-400" />;
             case 'incident_created':
             case 'calling_slip_issued':
             case 'security_alert':

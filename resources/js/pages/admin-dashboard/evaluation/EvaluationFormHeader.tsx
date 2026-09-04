@@ -52,13 +52,13 @@ export default function EvaluationFormHeader({
                         </Breadcrumb>
                         <div className="text-lg font-semibold">
                             {editingEvaluation
-                                ? 'Edit Evaluation Form'
-                                : 'Create Evaluation Form'}
+                                ? 'Edit Evaluation'
+                                : 'Setup Evaluation'}
                         </div>
                         <div className="text-sm text-white/80">
                             {editingEvaluation
-                                ? 'Update the evaluation form details and questions.'
-                                : 'Create a new evaluation form for your event attendees.'}
+                                ? 'Update the evaluation details and questions.'
+                                : 'Configure the evaluation for your event attendees.'}
                         </div>
                     </div>
                 </div>

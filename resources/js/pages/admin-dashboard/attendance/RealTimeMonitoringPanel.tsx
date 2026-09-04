@@ -42,6 +42,11 @@ import React, {
     useState,
 } from 'react';
 import Swal from 'sweetalert2';
+import {
+    playScanSuccessSound,
+    playScanErrorSound,
+    playScanLateSound,
+} from '@/services/notification-sound';
 
 interface LiveLogRow {
     id: string;
@@ -484,6 +489,12 @@ export default function RealTimeMonitoringPanel({
             );
             const data = await res.json();
             if (res.ok) {
+                if (data?.status === 'late' || (data?.message && data.message.toLowerCase().includes('late'))) {
+                    playScanLateSound();
+                } else {
+                    playScanSuccessSound();
+                }
+
                 setLastScanned({
                     status: 'valid',
                     message: data.message || 'Attendance recorded',
@@ -495,6 +506,7 @@ export default function RealTimeMonitoringPanel({
                 }));
                 void refreshLogs();
             } else {
+                playScanErrorSound();
                 setLastScanned({
                     status: 'invalid',
                     message: data.message || 'Invalid QR code',
@@ -514,6 +526,7 @@ export default function RealTimeMonitoringPanel({
             }
             setTimeout(() => setLastScanned(null), 3000);
         } catch (err) {
+            playScanErrorSound();
             console.error(err);
             setLastScanned({
                 status: 'invalid',
@@ -701,47 +714,59 @@ export default function RealTimeMonitoringPanel({
 
     return (
         <div className="flex animate-in flex-col gap-6 duration-500 fade-in">
-            {/* --- REDESIGNED MONITORING HEADER (UX Heuristics) --- */}
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg dark:border-slate-800 dark:bg-[#0B192C]/50">
-                {/* PRIMARY HEADER: 3-Zone Layout */}
-                <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-6 py-5 text-white">
-                    <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                        {/* ZONE 1: Navigation + Event Identity (Heuristic #6: Recognition over Recall) */}
+            {/* --- DSAMS SIGNATURE REAL-TIME MONITORING HERO BANNER --- */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] p-6 text-white shadow-xl shadow-blue-900/20">
+                {/* Ambient geometric orbs */}
+                <div className="pointer-events-none absolute -top-12 -right-12 h-56 w-56 rounded-full bg-white/5" />
+                <div className="pointer-events-none absolute -top-4 -right-4 h-32 w-32 rounded-full bg-white/5" />
+                <div className="pointer-events-none absolute bottom-0 left-1/3 h-48 w-48 -translate-y-1/4 rounded-full bg-blue-400/10 blur-2xl" />
+
+                <div className="relative flex flex-col gap-5">
+                    {/* TOP ROW: Back Button + Event Info + Live Status */}
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div className="flex min-w-0 flex-1 items-start gap-4">
                             <Button
                                 type="button"
                                 variant="ghost"
-                                className="h-10 shrink-0 gap-2 rounded-xl border border-white/5 bg-white/10 px-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-white/20 active:scale-95"
+                                className="h-11 shrink-0 gap-2 rounded-xl border border-white/20 bg-white/10 px-4 text-xs font-bold text-white shadow-sm backdrop-blur-md transition-all duration-200 hover:bg-white/20 active:scale-95"
                                 onClick={onBack}
                                 title="Return to event list"
                             >
                                 <ArrowLeft className="h-4 w-4" />
-                                <span className="hidden sm:inline">
-                                    Back to Events
-                                </span>
+                                <span>Back to Events</span>
                             </Button>
+
                             <div className="min-w-0 flex-1">
-                                <h2 className="truncate text-xl leading-tight font-bold tracking-tight">
-                                    {monitoredEvent?.event || 'Select an event'}
-                                </h2>
-                                <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+                                <div className="flex items-center gap-3">
+                                    <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white/15 text-white shadow-inner ring-1 ring-white/25 backdrop-blur-sm">
+                                        <Activity className="h-5 w-5" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <h1 className="truncate text-xl font-black tracking-tight text-white sm:text-2xl">
+                                            {monitoredEvent?.event || 'Select an Event'}
+                                        </h1>
+                                        <p className="text-xs font-medium text-blue-200/90">
+                                            Live Telemetry & Attendance Scanning Portal
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs">
                                     {monitoredEvent?.dateTime && (
-                                        <span className="flex items-center gap-1.5">
-                                            <Clock className="h-3 w-3 text-slate-500" />
+                                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-2.5 py-1 text-xs font-medium text-blue-100 backdrop-blur-sm">
+                                            <Clock className="h-3 w-3 text-blue-300" />
                                             {monitoredEvent.dateTime}
                                         </span>
                                     )}
                                     {monitoredEvent?.location && (
-                                        <span className="flex items-center gap-1.5">
-                                            <span className="text-slate-600">
-                                                📍
-                                            </span>
+                                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-2.5 py-1 text-xs font-medium text-blue-100 backdrop-blur-sm">
+                                            <MapPin className="h-3 w-3 text-blue-300" />
                                             {monitoredEvent.location}
                                         </span>
                                     )}
                                     {monitoredEvent?.organizer && (
-                                        <span className="flex items-center gap-1.5">
-                                            <Users className="h-3 w-3 text-slate-500" />
+                                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-2.5 py-1 text-xs font-medium text-blue-100 backdrop-blur-sm">
+                                            <Users className="h-3 w-3 text-blue-300" />
                                             {monitoredEvent.organizer}
                                         </span>
                                     )}
@@ -749,14 +774,14 @@ export default function RealTimeMonitoringPanel({
                             </div>
                         </div>
 
-                        {/* ZONE 2: System Status (Heuristic #1: Visibility of System Status) */}
-                        <div className="flex shrink-0 items-center justify-center gap-3 lg:justify-end">
+                        {/* LIVE SYSTEM PILL */}
+                        <div className="flex shrink-0 items-center justify-start gap-2 lg:justify-end">
                             <div
                                 className={cn(
-                                    'flex items-center gap-2.5 rounded-full border px-4 py-2 text-xs font-bold tracking-wider uppercase transition-all duration-500',
+                                    'flex items-center gap-2.5 rounded-full border px-4 py-2 text-xs font-black tracking-wider uppercase backdrop-blur-md transition-all duration-500',
                                     monitoringEnabled
-                                        ? 'border-emerald-500/30 bg-emerald-500/15 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.15)]'
-                                        : 'border-slate-600/30 bg-slate-700/50 text-slate-400',
+                                        ? 'border-emerald-400/40 bg-emerald-500/20 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.3)] ring-1 ring-emerald-400/30'
+                                        : 'border-white/20 bg-white/10 text-white/70',
                                 )}
                             >
                                 <span className="relative flex h-2.5 w-2.5">
@@ -768,78 +793,82 @@ export default function RealTimeMonitoringPanel({
                                             'relative inline-flex h-2.5 w-2.5 rounded-full',
                                             monitoringEnabled
                                                 ? 'bg-emerald-400'
-                                                : 'bg-slate-500',
+                                                : 'bg-slate-400',
                                         )}
                                     ></span>
                                 </span>
-                                {monitoringEnabled
-                                    ? 'System Live'
-                                    : 'System Paused'}
+                                {monitoringEnabled ? 'System Live' : 'System Paused'}
                             </div>
                         </div>
                     </div>
 
-                    {/* Time Windows Display Strip */}
-                    <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3.5 backdrop-blur-md">
-                        <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-white">
-                            {/* Time In Window Badge */}
-                            <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1.5">
-                                <LogIn className="h-4 w-4 text-emerald-400" />
-                                <span className="text-[11px] font-extrabold tracking-wider text-emerald-300 uppercase">
-                                    Time-In:
-                                </span>
-                                <span className="text-xs font-black tracking-wide text-white">
-                                    {timeInStart === '08:00' &&
-                                    timeInEnd === '09:30'
-                                        ? '08:00 AM to 09:30 AM'
-                                        : `${timeInStart} to ${timeInEnd}`}
-                                </span>
-                            </div>
+                    {/* TIME WINDOWS STRIP */}
+                    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-white/15 bg-white/10 p-3 shadow-inner backdrop-blur-md">
+                        <div className="flex items-center gap-2 rounded-lg border border-emerald-400/40 bg-emerald-500/15 px-3 py-1.5 shadow-sm">
+                            <LogIn className="h-4 w-4 text-emerald-300" />
+                            <span className="text-[11px] font-extrabold tracking-wider text-emerald-200 uppercase">
+                                Time-In:
+                            </span>
+                            <span className="text-xs font-black tracking-wide text-white">
+                                {timeInStart === '08:00' && timeInEnd === '09:30'
+                                    ? '08:00 AM - 09:30 AM'
+                                    : `${timeInStart} - ${timeInEnd}`}
+                            </span>
+                        </div>
 
-                            {/* Time Out Window Badge */}
-                            <div className="flex items-center gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3.5 py-1.5">
-                                <LogOut className="h-4 w-4 text-rose-400" />
-                                <span className="text-[11px] font-extrabold tracking-wider text-rose-300 uppercase">
-                                    Time-Out:
-                                </span>
-                                <span className="text-xs font-black tracking-wide text-white">
-                                    {timeOutStart === '11:00' &&
-                                    timeOutEnd === '12:30'
-                                        ? '11:00 AM to 12:30 PM'
-                                        : `${timeOutStart} to ${timeOutEnd}`}
-                                </span>
+                        <div className="flex items-center gap-2 rounded-lg border border-rose-400/40 bg-rose-500/15 px-3 py-1.5 shadow-sm">
+                            <LogOut className="h-4 w-4 text-rose-300" />
+                            <span className="text-[11px] font-extrabold tracking-wider text-rose-200 uppercase">
+                                Time-Out:
+                            </span>
+                            <span className="text-xs font-black tracking-wide text-white">
+                                {timeOutStart === '11:00' && timeOutEnd === '12:30'
+                                    ? '11:00 AM - 12:30 PM'
+                                    : `${timeOutStart} - ${timeOutEnd}`}
+                            </span>
+                        </div>
+
+                        {/* Scanner portal & last sync metadata tag */}
+                        <div className="ml-auto hidden items-center gap-3 text-xs font-medium text-blue-200/80 md:flex">
+                            <div className="flex items-center gap-1.5">
+                                <Zap className={cn('h-3.5 w-3.5', scannerPortalActive ? 'text-emerald-300 animate-pulse' : 'text-slate-400')} />
+                                <span>Portal {scannerPortalActive ? 'Active' : 'Inactive'}</span>
+                            </div>
+                            <span className="text-white/20">|</span>
+                            <div className="flex items-center gap-1.5">
+                                <Clock className="h-3.5 w-3.5 text-blue-300" />
+                                <span>Sync: {lastUpdatedAt ? lastUpdatedAt.split(',')[1]?.trim() || lastUpdatedAt : 'Active'}</span>
                             </div>
                         </div>
                     </div>
 
-                    {/* ZONE 3: Tabs + Controls (Miller's Law: grouped) */}
-                    <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    {/* BOTTOM ROW: TABS & ACTION BUTTONS */}
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         {/* Tab Switcher */}
-                        <div className="inline-flex gap-0.5 rounded-xl border border-white/[0.06] bg-white/[0.07] p-1">
+                        <div className="inline-flex gap-1 rounded-xl border border-white/20 bg-black/20 p-1 shadow-inner backdrop-blur-md">
                             <button
                                 type="button"
                                 onClick={() => setMonitoringTab('dashboard')}
                                 className={cn(
-                                    'flex h-9 items-center gap-1.5 rounded-lg px-4 text-xs font-bold tracking-widest uppercase transition-all duration-300',
+                                    'flex h-9 items-center gap-1.5 rounded-lg px-4 text-xs font-bold tracking-wider uppercase transition-all duration-200',
                                     monitoringTab === 'dashboard'
-                                        ? 'bg-white text-slate-900 shadow-md'
-                                        : 'text-white/70 hover:bg-white/10 hover:text-white',
+                                        ? 'bg-white text-[#1e3a8a] shadow-md'
+                                        : 'text-white/80 hover:bg-white/10 hover:text-white',
                                 )}
                             >
                                 <Activity className="h-3.5 w-3.5" />
                                 Dashboard
                             </button>
                             {(!monitoredEvent ||
-                                monitoredEvent.attendance_type !==
-                                    'dynamic_qr') && (
+                                monitoredEvent.attendance_type !== 'dynamic_qr') && (
                                 <button
                                     type="button"
                                     onClick={() => setMonitoringTab('scanner')}
                                     className={cn(
-                                        'flex h-9 items-center gap-1.5 rounded-lg px-4 text-xs font-bold tracking-widest uppercase transition-all duration-300',
+                                        'flex h-9 items-center gap-1.5 rounded-lg px-4 text-xs font-bold tracking-wider uppercase transition-all duration-200',
                                         monitoringTab === 'scanner'
-                                            ? 'bg-white text-slate-900 shadow-md'
-                                            : 'text-white/70 hover:bg-white/10 hover:text-white',
+                                            ? 'bg-white text-[#1e3a8a] shadow-md'
+                                            : 'text-white/80 hover:bg-white/10 hover:text-white',
                                     )}
                                 >
                                     <Camera className="h-3.5 w-3.5" />
@@ -849,18 +878,15 @@ export default function RealTimeMonitoringPanel({
                                 </button>
                             )}
                             {monitoredEvent &&
-                                monitoredEvent.attendance_type ===
-                                    'dynamic_qr' && (
+                                monitoredEvent.attendance_type === 'dynamic_qr' && (
                                     <button
                                         type="button"
-                                        onClick={() =>
-                                            setMonitoringTab('dynamic-qr')
-                                        }
+                                        onClick={() => setMonitoringTab('dynamic-qr')}
                                         className={cn(
-                                            'flex h-9 items-center gap-1.5 rounded-lg px-4 text-xs font-bold tracking-widest uppercase transition-all duration-300',
+                                            'flex h-9 items-center gap-1.5 rounded-lg px-4 text-xs font-bold tracking-wider uppercase transition-all duration-200',
                                             monitoringTab === 'dynamic-qr'
-                                                ? 'bg-white text-slate-900 shadow-md'
-                                                : 'text-white/70 hover:bg-white/10 hover:text-white',
+                                                ? 'bg-white text-[#1e3a8a] shadow-md'
+                                                : 'text-white/80 hover:bg-white/10 hover:text-white',
                                         )}
                                     >
                                         <MapPin className="h-3.5 w-3.5" />
@@ -869,51 +895,48 @@ export default function RealTimeMonitoringPanel({
                                 )}
                         </div>
 
-                        {/* Action Buttons & Scan Mode */}
+                        {/* Attendance Mode Selector & Controls */}
                         <div className="flex flex-wrap items-center gap-2">
-                            {/* Open vs Exit Mode Selector */}
-                            <div className="inline-flex gap-1 rounded-xl border border-white/20 bg-white/10 p-1">
+                            {/* Entry vs Exit Selector */}
+                            <div className="inline-flex gap-1 rounded-xl border border-white/20 bg-black/20 p-1 backdrop-blur-md">
                                 <button
                                     type="button"
                                     onClick={() => setAttendanceMode('entry')}
                                     className={cn(
-                                        'flex h-7 items-center gap-1.5 rounded-lg px-3 text-[11px] font-extrabold tracking-wider uppercase transition-all duration-200',
+                                        'flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-extrabold tracking-wide uppercase transition-all duration-200',
                                         attendanceMode === 'entry'
-                                            ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/50'
-                                            : 'text-white/70 hover:bg-white/10 hover:text-white',
+                                            ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/40'
+                                            : 'text-white/80 hover:bg-white/10 hover:text-white',
                                     )}
                                     title="Open Entrance Attendance (Time-In)"
                                 >
                                     <LogIn className="h-3.5 w-3.5" />
-                                    Open Attendance (Time-In)
+                                    Time-In
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setAttendanceMode('exit')}
                                     className={cn(
-                                        'flex h-7 items-center gap-1.5 rounded-lg px-3 text-[11px] font-extrabold tracking-wider uppercase transition-all duration-200',
+                                        'flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-extrabold tracking-wide uppercase transition-all duration-200',
                                         attendanceMode === 'exit'
-                                            ? 'bg-rose-500 text-white shadow-sm shadow-rose-500/50'
-                                            : 'text-white/70 hover:bg-white/10 hover:text-white',
+                                            ? 'bg-rose-500 text-white shadow-md shadow-rose-500/40'
+                                            : 'text-white/80 hover:bg-white/10 hover:text-white',
                                     )}
                                     title="Exit Attendance (Time-Out)"
                                 >
                                     <LogOut className="h-3.5 w-3.5" />
-                                    Exit Attendance (Time-Out)
+                                    Time-Out
                                 </button>
                             </div>
 
                             <Button
                                 type="button"
-                                variant={
-                                    monitoringEnabled ? 'outline' : 'default'
-                                }
                                 size="sm"
                                 className={cn(
-                                    'h-9 gap-2 rounded-xl px-4 text-xs font-bold transition-all duration-300 active:scale-95',
+                                    'h-9 gap-2 rounded-xl px-4 text-xs font-bold transition-all duration-200 active:scale-95',
                                     monitoringEnabled
-                                        ? 'border-white/20 bg-white/10 text-white hover:bg-white/20'
-                                        : 'border-transparent bg-blue-600 text-white shadow-lg shadow-blue-600/25 hover:bg-blue-500',
+                                        ? 'border border-white/25 bg-white/15 text-white hover:bg-white/25 backdrop-blur-md'
+                                        : 'bg-white text-[#1e3a8a] shadow-md hover:bg-blue-50',
                                 )}
                                 onClick={() => {
                                     if (monitoringEnabled) {
@@ -930,13 +953,13 @@ export default function RealTimeMonitoringPanel({
                             >
                                 {monitoringEnabled ? (
                                     <>
-                                        <Pause className="h-3.5 w-3.5 fill-current" />{' '}
-                                        Pause
+                                        <Pause className="h-3.5 w-3.5 fill-current" />
+                                        <span>Pause</span>
                                     </>
                                 ) : (
                                     <>
-                                        <Play className="h-3.5 w-3.5 fill-current" />{' '}
-                                        Start Live
+                                        <Play className="h-3.5 w-3.5 fill-current" />
+                                        <span>Start Live</span>
                                     </>
                                 )}
                             </Button>
@@ -944,7 +967,7 @@ export default function RealTimeMonitoringPanel({
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="h-9 w-9 rounded-xl border border-white/[0.06] bg-white/[0.07] text-white transition-all hover:bg-white/15 active:scale-95"
+                                className="h-9 w-9 rounded-xl border border-white/20 bg-white/10 text-white transition-all hover:bg-white/20 active:scale-95"
                                 onClick={() => void refreshLogs()}
                                 disabled={!monitorEventId}
                                 title="Manually refresh attendance data"
@@ -956,246 +979,205 @@ export default function RealTimeMonitoringPanel({
                         </div>
                     </div>
                 </div>
-
-                {/* LIVE STATUS STRIP (Heuristic #1: Visibility — persistent status bar) */}
-                <div
-                    className={cn(
-                        'flex flex-wrap items-center justify-between gap-3 px-6 py-2.5 text-xs transition-colors duration-500',
-                        monitoringEnabled
-                            ? 'border-t border-emerald-100 bg-gradient-to-r from-emerald-50 via-emerald-50/80 to-teal-50 dark:border-emerald-900/30 dark:from-emerald-950/30 dark:via-emerald-950/20 dark:to-teal-950/20'
-                            : 'border-t border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50',
-                    )}
-                >
-                    <div className="flex items-center gap-4">
-                        <div
-                            className={cn(
-                                'flex items-center gap-1.5 font-bold tracking-wider uppercase',
-                                scannerPortalActive
-                                    ? 'text-emerald-700 dark:text-emerald-400'
-                                    : 'text-rose-600 dark:text-rose-400',
-                            )}
-                        >
-                            <Zap
-                                className={cn(
-                                    'h-3 w-3',
-                                    scannerPortalActive && 'animate-pulse',
-                                )}
-                            />
-                            Portal {scannerPortalActive ? 'Active' : 'Inactive'}
-                        </div>
-                        <span className="text-slate-300 dark:text-slate-700">
-                            |
-                        </span>
-                        <div className="flex items-center gap-1.5 font-medium text-slate-500 dark:text-slate-400">
-                            <Clock className="h-3 w-3" />
-                            Last sync:{' '}
-                            {lastUpdatedAt
-                                ? lastUpdatedAt.split(',')[1]?.trim() ||
-                                  lastUpdatedAt
-                                : 'Never'}
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 font-medium text-slate-500 dark:text-slate-400">
-                        <Activity
-                            className={cn(
-                                'h-3 w-3',
-                                monitoringEnabled &&
-                                    'animate-pulse text-emerald-500',
-                            )}
-                        />
-                        {monitoringEnabled
-                            ? 'Syncing every 2.5s'
-                            : 'Auto-sync paused'}
-                    </div>
-                </div>
             </div>
 
             {/* TABBED CONTENTS */}
             {monitoringTab === 'dashboard' && (
                 <>
-                    {/* INLINE STATS STRIP (Gestalt: Proximity — stats near data) */}
-                    <div className="grid grid-cols-3 gap-4">
-                        <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
-                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600/10 dark:bg-blue-500/15">
-                                <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    {/* DSAMS KPI STATS CARDS */}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <Card className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-200/50 transition-all duration-300 hover:shadow-xl dark:border-slate-800 dark:bg-[#0B192C]/50 dark:shadow-none">
+                            <div className="pointer-events-none absolute -top-10 -right-10 h-28 w-28 rounded-full bg-blue-500/5 blur-xl transition-all duration-500 group-hover:scale-125" />
+                            <div className="relative flex items-center gap-4">
+                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600 ring-1 ring-blue-200/50 dark:bg-blue-500/20 dark:text-blue-400 dark:ring-blue-900/30">
+                                    <Users className="h-6 w-6" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-[10px] font-extrabold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+                                        Total Checked In
+                                    </p>
+                                    <p className="mt-0.5 text-2xl font-black text-slate-900 dark:text-white">
+                                        {liveCounts.total}
+                                    </p>
+                                    <p className="text-[11px] font-semibold text-blue-600 dark:text-blue-400">
+                                        Active Attendees
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-[10px] font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400">
-                                    Total Checked In
-                                </p>
-                                <p className="text-2xl leading-tight font-black text-slate-900 dark:text-white">
-                                    {liveCounts.total}
-                                </p>
+                            <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                <div
+                                    className="h-full rounded-full bg-gradient-to-r from-blue-400 to-blue-600"
+                                    style={{ width: '100%' }}
+                                />
                             </div>
-                        </div>
-                        <div className="flex items-center gap-4 rounded-2xl border border-emerald-100 bg-emerald-50/50 px-5 py-4 shadow-sm dark:border-emerald-900/30 dark:bg-emerald-950/20">
-                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15">
-                                <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                        </Card>
+
+                        <Card className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-200/50 transition-all duration-300 hover:shadow-xl dark:border-slate-800 dark:bg-[#0B192C]/50 dark:shadow-none">
+                            <div className="pointer-events-none absolute -top-10 -right-10 h-28 w-28 rounded-full bg-emerald-500/5 blur-xl transition-all duration-500 group-hover:scale-125" />
+                            <div className="relative flex items-center gap-4">
+                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-200/50 dark:bg-emerald-500/20 dark:text-emerald-400 dark:ring-emerald-900/30">
+                                    <CheckCircle2 className="h-6 w-6" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-[10px] font-extrabold tracking-wider text-emerald-600/80 uppercase dark:text-emerald-400/80">
+                                        On Time
+                                    </p>
+                                    <p className="mt-0.5 text-2xl font-black text-emerald-700 dark:text-emerald-300">
+                                        {liveCounts.present}
+                                    </p>
+                                    <p className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                        Prompt Check-ins
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-[10px] font-bold tracking-wider text-emerald-600/70 uppercase dark:text-emerald-400/70">
-                                    On Time
-                                </p>
-                                <p className="text-2xl leading-tight font-black text-emerald-700 dark:text-emerald-300">
-                                    {liveCounts.present}
-                                </p>
+                            <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                <div
+                                    className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600"
+                                    style={{
+                                        width: `${liveCounts.total > 0 ? (liveCounts.present / liveCounts.total) * 100 : 100}%`,
+                                    }}
+                                />
                             </div>
-                        </div>
-                        <div className="flex items-center gap-4 rounded-2xl border border-amber-100 bg-amber-50/50 px-5 py-4 shadow-sm dark:border-amber-900/30 dark:bg-amber-950/20">
-                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 dark:bg-amber-500/15">
-                                <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                        </Card>
+
+                        <Card className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-200/50 transition-all duration-300 hover:shadow-xl dark:border-slate-800 dark:bg-[#0B192C]/50 dark:shadow-none">
+                            <div className="pointer-events-none absolute -top-10 -right-10 h-28 w-28 rounded-full bg-rose-500/5 blur-xl transition-all duration-500 group-hover:scale-125" />
+                            <div className="relative flex items-center gap-4">
+                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-600 ring-1 ring-rose-200/50 dark:bg-rose-500/20 dark:text-rose-400 dark:ring-rose-900/30">
+                                    <Clock className="h-6 w-6" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-[10px] font-extrabold tracking-wider text-rose-600/80 uppercase dark:text-rose-400/80">
+                                        Late Arrivals
+                                    </p>
+                                    <p className="mt-0.5 text-2xl font-black text-rose-700 dark:text-rose-300">
+                                        {liveCounts.late}
+                                    </p>
+                                    <p className="text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+                                        Tardy Scans
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-[10px] font-bold tracking-wider text-amber-600/70 uppercase dark:text-amber-400/70">
-                                    Late Arrivals
-                                </p>
-                                <p className="text-2xl leading-tight font-black text-amber-700 dark:text-amber-300">
-                                    {liveCounts.late}
-                                </p>
+                            <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                <div
+                                    className="h-full rounded-full bg-gradient-to-r from-rose-400 to-rose-600"
+                                    style={{
+                                        width: `${liveCounts.total > 0 ? (liveCounts.late / liveCounts.total) * 100 : 0}%`,
+                                    }}
+                                />
                             </div>
-                        </div>
+                        </Card>
                     </div>
 
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
                         {/* LEFT COLUMN: LIVE FEED (8/12) */}
                         <div className="flex flex-col gap-6 lg:col-span-8">
-                            <Card className="overflow-hidden border-slate-200 shadow-sm dark:border-slate-800">
-                                <CardHeader className="border-b border-slate-100 bg-white px-6 py-4 dark:border-slate-800 dark:bg-slate-900">
+                            <Card className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xl shadow-slate-200/50 dark:border-slate-800 dark:bg-[#0B192C]/50 dark:shadow-none">
+                                <CardHeader className="border-b border-slate-100 bg-slate-50/50 px-6 py-4 dark:border-slate-800 dark:bg-[#0B192C]/70">
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/30">
-                                                <Activity className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+                                                <Activity className="h-4 w-4" />
                                             </div>
-                                            <CardTitle className="text-base font-bold">
-                                                Live Activity Feed
-                                            </CardTitle>
+                                            <div>
+                                                <CardTitle className="text-base font-bold text-slate-900 dark:text-white">
+                                                    Live Activity Feed
+                                                </CardTitle>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                    Streaming real-time student check-ins
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 dark:border-emerald-800 dark:bg-emerald-900/20">
+                                        <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 dark:border-emerald-800/40 dark:bg-emerald-950/30">
                                             <span className="relative flex h-2 w-2">
                                                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
                                                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
                                             </span>
                                             <span className="text-[10px] font-bold tracking-wider text-emerald-700 uppercase dark:text-emerald-400">
-                                                Real-Time Updates
+                                                Live Sync
                                             </span>
                                         </div>
                                     </div>
                                 </CardHeader>
                                 <CardContent className="p-0">
                                     <div className="overflow-x-auto">
-                                        <table className="w-full min-w-max">
-                                            <thead className="bg-slate-50/50 dark:bg-slate-900/50">
-                                                <tr className="border-b border-slate-100 dark:border-slate-800">
-                                                    <th className="px-6 py-4 text-left text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+                                        <table className="w-full min-w-max border-collapse">
+                                            <thead className="border-b border-slate-100 bg-slate-50/80 text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
+                                                <tr>
+                                                    <th className="px-6 py-3.5 text-left text-[10px] font-bold tracking-wider uppercase">
                                                         Student
                                                     </th>
-                                                    <th className="px-6 py-4 text-left text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+                                                    <th className="px-6 py-3.5 text-left text-[10px] font-bold tracking-wider uppercase">
                                                         Program
                                                     </th>
-                                                    <th className="px-6 py-4 text-left text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+                                                    <th className="px-6 py-3.5 text-left text-[10px] font-bold tracking-wider uppercase">
                                                         Status
                                                     </th>
-                                                    <th className="px-6 py-4 text-right text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-                                                        Time In
+                                                    <th className="px-6 py-3.5 text-right text-[10px] font-bold tracking-wider uppercase">
+                                                        Time
                                                     </th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                                            <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-800/80 dark:bg-transparent">
                                                 {paginatedLiveRows.length ? (
                                                     paginatedLiveRows.map(
                                                         (row, index) => (
                                                             <tr
                                                                 key={row.id}
-                                                                className={`group transition-all duration-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 ${
-                                                                    index ===
-                                                                        0 &&
-                                                                    monitoringEnabled
-                                                                        ? 'animate-pulse bg-blue-50/30 dark:bg-blue-900/10'
+                                                                className={`group transition-all duration-200 hover:bg-blue-50/40 dark:hover:bg-blue-950/20 ${
+                                                                    index === 0 && monitoringEnabled
+                                                                        ? 'bg-blue-50/20 dark:bg-blue-950/30'
                                                                         : ''
                                                                 }`}
                                                             >
                                                                 <td className="px-6 py-4">
                                                                     <div className="flex items-center gap-3">
-                                                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600 transition-colors group-hover:bg-blue-100 group-hover:text-blue-600 dark:bg-slate-800 dark:text-slate-400 dark:group-hover:bg-blue-900/30">
-                                                                            {(
-                                                                                row.name ||
-                                                                                ''
-                                                                            )
-                                                                                .split(
-                                                                                    ' ',
-                                                                                )
-                                                                                .map(
-                                                                                    (
-                                                                                        n: string,
-                                                                                    ) =>
-                                                                                        n[0],
-                                                                                )
-                                                                                .join(
-                                                                                    '',
-                                                                                )
-                                                                                .substring(
-                                                                                    0,
-                                                                                    2,
-                                                                                )
-                                                                                .toUpperCase() ||
-                                                                                '??'}
+                                                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 text-xs font-bold text-[#1e40af] shadow-sm dark:from-blue-500/20 dark:to-indigo-500/20 dark:text-blue-300">
+                                                                            {(row.name || '')
+                                                                                .split(' ')
+                                                                                .map((n: string) => n[0])
+                                                                                .join('')
+                                                                                .substring(0, 2)
+                                                                                .toUpperCase() || '??'}
                                                                         </div>
                                                                         <div>
                                                                             <div className="text-sm font-bold text-slate-900 dark:text-white">
-                                                                                {row.name ||
-                                                                                    'Unknown Student'}
+                                                                                {row.name || 'Unknown Student'}
                                                                             </div>
-                                                                            <div className="text-[11px] font-medium text-slate-500">
-                                                                                {row.student_id ||
-                                                                                    '---'}
+                                                                            <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                                                                                {row.student_id || '---'}
                                                                             </div>
                                                                         </div>
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-6 py-4">
                                                                     <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                                                        {row.program ||
-                                                                            '---'}
+                                                                        {row.program || '---'}
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-6 py-4">
-                                                                    <div
-                                                                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold ${
-                                                                            row.status?.toLowerCase() ===
-                                                                            'late'
-                                                                                ? 'border-amber-100 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400'
-                                                                                : 'border-emerald-100 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400'
-                                                                        }`}
+                                                                    <Badge
+                                                                        className={
+                                                                            row.status?.toLowerCase() === 'late'
+                                                                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+                                                                                : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                                        }
                                                                     >
-                                                                        <span
-                                                                            className={cn(
-                                                                                'h-1.5 w-1.5 rounded-full',
-                                                                                row.status?.toLowerCase() ===
-                                                                                    'late'
-                                                                                    ? 'bg-amber-500'
-                                                                                    : 'bg-emerald-500',
-                                                                            )}
-                                                                        />
                                                                         {row.status
-                                                                            ? row.status
-                                                                                  .charAt(
-                                                                                      0,
-                                                                                  )
-                                                                                  .toUpperCase() +
-                                                                              row.status.slice(
-                                                                                  1,
-                                                                              )
+                                                                            ? row.status.charAt(0).toUpperCase() + row.status.slice(1)
                                                                             : 'Present'}
-                                                                    </div>
+                                                                    </Badge>
                                                                 </td>
                                                                 <td className="px-6 py-4 text-right">
                                                                     <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                                                                        {row.time ||
-                                                                            '---'}
+                                                                        {row.time || '---'}
                                                                     </div>
                                                                     {row.check_in_distance_m !== undefined &&
                                                                         row.check_in_distance_m !== null && (
-                                                                            <div className="mt-0.5 inline-flex items-center gap-1 rounded-md border border-violet-200/60 bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-600 dark:border-violet-800/40 dark:bg-violet-950/40 dark:text-violet-400" title="GPS Geofence Check-in distance from venue">
+                                                                            <div
+                                                                                className="mt-0.5 inline-flex items-center gap-1 rounded-md border border-violet-200/60 bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-600 dark:border-violet-800/40 dark:bg-violet-950/40 dark:text-violet-400"
+                                                                                title="GPS Geofence Check-in distance from venue"
+                                                                            >
                                                                                 <span>📍 {row.check_in_distance_m}m</span>
                                                                             </div>
                                                                         )}
@@ -1205,12 +1187,9 @@ export default function RealTimeMonitoringPanel({
                                                     )
                                                 ) : (
                                                     <tr>
-                                                        <td
-                                                            colSpan={4}
-                                                            className="px-6 py-12 text-center text-slate-400"
-                                                        >
+                                                        <td colSpan={4} className="px-6 py-12 text-center text-slate-400">
                                                             <div className="flex flex-col items-center justify-center gap-2">
-                                                                <Activity className="h-8 w-8 text-slate-300 dark:text-slate-600 animate-pulse" />
+                                                                <Activity className="h-8 w-8 text-slate-300 animate-pulse dark:text-slate-600" />
                                                                 <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
                                                                     {monitoredEvent?.attendance_type === 'dynamic_qr'
                                                                         ? 'No GPS check-ins recorded yet'
@@ -1219,7 +1198,7 @@ export default function RealTimeMonitoringPanel({
                                                                 <p className="text-xs text-slate-400">
                                                                     {monitoredEvent?.attendance_type === 'dynamic_qr'
                                                                         ? 'Waiting for students to check in from their dashboard via GPS...'
-                                                                        : 'Waiting for attendance records...'}
+                                                                        : 'Waiting for student attendance records...'}
                                                                 </p>
                                                             </div>
                                                         </td>
@@ -1229,60 +1208,30 @@ export default function RealTimeMonitoringPanel({
                                         </table>
                                     </div>
                                     {/* Pagination strip */}
-                                    <div className="border-t border-slate-100 bg-slate-50/50 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/50">
+                                    <div className="border-t border-slate-100 bg-slate-50/50 px-6 py-3.5 dark:border-slate-800 dark:bg-[#0B192C]/40">
                                         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-                                            <span className="text-xs font-bold text-slate-500">
-                                                Showing {liveStartIndex}-
-                                                {liveEndIndex}{' '}
-                                                <span className="mx-1 text-slate-300">
-                                                    /
-                                                </span>{' '}
-                                                {liveRows.length} Total
+                                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                                Showing <span className="font-bold text-slate-700 dark:text-slate-200">{liveStartIndex + (paginatedLiveRows.length > 0 ? 1 : 0)}-{liveEndIndex}</span> of <span className="font-bold text-slate-700 dark:text-slate-200">{liveRows.length}</span> records
                                             </span>
-                                            <div className="flex items-center gap-1">
+                                            <div className="flex items-center gap-1.5">
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    className="h-8 rounded-lg px-2 text-xs font-bold"
-                                                    onClick={() =>
-                                                        setLiveCurrentPage(
-                                                            (p) =>
-                                                                Math.max(
-                                                                    1,
-                                                                    p - 1,
-                                                                ),
-                                                        )
-                                                    }
-                                                    disabled={
-                                                        liveCurrentPage <= 1
-                                                    }
+                                                    className="h-8 rounded-lg px-2.5 text-xs font-bold transition-all hover:bg-slate-200/60 dark:hover:bg-slate-800"
+                                                    onClick={() => setLiveCurrentPage((p) => Math.max(1, p - 1))}
+                                                    disabled={liveCurrentPage <= 1}
                                                 >
                                                     Prev
                                                 </Button>
-                                                <div className="flex h-8 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold dark:border-slate-700 dark:bg-slate-800">
-                                                    {liveCurrentPage}{' '}
-                                                    <span className="mx-1 text-slate-400">
-                                                        of
-                                                    </span>{' '}
-                                                    {liveTotalPages}
+                                                <div className="flex h-8 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                                                    {liveCurrentPage} / {liveTotalPages}
                                                 </div>
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    className="h-8 rounded-lg px-2 text-xs font-bold"
-                                                    onClick={() =>
-                                                        setLiveCurrentPage(
-                                                            (p) =>
-                                                                Math.min(
-                                                                    liveTotalPages,
-                                                                    p + 1,
-                                                                ),
-                                                        )
-                                                    }
-                                                    disabled={
-                                                        liveCurrentPage >=
-                                                        liveTotalPages
-                                                    }
+                                                    className="h-8 rounded-lg px-2.5 text-xs font-bold transition-all hover:bg-slate-200/60 dark:hover:bg-slate-800"
+                                                    onClick={() => setLiveCurrentPage((p) => Math.min(liveTotalPages, p + 1))}
+                                                    disabled={liveCurrentPage >= liveTotalPages}
                                                 >
                                                     Next
                                                 </Button>
@@ -1296,34 +1245,27 @@ export default function RealTimeMonitoringPanel({
                         {/* RIGHT COLUMN: ATTENDANCE OVERVIEW (4/12) */}
                         <div className="flex flex-col gap-5 lg:col-span-4">
                             {/* ATTENDANCE RATE DONUT FOR ALL PROGRAMS */}
-                            <Card className="border-slate-200 shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
+                            <Card className="rounded-2xl border border-slate-100 bg-white shadow-xl shadow-slate-200/50 dark:border-slate-800 dark:bg-[#0B192C]/50 dark:shadow-none">
                                 <CardContent className="p-5">
                                     <div className="mb-4 flex items-center justify-between">
-                                        <p className="text-[10px] font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400">
-                                            Attendance Rate
-                                        </p>
-                                        <span className="text-[10px] font-bold tracking-wider text-blue-600 uppercase dark:text-blue-400">
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+                                                <BarChart3 className="h-4 w-4" />
+                                            </div>
+                                            <p className="text-xs font-bold tracking-wider text-slate-700 uppercase dark:text-slate-300">
+                                                Attendance Rate
+                                            </p>
+                                        </div>
+                                        <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold tracking-wider text-blue-700 uppercase dark:bg-blue-950/40 dark:text-blue-300">
                                             All Programs
                                         </span>
                                     </div>
                                     {(() => {
-                                        const totalExpectedSum =
-                                            byCourse.reduce(
-                                                (acc, c) =>
-                                                    acc + (c.expected || 0),
-                                                0,
-                                            );
-                                        const totalScannedSum = byCourse.reduce(
-                                            (acc, c) => acc + (c.scanned || 0),
-                                            0,
-                                        );
+                                        const totalExpectedSum = byCourse.reduce((acc, c) => acc + (c.expected || 0), 0);
+                                        const totalScannedSum = byCourse.reduce((acc, c) => acc + (c.scanned || 0), 0);
                                         const overallRate =
                                             totalExpectedSum > 0
-                                                ? Math.round(
-                                                      (totalScannedSum /
-                                                          totalExpectedSum) *
-                                                          100,
-                                                  )
+                                                ? Math.round((totalScannedSum / totalExpectedSum) * 100)
                                                 : liveCounts.total > 0
                                                   ? 88
                                                   : 0;
@@ -1332,36 +1274,16 @@ export default function RealTimeMonitoringPanel({
                                         let accumulatedOffset = 0;
 
                                         const getHexColor = (name: string) => {
-                                            const u = (
-                                                name || ''
-                                            ).toUpperCase();
-                                            if (
-                                                u.includes('BSIT') ||
-                                                u.includes('COMPUTER') ||
-                                                u.includes('INFORMATION')
-                                            )
+                                            const u = (name || '').toUpperCase();
+                                            if (u.includes('BSIT') || u.includes('COMPUTER') || u.includes('INFORMATION'))
                                                 return '#f43f5e';
-                                            if (
-                                                u.includes('BSBA') ||
-                                                u.includes('BUSINESS')
-                                            )
+                                            if (u.includes('BSBA') || u.includes('BUSINESS'))
                                                 return '#f59e0b';
-                                            if (
-                                                u.includes('BSHM') ||
-                                                u.includes('HOSPITALITY') ||
-                                                u.includes('HOTEL')
-                                            )
+                                            if (u.includes('BSHM') || u.includes('HOSPITALITY') || u.includes('HOTEL'))
                                                 return '#10b981';
-                                            if (
-                                                u.includes('CRIM') ||
-                                                u.includes('BSCRIM')
-                                            )
+                                            if (u.includes('CRIM') || u.includes('BSCRIM'))
                                                 return '#1d4ed8';
-                                            if (
-                                                u.includes('BSED') ||
-                                                u.includes('BEED') ||
-                                                u.includes('EDUCATION')
-                                            )
+                                            if (u.includes('BSED') || u.includes('BEED') || u.includes('EDUCATION'))
                                                 return '#38bdf8';
                                             return '#3b82f6';
                                         };
@@ -1369,11 +1291,7 @@ export default function RealTimeMonitoringPanel({
                                         return (
                                             <div className="flex flex-col items-center">
                                                 <div className="relative">
-                                                    <svg
-                                                        width="140"
-                                                        height="140"
-                                                        viewBox="0 0 140 140"
-                                                    >
+                                                    <svg width="140" height="140" viewBox="0 0 140 140">
                                                         {/* Background ring */}
                                                         <circle
                                                             cx="70"
@@ -1385,32 +1303,17 @@ export default function RealTimeMonitoringPanel({
                                                         />
                                                         {byCourse.map((c) => {
                                                             const proportion =
-                                                                totalScannedSum >
-                                                                0
-                                                                    ? c.scanned /
-                                                                      totalScannedSum
-                                                                    : 1 /
-                                                                      Math.max(
-                                                                          1,
-                                                                          byCourse.length,
-                                                                      );
-                                                            const dashLen =
-                                                                proportion *
-                                                                circumference;
-                                                            const offset =
-                                                                accumulatedOffset;
-                                                            accumulatedOffset +=
-                                                                dashLen;
-                                                            const hex =
-                                                                getHexColor(
-                                                                    c.program,
-                                                                );
+                                                                totalScannedSum > 0
+                                                                    ? c.scanned / totalScannedSum
+                                                                    : 1 / Math.max(1, byCourse.length);
+                                                            const dashLen = proportion * circumference;
+                                                            const offset = accumulatedOffset;
+                                                            accumulatedOffset += dashLen;
+                                                            const hex = getHexColor(c.program);
 
                                                             return (
                                                                 <circle
-                                                                    key={
-                                                                        c.program
-                                                                    }
+                                                                    key={c.program}
                                                                     cx="70"
                                                                     cy="70"
                                                                     r="54"
@@ -1418,9 +1321,7 @@ export default function RealTimeMonitoringPanel({
                                                                     strokeWidth="12"
                                                                     stroke={hex}
                                                                     strokeDasharray={`${dashLen} ${circumference}`}
-                                                                    strokeDashoffset={
-                                                                        -offset
-                                                                    }
+                                                                    strokeDashoffset={-offset}
                                                                     transform="rotate(-90 70 70)"
                                                                     className="transition-all duration-1000"
                                                                 />
@@ -1432,7 +1333,7 @@ export default function RealTimeMonitoringPanel({
                                                             {overallRate}%
                                                         </span>
                                                         <span className="text-[9px] font-bold tracking-wider text-slate-400 uppercase">
-                                                            All Programs
+                                                            Turnout
                                                         </span>
                                                     </div>
                                                 </div>
@@ -1440,19 +1341,13 @@ export default function RealTimeMonitoringPanel({
                                                 {/* All Program Legend Grid */}
                                                 <div className="mt-4 grid w-full grid-cols-2 gap-x-3 gap-y-2 border-t border-slate-100 pt-3 dark:border-slate-800">
                                                     {byCourse.map((c) => {
-                                                        const hex = getHexColor(
-                                                            c.program,
-                                                        );
+                                                        const hex = getHexColor(c.program);
                                                         return (
-                                                            <div
-                                                                key={c.program}
-                                                                className="flex min-w-0 items-center gap-1.5"
-                                                            >
+                                                            <div key={c.program} className="flex min-w-0 items-center gap-1.5">
                                                                 <span
                                                                     className="h-2.5 w-2.5 shrink-0 rounded-full"
                                                                     style={{
-                                                                        backgroundColor:
-                                                                            hex,
+                                                                        backgroundColor: hex,
                                                                     }}
                                                                 />
                                                                 <span className="truncate text-[10px] font-bold text-slate-700 dark:text-slate-300">
@@ -1472,12 +1367,12 @@ export default function RealTimeMonitoringPanel({
                             </Card>
 
                             {/* PROGRAM BREAKDOWN */}
-                            <Card className="flex-1 border-slate-200 shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
+                            <Card className="flex-1 rounded-2xl border border-slate-100 bg-white shadow-xl shadow-slate-200/50 dark:border-slate-800 dark:bg-[#0B192C]/50 dark:shadow-none">
                                 <CardHeader className="border-b border-slate-100 bg-slate-50/30 px-5 py-3.5 dark:border-slate-800 dark:bg-transparent">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            <BarChart3 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                            <CardTitle className="text-sm font-bold">
+                                            <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                            <CardTitle className="text-sm font-bold text-slate-900 dark:text-white">
                                                 By Program
                                             </CardTitle>
                                         </div>
@@ -1491,173 +1386,82 @@ export default function RealTimeMonitoringPanel({
                                         {byCourse.length > 0 ? (
                                             <div className="divide-y divide-slate-50 dark:divide-slate-800">
                                                 {[...byCourse]
-                                                    .sort(
-                                                        (a, b) =>
-                                                            b.percentage -
-                                                            a.percentage,
-                                                    )
+                                                    .sort((a, b) => b.percentage - a.percentage)
                                                     .map((c) => {
-                                                        const getProgramColors =
-                                                            (name: string) => {
-                                                                const p = (
-                                                                    name || ''
-                                                                ).toUpperCase();
-                                                                if (
-                                                                    p.includes(
-                                                                        'BSIT',
-                                                                    ) ||
-                                                                    p.includes(
-                                                                        'INFORMATION TECHNOLOGY',
-                                                                    ) ||
-                                                                    p.includes(
-                                                                        'COMPUTER SCIENCE',
-                                                                    )
-                                                                ) {
-                                                                    return {
-                                                                        dot: 'bg-rose-500 shadow-rose-500/50',
-                                                                        text: 'text-rose-600 dark:text-rose-400',
-                                                                        bar: 'from-rose-400 to-rose-600',
-                                                                    };
-                                                                }
-                                                                if (
-                                                                    p.includes(
-                                                                        'BSBA',
-                                                                    ) ||
-                                                                    p.includes(
-                                                                        'BUSINESS',
-                                                                    )
-                                                                ) {
-                                                                    return {
-                                                                        dot: 'bg-amber-500 shadow-amber-500/50',
-                                                                        text: 'text-amber-600 dark:text-amber-400',
-                                                                        bar: 'from-amber-400 to-amber-600',
-                                                                    };
-                                                                }
-                                                                if (
-                                                                    p.includes(
-                                                                        'BSHM',
-                                                                    ) ||
-                                                                    p.includes(
-                                                                        'HOSPITALITY',
-                                                                    ) ||
-                                                                    p.includes(
-                                                                        'HOTEL',
-                                                                    )
-                                                                ) {
-                                                                    return {
-                                                                        dot: 'bg-emerald-500 shadow-emerald-500/50',
-                                                                        text: 'text-emerald-600 dark:text-emerald-400',
-                                                                        bar: 'from-emerald-400 to-emerald-600',
-                                                                    };
-                                                                }
-                                                                if (
-                                                                    p.includes(
-                                                                        'CRIM',
-                                                                    ) ||
-                                                                    p.includes(
-                                                                        'BSCRIM',
-                                                                    )
-                                                                ) {
-                                                                    return {
-                                                                        dot: 'bg-blue-700 shadow-blue-700/50',
-                                                                        text: 'text-blue-700 dark:text-blue-400',
-                                                                        bar: 'from-blue-600 to-blue-800',
-                                                                    };
-                                                                }
-                                                                if (
-                                                                    p.includes(
-                                                                        'BSED',
-                                                                    ) ||
-                                                                    p.includes(
-                                                                        'BEED',
-                                                                    ) ||
-                                                                    p.includes(
-                                                                        'EDUCATION',
-                                                                    ) ||
-                                                                    p.includes(
-                                                                        'TEACHER',
-                                                                    )
-                                                                ) {
-                                                                    return {
-                                                                        dot: 'bg-sky-400 shadow-sky-400/50',
-                                                                        text: 'text-sky-500 dark:text-sky-400',
-                                                                        bar: 'from-sky-300 to-sky-500',
-                                                                    };
-                                                                }
+                                                        const getProgramColors = (name: string) => {
+                                                            const p = (name || '').toUpperCase();
+                                                            if (p.includes('BSIT') || p.includes('INFORMATION TECHNOLOGY') || p.includes('COMPUTER SCIENCE')) {
                                                                 return {
-                                                                    dot: 'bg-blue-500 shadow-blue-500/50',
-                                                                    text: 'text-blue-600 dark:text-blue-400',
-                                                                    bar: 'from-blue-400 to-blue-600',
+                                                                    dot: 'bg-rose-500 shadow-rose-500/50',
+                                                                    text: 'text-rose-600 dark:text-rose-400',
+                                                                    bar: 'from-rose-400 to-rose-600',
                                                                 };
+                                                            }
+                                                            if (p.includes('BSBA') || p.includes('BUSINESS')) {
+                                                                return {
+                                                                    dot: 'bg-amber-500 shadow-amber-500/50',
+                                                                    text: 'text-amber-600 dark:text-amber-400',
+                                                                    bar: 'from-amber-400 to-amber-600',
+                                                                };
+                                                            }
+                                                            if (p.includes('BSHM') || p.includes('HOSPITALITY') || p.includes('HOTEL')) {
+                                                                return {
+                                                                    dot: 'bg-emerald-500 shadow-emerald-500/50',
+                                                                    text: 'text-emerald-600 dark:text-emerald-400',
+                                                                    bar: 'from-emerald-400 to-emerald-600',
+                                                                };
+                                                            }
+                                                            if (p.includes('CRIM') || p.includes('BSCRIM')) {
+                                                                return {
+                                                                    dot: 'bg-blue-700 shadow-blue-700/50',
+                                                                    text: 'text-blue-700 dark:text-blue-400',
+                                                                    bar: 'from-blue-600 to-blue-800',
+                                                                };
+                                                            }
+                                                            if (p.includes('BSED') || p.includes('BEED') || p.includes('EDUCATION') || p.includes('TEACHER')) {
+                                                                return {
+                                                                    dot: 'bg-sky-400 shadow-sky-400/50',
+                                                                    text: 'text-sky-500 dark:text-sky-400',
+                                                                    bar: 'from-sky-300 to-sky-500',
+                                                                };
+                                                            }
+                                                            return {
+                                                                dot: 'bg-blue-500 shadow-blue-500/50',
+                                                                text: 'text-blue-600 dark:text-blue-400',
+                                                                bar: 'from-blue-400 to-blue-600',
                                                             };
-                                                        const colorCfg =
-                                                            getProgramColors(
-                                                                c.program,
-                                                            );
+                                                        };
+                                                        const colorCfg = getProgramColors(c.program);
 
                                                         return (
                                                             <div
                                                                 key={c.program}
                                                                 className="group flex cursor-pointer flex-col gap-2 px-5 py-3.5 transition-all hover:bg-slate-50/80 dark:hover:bg-slate-800/30"
-                                                                onClick={() =>
-                                                                    handleViewStudentsByCourse(
-                                                                        String(
-                                                                            c.program,
-                                                                        ),
-                                                                    )
-                                                                }
+                                                                onClick={() => handleViewStudentsByCourse(String(c.program))}
                                                             >
                                                                 <div className="flex items-center justify-between">
                                                                     <div className="flex min-w-0 items-center gap-2.5 overflow-hidden">
-                                                                        <div
-                                                                            className={cn(
-                                                                                'h-2 w-2 shrink-0 rounded-full shadow-sm',
-                                                                                colorCfg.dot,
-                                                                            )}
-                                                                        />
+                                                                        <div className={cn('h-2 w-2 shrink-0 rounded-full shadow-sm', colorCfg.dot)} />
                                                                         <span className="truncate text-xs font-bold text-slate-900 dark:text-white">
-                                                                            {
-                                                                                c.program
-                                                                            }
+                                                                            {c.program}
                                                                         </span>
                                                                     </div>
                                                                     <div className="ml-2 flex shrink-0 items-center gap-1">
                                                                         <span className="text-xs font-black text-slate-900 dark:text-white">
-                                                                            {
-                                                                                c.scanned
-                                                                            }
+                                                                            {c.scanned}
                                                                         </span>
-                                                                        <span className="text-[10px] text-slate-400">
-                                                                            /
-                                                                        </span>
-                                                                        <span className="text-[10px] text-slate-400">
-                                                                            {
-                                                                                c.expected
-                                                                            }
-                                                                        </span>
-                                                                        <span
-                                                                            className={cn(
-                                                                                'ml-1.5 text-[10px] font-black',
-                                                                                colorCfg.text,
-                                                                            )}
-                                                                        >
-                                                                            {
-                                                                                c.percentage
-                                                                            }
-                                                                            %
+                                                                        <span className="text-[10px] text-slate-400">/</span>
+                                                                        <span className="text-[10px] text-slate-400">{c.expected}</span>
+                                                                        <span className={cn('ml-1.5 text-[10px] font-black', colorCfg.text)}>
+                                                                            {c.percentage}%
                                                                         </span>
                                                                         <ChevronRight className="h-3 w-3 text-slate-300 opacity-0 transition-opacity group-hover:opacity-100 dark:text-slate-600" />
                                                                     </div>
                                                                 </div>
                                                                 <div className="h-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                                                                     <div
-                                                                        className={cn(
-                                                                            'h-full rounded-full bg-gradient-to-r shadow-sm transition-all duration-1000',
-                                                                            colorCfg.bar,
-                                                                        )}
-                                                                        style={{
-                                                                            width: `${Math.min(c.percentage, 100)}%`,
-                                                                        }}
+                                                                        className={cn('h-full rounded-full bg-gradient-to-r shadow-sm transition-all duration-1000', colorCfg.bar)}
+                                                                        style={{ width: `${Math.min(c.percentage, 100)}%` }}
                                                                     />
                                                                 </div>
                                                             </div>
@@ -1674,8 +1478,7 @@ export default function RealTimeMonitoringPanel({
                                                         No program data
                                                     </p>
                                                     <p className="mt-0.5 text-xs text-slate-500">
-                                                        Data will appear as
-                                                        students check in.
+                                                        Data will appear as students check in.
                                                     </p>
                                                 </div>
                                             </div>
@@ -1685,12 +1488,7 @@ export default function RealTimeMonitoringPanel({
                                         <Button
                                             variant="outline"
                                             className="h-9 w-full gap-2 rounded-xl border-slate-200 text-xs font-bold transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
-                                            onClick={() =>
-                                                monitorEventId &&
-                                                handleViewStudentsByCourse(
-                                                    byCourse[0]?.program || '',
-                                                )
-                                            }
+                                            onClick={() => monitorEventId && handleViewStudentsByCourse(byCourse[0]?.program || '')}
                                             disabled={byCourse.length === 0}
                                         >
                                             <Users className="h-3.5 w-3.5" />
@@ -1707,36 +1505,32 @@ export default function RealTimeMonitoringPanel({
             {monitoringTab === 'scanner' && (
                 <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-12">
                     <div className="flex flex-col gap-6 lg:col-span-8">
-                        <Card className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-[#0B192C]/50">
-                            <CardHeader className="border-b border-slate-100 px-6 py-4 dark:border-slate-800">
+                        <Card className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xl shadow-slate-200/50 dark:border-slate-800 dark:bg-[#0B192C]/50 dark:shadow-none">
+                            <CardHeader className="border-b border-slate-100 px-6 py-4 dark:border-slate-800 dark:bg-[#0B192C]/70">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <div className="rounded-xl bg-blue-600/10 p-2.5 dark:bg-blue-600/20">
-                                            <Camera className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+                                            <Camera className="h-5 w-5" />
                                         </div>
-                                        <CardTitle className="text-base font-bold">
-                                            Live Camera
+                                        <CardTitle className="text-base font-bold text-slate-900 dark:text-white">
+                                            Live Camera Scanner
                                         </CardTitle>
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <div className="hidden items-center gap-2 border-r border-slate-200 pr-4 sm:flex dark:border-slate-700">
-                                            <span className="text-xs font-bold tracking-widest text-slate-400 uppercase">
-                                                Status
+                                            <span className="text-xs font-bold tracking-wider text-slate-400 uppercase">
+                                                Status:
                                             </span>
                                             {scanState.status === 'running' ? (
-                                                <Badge className="animate-pulse border-emerald-500/20 bg-emerald-500/10 text-[10px] font-black tracking-wider text-emerald-600 uppercase">
+                                                <Badge className="animate-pulse bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
                                                     Running
                                                 </Badge>
-                                            ) : scanState.status ===
-                                              'starting' ? (
-                                                <Badge className="border-amber-500/20 bg-amber-500/10 text-[10px] font-black tracking-wider text-amber-600 uppercase">
+                                            ) : scanState.status === 'starting' ? (
+                                                <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
                                                     Starting...
                                                 </Badge>
                                             ) : (
-                                                <Badge
-                                                    variant="outline"
-                                                    className="border-slate-200 text-[10px] font-black tracking-wider text-slate-400 uppercase"
-                                                >
+                                                <Badge variant="outline" className="border-slate-200 text-slate-500">
                                                     Idle
                                                 </Badge>
                                             )}
@@ -1744,14 +1538,9 @@ export default function RealTimeMonitoringPanel({
                                         <div className="flex items-center gap-2">
                                             <Button
                                                 type="button"
-                                                className="h-10 gap-2 rounded-xl bg-blue-600 px-5 text-xs font-bold tracking-wider text-white uppercase shadow-lg shadow-blue-500/30 transition-all duration-300 hover:bg-blue-700 hover:shadow-blue-500/40 active:scale-95"
+                                                className="h-10 gap-2 rounded-xl bg-blue-600 px-4 text-xs font-bold tracking-wider text-white uppercase shadow-md shadow-blue-500/20 transition-all duration-200 hover:bg-blue-700 active:scale-95"
                                                 onClick={startScanner}
-                                                disabled={
-                                                    scanState.status ===
-                                                        'starting' ||
-                                                    scanState.status ===
-                                                        'running'
-                                                }
+                                                disabled={scanState.status === 'starting' || scanState.status === 'running'}
                                             >
                                                 <QrCode className="h-4 w-4" />
                                                 Start Scanner
@@ -1759,7 +1548,7 @@ export default function RealTimeMonitoringPanel({
                                             <Button
                                                 type="button"
                                                 variant="outline"
-                                                className="h-10 rounded-xl border-slate-200 bg-white px-5 text-xs font-bold tracking-wider text-slate-600 uppercase transition-all duration-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700"
+                                                className="h-10 rounded-xl border-slate-200 bg-white px-4 text-xs font-bold tracking-wider text-slate-600 uppercase transition-all duration-200 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700"
                                                 onClick={stopScanner}
                                             >
                                                 Stop
@@ -1768,7 +1557,7 @@ export default function RealTimeMonitoringPanel({
                                     </div>
                                 </div>
                             </CardHeader>
-                            <CardContent className="relative aspect-video w-full overflow-hidden bg-slate-900 p-0">
+                            <CardContent className="relative aspect-video w-full overflow-hidden bg-slate-950 p-0">
                                 <video
                                     ref={videoRef}
                                     className="absolute inset-0 h-full w-full object-cover opacity-85"
@@ -1791,10 +1580,10 @@ export default function RealTimeMonitoringPanel({
 
                                 {scanState.status !== 'running' && (
                                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-sm transition-all duration-500">
-                                        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-3xl border border-white/10 bg-white/10 text-white/50">
+                                        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-3xl border border-white/10 bg-white/10 text-white/50 shadow-inner">
                                             <Camera className="h-8 w-8" />
                                         </div>
-                                        <p className="text-[10px] font-bold tracking-widest text-white/60 uppercase">
+                                        <p className="text-xs font-bold tracking-wider text-white/70 uppercase">
                                             Camera Standby
                                         </p>
                                     </div>
@@ -1816,22 +1605,19 @@ export default function RealTimeMonitoringPanel({
                                                 <AlertCircle className="h-6 w-6 text-rose-400" />
                                             )}
                                             <div className="flex flex-col">
-                                                <span className="text-[10px] font-black tracking-[0.2em] uppercase opacity-70">
-                                                    {lastScanned.status ===
-                                                    'valid'
-                                                        ? 'Success'
-                                                        : 'Scan Failed'}
+                                                <span className="text-[10px] font-black tracking-wider uppercase opacity-70">
+                                                    {lastScanned.status === 'valid' ? 'Success' : 'Scan Failed'}
                                                 </span>
-                                                <span className="max-w-[200px] truncate text-sm font-bold">
+                                                <span className="max-w-[240px] truncate text-sm font-bold">
                                                     {lastScanned.message}
                                                 </span>
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-white/60 backdrop-blur-xl">
-                                            <Info className="h-5 w-5" />
-                                            <span className="text-xs font-bold tracking-widest uppercase">
-                                                Ready to scan student QR codes
+                                        <div className="flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-6 py-3.5 text-white/70 backdrop-blur-xl">
+                                            <Info className="h-4 w-4 text-blue-300" />
+                                            <span className="text-xs font-semibold tracking-wider">
+                                                Position student QR code within frame to scan
                                             </span>
                                         </div>
                                     )}
@@ -1840,43 +1626,40 @@ export default function RealTimeMonitoringPanel({
                         </Card>
 
                         {/* Scanner Recent Activity Feed */}
-                        <Card className="overflow-hidden border-slate-200 shadow-sm dark:border-slate-800">
-                            <CardHeader className="border-b border-slate-100 bg-white px-6 py-4 dark:border-slate-800 dark:bg-slate-900">
-                                <CardTitle className="text-base font-bold">
+                        <Card className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xl shadow-slate-200/50 dark:border-slate-800 dark:bg-[#0B192C]/50 dark:shadow-none">
+                            <CardHeader className="border-b border-slate-100 bg-slate-50/50 px-6 py-4 dark:border-slate-800 dark:bg-[#0B192C]/70">
+                                <CardTitle className="text-base font-bold text-slate-900 dark:text-white">
                                     Recent Scanner Check-ins
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-0">
                                 <div className="overflow-x-auto">
-                                    <table className="w-full min-w-max">
-                                        <thead className="bg-slate-50/50 dark:bg-slate-900/50">
-                                            <tr className="border-b border-slate-100 dark:border-slate-800">
-                                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+                                    <table className="w-full min-w-max border-collapse">
+                                        <thead className="border-b border-slate-100 bg-slate-50/80 text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
+                                            <tr>
+                                                <th className="px-6 py-3.5 text-left text-[10px] font-bold tracking-wider uppercase">
                                                     Student
                                                 </th>
-                                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+                                                <th className="px-6 py-3.5 text-left text-[10px] font-bold tracking-wider uppercase">
                                                     Program
                                                 </th>
-                                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+                                                <th className="px-6 py-3.5 text-left text-[10px] font-bold tracking-wider uppercase">
                                                     Status
                                                 </th>
-                                                <th className="px-6 py-4 text-right text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+                                                <th className="px-6 py-3.5 text-right text-[10px] font-bold tracking-wider uppercase">
                                                     Time
                                                 </th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                                        <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-800/80 dark:bg-transparent">
                                             {paginatedLiveRows.length ? (
                                                 paginatedLiveRows.map((row) => (
-                                                    <tr
-                                                        key={row.id}
-                                                        className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40"
-                                                    >
+                                                    <tr key={row.id} className="transition-colors hover:bg-blue-50/40 dark:hover:bg-blue-950/20">
                                                         <td className="px-6 py-4">
                                                             <div className="text-sm font-bold text-slate-900 dark:text-white">
                                                                 {row.name}
                                                             </div>
-                                                            <div className="text-[11px] text-slate-500">
+                                                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
                                                                 {row.student_id}
                                                             </div>
                                                         </td>
@@ -1884,33 +1667,21 @@ export default function RealTimeMonitoringPanel({
                                                             {row.program}
                                                         </td>
                                                         <td className="px-6 py-4">
-                                                            <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400">
-                                                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                                            <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
                                                                 {row.status
-                                                                    ? row.status
-                                                                          .charAt(
-                                                                              0,
-                                                                          )
-                                                                          .toUpperCase() +
-                                                                      row.status.slice(
-                                                                          1,
-                                                                      )
+                                                                    ? row.status.charAt(0).toUpperCase() + row.status.slice(1)
                                                                     : 'Present'}
-                                                            </div>
+                                                            </Badge>
                                                         </td>
-                                                        <td className="px-6 py-4 text-right text-sm font-bold text-blue-600">
+                                                        <td className="px-6 py-4 text-right text-sm font-bold text-blue-600 dark:text-blue-400">
                                                             {row.time}
                                                         </td>
                                                     </tr>
                                                 ))
                                             ) : (
                                                 <tr>
-                                                    <td
-                                                        colSpan={4}
-                                                        className="px-6 py-10 text-center text-slate-400"
-                                                    >
-                                                        No scanner scans
-                                                        recorded yet
+                                                    <td colSpan={4} className="px-6 py-10 text-center text-slate-400">
+                                                        No scanner records yet
                                                     </td>
                                                 </tr>
                                             )}
@@ -1922,12 +1693,12 @@ export default function RealTimeMonitoringPanel({
                     </div>
 
                     <div className="flex flex-col gap-6 lg:col-span-4">
-                        <Card className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-[#0B192C]/50">
-                            <h3 className="mb-4 text-sm font-bold">
-                                Scanner Statistics
+                        <Card className="rounded-2xl border border-slate-100 bg-white p-5 shadow-xl shadow-slate-200/50 dark:border-slate-800 dark:bg-[#0B192C]/50 dark:shadow-none">
+                            <h3 className="mb-4 text-sm font-bold text-slate-900 dark:text-white">
+                                Scanner Telemetry
                             </h3>
                             <div className="grid grid-cols-1 gap-3">
-                                <div className="flex items-center justify-between rounded-xl bg-emerald-50 p-3 dark:bg-emerald-500/10">
+                                <div className="flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50/60 p-3.5 dark:border-emerald-900/30 dark:bg-emerald-950/20">
                                     <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
                                         Valid Scans
                                     </span>
@@ -1935,7 +1706,7 @@ export default function RealTimeMonitoringPanel({
                                         {scannerCounts.valid}
                                     </span>
                                 </div>
-                                <div className="flex items-center justify-between rounded-xl bg-rose-50 p-3 dark:bg-rose-500/10">
+                                <div className="flex items-center justify-between rounded-xl border border-rose-100 bg-rose-50/60 p-3.5 dark:border-rose-900/30 dark:bg-rose-950/20">
                                     <span className="text-xs font-bold text-rose-700 dark:text-rose-300">
                                         Invalid Scans
                                     </span>
@@ -1943,9 +1714,9 @@ export default function RealTimeMonitoringPanel({
                                         {scannerCounts.invalid}
                                     </span>
                                 </div>
-                                <div className="flex items-center justify-between rounded-xl bg-blue-50 p-3 dark:bg-blue-500/10">
+                                <div className="flex items-center justify-between rounded-xl border border-blue-100 bg-blue-50/60 p-3.5 dark:border-blue-900/30 dark:bg-blue-950/20">
                                     <span className="text-xs font-bold text-blue-700 dark:text-blue-300">
-                                        Total Scans
+                                        Total Scanned
                                     </span>
                                     <span className="text-xl font-black text-blue-800 dark:text-blue-200">
                                         {scannerCounts.total}
@@ -1960,10 +1731,10 @@ export default function RealTimeMonitoringPanel({
             {monitoringTab === 'dynamic-qr' && (
                 <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-12">
                     <div className="flex flex-col gap-6 lg:col-span-8">
-                        <Card className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-[#0B192C]/50">
-                            <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-800">
+                        <Card className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xl shadow-slate-200/50 dark:border-slate-800 dark:bg-[#0B192C]/50 dark:shadow-none">
+                            <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-800 dark:bg-[#0B192C]/70">
                                 <div>
-                                    <CardTitle className="text-base font-bold">
+                                    <CardTitle className="text-base font-bold text-slate-900 dark:text-white">
                                         GPS Location Check-in & Geofence
                                     </CardTitle>
                                     <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -1971,9 +1742,9 @@ export default function RealTimeMonitoringPanel({
                                     </p>
                                 </div>
                                 <div>
-                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-800/40 dark:bg-emerald-950/30 dark:text-emerald-400">
                                         <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
-                                        Whole Campus Active
+                                        Campus Active
                                     </span>
                                 </div>
                             </CardHeader>
@@ -2042,32 +1813,32 @@ export default function RealTimeMonitoringPanel({
                     </div>
 
                     <div className="flex flex-col gap-6 lg:col-span-4">
-                        <Card className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-[#0B192C]/50">
-                            <h3 className="mb-4 text-sm font-bold">
+                        <Card className="rounded-2xl border border-slate-100 bg-white p-5 shadow-xl shadow-slate-200/50 dark:border-slate-800 dark:bg-[#0B192C]/50 dark:shadow-none">
+                            <h3 className="mb-4 text-sm font-bold text-slate-900 dark:text-white">
                                 GPS Attendance Status
                             </h3>
                             <div className="grid grid-cols-1 gap-3">
-                                <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50">
-                                    <span className="text-xs font-bold text-slate-500">
+                                <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/60 p-3.5 dark:border-slate-800 dark:bg-slate-800/50">
+                                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
                                         Attendance Mode
                                     </span>
                                     <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
                                         GPS Check-in (No QR)
                                     </span>
                                 </div>
-                                <div className="flex items-center justify-between rounded-xl bg-emerald-50 p-3 dark:bg-emerald-500/10">
-                                    <span className="text-xs font-bold text-emerald-700">
+                                <div className="flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50/60 p-3.5 dark:border-emerald-900/30 dark:bg-emerald-950/20">
+                                    <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
                                         Geofence Center
                                     </span>
-                                    <span className="text-xs font-mono font-bold text-emerald-700">
+                                    <span className="text-xs font-mono font-bold text-emerald-700 dark:text-emerald-400">
                                         8.74307, 124.7745
                                     </span>
                                 </div>
-                                <div className="flex items-center justify-between rounded-xl bg-blue-50 p-3 dark:bg-blue-500/10">
-                                    <span className="text-xs font-bold text-blue-700">
+                                <div className="flex items-center justify-between rounded-xl border border-blue-100 bg-blue-50/60 p-3.5 dark:border-blue-900/30 dark:bg-blue-950/20">
+                                    <span className="text-xs font-bold text-blue-700 dark:text-blue-400">
                                         Allowed Perimeter
                                     </span>
-                                    <span className="text-xs font-bold text-blue-700">
+                                    <span className="text-xs font-bold text-blue-700 dark:text-blue-400">
                                         300m Radius
                                     </span>
                                 </div>
@@ -2078,7 +1849,7 @@ export default function RealTimeMonitoringPanel({
                             <h4 className="mb-2 text-xs font-bold tracking-wider text-blue-800 uppercase dark:text-blue-400">
                                 How Students Attend
                             </h4>
-                            <ol className="list-decimal space-y-1.5 pl-4 text-xs text-blue-600/90 dark:text-blue-300/80">
+                            <ol className="list-decimal space-y-1.5 pl-4 text-xs text-blue-700/90 dark:text-blue-300/80">
                                 <li>
                                     Students log into DSAMS on their mobile phone or device.
                                 </li>
@@ -2099,3 +1870,4 @@ export default function RealTimeMonitoringPanel({
         </div>
     );
 }
+

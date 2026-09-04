@@ -14,6 +14,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Swal from 'sweetalert2';
 import StudentLayout from './components/StudentLayout';
+import {
+    playScanSuccessSound,
+    playScanErrorSound,
+} from '@/services/notification-sound';
 
 import {
     Select,
@@ -94,6 +98,7 @@ type EventRecord = {
     location: string;
     description: string;
     status: string;
+    attendance_type?: string;
     scanner_portal_active?: boolean;
     geofence_enabled?: boolean;
     geofence_latitude?: number | null;
@@ -262,11 +267,16 @@ export default function StudentDashboard({
             ? dashboardNotifications
             : recentNotifications;
 
+    const isGpsAttendance = (e: EventRecord) => {
+        const type = (e.attendance_type || 'qr_scanner').toLowerCase();
+        return (type === 'dynamic_qr' || type === 'gps' || type === 'direct_gps') && !!e.geofence_enabled;
+    };
+
     const activeEvents = events.filter(
         (e) =>
             !e.is_done &&
             e.status !== 'completed' &&
-            (e.scanner_portal_active || e.geofence_enabled),
+            (e.scanner_portal_active || isGpsAttendance(e)),
     );
 
     const [gpsCheckingIn, setGpsCheckingIn] = useState<number | null>(null);
@@ -357,6 +367,7 @@ export default function StudentDashboard({
                         const data = await response.json();
 
                         if (response.ok && data.success) {
+                            playScanSuccessSound();
                             Swal.fire({
                                 icon: 'success',
                                 title: isCheckout ? 'Check-Out Successful!' : 'Check-In Successful!',
@@ -375,6 +386,7 @@ export default function StudentDashboard({
                                 router.reload();
                             });
                         } else {
+                            playScanErrorSound();
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Attendance Denied',
@@ -383,6 +395,7 @@ export default function StudentDashboard({
                             });
                         }
                     } catch (err: any) {
+                        playScanErrorSound();
                         Swal.fire({
                             icon: 'error',
                             title: 'Network Error',
@@ -2214,7 +2227,7 @@ export default function StudentDashboard({
                                                                       : event.status ||
                                                                         'Upcoming'}
                                                             </Badge>
-                                                            {event.geofence_enabled && (
+                                                            {isGpsAttendance(event) && (
                                                                 <Badge className="rounded-lg border border-violet-500/20 bg-violet-500/10 px-2.5 py-0.5 text-[8px] font-black tracking-[0.2em] text-violet-600 uppercase dark:text-violet-400">
                                                                     📍 Geofenced ({event.geofence_radius_m || 50}m)
                                                                 </Badge>
@@ -2273,7 +2286,7 @@ export default function StudentDashboard({
                                                             )
                                                         ) : (
                                                             <>
-                                                                {event.geofence_enabled &&
+                                                                {isGpsAttendance(event) &&
                                                                     (event.attendance_status ===
                                                                     'checked_out' ? (
                                                                         <Badge className="gap-1 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
@@ -2411,7 +2424,7 @@ export default function StudentDashboard({
                             onClick={() => {
                                 if (activeEvents.length > 0) {
                                     const geofenced = activeEvents.find(
-                                        (e) => e.geofence_enabled,
+                                        (e) => isGpsAttendance(e),
                                     );
                                     if (geofenced) {
                                         Swal.fire({

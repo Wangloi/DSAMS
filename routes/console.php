@@ -10,3 +10,9 @@ Artisan::command('inspire', function () {
 \Illuminate\Support\Facades\Schedule::command('model:prune', [
     '--model' => [\App\Models\AuditLog::class],
 ])->daily();
+
+\Illuminate\Support\Facades\Schedule::command('events:send-reminders')
+    ->everyThirtyMinutes()
+    ->withoutOverlapping()
+    ->runInBackground();
+

@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 
 // Stepper utility (same as in create page)
@@ -17,6 +18,7 @@ import {
     Archive,
     ArchiveRestore,
     ArrowLeft,
+    BellRing,
     Calendar,
     Edit,
     MapPin,
@@ -214,6 +216,49 @@ export default function ShowEventPage() {
                                 text: 'Failed to restore event. Please try again.',
                             });
                             console.error('Unarchive error:', errors);
+                        },
+                    },
+                );
+            }
+        });
+    };
+
+    const [sendingReminder, setSendingReminder] = useState(false);
+
+    const handleSendReminder = () => {
+        Swal.fire({
+            title: 'Send Event Reminder?',
+            text: `This will instantly dispatch an event reminder notification to all eligible students for "${event.event_name}".`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#2563eb',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Send Reminder',
+            cancelButtonText: 'Cancel',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                setSendingReminder(true);
+                router.post(
+                    `/admin/events/${event.id}/send-reminder`,
+                    {},
+                    {
+                        onSuccess: () => {
+                            setSendingReminder(false);
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Reminder Sent!',
+                                text: 'Event reminder has been dispatched to all eligible students.',
+                                timer: 2000,
+                                showConfirmButton: false,
+                            });
+                        },
+                        onError: () => {
+                            setSendingReminder(false);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Failed to send event reminder. Please try again.',
+                            });
                         },
                     },
                 );
@@ -501,6 +546,16 @@ export default function ShowEventPage() {
                                     <CardTitle>Actions</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-3">
+                                    <Button
+                                        variant="outline"
+                                        onClick={handleSendReminder}
+                                        disabled={sendingReminder || Boolean(event.archived_at)}
+                                        className="w-full gap-2 border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-950/40 font-bold"
+                                    >
+                                        <BellRing className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                        {sendingReminder ? 'Sending...' : 'Send Reminder to Students'}
+                                    </Button>
+
                                     <Link
                                         href={adminEventsEdit(event.id)}
                                         className="w-full"

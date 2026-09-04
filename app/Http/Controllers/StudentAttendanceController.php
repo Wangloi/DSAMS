@@ -56,31 +56,36 @@ class StudentAttendanceController extends Controller
         return $earthRadius * $c;
     }
 
-    private function validateScannerAccess(Student $student, Event $event): void
+    public function isAssignedScanner(?Student $student, Event $event): bool
     {
-        $courses = is_array($event->courses) ? $event->courses : [];
-        $yearLevels = is_array($event->year_levels) ? $event->year_levels : [];
-
-        $studentCourse = $student->course ?? $student->program;
-        $studentYearLevel = $student->year_level;
-
-        $courseMatch = empty($courses) || in_array($studentCourse, $courses, true);
-        $yearLevelMatch = empty($yearLevels) || in_array($studentYearLevel, $yearLevels, true);
+        if (! $student) {
+            return false;
+        }
 
         $allowed = $event->scanner_student_ids;
         if (! is_array($allowed)) {
             $allowed = [];
         }
-        $legacyAllowed = (string) ($event->scanner_student_id ?? '');
+        $legacyAllowed = trim((string) ($event->scanner_student_id ?? ''));
         if ($legacyAllowed !== '' && ! in_array($legacyAllowed, $allowed, true)) {
             $allowed[] = $legacyAllowed;
         }
 
-        $studentId = (string) ($student->student_id ?? '');
-        $isManuallyAllowed = $studentId !== '' && in_array($studentId, $allowed, true);
+        if (empty($allowed)) {
+            return false;
+        }
 
-        if (! $isManuallyAllowed && (! $courseMatch || ! $yearLevelMatch)) {
-            abort(403);
+        $studentId = trim((string) ($student->student_id ?? ''));
+        $dbId = trim((string) ($student->id ?? ''));
+
+        return ($studentId !== '' && in_array($studentId, $allowed, true))
+            || ($dbId !== '' && in_array($dbId, $allowed, true));
+    }
+
+    private function validateScannerAccess(Student $student, Event $event): void
+    {
+        if (! $this->isAssignedScanner($student, $event)) {
+            abort(403, 'Access Denied: Only assigned student scanners are authorized to access this scanner portal.');
         }
     }
 
@@ -326,7 +331,12 @@ class StudentAttendanceController extends Controller
             abort(403, 'Your account is pending approval. Please wait for admin verification.');
         }
 
-        $this->validateScannerAccess($student, $event);
+        if (! $this->isAssignedScanner($student, $event)) {
+            return redirect()
+                ->route('student.dashboard')
+                ->with('error', 'Access Denied: You are not an assigned scanner for "' . ($event->event_name ?? 'this event') . '". Only assigned student scanners can access the scanner portal.')
+                ->setStatusCode(303);
+        }
 
         if ((string) $event->status === 'completed') {
             if (Schema::hasColumn('events', 'scanner_portal_active') && (bool) $event->scanner_portal_active) {
@@ -367,6 +377,10 @@ class StudentAttendanceController extends Controller
                 'timeEnd' => (string) ($event->registration_end_time ?? ''),
                 'location' => $event->location,
                 'scannerPortalActive' => $isScannerPortalActive,
+                'geofence_enabled' => (bool) ($event->geofence_enabled ?? false),
+                'geofence_latitude' => $event->geofence_latitude,
+                'geofence_longitude' => $event->geofence_longitude,
+                'geofence_radius_m' => (int) ($event->geofence_radius_m ?? 50),
             ],
             'initialLogRows' => $initialLogRows,
             'studentsByProgram' => $studentsByProgram,
@@ -428,9 +442,10 @@ class StudentAttendanceController extends Controller
 
         if (Schema::hasColumn('events', 'scanner_portal_active') && ! (bool) $event->scanner_portal_active) {
             if (Schema::hasTable('activity_logs')) {
-                ActivityLog::logForUser($scanner, 'Attendance', 'Denied', 'Scan denied: scanner portal not active for event #' . $event->id, $request);
+                ActivityLog::logForUser($scanner, 'Attendance', 'Denied', 'Scan denied: scanner portal inactive for event #' . $event->id, $request);
             }
-            return response()->json(['message' => 'Scanner portal is not activated yet.'], 403);
+
+            return response()->json(['message' => 'Scanner portal is not active for this event.'], 403);
         }
 
         $validated = $request->validate([
@@ -468,31 +483,26 @@ class StudentAttendanceController extends Controller
             if (Schema::hasTable('activity_logs')) {
                 ActivityLog::logForUser($scanner, 'Attendance', 'Denied', 'Student not found for QR value in event #' . $event->id, $request);
             }
-            return response()->json(['message' => 'Student not found.'], 404);
+            return response()->json(['message' => 'Student attendee record not found.'], 404);
         }
 
-        // Self check-in rule: the scanned QR must belong to the currently authenticated student.
-        // Prevents using another student's school ID QR / account to record attendance.
-        // Determine the authenticated student's school ID field safely.
-        // This guard must have a matching student_id to allow self check-in.
-        $authenticatedStudentId = (string) ($scanner->student_id ?? '');
+        // Verify that the attendee matches event course & year requirements
+        $courses = is_array($event->courses) ? $event->courses : [];
+        $yearLevels = is_array($event->year_levels) ? $event->year_levels : [];
+        $studentCourse = $student->course ?? $student->program;
+        $studentYearLevel = $student->year_level;
 
-        if ($authenticatedStudentId === '' || (string) $student->student_id !== $authenticatedStudentId) {
+        $courseMatch = empty($courses) || in_array($studentCourse, $courses, true);
+        $yearLevelMatch = empty($yearLevels) || in_array($studentYearLevel, $yearLevels, true);
+
+        if (! $courseMatch || ! $yearLevelMatch) {
             if (Schema::hasTable('activity_logs')) {
-                ActivityLog::logForUser($scanner, 'Attendance', 'Denied', "QR not owned: attempted to scan student '{$student->student_id}' but scanner is '{$authenticatedStudentId}' for event #{$event->id}", $request);
+                ActivityLog::logForUser($scanner, 'Attendance', 'Denied', "Attendee '{$student->student_id}' is not eligible for event #{$event->id} (course/year mismatch)", $request);
             }
-            app(StudentNotificationDispatcher::class)->attendanceIssue(
-                $event,
-                $student,
-                'Invalid self check-in: the scanned QR code does not belong to the currently logged-in student.',
-                'qr_not_owned',
-            );
-
             return response()->json([
-                'message' => 'Invalid - This QR code does not belong to the currently logged-in student.',
+                'message' => 'Attendance Denied: Student ' . ($student->name ?? $student->student_id) . ' is not eligible for this event (course/year mismatch).',
             ], 403);
         }
-
 
         $pendingEvalResponse = $this->checkPendingEvaluations($student, $event, $scanner, $request);
         if ($pendingEvalResponse) {
@@ -897,6 +907,11 @@ class StudentAttendanceController extends Controller
             }
         }
 
+        $attType = strtolower(trim((string) ($event->attendance_type ?? 'qr_scanner')));
+        if ($attType === 'qr_scanner' || $attType === 'qr') {
+            return response()->json(['message' => 'Direct GPS check-in is not allowed for QR-based attendance events.'], 422);
+        }
+
         if (! (bool) ($event->geofence_enabled ?? false)) {
             return response()->json(['message' => 'Geofenced location check-in is not enabled for this event.'], 422);
         }
@@ -1028,6 +1043,89 @@ class StudentAttendanceController extends Controller
                 'checked_at'       => $now->toDateTimeString(),
             ]);
         }
+    }
+
+    /**
+     * Provide real-time logs and statistics for the student scanner portal.
+     * Enforces strict student authorization and event access rules.
+     */
+    public function logs(Request $request, Event $event): JsonResponse
+    {
+        /** @var Student|null $student */
+        $student = auth()->guard('student')->user();
+
+        if (! $student) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        if ($student->status !== 'approved') {
+            return response()->json(['message' => 'Your account is pending approval.'], 403);
+        }
+
+        $this->validateScannerAccess($student, $event);
+
+        $limit = min(max((int) $request->query('limit', 100), 1), 500);
+
+        $attendances = Attendance::query()
+            ->with('student')
+            ->where('event_id', $event->id)
+            ->orderByDesc('scanned_at')
+            ->limit($limit)
+            ->get();
+
+        $rows = $attendances->map(function (Attendance $attendance) {
+            $st = $attendance->student;
+
+            return [
+                'id' => (string) $attendance->id,
+                'student_id' => (string) ($st?->student_id ?? $attendance->student_id),
+                'name' => (string) ($st?->name ?? 'Unknown Student'),
+                'program' => (string) (($st?->course ?? $st?->program ?? '') ?: '—'),
+                'checked_in_at' => optional($attendance->checked_in_at ?? $attendance->scanned_at)->toDateTimeString() ?: '—',
+                'time' => optional($attendance->scanned_at)->format('h:i A') ?: '—',
+                'status' => (string) ($attendance->status ?? 'present'),
+                'check_in_distance_m' => $attendance->check_in_distance_m,
+                'check_out_distance_m' => $attendance->check_out_distance_m,
+            ];
+        });
+
+        $total = Attendance::query()->where('event_id', $event->id)->count();
+        $present = Attendance::query()->where('event_id', $event->id)->where('status', 'present')->count();
+        $late = Attendance::query()->where('event_id', $event->id)->where('status', 'late')->count();
+
+        // Course breakdown
+        $byCourse = Attendance::query()
+            ->join('students', 'attendances.student_id', '=', 'students.id')
+            ->where('attendances.event_id', $event->id)
+            ->selectRaw("COALESCE(NULLIF(TRIM(students.course), ''), NULLIF(TRIM(students.program), ''), 'Other') as program")
+            ->selectRaw('COUNT(*) as scanned')
+            ->groupBy('program')
+            ->get()
+            ->map(function ($item) {
+                $expected = Student::where(function ($q) use ($item) {
+                    $q->where('course', $item->program)
+                      ->orWhere('program', $item->program);
+                })->count();
+
+                return [
+                    'program' => $item->program,
+                    'scanned' => (int) $item->scanned,
+                    'expected' => max((int) $expected, (int) $item->scanned),
+                    'percentage' => $expected > 0 ? (int) round(($item->scanned / $expected) * 100) : 100,
+                ];
+            });
+
+        return response()->json([
+            'rows' => $rows,
+            'counts' => [
+                'total' => $total,
+                'present' => $present,
+                'late' => $late,
+            ],
+            'byCourse' => $byCourse,
+            'server_time' => now()->format('M d, Y h:i:s A'),
+            'scanner_portal_active' => Schema::hasColumn('events', 'scanner_portal_active') ? (bool) $event->scanner_portal_active : true,
+        ]);
     }
 }
 

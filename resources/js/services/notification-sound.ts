@@ -91,6 +91,89 @@ function writeString(view: DataView, offset: number, str: string) {
     }
 }
 
+let scanSuccessSound: Howl | null = null;
+let scanErrorSound: Howl | null = null;
+let scanLateSound: Howl | null = null;
+let lastScanPlayedAt = 0;
+const SCAN_COOLDOWN_MS = 250;
+
+/**
+ * Generate a crisp, high-pitch scanner confirmation beep (C6 -> E6).
+ */
+function generateScanSuccessUrl(): string {
+    const sampleRate = 44100;
+    const duration = 0.22;
+    const numSamples = Math.floor(sampleRate * duration);
+    const buffer = new Float32Array(numSamples);
+
+    for (let i = 0; i < numSamples; i++) {
+        const t = i / sampleRate;
+        const envelope = Math.exp(-t * 12); // Snappy decay
+
+        // Short dual tone beep
+        const tone1 = Math.sin(2 * Math.PI * 1046.5 * t) * 0.35; // C6
+        const tone2 = t > 0.05 ? Math.sin(2 * Math.PI * 1567.98 * (t - 0.05)) * 0.4 : 0; // G6
+        const overtone = Math.sin(2 * Math.PI * 2093.0 * t) * 0.1;
+
+        buffer[i] = (tone1 + tone2 + overtone) * envelope;
+    }
+
+    const wavBuffer = encodeWAV(buffer, sampleRate);
+    const blob = new Blob([wavBuffer], { type: 'audio/wav' });
+    return URL.createObjectURL(blob);
+}
+
+/**
+ * Generate a low error buzz tone.
+ */
+function generateScanErrorUrl(): string {
+    const sampleRate = 44100;
+    const duration = 0.28;
+    const numSamples = Math.floor(sampleRate * duration);
+    const buffer = new Float32Array(numSamples);
+
+    for (let i = 0; i < numSamples; i++) {
+        const t = i / sampleRate;
+        const envelope = Math.exp(-t * 5);
+
+        // Low buzz (combination of square-ish 220Hz and 180Hz)
+        const tone1 = Math.sin(2 * Math.PI * 220.0 * t) * 0.3;
+        const tone2 = Math.sin(2 * Math.PI * 440.0 * t) * 0.15;
+        const sub = Math.sin(2 * Math.PI * 110.0 * t) * 0.1;
+
+        buffer[i] = (tone1 + tone2 + sub) * envelope;
+    }
+
+    const wavBuffer = encodeWAV(buffer, sampleRate);
+    const blob = new Blob([wavBuffer], { type: 'audio/wav' });
+    return URL.createObjectURL(blob);
+}
+
+/**
+ * Generate a distinct chime for late scan.
+ */
+function generateScanLateUrl(): string {
+    const sampleRate = 44100;
+    const duration = 0.35;
+    const numSamples = Math.floor(sampleRate * duration);
+    const buffer = new Float32Array(numSamples);
+
+    for (let i = 0; i < numSamples; i++) {
+        const t = i / sampleRate;
+        const envelope = Math.exp(-t * 7);
+
+        // Descending warning chime (880Hz -> 659Hz)
+        const tone1 = Math.sin(2 * Math.PI * 880.0 * t) * 0.3;
+        const tone2 = t > 0.08 ? Math.sin(2 * Math.PI * 659.25 * (t - 0.08)) * 0.3 : 0;
+
+        buffer[i] = (tone1 + tone2) * envelope;
+    }
+
+    const wavBuffer = encodeWAV(buffer, sampleRate);
+    const blob = new Blob([wavBuffer], { type: 'audio/wav' });
+    return URL.createObjectURL(blob);
+}
+
 /**
  * Get or create the Howl instance for notification sounds.
  */
@@ -105,6 +188,93 @@ function getNotificationSound(): Howl {
         });
     }
     return notificationSound;
+}
+
+function getScanSuccessSound(): Howl {
+    if (!scanSuccessSound) {
+        const url = generateScanSuccessUrl();
+        scanSuccessSound = new Howl({
+            src: [url],
+            format: ['wav'],
+            volume: 0.75,
+            preload: true,
+        });
+    }
+    return scanSuccessSound;
+}
+
+function getScanErrorSound(): Howl {
+    if (!scanErrorSound) {
+        const url = generateScanErrorUrl();
+        scanErrorSound = new Howl({
+            src: [url],
+            format: ['wav'],
+            volume: 0.65,
+            preload: true,
+        });
+    }
+    return scanErrorSound;
+}
+
+function getScanLateSound(): Howl {
+    if (!scanLateSound) {
+        const url = generateScanLateUrl();
+        scanLateSound = new Howl({
+            src: [url],
+            format: ['wav'],
+            volume: 0.7,
+            preload: true,
+        });
+    }
+    return scanLateSound;
+}
+
+/**
+ * Play sound when student attendance scan is successful.
+ */
+export function playScanSuccessSound(): void {
+    const now = Date.now();
+    if (now - lastScanPlayedAt < SCAN_COOLDOWN_MS) return;
+    lastScanPlayedAt = now;
+
+    try {
+        const sound = getScanSuccessSound();
+        sound.play();
+    } catch (e) {
+        console.warn('[ScannerSound] Failed to play success sound:', e);
+    }
+}
+
+/**
+ * Play sound when student attendance scan is rejected or invalid.
+ */
+export function playScanErrorSound(): void {
+    const now = Date.now();
+    if (now - lastScanPlayedAt < SCAN_COOLDOWN_MS) return;
+    lastScanPlayedAt = now;
+
+    try {
+        const sound = getScanErrorSound();
+        sound.play();
+    } catch (e) {
+        console.warn('[ScannerSound] Failed to play error sound:', e);
+    }
+}
+
+/**
+ * Play sound when student attendance scan is recorded as late.
+ */
+export function playScanLateSound(): void {
+    const now = Date.now();
+    if (now - lastScanPlayedAt < SCAN_COOLDOWN_MS) return;
+    lastScanPlayedAt = now;
+
+    try {
+        const sound = getScanLateSound();
+        sound.play();
+    } catch (e) {
+        console.warn('[ScannerSound] Failed to play late sound:', e);
+    }
 }
 
 /**
@@ -142,3 +312,4 @@ export function muteNotificationSound(muted: boolean): void {
     const sound = getNotificationSound();
     sound.mute(muted);
 }
+

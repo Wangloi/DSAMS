@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { RotateCcw, Sparkles } from 'lucide-react';
 import EvaluationQuestionEditCard from './EvaluationQuestionEditCard';
 import EvaluationQuestionPreviewCard from './EvaluationQuestionPreviewCard';
 import type { FormState, Question } from './types';
@@ -14,6 +15,7 @@ export default function EvaluationQuestionsSection({
     updateOption,
     addOption,
     removeOption,
+    resetToStandard,
 }: {
     form: FormState;
     previewMode: boolean;
@@ -29,16 +31,46 @@ export default function EvaluationQuestionsSection({
     ) => void;
     addOption: (questionId: string) => void;
     removeOption: (questionId: string, optionIndex: number) => void;
+    resetToStandard?: () => void;
 }) {
     return (
         <div className="space-y-4">
+            {/* Standard Template Notice */}
+            <div className="flex flex-col gap-3 rounded-xl border border-blue-200 bg-blue-50/70 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-blue-900/50 dark:bg-blue-950/30">
+                <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm dark:bg-blue-500">
+                        <Sparkles className="h-5 w-5" />
+                    </div>
+                    <div>
+                        <div className="text-sm font-bold text-blue-950 dark:text-blue-200">
+                            Institutional Standard Evaluation Form
+                        </div>
+                        <p className="text-xs text-blue-800/80 dark:text-blue-300/80">
+                            Preloaded with standard questions: Standard 1 (The Presenter: 1-5 Scale), Standard 2 (Presentation: Yes/No), and Standard 3 (Qualitative Feedback).
+                        </p>
+                    </div>
+                </div>
+                {resetToStandard && !previewMode && (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={resetToStandard}
+                        className="h-8 shrink-0 gap-1.5 border-blue-300 bg-white text-xs font-semibold text-blue-800 hover:bg-blue-100/50 hover:text-blue-900 dark:border-blue-700 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
+                    >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        Reset to Standard Form
+                    </Button>
+                )}
+            </div>
+
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                        Questions *
+                        Questions ({form.form_data.questions.length}) *
                     </div>
                     <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                        Add and configure your evaluation questions
+                        Customize or add questions if needed
                     </p>
                 </div>
                 {!previewMode && (

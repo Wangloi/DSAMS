@@ -405,6 +405,19 @@ export function StudentHeader() {
                                                                     Evaluate
                                                                 </Link>
                                                             )}
+                                                        {(n.type ===
+                                                            'event_reminder' ||
+                                                            n.type ===
+                                                                'event_upcoming' ||
+                                                            n.type ===
+                                                                'event_updated') && (
+                                                            <Link
+                                                                href="/student-dashboard"
+                                                                className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-[10px] font-black tracking-widest text-white uppercase shadow-sm transition-colors hover:bg-blue-700"
+                                                            >
+                                                                View Event
+                                                            </Link>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>

@@ -15,6 +15,11 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Swal from 'sweetalert2';
+import {
+    playScanSuccessSound,
+    playScanErrorSound,
+    playScanLateSound,
+} from '@/services/notification-sound';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -187,9 +192,16 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
                 );
 
                 const data = res.data ?? {};
+                const scanStatus = String(data?.status ?? 'present');
+                if (scanStatus === 'late') {
+                    playScanLateSound();
+                } else {
+                    playScanSuccessSound();
+                }
+
                 setSuccessData({
                     name: String(data?.student?.name ?? 'You'),
-                    status: String(data?.status ?? 'present'),
+                    status: scanStatus,
                 });
                 setPhase('success');
             } catch (e: any) {
@@ -198,12 +210,14 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
 
                 if (status === 409) {
                     // Already checked in — show as success (idempotent)
+                    playScanSuccessSound();
                     setSuccessData({
                         name: 'You',
                         status: 'already-checked-in',
                     });
                     setPhase('success');
                 } else {
+                    playScanErrorSound();
                     const message = String(
                         data?.message ??
                             e?.message ??

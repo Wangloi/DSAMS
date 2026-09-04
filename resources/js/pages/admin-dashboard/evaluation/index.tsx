@@ -6,6 +6,7 @@ import {
     adminEvaluationDestroy,
     adminEvaluationPublish,
     adminEvaluationShow,
+    adminEvaluationStore,
     adminEvaluationUnpublish,
     studentEvaluationShow,
 } from '@/routes';
@@ -20,6 +21,7 @@ import EvaluationFormDialog from './EvaluationFormDialog';
 import EvaluationDialogs from './components/EvaluationDialogs';
 import EvaluationTable from './components/EvaluationTable';
 import KpiCards from './components/KpiCards';
+import { DEFAULT_STATIC_QUESTIONS } from './types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -143,6 +145,68 @@ export default function AdminEvaluationPage() {
     };
 
     const handleCreateEvaluation = () => {
+        setEditingEvaluation(null);
+        setEvaluationDialogOpen(true);
+    };
+
+    const handleQuickCreateEvaluation = (event: EventOption) => {
+        Swal.fire({
+            title: 'Generate Evaluation?',
+            text: `Generate the standard evaluation for "${event.name}"?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#2563eb',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Generate',
+            cancelButtonText: 'Cancel',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.post(
+                    adminEvaluationStore(),
+                    {
+                        name: `${event.name} Evaluation Form`,
+                        description: `Standard institutional evaluation form for ${event.name} assessing the presenter, presentation objectives, and participant feedback.`,
+                        eventId: event.id,
+                        is_active: false,
+                        form_data: {
+                            questions: DEFAULT_STATIC_QUESTIONS,
+                        },
+                    },
+                    {
+                        preserveScroll: true,
+                        onSuccess: () => {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Evaluation Generated!',
+                                text: `Standard evaluation generated for ${event.name}. You can preview, edit, or publish it.`,
+                                timer: 2000,
+                                showConfirmButton: false,
+                            });
+                        },
+                        onError: (err) => {
+                            console.error('Failed to generate evaluation:', err);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Failed to generate evaluation',
+                                text: 'Please check your connection and try again.',
+                            });
+                        },
+                    },
+                );
+            }
+        });
+    };
+
+    const handleOpenCreateForEvent = (event: EventOption) => {
+        setInitialFormState({
+            name: `${event.name} Evaluation Form`,
+            description: `Standard institutional evaluation form for ${event.name} assessing the presenter, presentation objectives, and participant feedback.`,
+            eventId: String(event.id),
+            is_active: false,
+            form_data: {
+                questions: DEFAULT_STATIC_QUESTIONS,
+            },
+        });
         setEditingEvaluation(null);
         setEvaluationDialogOpen(true);
     };
@@ -300,7 +364,7 @@ export default function AdminEvaluationPage() {
                                         onClick={handleCreateEvaluation}
                                     >
                                         <PlusCircle className="h-5 w-5" />
-                                        Create Form
+                                        Add Evaluation
                                     </Button>
                                 </div>
                             </div>
@@ -319,6 +383,12 @@ export default function AdminEvaluationPage() {
                                 handleEditEvaluation={handleEditEvaluation}
                                 handleArchiveEvaluation={
                                     handleArchiveEvaluation
+                                }
+                                handleQuickCreateEvaluation={
+                                    handleQuickCreateEvaluation
+                                }
+                                handleOpenCreateForEvent={
+                                    handleOpenCreateForEvent
                                 }
                             />
                         </>

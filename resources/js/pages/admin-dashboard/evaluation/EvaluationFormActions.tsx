@@ -35,7 +35,7 @@ export default function EvaluationFormActions({
                     ? 'Saving...'
                     : editingEvaluation
                       ? 'Update Evaluation'
-                      : 'Create Evaluation'}
+                      : 'Save Evaluation'}
             </Button>
         </div>
     );

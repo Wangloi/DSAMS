@@ -40,6 +40,8 @@ type Question = {
     label: string;
     required?: boolean;
     options?: string[];
+    section?: string;
+    section_note?: string;
 };
 
 type Evaluation = {
@@ -349,23 +351,38 @@ export default function AdminEvaluationShowPage() {
                                 </div>
                             ) : (
                                 <div className="space-y-5">
-                                    {questions.map((q, idx) => (
-                                        <div
-                                            key={q.id}
-                                            className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800"
-                                        >
-                                            <div className="text-sm font-semibold text-slate-900 dark:text-white">
-                                                {idx + 1}. {q.label}{' '}
-                                                {q.required ? (
-                                                    <span className="text-rose-600 dark:text-rose-400">
-                                                        *
-                                                    </span>
-                                                ) : null}
-                                            </div>
+                                    {questions.map((q, idx) => {
+                                        const prevQ = idx > 0 ? questions[idx - 1] : null;
+                                        const isNewSection = !prevQ || (q.section && q.section !== prevQ.section);
 
-                                            <div className="mt-3">
-                                                {q.type === 'rating' ? (
-                                                    <div className="flex items-center gap-2">
+                                        return (
+                                            <div key={q.id} className="space-y-3">
+                                                {isNewSection && q.section && (
+                                                    <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50/70 p-3.5 dark:border-blue-900/50 dark:bg-blue-950/30">
+                                                        <div className="text-xs font-bold uppercase tracking-wider text-blue-950 dark:text-blue-200">
+                                                            {q.section}
+                                                        </div>
+                                                        {q.section_note && (
+                                                            <div className="text-[11px] text-blue-800/80 dark:text-blue-300/80">
+                                                                {q.section_note}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+                                                    <div className="text-sm font-semibold text-slate-900 dark:text-white">
+                                                        {idx + 1}. {q.label}{' '}
+                                                        {q.required ? (
+                                                            <span className="text-rose-600 dark:text-rose-400">
+                                                                *
+                                                            </span>
+                                                        ) : null}
+                                                    </div>
+
+                                                    <div className="mt-3">
+                                                        {q.type === 'rating' ? (
+                                                            <div className="flex items-center gap-2">
                                                         {[1, 2, 3, 4, 5].map(
                                                             (n) => (
                                                                 <button
@@ -437,9 +454,11 @@ export default function AdminEvaluationShowPage() {
                                                         />
                                                     </div>
                                                 ) : null}
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </CardContent>
@@ -545,22 +564,35 @@ export default function AdminEvaluationShowPage() {
                             ) : (
                                 <div className="space-y-4">
                                     {questions.map((q, idx) => {
+                                        const prevQ = idx > 0 ? questions[idx - 1] : null;
+                                        const isNewSection = !prevQ || (q.section && q.section !== prevQ.section);
                                         const summary = summaryByQuestion[q.id];
                                         return (
-                                            <div
-                                                key={q.id}
-                                                className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800"
-                                            >
-                                                <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-                                                    <div className="text-sm font-semibold text-slate-900 dark:text-white">
-                                                        {idx + 1}. {q.label}
+                                            <div key={q.id} className="space-y-3">
+                                                {isNewSection && q.section && (
+                                                    <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50/70 p-3.5 dark:border-blue-900/50 dark:bg-blue-950/30">
+                                                        <div className="text-xs font-bold uppercase tracking-wider text-blue-950 dark:text-blue-200">
+                                                            {q.section}
+                                                        </div>
+                                                        {q.section_note && (
+                                                            <div className="text-[11px] text-blue-800/80 dark:text-blue-300/80">
+                                                                {q.section_note}
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                    <div className="text-xs text-slate-500 dark:text-slate-400">
-                                                        {summary?.totalAnswers ??
-                                                            0}{' '}
-                                                        answer(s)
+                                                )}
+
+                                                <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+                                                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                                                        <div className="text-sm font-semibold text-slate-900 dark:text-white">
+                                                            {idx + 1}. {q.label}
+                                                        </div>
+                                                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                                                            {summary?.totalAnswers ??
+                                                                0}{' '}
+                                                            answer(s)
+                                                        </div>
                                                     </div>
-                                                </div>
 
                                                 {q.type === 'rating' &&
                                                 summary?.ratingCounts ? (
@@ -692,9 +724,10 @@ export default function AdminEvaluationShowPage() {
                                                     </div>
                                                 ) : null}
                                             </div>
-                                        );
-                                    })}
-                                </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                             )}
                         </CardContent>
                     </Card>

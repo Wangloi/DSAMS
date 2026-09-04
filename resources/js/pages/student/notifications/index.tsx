@@ -10,7 +10,7 @@ import {
 } from '@/routes';
 import { Head, Link, router } from '@inertiajs/react';
 import axios from 'axios';
-import { Bell, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Bell, Calendar, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import React, { useState } from 'react';
 import { StudentDashboardFooter } from '../components/StudentDashboardFooter';
 
@@ -30,74 +30,80 @@ interface PaginatedNotifications {
     data: Notification[];
     current_page: number;
     last_page: number;
+    total: number;
     prev_page_url: string | null;
     next_page_url: string | null;
-    total: number;
 }
 
-interface Props {
+interface StudentNotificationsProps {
     paginatedNotifications: PaginatedNotifications;
 }
 
 export default function StudentNotifications({
     paginatedNotifications,
-}: Props) {
+}: StudentNotificationsProps) {
     const [locallyRead, setLocallyRead] = useState<string[]>([]);
-
     const notifications = paginatedNotifications.data;
-
-    const markSingleAsRead = (id: string, e: React.MouseEvent) => {
-        if (
-            (e.target as HTMLElement).closest('a') ||
-            (e.target as HTMLElement).closest('button')
-        )
-            return;
-
-        const n = notifications.find((notif) => notif.id === id);
-        if (n && !n.is_read && !locallyRead.includes(id)) {
-            setLocallyRead((prev) => [...prev, id]);
-            axios.post(`/notifications/${id}/mark-read`).catch(console.error);
-        }
-    };
 
     const markAllAsRead = () => {
         axios
             .post('/notifications/mark-all-read')
             .then(() => {
-                // Mark all as locally read for immediate UI feedback
                 setLocallyRead(notifications.map((n) => n.id));
+                router.reload({ only: ['paginatedNotifications'] });
             })
             .catch(console.error);
     };
+
+    const markSingleAsRead = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setLocallyRead((prev) => [...prev, id]);
+        const n = notifications.find((notif) => notif.id === id);
+        if (n) {
+            n.is_read = true;
+            axios.post(`/notifications/${id}/mark-read`).catch(console.error);
+        }
+    };
+
+    const unreadCount = notifications.filter(
+        (n) => !n.is_read && !locallyRead.includes(n.id),
+    ).length;
 
     return (
         <StudentLayout>
             <Head title="Notifications" />
 
-            <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col space-y-6 p-4 sm:p-6 lg:p-8">
-
-                {/* Header Section */}
-                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+                {/* Header */}
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                            Notifications
-                        </h1>
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl dark:text-white">
+                                Notifications
+                            </h1>
+                            {unreadCount > 0 && (
+                                <Badge className="bg-blue-600 px-2.5 py-0.5 text-xs font-bold text-white hover:bg-blue-600">
+                                    {unreadCount} unread
+                                </Badge>
+                            )}
+                        </div>
                         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                            View and manage your updates, alerts, and
-                            notifications.
+                            Stay updated with events, disciplinary records, and
+                            important announcements.
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    {unreadCount > 0 && (
                         <Button
                             variant="outline"
-                            className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+                            size="sm"
                             onClick={markAllAsRead}
+                            className="flex w-fit items-center gap-2 border-slate-200 bg-white font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
                         >
-                            <Check className="mr-2 h-4 w-4" />
+                            <Check className="h-4 w-4 text-emerald-600" />
                             Mark all as read
                         </Button>
-                    </div>
+                    )}
                 </div>
 
                 {/* Notifications List */}
@@ -107,6 +113,11 @@ export default function StudentNotifications({
                             notifications.map((n) => {
                                 const isRead =
                                     n.is_read || locallyRead.includes(n.id);
+                                const isEvent =
+                                    n.type === 'event_reminder' ||
+                                    n.type === 'event_upcoming' ||
+                                    n.type === 'event_updated' ||
+                                    n.type === 'event_announcement';
                                 return (
                                     <div
                                         key={n.id}
@@ -130,10 +141,16 @@ export default function StudentNotifications({
                                                     'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
                                                     isRead
                                                         ? 'bg-slate-100 text-slate-400 dark:bg-slate-800'
-                                                        : 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400',
+                                                        : isEvent
+                                                          ? 'bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400'
+                                                          : 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400',
                                                 )}
                                             >
-                                                <Bell className="h-5 w-5" />
+                                                {isEvent ? (
+                                                    <Calendar className="h-5 w-5" />
+                                                ) : (
+                                                    <Bell className="h-5 w-5" />
+                                                )}
                                             </div>
 
                                             <div className="flex flex-col gap-1">
@@ -211,6 +228,14 @@ export default function StudentNotifications({
                                                         Evaluate
                                                     </Link>
                                                 )}
+                                            {isEvent && (
+                                                <Link
+                                                    href={studentDashboard()}
+                                                    className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-xs font-black tracking-widest text-white uppercase shadow-sm transition-colors hover:bg-blue-700"
+                                                >
+                                                    View Event
+                                                </Link>
+                                            )}
                                         </div>
                                     </div>
                                 );

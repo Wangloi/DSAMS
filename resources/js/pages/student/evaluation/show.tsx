@@ -30,6 +30,8 @@ type Question = {
     label: string;
     required?: boolean;
     options?: string[];
+    section?: string;
+    section_note?: string;
 };
 
 type Evaluation = {
@@ -238,8 +240,10 @@ export default function StudentEvaluationShow() {
                                     </p>
                                 </div>
                             ) : (
-                                <div className="space-y-5">
+                                <div className="space-y-6">
                                     {questions.map((q, idx) => {
+                                        const prevQ = idx > 0 ? questions[idx - 1] : null;
+                                        const isNewSection = !prevQ || (q.section && q.section !== prevQ.section);
                                         const isAnswered =
                                             answers[q.id] !== undefined &&
                                             answers[q.id] !== '' &&
@@ -247,209 +251,263 @@ export default function StudentEvaluationShow() {
                                                 answers[q.id].length > 0);
 
                                         return (
-                                            <div
-                                                key={q.id}
-                                                className={cn(
-                                                    'group relative overflow-hidden rounded-2xl border bg-white/80 p-5 shadow-sm backdrop-blur-xl transition-all duration-300 sm:p-6 dark:bg-slate-900/40',
-                                                    isAnswered
-                                                        ? 'border-blue-500/20 shadow-blue-500/5 dark:border-blue-500/10'
-                                                        : 'border-slate-200/60 dark:border-slate-800',
-                                                )}
-                                            >
-                                                {/* Question Header */}
-                                                <div className="mb-5 flex items-start gap-3.5">
-                                                    <div
-                                                        className={cn(
-                                                            'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-black transition-colors',
-                                                            isAnswered
-                                                                ? 'bg-[#0b2d66] text-white shadow-md shadow-blue-900/20 dark:bg-blue-600'
-                                                                : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500',
-                                                        )}
-                                                    >
-                                                        {idx + 1}
-                                                    </div>
-                                                    <div className="pt-0.5">
-                                                        <h3 className="text-sm font-bold text-slate-900 dark:text-white sm:text-base">
-                                                            {q.label}
-                                                            {q.required && (
-                                                                <span className="ml-1.5 text-rose-500">
-                                                                    *
-                                                                </span>
+                                            <div key={q.id} className="space-y-4">
+                                                {/* Section Header if new section or Standard */}
+                                                {isNewSection && q.section && (
+                                                    <div className="mt-8 mb-4 overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50/90 via-slate-50 to-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-800/60 dark:from-slate-800">
+                                                        <div className="flex flex-col gap-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="inline-block h-2 w-2 rounded-full bg-[#0b2d66] dark:bg-blue-400"></span>
+                                                                <h2 className="text-base font-black tracking-tight text-[#0b2d66] uppercase sm:text-lg dark:text-blue-300">
+                                                                    {q.section}
+                                                                </h2>
+                                                            </div>
+                                                            {q.section_note && (
+                                                                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                                                    {q.section_note}
+                                                                </p>
                                                             )}
-                                                        </h3>
+                                                        </div>
+
+                                                        {/* Standard 1 Rating Legend */}
+                                                        {q.type === 'rating' && (
+                                                            <div className="mt-4 grid grid-cols-5 gap-1.5 rounded-xl border border-blue-200/60 bg-white/90 p-2.5 text-center dark:border-slate-700 dark:bg-slate-900/60">
+                                                                <div className="rounded-lg bg-blue-50/80 p-1.5 dark:bg-slate-800">
+                                                                    <span className="block text-xs font-black text-[#0b2d66] dark:text-blue-300">1</span>
+                                                                    <span className="text-[10px] font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400">Poor</span>
+                                                                </div>
+                                                                <div className="rounded-lg bg-blue-50/80 p-1.5 dark:bg-slate-800">
+                                                                    <span className="block text-xs font-black text-[#0b2d66] dark:text-blue-300">2</span>
+                                                                    <span className="text-[10px] font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400">Fair</span>
+                                                                </div>
+                                                                <div className="rounded-lg bg-blue-50/80 p-1.5 dark:bg-slate-800">
+                                                                    <span className="block text-xs font-black text-[#0b2d66] dark:text-blue-300">3</span>
+                                                                    <span className="text-[10px] font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400">Good</span>
+                                                                </div>
+                                                                <div className="rounded-lg bg-blue-50/80 p-1.5 dark:bg-slate-800">
+                                                                    <span className="block text-xs font-black text-[#0b2d66] dark:text-blue-300">4</span>
+                                                                    <span className="text-[10px] font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400">Very Good</span>
+                                                                </div>
+                                                                <div className="rounded-lg bg-blue-50/80 p-1.5 dark:bg-slate-800">
+                                                                    <span className="block text-xs font-black text-[#0b2d66] dark:text-blue-300">5</span>
+                                                                    <span className="text-[10px] font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400">Excellent</span>
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                </div>
+                                                )}
 
-                                                {/* Answers Body */}
-                                                <div className="sm:pl-10">
-                                                    {/* RATING */}
-                                                    {q.type === 'rating' && (
-                                                        <div className="flex flex-wrap items-center gap-2">
-                                                            {[1, 2, 3, 4, 5].map((n) => {
-                                                                const isSelected =
-                                                                    Number(answers[q.id]) === n;
-                                                                return (
-                                                                    <button
-                                                                        key={n}
-                                                                        type="button"
-                                                                        onClick={() =>
-                                                                            setAnswers((p) => ({
-                                                                                ...p,
-                                                                                [q.id]: n,
-                                                                            }))
-                                                                        }
-                                                                        className={cn(
-                                                                            'flex h-10 w-10 items-center justify-center rounded-xl border-2 text-sm font-black transition-all duration-200 hover:scale-105 active:scale-95',
-                                                                            isSelected
-                                                                                ? 'border-[#0b2d66] bg-[#0b2d66] text-white shadow-md shadow-blue-900/20 dark:border-blue-600 dark:bg-blue-600'
-                                                                                : 'border-slate-100 bg-slate-50 text-slate-600 hover:border-blue-200 hover:bg-blue-50 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-400 dark:hover:border-blue-900/30 dark:hover:bg-blue-900/10',
-                                                                        )}
-                                                                    >
-                                                                        {n}
-                                                                    </button>
-                                                                );
-                                                            })}
+                                                {/* Question Card */}
+                                                <div
+                                                    className={cn(
+                                                        'group relative overflow-hidden rounded-2xl border bg-white/80 p-5 shadow-sm backdrop-blur-xl transition-all duration-300 sm:p-6 dark:bg-slate-900/40',
+                                                        isAnswered
+                                                            ? 'border-blue-500/20 shadow-blue-500/5 dark:border-blue-500/10'
+                                                            : 'border-slate-200/60 dark:border-slate-800',
+                                                    )}
+                                                >
+                                                    {/* Question Header */}
+                                                    <div className="mb-5 flex items-start gap-3.5">
+                                                        <div
+                                                            className={cn(
+                                                                'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-black transition-colors',
+                                                                isAnswered
+                                                                    ? 'bg-[#0b2d66] text-white shadow-md shadow-blue-900/20 dark:bg-blue-600'
+                                                                    : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500',
+                                                            )}
+                                                        >
+                                                            {idx + 1}
                                                         </div>
-                                                    )}
-
-                                                    {/* MULTIPLE CHOICE */}
-                                                    {q.type === 'multiple_choice' && (
-                                                        <div className="grid gap-2">
-                                                            {(q.options ?? []).map((opt) => {
-                                                                const isSelected =
-                                                                    answers[q.id] === opt;
-                                                                return (
-                                                                    <button
-                                                                        key={opt}
-                                                                        type="button"
-                                                                        onClick={() =>
-                                                                            setAnswers((p) => ({
-                                                                                ...p,
-                                                                                [q.id]: opt,
-                                                                            }))
-                                                                        }
-                                                                        className={cn(
-                                                                            'group flex w-full items-center justify-between rounded-xl border-2 px-4 py-3 text-left transition-all duration-200',
-                                                                            isSelected
-                                                                                ? 'border-[#0b2d66] bg-blue-50/40 dark:border-blue-500/30 dark:bg-blue-950/20'
-                                                                                : 'border-slate-100 bg-slate-50 hover:border-blue-100 hover:bg-blue-50/20 dark:border-slate-800 dark:bg-slate-800/40 dark:hover:border-blue-950/25',
-                                                                        )}
-                                                                    >
-                                                                        <span
-                                                                            className={cn(
-                                                                                'text-xs font-semibold transition-colors sm:text-sm',
-                                                                                isSelected
-                                                                                    ? 'text-[#0b2d66] dark:text-blue-400'
-                                                                                    : 'text-slate-700 dark:text-slate-300',
-                                                                            )}
-                                                                        >
-                                                                            {opt}
-                                                                        </span>
-                                                                        <div
-                                                                            className={cn(
-                                                                                'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
-                                                                                isSelected
-                                                                                    ? 'border-[#0b2d66]'
-                                                                                    : 'border-slate-300 group-hover:border-blue-400 dark:border-slate-600',
-                                                                            )}
-                                                                        >
-                                                                            {isSelected && (
-                                                                                <div className="h-2 w-2 rounded-full bg-[#0b2d66] dark:bg-blue-500" />
-                                                                            )}
-                                                                        </div>
-                                                                    </button>
-                                                                );
-                                                            })}
+                                                        <div className="pt-0.5">
+                                                            <h3 className="text-sm font-bold text-slate-900 dark:text-white sm:text-base">
+                                                                {q.label}
+                                                                {q.required && (
+                                                                    <span className="ml-1.5 text-rose-500">
+                                                                        *
+                                                                    </span>
+                                                                )}
+                                                            </h3>
                                                         </div>
-                                                    )}
+                                                    </div>
 
-                                                    {/* CHECKBOX */}
-                                                    {q.type === 'checkbox' && (
-                                                        <div className="grid gap-2">
-                                                            {(q.options ?? []).map((opt) => {
-                                                                const isSelected =
-                                                                    Array.isArray(answers[q.id]) &&
-                                                                    answers[q.id].includes(opt);
-                                                                return (
-                                                                    <button
-                                                                        key={opt}
-                                                                        type="button"
-                                                                        onClick={() =>
-                                                                            toggleCheckbox(q.id, opt)
-                                                                        }
-                                                                        className={cn(
-                                                                            'group flex w-full items-center justify-between rounded-xl border-2 px-4 py-3 text-left transition-all duration-200',
-                                                                            isSelected
-                                                                                ? 'border-[#0b2d66] bg-blue-50/40 dark:border-blue-500/30 dark:bg-blue-950/20'
-                                                                                : 'border-slate-100 bg-slate-50 hover:border-blue-100 hover:bg-blue-50/20 dark:border-slate-800 dark:bg-slate-800/40 dark:hover:border-blue-950/25',
-                                                                        )}
-                                                                    >
-                                                                        <span
+                                                    {/* Answers Body */}
+                                                    <div className="sm:pl-10">
+                                                        {/* RATING */}
+                                                        {q.type === 'rating' && (
+                                                            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                                                                {[1, 2, 3, 4, 5].map((n) => {
+                                                                    const isSelected =
+                                                                        Number(answers[q.id]) === n;
+                                                                    const ratingLabels = ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+                                                                    return (
+                                                                        <button
+                                                                            key={n}
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                setAnswers((p) => ({
+                                                                                    ...p,
+                                                                                    [q.id]: n,
+                                                                                }))
+                                                                            }
                                                                             className={cn(
-                                                                                'text-xs font-semibold transition-colors sm:text-sm',
+                                                                                'flex flex-col items-center justify-center rounded-xl border-2 px-3 py-2 text-xs font-black transition-all duration-200 hover:scale-105 active:scale-95 min-w-[54px] sm:min-w-[64px]',
                                                                                 isSelected
-                                                                                    ? 'text-[#0b2d66] dark:text-blue-400'
-                                                                                    : 'text-slate-700 dark:text-slate-300',
+                                                                                    ? 'border-[#0b2d66] bg-[#0b2d66] text-white shadow-md shadow-blue-900/20 dark:border-blue-600 dark:bg-blue-600'
+                                                                                    : 'border-slate-100 bg-slate-50 text-slate-600 hover:border-blue-200 hover:bg-blue-50 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-400 dark:hover:border-blue-900/30 dark:hover:bg-blue-900/10',
                                                                             )}
                                                                         >
-                                                                            {opt}
-                                                                        </span>
-                                                                        <div
+                                                                            <span className="text-base font-black leading-none">{n}</span>
+                                                                            <span className={cn(
+                                                                                "mt-1 text-[9px] font-bold uppercase tracking-tighter leading-none",
+                                                                                isSelected ? "text-blue-100 dark:text-blue-200" : "text-slate-400 dark:text-slate-500"
+                                                                            )}>
+                                                                                {ratingLabels[n - 1]}
+                                                                            </span>
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
+
+                                                        {/* MULTIPLE CHOICE */}
+                                                        {q.type === 'multiple_choice' && (
+                                                            <div className="grid gap-2 sm:grid-cols-2">
+                                                                {(q.options ?? []).map((opt) => {
+                                                                    const isSelected =
+                                                                        answers[q.id] === opt;
+                                                                    return (
+                                                                        <button
+                                                                            key={opt}
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                setAnswers((p) => ({
+                                                                                    ...p,
+                                                                                    [q.id]: opt,
+                                                                                }))
+                                                                            }
                                                                             className={cn(
-                                                                                'flex h-4 w-4 shrink-0 items-center justify-center rounded-md border-2 transition-colors',
+                                                                                'group flex w-full items-center justify-between rounded-xl border-2 px-4 py-3 text-left transition-all duration-200',
                                                                                 isSelected
-                                                                                    ? 'border-[#0b2d66] bg-[#0b2d66] text-white dark:border-blue-500 dark:bg-blue-500'
-                                                                                    : 'border-slate-300 group-hover:border-blue-400 dark:border-slate-600',
+                                                                                    ? 'border-[#0b2d66] bg-blue-50/40 dark:border-blue-500/30 dark:bg-blue-950/20'
+                                                                                    : 'border-slate-100 bg-slate-50 hover:border-blue-100 hover:bg-blue-50/20 dark:border-slate-800 dark:bg-slate-800/40 dark:hover:border-blue-950/25',
                                                                             )}
                                                                         >
-                                                                            {isSelected && (
-                                                                                <Check className="h-3 w-3" />
+                                                                            <span
+                                                                                className={cn(
+                                                                                    'text-xs font-bold transition-colors sm:text-sm',
+                                                                                    isSelected
+                                                                                        ? 'text-[#0b2d66] dark:text-blue-400'
+                                                                                        : 'text-slate-700 dark:text-slate-300',
+                                                                                )}
+                                                                            >
+                                                                                {opt}
+                                                                            </span>
+                                                                            <div
+                                                                                className={cn(
+                                                                                    'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
+                                                                                    isSelected
+                                                                                        ? 'border-[#0b2d66]'
+                                                                                        : 'border-slate-300 group-hover:border-blue-400 dark:border-slate-600',
+                                                                                )}
+                                                                            >
+                                                                                {isSelected && (
+                                                                                    <div className="h-2 w-2 rounded-full bg-[#0b2d66] dark:bg-blue-500" />
+                                                                                )}
+                                                                            </div>
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
+
+                                                        {/* CHECKBOX */}
+                                                        {q.type === 'checkbox' && (
+                                                            <div className="grid gap-2">
+                                                                {(q.options ?? []).map((opt) => {
+                                                                    const isSelected =
+                                                                        Array.isArray(answers[q.id]) &&
+                                                                        answers[q.id].includes(opt);
+                                                                    return (
+                                                                        <button
+                                                                            key={opt}
+                                                                            type="button"
+                                                                            onClick={() =>
+                                                                                toggleCheckbox(q.id, opt)
+                                                                            }
+                                                                            className={cn(
+                                                                                'group flex w-full items-center justify-between rounded-xl border-2 px-4 py-3 text-left transition-all duration-200',
+                                                                                isSelected
+                                                                                    ? 'border-[#0b2d66] bg-blue-50/40 dark:border-blue-500/30 dark:bg-blue-950/20'
+                                                                                    : 'border-slate-100 bg-slate-50 hover:border-blue-100 hover:bg-blue-50/20 dark:border-slate-800 dark:bg-slate-800/40 dark:hover:border-blue-950/25',
                                                                             )}
-                                                                        </div>
-                                                                    </button>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    )}
+                                                                        >
+                                                                            <span
+                                                                                className={cn(
+                                                                                    'text-xs font-semibold transition-colors sm:text-sm',
+                                                                                    isSelected
+                                                                                        ? 'text-[#0b2d66] dark:text-blue-400'
+                                                                                        : 'text-slate-700 dark:text-slate-300',
+                                                                                )}
+                                                                            >
+                                                                                {opt}
+                                                                            </span>
+                                                                            <div
+                                                                                className={cn(
+                                                                                    'flex h-4 w-4 shrink-0 items-center justify-center rounded-md border-2 transition-colors',
+                                                                                    isSelected
+                                                                                        ? 'border-[#0b2d66] bg-[#0b2d66] text-white dark:border-blue-500 dark:bg-blue-500'
+                                                                                        : 'border-slate-300 group-hover:border-blue-400 dark:border-slate-600',
+                                                                                )}
+                                                                            >
+                                                                                {isSelected && (
+                                                                                    <Check className="h-3 w-3" />
+                                                                                )}
+                                                                            </div>
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
 
-                                                    {/* SHORT TEXT */}
-                                                    {q.type === 'short_text' && (
-                                                        <Input
-                                                            value={
-                                                                typeof answers[q.id] === 'string'
-                                                                    ? answers[q.id]
-                                                                    : ''
-                                                            }
-                                                            onChange={(e) =>
-                                                                setAnswers((p) => ({
-                                                                    ...p,
-                                                                    [q.id]: e.target.value,
-                                                                }))
-                                                            }
-                                                            placeholder="Type your answer here..."
-                                                            className="h-11 rounded-xl border-slate-200 bg-slate-50 px-4 text-sm focus:border-blue-500 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800/30"
-                                                        />
-                                                    )}
+                                                        {/* SHORT TEXT */}
+                                                        {q.type === 'short_text' && (
+                                                            <Input
+                                                                value={
+                                                                    typeof answers[q.id] === 'string'
+                                                                        ? answers[q.id]
+                                                                        : ''
+                                                                }
+                                                                onChange={(e) =>
+                                                                    setAnswers((p) => ({
+                                                                        ...p,
+                                                                        [q.id]: e.target.value,
+                                                                    }))
+                                                                }
+                                                                placeholder="Type your answer here..."
+                                                                className="h-11 rounded-xl border-slate-200 bg-slate-50 px-4 text-sm focus:border-blue-500 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800/30"
+                                                            />
+                                                        )}
 
-                                                    {/* LONG TEXT */}
-                                                    {q.type === 'long_text' && (
-                                                        <Textarea
-                                                            value={
-                                                                typeof answers[q.id] === 'string'
-                                                                    ? answers[q.id]
-                                                                    : ''
-                                                            }
-                                                            onChange={(e) =>
-                                                                setAnswers((p) => ({
-                                                                    ...p,
-                                                                    [q.id]: e.target.value,
-                                                                }))
-                                                            }
-                                                            placeholder="Share your detailed feedback..."
-                                                            rows={3}
-                                                            className="resize-y rounded-xl border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed focus:border-blue-500 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800/30"
-                                                        />
-                                                    )}
+                                                        {/* LONG TEXT */}
+                                                        {q.type === 'long_text' && (
+                                                            <Textarea
+                                                                value={
+                                                                    typeof answers[q.id] === 'string'
+                                                                        ? answers[q.id]
+                                                                        : ''
+                                                                }
+                                                                onChange={(e) =>
+                                                                    setAnswers((p) => ({
+                                                                        ...p,
+                                                                        [q.id]: e.target.value,
+                                                                    }))
+                                                                }
+                                                                placeholder="Share your detailed feedback..."
+                                                                rows={3}
+                                                                className="resize-y rounded-xl border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed focus:border-blue-500 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800/30"
+                                                            />
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         );

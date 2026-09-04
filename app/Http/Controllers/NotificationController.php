@@ -137,4 +137,40 @@ class NotificationController extends Controller
             'message'      => 'Notification event dispatched to Node.js Socket.IO server',
         ]);
     }
+
+    /**
+     * Render student notifications page
+     */
+    public function studentIndex(Request $request)
+    {
+        /** @var \App\Models\Student|null $user */
+        $user = Auth::guard('student')->user() ?: Auth::user();
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        $paginated = $user->notifications()
+            ->orderByDesc('created_at')
+            ->paginate(15);
+
+        $formattedData = collect($paginated->items())
+            ->map(fn ($n) => \App\Services\StudentNotificationPresenter::format($n))
+            ->filter(fn ($row) => $row !== null && \App\Services\StudentNotificationPresenter::isRelevantForStudent($user, $row))
+            ->values()
+            ->all();
+
+        $paginatedNotifications = [
+            'data' => $formattedData,
+            'current_page' => $paginated->currentPage(),
+            'last_page' => $paginated->lastPage(),
+            'total' => $paginated->total(),
+            'prev_page_url' => $paginated->previousPageUrl(),
+            'next_page_url' => $paginated->nextPageUrl(),
+        ];
+
+        return \Inertia\Inertia::render('student/notifications/index', [
+            'paginatedNotifications' => $paginatedNotifications,
+        ]);
+    }
 }
+

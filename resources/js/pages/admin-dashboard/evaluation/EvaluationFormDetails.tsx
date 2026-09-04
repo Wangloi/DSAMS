@@ -61,7 +61,21 @@ export default function EvaluationFormDetails({
                 </Label>
                 <Select
                     value={form.eventId}
-                    onValueChange={(v) => onChange({ eventId: v })}
+                    onValueChange={(v) => {
+                        const selectedEvent = events.find(
+                            (e) => String(e.id) === v,
+                        );
+                        const updates: Partial<FormState> = { eventId: v };
+                        if (
+                            selectedEvent &&
+                            (!form.name.trim() ||
+                                form.name ===
+                                    'Seminar/Training Evaluation Form')
+                        ) {
+                            updates.name = `${selectedEvent.name} Evaluation Form`;
+                        }
+                        onChange(updates);
+                    }}
                 >
                     <SelectTrigger className="text-base">
                         <SelectValue placeholder="Select an event for this evaluation" />

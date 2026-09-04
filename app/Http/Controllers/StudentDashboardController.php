@@ -208,7 +208,7 @@ class StudentDashboardController extends Controller
                 ->keyBy('event_id')
             : collect();
 
-        return $events->map(function ($event) use ($attendances) {
+        return $events->map(function ($event) use ($attendances, $user) {
             $att = $attendances->get($event->id);
             $attendanceStatus = 'none';
             if ($att) {
@@ -235,6 +235,20 @@ class StudentDashboardController extends Controller
                 }
             }
 
+            $allowedScanners = is_array($event->scanner_student_ids) ? $event->scanner_student_ids : [];
+            $legacyScanner = trim((string) ($event->scanner_student_id ?? ''));
+            if ($legacyScanner !== '' && ! in_array($legacyScanner, $allowedScanners, true)) {
+                $allowedScanners[] = $legacyScanner;
+            }
+
+            $isScannerAssigned = false;
+            if ($user instanceof Student && ! empty($allowedScanners)) {
+                $stSchoolId = trim((string) ($user->student_id ?? ''));
+                $stDbId = trim((string) ($user->id ?? ''));
+                $isScannerAssigned = ($stSchoolId !== '' && in_array($stSchoolId, $allowedScanners, true))
+                    || ($stDbId !== '' && in_array($stDbId, $allowedScanners, true));
+            }
+
             return [
                 'id'                    => $event->id,
                 'title'                 => $event->event_name,
@@ -244,7 +258,9 @@ class StudentDashboardController extends Controller
                 'description'           => $event->description,
                 'status'                => $isDone ? 'completed' : $event->status,
                 'is_done'               => $isDone,
-                'scanner_portal_active' => (bool) ($event->scanner_portal_active ?? false) && !$isDone,
+                'is_scanner_assigned'   => $isScannerAssigned,
+                'scanner_portal_active' => $isScannerAssigned && (bool) ($event->scanner_portal_active ?? false) && !$isDone,
+                'attendance_type'       => (string) ($event->attendance_type ?? 'qr_scanner'),
                 'geofence_enabled'      => (bool) ($event->geofence_enabled ?? false),
                 'geofence_latitude'     => $event->geofence_latitude ? (float) $event->geofence_latitude : null,
                 'geofence_longitude'    => $event->geofence_longitude ? (float) $event->geofence_longitude : null,

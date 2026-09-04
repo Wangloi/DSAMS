@@ -668,5 +668,21 @@ class AdminEventsController extends Controller
 
         return redirect()->back()->with('success', 'Event schedule request rejected.');
     }
+
+    public function sendReminder(Event $event)
+    {
+        if ($event->archived_at !== null) {
+            return redirect()->back()->with('error', 'Cannot send reminders for archived events.');
+        }
+
+        $dispatcher = app(StudentNotificationDispatcher::class);
+        $eventDate = optional($event->event_date);
+        $timeframe = $eventDate->isToday() ? 'today' : ($eventDate->isTomorrow() ? 'tomorrow' : 'soon');
+
+        $dispatcher->eventReminder($event, $timeframe);
+
+        return redirect()->back()->with('success', "Event reminder successfully dispatched to eligible students!");
+    }
 }
+
 

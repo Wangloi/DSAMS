@@ -48,9 +48,16 @@ export default function EvaluationQuestionEditCard({
                                 {idx + 1}
                             </div>
                             <div>
-                                <h4 className="text-sm font-medium text-slate-900 dark:text-white">
-                                    Question {idx + 1}
-                                </h4>
+                                <div className="flex items-center gap-2">
+                                    <h4 className="text-sm font-medium text-slate-900 dark:text-white">
+                                        Question {idx + 1}
+                                    </h4>
+                                    {q.section && (
+                                        <span className="rounded-md bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+                                            {q.section}
+                                        </span>
+                                    )}
+                                </div>
                                 <p className="text-xs text-slate-500 capitalize dark:text-slate-400">
                                     {q.type.replace('_', ' ')}
                                 </p>

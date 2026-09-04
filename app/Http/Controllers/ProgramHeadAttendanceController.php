@@ -12,13 +12,12 @@ use Inertia\Inertia;
 
 class ProgramHeadAttendanceController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): \Inertia\Response
     {
         $programHead = auth()->guard('program_head')->user() ?: auth()->user();
         $program = is_object($programHead) ? (string) ($programHead->program ?? '') : '';
+        $search = (string) $request->query('search', '');
 
-        $search = $request->query('search', '');
-        
         try {
             $eventModels = Event::query()
                 ->withCount('attendances')
@@ -31,7 +30,7 @@ class ProgramHeadAttendanceController extends Controller
                             ->orWhere('courses', '[]');
                     });
                 })
-                ->when($search !== '', function($query) use ($search) {
+                ->when($search !== '', function ($query) use ($search) {
                     $query->search($search);
                 })
                 ->orderBy('event_date', 'desc')
@@ -41,7 +40,7 @@ class ProgramHeadAttendanceController extends Controller
             $eventIds = $eventModels->pluck('id')->all();
 
             $lateByEventId = collect();
-            if ($program !== '' && count($eventIds) > 0 && Schema::hasTable('attendances')) {
+            if ($program !== '' && !empty($eventIds) && Schema::hasTable('attendances')) {
                 $lateByEventId = Attendance::query()
                     ->whereIn('event_id', $eventIds)
                     ->where('status', 'late')
@@ -51,50 +50,8 @@ class ProgramHeadAttendanceController extends Controller
                     ->pluck('late_count', 'event_id');
             }
 
-            $events = $eventModels
-                ->map(function (Event $event) use ($program, $lateByEventId) {
-                    if ($event->total_attendees !== $event->attendances_count) {
-                        $event->updateAttendanceCounts();
-                    }
-
-                    $eligibleStudentsCount = $this->programEligibleStudentsCount($event, $program);
-                    $expectedAttendees = $eligibleStudentsCount;
-                    $attendanceDenominator = $eligibleStudentsCount;
-                    $scannedCount = $this->programAttendanceCount($event, $program);
-
-                    return [
-                        'id' => $event->id,
-                        'event' => $event->event_name,
-                        'dateTime' => $event->date_time,
-                        'organizer' => $event->organizer,
-                        'totalAttendees' => $attendanceDenominator,
-                        'presentCount' => $this->programAttendanceCount($event, $program, 'present'),
-                        'scannedCount' => $scannedCount,
-                        'lateCount' => (int) ($lateByEventId[$event->id] ?? 0),
-                        'eligibleStudentsCount' => $eligibleStudentsCount,
-                        'expectedAttendees' => $expectedAttendees,
-                        'attendanceDenominator' => $attendanceDenominator,
-                        'status' => $event->status,
-                        'location' => $event->location,
-                        'event_time' => $event->event_time,
-                        'registration_end_time' => $event->registration_end_time,
-                        'registrationEndTime' => $event->registration_end_time,
-                        'scannerPortalActive' => Schema::hasColumn('events', 'scanner_portal_active') ? (bool) $event->scanner_portal_active : true,
-                    ];
-                });
-
-            $totalEvents = $events->count();
-            $totalAttendees = (int) $events->sum('scannedCount');
-            $avgAttendanceRate = $totalEvents > 0
-                ? (int) round($events->sum(function ($event) {
-                    $cap = (int) ($event['attendanceDenominator'] ?? 0);
-                    $scanned = (int) ($event['scannedCount'] ?? 0);
-
-                    return $cap > 0 ? ($scanned / $cap) * 100 : 0;
-                }) / $totalEvents)
-                : 0;
-
-            $totalStudents = Student::query()->where('course', $program)->count();
+            $events = $this->formatEventsList($eventModels, $program, $lateByEventId);
+            $stats = $this->calculateStats($events, $lateByEventId, $program);
 
             return Inertia::render('program-head/Attendance', [
                 'events' => $events,
@@ -102,19 +59,15 @@ class ProgramHeadAttendanceController extends Controller
                 'filters' => [
                     'search' => $search,
                 ],
-                'stats' => [
-                    'totalEvents' => $totalEvents,
-                    'totalAttendees' => $totalAttendees,
-                    'avgAttendanceRate' => $avgAttendanceRate,
-                    'totalLate' => (int) $lateByEventId->sum(),
-                    'totalStudents' => $totalStudents,
-                ]
+                'stats' => $stats,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return Inertia::render('program-head/Attendance', [
                 'events' => [],
                 'program' => $program,
-                'filters' => ['search' => clone $search],
+                'filters' => [
+                    'search' => $search,
+                ],
                 'stats' => [
                     'totalEvents' => 0,
                     'totalAttendees' => 0,
@@ -122,9 +75,64 @@ class ProgramHeadAttendanceController extends Controller
                     'totalLate' => 0,
                     'totalStudents' => 0,
                 ],
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    private function formatEventsList(\Illuminate\Support\Collection $eventModels, string $program, \Illuminate\Support\Collection $lateByEventId): \Illuminate\Support\Collection
+    {
+        return $eventModels->map(function (Event $event) use ($program, $lateByEventId) {
+            if ($event->total_attendees !== $event->attendances_count) {
+                $event->updateAttendanceCounts();
+            }
+
+            $eligibleStudentsCount = $this->programEligibleStudentsCount($event, $program);
+            $scannedCount = $this->programAttendanceCount($event, $program);
+
+            return [
+                'id' => $event->id,
+                'event' => $event->event_name,
+                'dateTime' => $event->date_time,
+                'organizer' => $event->organizer,
+                'totalAttendees' => $eligibleStudentsCount,
+                'presentCount' => $this->programAttendanceCount($event, $program, 'present'),
+                'scannedCount' => $scannedCount,
+                'lateCount' => (int) ($lateByEventId[$event->id] ?? 0),
+                'eligibleStudentsCount' => $eligibleStudentsCount,
+                'expectedAttendees' => $eligibleStudentsCount,
+                'attendanceDenominator' => $eligibleStudentsCount,
+                'status' => $event->status,
+                'location' => $event->location,
+                'event_time' => $event->event_time,
+                'registration_end_time' => $event->registration_end_time,
+                'registrationEndTime' => $event->registration_end_time,
+                'scannerPortalActive' => Schema::hasColumn('events', 'scanner_portal_active') ? (bool) $event->scanner_portal_active : true,
+            ];
+        });
+    }
+
+    private function calculateStats(\Illuminate\Support\Collection $events, \Illuminate\Support\Collection $lateByEventId, string $program): array
+    {
+        $totalEvents = $events->count();
+        $totalAttendees = (int) $events->sum('scannedCount');
+        $avgAttendanceRate = $totalEvents > 0
+            ? (int) round($events->sum(function (array $event) {
+                $cap = (int) ($event['attendanceDenominator'] ?? 0);
+                $scanned = (int) ($event['scannedCount'] ?? 0);
+                return $cap > 0 ? ($scanned / $cap) * 100 : 0;
+            }) / $totalEvents)
+            : 0;
+
+        $totalStudents = Student::query()->where('course', $program)->count();
+
+        return [
+            'totalEvents' => $totalEvents,
+            'totalAttendees' => $totalAttendees,
+            'avgAttendanceRate' => $avgAttendanceRate,
+            'totalLate' => (int) $lateByEventId->sum(),
+            'totalStudents' => $totalStudents,
+        ];
     }
 
     public function studentsByCourse(Event $event)
@@ -161,7 +169,7 @@ class ProgramHeadAttendanceController extends Controller
                 'program' => $student->course,
                 'scanned' => $attendance !== null,
                 'status' => $attendance ? $attendance->status : null,
-                'time' => $attendance ? \Carbon\Carbon::parse($attendance->time)->format('h:i A') : null,
+                'time' => $attendance ? Carbon::parse($attendance->time)->format('h:i A') : null,
             ];
         });
 

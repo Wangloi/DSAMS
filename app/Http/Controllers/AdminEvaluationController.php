@@ -403,15 +403,20 @@ class AdminEvaluationController extends Controller
             return redirect()->back()->with('error', 'Evaluations can only be created for completed events (event date must be in the past).');
         }
 
+        $formData = $validated['form_data'] ?? [];
+        if (empty($formData['questions'])) {
+            $formData = Evaluation::getDefaultFormData();
+        }
+
         $evaluation = Evaluation::create([
             'name' => $validated['name'],
-            'description' => $validated['description'] ?? null,
+            'description' => $validated['description'] ?? 'Standard institutional evaluation form assessing the presenter, presentation objectives, and participant feedback.',
             'event_id' => (int) $validated['eventId'],
             'event' => trim(implode(' • ', array_filter([
                 $event->event_name,
                 optional($event->event_date)->format('Y-m-d'),
             ]))),
-            'form_data' => $validated['form_data'] ?? [],
+            'form_data' => $formData,
             'is_active' => false,
             'published_at' => null,
         ]);
