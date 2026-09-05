@@ -455,11 +455,6 @@ class StudentAttendanceController extends Controller
             'accuracy_m' => 'nullable|numeric',
         ]);
 
-        $geofenceResponse = $this->validateGeofence($request, $event, $scanner, $validated);
-        if ($geofenceResponse) {
-            return $geofenceResponse;
-        }
-
         $lat = $validated['latitude'] ?? null;
         $lng = $validated['longitude'] ?? null;
         $accuracyM = $validated['accuracy_m'] ?? null;

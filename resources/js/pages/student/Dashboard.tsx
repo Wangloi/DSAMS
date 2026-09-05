@@ -33,7 +33,7 @@ import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
 import {
     studentAdmissionSlipStore,
-    studentAttendanceDynamicQrScan,
+    studentAttendanceScannerPortal,
     studentCertificates,
     studentEvaluationShow,
     studentIncidentsStore,
@@ -50,6 +50,7 @@ import {
     Award,
     Building2,
     Calendar,
+    Camera,
     Check,
     ChevronRight,
     ClipboardList,
@@ -270,14 +271,17 @@ export default function StudentDashboard({
 
     const isGpsAttendance = (e: EventRecord) => {
         const type = (e.attendance_type || 'qr_scanner').toLowerCase();
-        return (type === 'dynamic_qr' || type === 'gps' || type === 'direct_gps') && !!e.geofence_enabled;
+        if (type === 'qr_scanner' || type === 'qr') {
+            return false;
+        }
+        return (type === 'gps' || type === 'direct_gps') && !!e.geofence_enabled;
     };
 
     const activeEvents = events.filter(
         (e) =>
             !e.is_done &&
             e.status !== 'completed' &&
-            (e.scanner_portal_active || isGpsAttendance(e)),
+            ((e.is_scanner_assigned && e.scanner_portal_active) || isGpsAttendance(e)),
     );
 
     const [gpsCheckingIn, setGpsCheckingIn] = useState<number | null>(null);
@@ -2326,19 +2330,19 @@ export default function StudentDashboard({
                                                                         </Button>
                                                                     ))}
 
-                                                                {isOngoing && (
+                                                                {event.is_scanner_assigned && event.scanner_portal_active && !isDone && (
                                                                     <Button
-                                                                        className="h-8.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-4 text-[9px] font-black tracking-widest text-white uppercase shadow-lg shadow-emerald-500/20 transition-all hover:scale-105 active:scale-95"
+                                                                        className="h-8.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 text-[9px] font-black tracking-widest text-white uppercase shadow-lg shadow-blue-500/25 transition-all hover:scale-105 active:scale-95"
                                                                         onClick={() =>
                                                                             router.visit(
-                                                                                studentAttendanceDynamicQrScan(
+                                                                                studentAttendanceScannerPortal(
                                                                                     event.id,
                                                                                 ),
                                                                             )
                                                                         }
                                                                     >
-                                                                        Scan
-                                                                        <QrCode className="ml-1.5 h-3.5 w-3.5" />
+                                                                        Open Scanner
+                                                                        <Camera className="ml-1.5 h-3.5 w-3.5" />
                                                                     </Button>
                                                                 )}
                                                             </>

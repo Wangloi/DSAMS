@@ -1,16 +1,24 @@
 import { AppShell } from '@/components/app-shell';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { studentAttendanceDynamicQrScan, studentDashboard } from '@/routes';
 import { Head, Link } from '@inertiajs/react';
 import { BrowserQRCodeReader } from '@zxing/browser';
 import axios from 'axios';
 import {
     ArrowLeft,
+    Camera,
     CheckCircle2,
     Clock,
+    Compass,
     Loader2,
     MapPin,
     QrCode,
+    RefreshCw,
     ShieldAlert,
+    ShieldCheck,
+    SwitchCamera,
+    Volume2,
     XCircle,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -69,15 +77,6 @@ const getGeo = (): Promise<GeoResult> =>
         );
     });
 
-// ── CSRF helper ───────────────────────────────────────────────────────────────
-
-const csrfToken = () =>
-    (
-        document.querySelector(
-            'meta[name="csrf-token"]',
-        ) as HTMLMetaElement | null
-    )?.content ?? '';
-
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function StudentDynamicQrScanPage({ event }: Props) {
@@ -93,6 +92,7 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
     const [geoStatus, setGeoStatus] = useState<'pending' | 'ok' | 'missing'>(
         'pending',
     );
+    const [cameraFacing, setCameraFacing] = useState<'environment' | 'user'>('environment');
     const [successData, setSuccessData] = useState<{
         name: string;
         status: string;
@@ -131,7 +131,6 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
     // ── Submit token to server ─────────────────────────────────────────────────
     const submitToken = useCallback(
         async (rawQrPayload: string) => {
-            // Debounce: ignore the same token within 2 s
             const now = Date.now();
             if (
                 lastTokenRef.current?.value === rawQrPayload &&
@@ -140,7 +139,6 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
                 return;
             lastTokenRef.current = { value: rawQrPayload, at: now };
 
-            // Parse JSON payload from QR
             let token: string | null = null;
             let qrEventId: number | null = null;
             try {
@@ -153,15 +151,14 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
                 // not JSON — ignore
             }
 
-            if (!token) return; // not a DSAMS QR
+            if (!token) return;
 
-            // Validate event match early on client side
             if (qrEventId !== null && qrEventId !== Number(event.id)) {
                 void Swal.fire({
                     icon: 'error',
-                    title: 'Wrong Event',
-                    text: 'This QR code belongs to a different event.',
-                    confirmButtonColor: '#6366f1',
+                    title: 'Wrong Event Code',
+                    text: 'This QR code belongs to a different event session.',
+                    confirmButtonColor: '#0b2d66',
                 });
                 return;
             }
@@ -169,7 +166,6 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
             stopCamera();
             setPhase('submitting');
 
-            // Refresh GPS right before submitting if we already have a result
             const freshGeo = (await getGeo()) ?? geo;
 
             try {
@@ -209,7 +205,6 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
                 const data = e?.response?.data ?? {};
 
                 if (status === 409) {
-                    // Already checked in — show as success (idempotent)
                     playScanSuccessSound();
                     setSuccessData({
                         name: 'You',
@@ -235,7 +230,7 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
     const startCamera = useCallback(async () => {
         if (!event.scannerPortalActive) {
             setErrorMsg(
-                'The attendance session is not active yet. Please wait for the admin to start it.',
+                'The attendance session is not active yet. Please wait for the event coordinator to activate it.',
             );
             setPhase('error');
             return;
@@ -247,7 +242,7 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: { ideal: 'environment' } },
+                video: { facingMode: { ideal: cameraFacing } },
                 audio: false,
             });
             streamRef.current = stream;
@@ -278,7 +273,7 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
                     } catch {
                         // ignore
                     }
-                }, 250);
+                }, 220);
             } else {
                 const reader = new BrowserQRCodeReader();
                 const controls = await reader.decodeFromVideoDevice(
@@ -303,16 +298,21 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
             stopCamera();
             setErrorMsg(
                 e?.message ??
-                    'Unable to access camera. Please allow camera permissions.',
+                    'Unable to access camera. Please allow camera permissions in your browser.',
             );
             setPhase('error');
         }
     }, [
         event.scannerPortalActive,
+        cameraFacing,
         barcodeApiSupported,
         submitToken,
         stopCamera,
     ]);
+
+    const toggleCameraFacing = () => {
+        setCameraFacing((prev) => (prev === 'environment' ? 'user' : 'environment'));
+    };
 
     const reset = () => {
         stopCamera();
@@ -322,78 +322,94 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
         lastTokenRef.current = null;
     };
 
-    // ── Derived UI state ──────────────────────────────────────────────────────
     const isScanning = phase === 'scanning';
     const isSubmitting = phase === 'submitting';
-    const isIdle = phase === 'idle' || phase === 'camera-starting';
 
     return (
         <AppShell>
             <Head title={`Scan Attendance — ${event.name}`} />
 
-            {/* Background */}
-            <div className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950">
-                <div className="pointer-events-none fixed inset-0 overflow-hidden">
-                    <div className="absolute top-[-20%] left-[-10%] h-[60%] w-[60%] rounded-full bg-indigo-600/10 blur-[150px]" />
-                    <div className="absolute right-[-10%] bottom-[-20%] h-[60%] w-[60%] rounded-full bg-blue-600/10 blur-[150px]" />
+            <div className="relative min-h-screen overflow-x-hidden bg-slate-950 font-sans text-slate-100 selection:bg-blue-600 selection:text-white pb-16">
+                {/* Background ambient lighting */}
+                <div className="pointer-events-none fixed inset-0 z-0">
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b12_1px,transparent_1px),linear-gradient(to_bottom,#1e293b12_1px,transparent_1px)] bg-[size:32px_32px]" />
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[450px] w-[450px] rounded-full bg-blue-600/10 blur-[130px]" />
+                    <div className="absolute bottom-0 right-10 h-[350px] w-[350px] rounded-full bg-indigo-600/10 blur-[130px]" />
                 </div>
 
-                <div className="relative z-10 mx-auto flex w-full max-w-lg flex-col gap-6 px-4 py-8">
-                    {/* ── Header ─────────────────────────────────────────────── */}
-                    <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-5 text-white shadow-xl shadow-indigo-900/40">
-                        <Link
-                            href={studentDashboard()}
-                            className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium text-white/80 transition hover:bg-white/20 hover:text-white"
-                        >
-                            <ArrowLeft className="h-3.5 w-3.5" />
-                            Dashboard
-                        </Link>
-                        <h1 className="mt-3 text-lg font-bold">
-                            Scan Attendance QR
+                <div className="relative z-10 mx-auto flex w-full max-w-xl flex-col gap-6 px-4 py-8 sm:px-6">
+                    {/* Header Banner */}
+                    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#07193b] via-[#0d285b] to-[#153f8a] p-6 shadow-2xl backdrop-blur-2xl">
+                        <div className="flex items-center justify-between gap-3 mb-4">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                className="h-8 gap-2 rounded-xl border border-white/15 bg-white/10 px-3 text-xs font-bold text-white backdrop-blur-md transition-all hover:bg-white/20 hover:text-white"
+                                asChild
+                            >
+                                <Link href={studentDashboard()}>
+                                    <ArrowLeft className="h-3.5 w-3.5" />
+                                    Dashboard
+                                </Link>
+                            </Button>
+
+                            <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/15 px-3 py-1 text-[10px] font-black tracking-wider text-blue-200 uppercase backdrop-blur-md">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                                </span>
+                                <span>Self Check-In</span>
+                            </div>
+                        </div>
+
+                        <h1 className="text-xl font-black text-white sm:text-2xl drop-shadow-md">
+                            Scan Event Attendance QR
                         </h1>
-                        <p className="mt-1 text-sm text-indigo-100/80">
+                        <p className="mt-1 text-xs font-semibold text-blue-200/90">
                             {event.name}
                         </p>
                         {event.date && (
-                            <p className="mt-0.5 text-xs text-indigo-100/60">
-                                {event.date}
+                            <p className="mt-0.5 text-[11px] font-medium text-blue-300/70">
+                                {event.date} {event.location ? `• ${event.location}` : ''}
                             </p>
                         )}
                     </div>
 
-                    {/* ── GPS status bar ─────────────────────────────────────── */}
+                    {/* GPS Status Indicator */}
                     <div
-                        className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm ${
+                        className={`flex items-center gap-3 rounded-2xl p-3.5 text-xs font-bold backdrop-blur-xl border ${
                             geoStatus === 'ok'
-                                ? 'bg-emerald-500/10 text-emerald-300 ring-1 ring-emerald-500/20'
+                                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
                                 : geoStatus === 'missing'
-                                  ? 'bg-amber-500/10 text-amber-300 ring-1 ring-amber-500/20'
-                                  : 'bg-white/5 text-white/40 ring-1 ring-white/10'
+                                  ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+                                  : 'border-white/10 bg-slate-900/60 text-slate-400'
                         }`}
                     >
-                        <MapPin className="h-4 w-4 shrink-0" />
-                        {geoStatus === 'ok'
-                            ? `GPS acquired (±${Math.round(geo!.accuracy_m)}m)`
-                            : geoStatus === 'missing'
-                              ? event.geofenceEnabled
-                                  ? 'GPS unavailable — attendance requires location for this event'
-                                  : 'GPS unavailable (not required for this event)'
-                              : 'Acquiring GPS…'}
+                        <Compass className="h-4 w-4 shrink-0 text-cyan-400" />
+                        <span>
+                            {geoStatus === 'ok'
+                                ? `GPS Verified (Accuracy: ±${Math.round(geo!.accuracy_m)}m)`
+                                : geoStatus === 'missing'
+                                  ? event.geofenceEnabled
+                                      ? 'GPS Location unavailable — attendance requires active location permissions.'
+                                      : 'GPS Location unavailable (not enforced for this event).'
+                                  : 'Acquiring GPS coordinates…'}
+                        </span>
                     </div>
 
-                    {/* ── Session status ─────────────────────────────────────── */}
+                    {/* Scanner Portal Deactivated Warning */}
                     {!event.scannerPortalActive && (
-                        <div className="flex items-center gap-3 rounded-xl bg-rose-500/10 px-4 py-3 text-sm text-rose-300 ring-1 ring-rose-500/20">
-                            <ShieldAlert className="h-4 w-4 shrink-0" />
-                            The attendance session is not active yet. Wait for
-                            your admin to start it.
+                        <div className="flex items-center gap-3 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-xs font-bold text-rose-300 backdrop-blur-xl">
+                            <ShieldAlert className="h-4 w-4 shrink-0 text-rose-400" />
+                            <span>
+                                The attendance scanning session is currently paused. Please wait for the event coordinator.
+                            </span>
                         </div>
                     )}
 
-                    {/* ── Camera / result panel ──────────────────────────────── */}
-                    <div className="overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/10">
-                        {/* Camera viewport */}
-                        <div className="relative aspect-square w-full bg-slate-900">
+                    {/* Camera Scanner Viewport Card */}
+                    <div className="overflow-hidden rounded-3xl border border-white/10 bg-slate-900/80 shadow-2xl backdrop-blur-xl">
+                        <div className="relative aspect-[4/3] w-full overflow-hidden bg-black">
                             <video
                                 ref={videoRef}
                                 className="absolute inset-0 h-full w-full object-cover"
@@ -401,187 +417,144 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
                                 muted
                             />
 
-                            {/* Overlay when not actively scanning */}
+                            {/* Camera HUD Reticle */}
+                            {isScanning && (
+                                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                                    <div className="relative h-56 w-56 sm:h-64 sm:w-64">
+                                        <div className="absolute top-0 left-0 h-8 w-8 rounded-tl-2xl border-t-4 border-l-4 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
+                                        <div className="absolute top-0 right-0 h-8 w-8 rounded-tr-2xl border-t-4 border-r-4 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
+                                        <div className="absolute bottom-0 left-0 h-8 w-8 rounded-bl-2xl border-b-4 border-l-4 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
+                                        <div className="absolute right-0 bottom-0 h-8 w-8 rounded-br-2xl border-r-4 border-b-4 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
+                                        <div className="absolute top-0 left-0 h-1 w-full animate-scan-line bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_15px_rgba(34,211,238,1)]" />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Overlays for different phases */}
                             {!isScanning && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-slate-950/80">
+                                <div className="absolute inset-0 flex items-center justify-center bg-slate-950/85 p-6 backdrop-blur-md">
                                     {phase === 'camera-starting' ? (
                                         <div className="flex flex-col items-center gap-3 text-white">
-                                            <Loader2 className="h-12 w-12 animate-spin text-indigo-400" />
-                                            <span className="text-sm font-medium">
-                                                Starting camera…
+                                            <Loader2 className="h-10 w-10 animate-spin text-blue-400" />
+                                            <span className="text-xs font-bold tracking-wider uppercase text-slate-300">
+                                                Starting Camera…
                                             </span>
                                         </div>
                                     ) : phase === 'submitting' ? (
                                         <div className="flex flex-col items-center gap-3 text-white">
-                                            <Loader2 className="h-12 w-12 animate-spin text-indigo-400" />
-                                            <span className="text-sm font-medium">
-                                                Recording attendance…
+                                            <Loader2 className="h-10 w-10 animate-spin text-emerald-400" />
+                                            <span className="text-xs font-bold tracking-wider uppercase text-slate-300">
+                                                Verifying Attendance…
                                             </span>
                                         </div>
                                     ) : phase === 'success' ? (
-                                        <div className="flex flex-col items-center gap-4 px-6 text-center">
-                                            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/20 ring-4 ring-emerald-500/30">
-                                                <CheckCircle2 className="h-10 w-10 text-emerald-400" />
+                                        <div className="flex flex-col items-center gap-4 text-center animate-in zoom-in-95">
+                                            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-400 ring-2 ring-emerald-400/40 shadow-lg shadow-emerald-500/20">
+                                                <CheckCircle2 className="h-8 w-8" />
                                             </div>
                                             <div>
-                                                <div className="text-lg font-bold text-emerald-300">
-                                                    {successData?.status ===
-                                                    'already-checked-in'
+                                                <h3 className="text-base font-black text-white uppercase tracking-wider">
+                                                    {successData?.status === 'already-checked-in'
                                                         ? 'Already Checked In'
                                                         : 'Attendance Recorded!'}
-                                                </div>
-                                                <div className="mt-1 text-sm text-white/60">
-                                                    {successData?.name}
-                                                    {successData?.status ===
-                                                        'late' && (
-                                                        <span className="ml-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-xs text-amber-300">
-                                                            Late
-                                                        </span>
-                                                    )}
-                                                </div>
+                                                </h3>
+                                                <p className="mt-1 text-xs font-semibold text-emerald-300">
+                                                    {successData?.name} {successData?.status === 'late' && '(Late Arrival)'}
+                                                </p>
                                             </div>
                                         </div>
                                     ) : phase === 'error' ? (
-                                        <div className="flex flex-col items-center gap-4 px-6 text-center">
-                                            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-rose-500/20 ring-4 ring-rose-500/30">
-                                                <XCircle className="h-10 w-10 text-rose-400" />
+                                        <div className="flex flex-col items-center gap-4 text-center animate-in zoom-in-95">
+                                            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-500/20 text-rose-400 ring-2 ring-rose-400/40 shadow-lg shadow-rose-500/20">
+                                                <XCircle className="h-8 w-8" />
                                             </div>
                                             <div>
-                                                <div className="text-base font-bold text-rose-300">
-                                                    Scan Failed
-                                                </div>
-                                                <div className="mt-1 text-sm text-white/60">
+                                                <h3 className="text-base font-black text-rose-300 uppercase tracking-wider">
+                                                    Scan Unsuccessful
+                                                </h3>
+                                                <p className="mt-1 text-xs font-medium text-slate-300 max-w-xs">
                                                     {errorMsg}
-                                                </div>
+                                                </p>
                                             </div>
                                         </div>
                                     ) : (
-                                        /* Idle state */
-                                        <div className="flex flex-col items-center gap-4 text-center">
-                                            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-white/10">
-                                                <QrCode className="h-10 w-10 text-white/60" />
+                                        <div className="flex flex-col items-center gap-3 text-center">
+                                            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-500/15 text-blue-400 ring-1 ring-blue-500/30">
+                                                <QrCode className="h-8 w-8" />
                                             </div>
-                                            <p className="text-sm text-white/50">
-                                                Tap{' '}
-                                                <strong className="text-white/80">
-                                                    Start Scanning
-                                                </strong>{' '}
-                                                then point your camera at the QR
-                                                code on the admin's screen.
+                                            <p className="text-xs font-semibold text-slate-300 max-w-xs leading-relaxed">
+                                                Tap <strong className="text-white">Start Camera Scan</strong> and align the dynamic QR display into view.
                                             </p>
                                         </div>
                                     )}
                                 </div>
                             )}
-
-                            {/* Scanning overlay — corner guides */}
-                            {isScanning && (
-                                <>
-                                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                                        <div className="relative h-48 w-48">
-                                            <div className="absolute top-0 left-0 h-8 w-8 rounded-tl-xl border-t-4 border-l-4 border-indigo-400" />
-                                            <div className="absolute top-0 right-0 h-8 w-8 rounded-tr-xl border-t-4 border-r-4 border-indigo-400" />
-                                            <div className="absolute bottom-0 left-0 h-8 w-8 rounded-bl-xl border-b-4 border-l-4 border-indigo-400" />
-                                            <div className="absolute right-0 bottom-0 h-8 w-8 rounded-br-xl border-r-4 border-b-4 border-indigo-400" />
-                                            {/* Scan line */}
-                                            <div className="absolute top-0 left-0 h-0.5 w-full animate-[scan_2s_ease-in-out_infinite] bg-indigo-400/80" />
-                                        </div>
-                                    </div>
-                                    <div className="absolute right-0 bottom-3 left-0 text-center text-xs text-white/50">
-                                        Scanning…
-                                    </div>
-                                </>
-                            )}
                         </div>
 
-                        {/* Controls */}
-                        <div className="flex gap-3 px-4 py-4">
+                        {/* Scanner Actions Bar */}
+                        <div className="flex flex-wrap items-center justify-between gap-3 p-5 border-t border-white/10 bg-slate-950/60">
                             {phase === 'success' || phase === 'error' ? (
-                                <button
+                                <Button
+                                    type="button"
                                     onClick={reset}
-                                    className="flex-1 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500"
+                                    className="w-full h-11 rounded-xl bg-blue-600 font-bold text-white hover:bg-blue-500 active:scale-95"
                                 >
-                                    {phase === 'success' ? 'Done' : 'Try Again'}
-                                </button>
+                                    {phase === 'success' ? 'Scan Another' : 'Try Again'}
+                                </Button>
                             ) : (
                                 <>
-                                    <button
+                                    <Button
+                                        type="button"
                                         onClick={() => void startCamera()}
-                                        disabled={
-                                            isScanning ||
-                                            isSubmitting ||
-                                            phase === 'camera-starting' ||
-                                            !event.scannerPortalActive
-                                        }
-                                        className="flex-1 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
+                                        disabled={isScanning || isSubmitting || phase === 'camera-starting' || !event.scannerPortalActive}
+                                        className="flex-1 h-11 rounded-xl bg-blue-600 font-bold text-white hover:bg-blue-500 active:scale-95 shadow-lg shadow-blue-600/20"
                                     >
-                                        {phase === 'camera-starting'
-                                            ? 'Starting…'
-                                            : isScanning
-                                              ? 'Scanning…'
-                                              : isSubmitting
-                                                ? 'Recording…'
-                                                : 'Start Scanning'}
-                                    </button>
+                                        <Camera className="h-4 w-4 mr-2" />
+                                        {phase === 'camera-starting' ? 'Starting…' : isScanning ? 'Scanning Active…' : 'Start Camera Scan'}
+                                    </Button>
+
                                     {isScanning && (
-                                        <button
-                                            onClick={() => {
-                                                stopCamera();
-                                                setPhase('idle');
-                                            }}
-                                            className="rounded-xl bg-white/10 px-4 py-3 text-sm font-semibold text-white/70 transition hover:bg-white/20"
-                                        >
-                                            Stop
-                                        </button>
+                                        <>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={toggleCameraFacing}
+                                                className="h-11 rounded-xl border-white/10 bg-white/5 text-xs text-slate-300 hover:bg-white/10 hover:text-white"
+                                            >
+                                                <SwitchCamera className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() => {
+                                                    stopCamera();
+                                                    setPhase('idle');
+                                                }}
+                                                className="h-11 rounded-xl border-white/10 bg-white/5 text-xs font-bold text-slate-300 hover:bg-white/10 hover:text-white"
+                                            >
+                                                Stop
+                                            </Button>
+                                        </>
                                     )}
                                 </>
                             )}
                         </div>
                     </div>
 
-                    {/* ── Instructions ───────────────────────────────────────── */}
-                    <div className="rounded-2xl bg-white/5 px-5 py-4 ring-1 ring-white/10">
-                        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-white/70">
-                            <Clock className="h-4 w-4" />
-                            How it works
+                    {/* How It Works Card */}
+                    <div className="rounded-3xl border border-white/10 bg-slate-900/60 p-5 shadow-xl backdrop-blur-xl">
+                        <div className="flex items-center gap-2 pb-3 border-b border-white/10 text-xs font-black text-white uppercase tracking-wider">
+                            <Clock className="h-4 w-4 text-blue-400" />
+                            <span>Quick Instructions</span>
                         </div>
-                        <ol className="space-y-2 text-xs text-white/40">
-                            <li>
-                                1. The admin displays a QR code on their screen
-                                or projector.
-                            </li>
-                            <li>
-                                2. Tap{' '}
-                                <strong className="text-white/60">
-                                    Start Scanning
-                                </strong>{' '}
-                                and point your camera at it.
-                            </li>
-                            <li>
-                                3. The system verifies your identity, location,
-                                and the token.
-                            </li>
-                            <li>
-                                4. Your attendance is saved automatically — no
-                                manual entry needed.
-                            </li>
+                        <ol className="mt-3 space-y-2 text-xs font-medium text-slate-400">
+                            <li>1. Look at the rotating QR display presented by the event coordinator.</li>
+                            <li>2. Tap <strong className="text-white">Start Camera Scan</strong> and point your device camera at the code.</li>
+                            <li>3. Your location and token will be authenticated automatically with instant feedback.</li>
                         </ol>
-                        <p className="mt-3 text-xs text-white/30">
-                            The QR code rotates every 30 seconds — always scan
-                            the latest one.
-                        </p>
                     </div>
                 </div>
             </div>
-
-            {/* Scan-line animation */}
-            <style>{`
-                @keyframes scan {
-                    0%   { top: 0%; }
-                    50%  { top: calc(100% - 2px); }
-                    100% { top: 0%; }
-                }
-            `}</style>
         </AppShell>
     );
 }
