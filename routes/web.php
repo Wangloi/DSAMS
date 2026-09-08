@@ -37,6 +37,9 @@ use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use App\Models\Student;
+use App\Models\Event;
+use App\Models\Evaluation;
+use App\Models\ActivityLog;
 
 // Custom password reset routes (handle students, admin_users, and program_heads)
 use App\Http\Controllers\ForgotPasswordController;
@@ -66,8 +69,8 @@ Route::get('/features', function () {
 
 Route::get('/about', function () {
     $stats = [
-        'totalStudents' => \App\Models\Student::count(),
-        'totalEvents' => \App\Models\Event::count(),
+        'totalStudents' => Student::count(),
+        'totalEvents' => Event::count(),
     ];
     return Inertia::render('landing/about', [
         'stats' => $stats,
@@ -135,7 +138,7 @@ Route::post('/student/attendance/{event}/scan', [StudentAttendanceController::cl
     ->name('student.attendance.scan');
 
 // Dynamic QR self check-in (student scans the admin's rotating QR)
-Route::get('/student/attendance/{event}/dynamic-qr-scan', function (\App\Models\Event $event) {
+Route::get('/student/attendance/{event}/dynamic-qr-scan', function (Event $event) {
     $student = auth()->guard('student')->user();
     if (! $student) { abort(403); }
     return Inertia::render('student/attendance/dynamic-qr-scan', [
@@ -546,7 +549,7 @@ Route::get('/admin/attendance/{event}/print', [AdminAttendanceController::class,
 // Route::put('/admin/lost-found/{foundItem}/archive', [AdminLostFoundController::class, 'archive'])->middleware('auth:admin')->name('admin.lost-found.archive');
 // Route::put('/admin/lost-found/{foundItem}/unarchive', [AdminLostFoundController::class, 'unarchive'])->middleware('auth:admin')->name('admin.lost-found.unarchive');
 
-Route::get('/evaluation/{evaluation}', function (\App\Models\Evaluation $evaluation) {
+Route::get('/evaluation/{evaluation}', function (Evaluation $evaluation) {
     return redirect()->route('student.evaluation.show', ['evaluation' => $evaluation->id]);
 })->name('evaluation.show');
 
@@ -573,7 +576,7 @@ Route::get('/admin/qr-scanner', function () {
     $eventPayload = null;
 
     if ($eventId) {
-        $event = \App\Models\Event::query()->find($eventId);
+        $event = Event::query()->find($eventId);
         if ($event) {
             $scannerPortalActive = true;
             if (Schema::hasColumn('events', 'scanner_portal_active')) {
@@ -610,7 +613,7 @@ Route::get('/student/certificates/{certificate}/download', [CertificateControlle
 Route::get('/login', function () {
     $alerts = [];
     if (Schema::hasTable('activity_logs')) {
-        $alerts = \App\Models\ActivityLog::query()
+        $alerts = ActivityLog::query()
             ->where('module', 'Security Monitor')
             ->where('action', 'ALERT')
             ->where('ip_address', request()->ip())

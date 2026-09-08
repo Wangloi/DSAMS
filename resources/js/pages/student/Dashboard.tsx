@@ -1,4 +1,5 @@
 import StudentProfileCompletionModal from '@/components/StudentProfileCompletionModal';
+import { AdmissionSlipRequestModal } from '@/components/AdmissionSlipRequestModal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
 import {
     studentAdmissionSlipStore,
+    studentAttendanceDynamicQrScan,
     studentAttendanceScannerPortal,
     studentCertificates,
     studentEvaluationShow,
@@ -461,23 +463,6 @@ export default function StudentDashboard({
     const [reportIncidentOpen, setReportIncidentOpen] = useState(false);
     const [admissionSlipOpen, setAdmissionSlipOpen] = useState(false);
 
-    const {
-        data: admissionSlipData,
-        setData: setAdmissionSlipData,
-        post: postAdmissionSlip,
-        processing: admissionSlipProcessing,
-        errors: admissionSlipErrors,
-        reset: resetAdmissionSlip,
-    } = useForm({
-        student_name: (authUser as any)?.name ?? '',
-        program_year_level: '',
-        program: (authUser as any)?.course ?? '',
-        year_level: (authUser as any)?.year_level ?? '',
-        case_text: '',
-        reason_text: '',
-        valid_until: new Date().toLocaleDateString('en-CA'),
-    });
-
     const [reportProcessing, setReportProcessing] = useState(false);
     const [reportErrors, setReportErrors] = useState<Record<string, string>>(
         {},
@@ -801,46 +786,6 @@ export default function StudentDashboard({
 
     const evaluationRows: EvaluationRow[] = serverEvaluations || [];
 
-    const onSubmitAdmissionSlip = (e: React.FormEvent) => {
-        e.preventDefault();
-
-        // Combine resolved program name + year_level into program_year_level for submission
-        const programName = resolvedProgram?.name ?? admissionSlipData.program;
-        const combined = [programName, admissionSlipData.year_level]
-            .filter(Boolean)
-            .join(' ');
-
-        router.post(
-            studentAdmissionSlipStore(),
-            {
-                student_name: admissionSlipData.student_name,
-                program_year_level: combined,
-                case_text: admissionSlipData.case_text,
-                reason_text: admissionSlipData.reason_text,
-                valid_until: admissionSlipData.valid_until,
-            },
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    resetAdmissionSlip();
-                    setAdmissionSlipData(
-                        'student_name',
-                        (authUser as any)?.name ?? '',
-                    );
-                    setAdmissionSlipData(
-                        'program',
-                        (authUser as any)?.course ?? '',
-                    );
-                    setAdmissionSlipData(
-                        'year_level',
-                        (authUser as any)?.year_level ?? '',
-                    );
-                    setAdmissionSlipOpen(false);
-                },
-            },
-        );
-    };
-
     return (
         <StudentLayout>
             {/* Profile completion gate — non-dismissible until student fills in personal info */}
@@ -848,66 +793,6 @@ export default function StudentDashboard({
                 isOpen={needsProfileCompletion}
                 onComplete={() => window.location.reload()}
             />
-
-            {/* Pending Evaluations Gate Modal - Disabled by user request */}
-            {false && !needsProfileCompletion && evaluationRows.length > 0 && (
-                <div className="fixed inset-0 z-[90] flex animate-in items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md duration-300 fade-in">
-                    <div className="relative flex w-full max-w-lg animate-in flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-2xl duration-300 zoom-in-95 dark:border-slate-800 dark:bg-slate-900">
-                        {/* Background Decorations */}
-                        <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-rose-500/10 blur-xl" />
-                        <div className="pointer-events-none absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-blue-500/10 blur-xl" />
-
-                        <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-amber-500/10 text-amber-500 ring-1 ring-amber-200/50 dark:bg-amber-500/20 dark:text-amber-400 dark:ring-amber-900/30">
-                            <ClipboardList className="h-8 w-8 animate-bounce" />
-                        </div>
-
-                        <h2 className="mt-5 animate-pulse text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                            Pending Evaluation Required
-                        </h2>
-
-                        <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-                            To ensure high-quality student services and events,
-                            you are required to complete all pending event
-                            evaluations before accessing the system.
-                        </p>
-
-                        <div className="mt-6 max-h-[30vh] space-y-3 overflow-y-auto pr-1">
-                            {evaluationRows.map((evaluation) => (
-                                <div
-                                    key={evaluation.id}
-                                    className="dark:border-slate-850 flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 p-4 text-left transition-all hover:border-blue-500/30 dark:bg-slate-900/30"
-                                >
-                                    <div className="min-w-0 flex-1 pr-3">
-                                        <p className="truncate text-sm font-bold text-slate-800 dark:text-slate-200">
-                                            {evaluation.title}
-                                        </p>
-                                        <p className="mt-0.5 text-xs text-slate-400">
-                                            Event Date:{' '}
-                                            {evaluation.date || 'N/A'}
-                                        </p>
-                                    </div>
-                                    <Button
-                                        onClick={() => {
-                                            router.get(
-                                                studentEvaluationShow(
-                                                    evaluation.id,
-                                                ),
-                                            );
-                                        }}
-                                        className="h-8 shrink-0 rounded-lg bg-blue-600 px-3 text-xs font-bold text-white hover:bg-blue-700"
-                                    >
-                                        Start Evaluation
-                                    </Button>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="mt-6 border-t border-slate-100 pt-4 text-[10px] font-black tracking-widest text-slate-400 uppercase dark:border-slate-800">
-                            OSAMS • Office of Student Affairs
-                        </div>
-                    </div>
-                </div>
-            )}
 
             <Head title="Student Dashboard" />
 
@@ -1520,232 +1405,25 @@ export default function StudentDashboard({
             </Dialog>
 
             {/* ADMISSION SLIP MODAL */}
-            <Dialog
+            <AdmissionSlipRequestModal
                 open={admissionSlipOpen}
-                onOpenChange={(next) => {
-                    if (admissionSlipProcessing) return;
-                    setAdmissionSlipOpen(next);
+                setOpen={setAdmissionSlipOpen}
+                errors={(page.props.errors as Record<string, string>) || {}}
+                mode="student"
+                user={{
+                    student_id:
+                        (authUser as any)?.student_id ??
+                        (authUser as any)?.id ??
+                        '',
+                    name: authUser?.name ?? '',
+                    course:
+                        resolvedProgram?.name ??
+                        (authUser as any)?.course ??
+                        (authUser as any)?.program ??
+                        '',
+                    year_level: (authUser as any)?.year_level ?? '',
                 }}
-            >
-                <DialogContent className="flex max-h-[90vh] w-[96vw] max-w-2xl flex-col overflow-hidden rounded-3xl border-0 bg-white p-0 shadow-2xl dark:bg-slate-900">
-                    <div className="relative bg-gradient-to-br from-[#0b2d66] to-[#1e40af] px-8 py-8 text-white">
-                        <div className="absolute top-0 right-0 h-64 w-64 translate-x-1/2 -translate-y-1/2 rounded-full bg-white/5 blur-3xl" />
-                        <div className="relative flex items-center gap-6">
-                            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/20 bg-white/10 shadow-inner backdrop-blur-xl">
-                                <ClipboardList className="h-8 w-8 text-blue-300" />
-                            </div>
-                            <div>
-                                <DialogTitle className="text-2xl font-black tracking-tight text-white">
-                                    Request Admission Slip
-                                </DialogTitle>
-                                <DialogDescription className="mt-1 text-xs font-medium text-blue-100/70">
-                                    Submit your admission slip request for
-                                    administrative review.
-                                </DialogDescription>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="min-h-0 flex-1 overflow-y-auto p-8">
-                        <form
-                            onSubmit={onSubmitAdmissionSlip}
-                            className="space-y-8"
-                        >
-                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                <div className="space-y-2.5 md:col-span-2">
-                                    <Label
-                                        htmlFor="student_name"
-                                        className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
-                                    >
-                                        Student Name
-                                    </Label>
-                                    <div className="flex h-12 items-center rounded-2xl border border-slate-200 bg-slate-100 px-4 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                                        {admissionSlipData.student_name ||
-                                            'N/A'}
-                                    </div>
-                                    <p className="ml-1 text-[10px] text-slate-400">
-                                        Auto-filled from your account
-                                    </p>
-                                </div>
-
-                                <div className="space-y-2.5">
-                                    <Label
-                                        htmlFor="program"
-                                        className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
-                                    >
-                                        Department / Program
-                                    </Label>
-                                    <div className="flex h-12 items-center rounded-2xl border border-slate-200 bg-slate-100 px-4 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                                        {autoFilledProgram}
-                                    </div>
-                                    {autoFilledDepartment && (
-                                        <p className="ml-1 text-[10px] text-slate-400">
-                                            Department:{' '}
-                                            <span className="font-semibold text-slate-500 dark:text-slate-300">
-                                                {autoFilledDepartment}
-                                            </span>
-                                        </p>
-                                    )}
-                                    {!autoFilledDepartment && (
-                                        <p className="ml-1 text-[10px] text-slate-400">
-                                            Auto-filled from your account
-                                        </p>
-                                    )}
-                                    {admissionSlipErrors.program_year_level && (
-                                        <div className="ml-1 text-[11px] font-bold text-rose-500">
-                                            {
-                                                admissionSlipErrors.program_year_level
-                                            }
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="space-y-2.5">
-                                    <Label
-                                        htmlFor="year_level"
-                                        className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
-                                    >
-                                        Year Level
-                                    </Label>
-                                    <Select
-                                        value={admissionSlipData.year_level}
-                                        onValueChange={(val) =>
-                                            setAdmissionSlipData(
-                                                'year_level',
-                                                val,
-                                            )
-                                        }
-                                    >
-                                        <SelectTrigger
-                                            id="year_level"
-                                            className="h-12 rounded-2xl border-slate-200 bg-slate-50 px-4 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50"
-                                        >
-                                            <SelectValue placeholder="Select year level" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="1st Year">
-                                                1st Year
-                                            </SelectItem>
-                                            <SelectItem value="2nd Year">
-                                                2nd Year
-                                            </SelectItem>
-                                            <SelectItem value="3rd Year">
-                                                3rd Year
-                                            </SelectItem>
-                                            <SelectItem value="4th Year">
-                                                4th Year
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-2.5 md:col-span-2">
-                                    <Label
-                                        htmlFor="case_text"
-                                        className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
-                                    >
-                                        Case / Reason Title
-                                    </Label>
-                                    <Input
-                                        id="case_text"
-                                        value={admissionSlipData.case_text}
-                                        onChange={(e) =>
-                                            setAdmissionSlipData(
-                                                'case_text',
-                                                e.target.value,
-                                            )
-                                        }
-                                        placeholder="Briefly describe the case"
-                                        className="h-12 rounded-2xl border-slate-200 bg-slate-50 px-4 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50"
-                                    />
-                                    {admissionSlipErrors.case_text && (
-                                        <div className="ml-1 text-[11px] font-bold text-rose-500">
-                                            {admissionSlipErrors.case_text}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="space-y-2.5 md:col-span-2">
-                                    <Label
-                                        htmlFor="reason_text"
-                                        className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
-                                    >
-                                        Reason / Details
-                                    </Label>
-                                    <Input
-                                        id="reason_text"
-                                        value={admissionSlipData.reason_text}
-                                        onChange={(e) =>
-                                            setAdmissionSlipData(
-                                                'reason_text',
-                                                e.target.value,
-                                            )
-                                        }
-                                        placeholder="More details about your request"
-                                        className="h-12 rounded-2xl border-slate-200 bg-slate-50 px-4 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50"
-                                    />
-                                    {admissionSlipErrors.reason_text && (
-                                        <div className="ml-1 text-[11px] font-bold text-rose-500">
-                                            {admissionSlipErrors.reason_text}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="space-y-2.5 md:col-span-2">
-                                    <Label
-                                        htmlFor="valid_until"
-                                        className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
-                                    >
-                                        Valid Until
-                                    </Label>
-                                    <div className="flex h-12 items-center rounded-2xl border border-slate-200 bg-slate-100 px-4 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                                        {new Date().toLocaleDateString(
-                                            'en-US',
-                                            {
-                                                month: 'long',
-                                                day: 'numeric',
-                                                year: 'numeric',
-                                            },
-                                        )}
-                                    </div>
-                                    <input
-                                        type="hidden"
-                                        id="valid_until"
-                                        value={admissionSlipData.valid_until}
-                                    />
-                                    {admissionSlipErrors.valid_until && (
-                                        <div className="ml-1 text-[11px] font-bold text-rose-500">
-                                            {admissionSlipErrors.valid_until}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-
-                    <DialogFooter className="gap-3 border-t border-slate-100 bg-slate-50/50 px-8 py-6 dark:border-slate-800 dark:bg-slate-900/50">
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            onClick={() => setAdmissionSlipOpen(false)}
-                            disabled={admissionSlipProcessing}
-                            className="rounded-xl px-6 text-[10px] font-black tracking-widest text-slate-500 uppercase transition-all hover:bg-slate-100"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            type="submit"
-                            onClick={onSubmitAdmissionSlip}
-                            disabled={admissionSlipProcessing}
-                            className="rounded-xl bg-blue-600 px-8 text-[10px] font-black tracking-widest text-white uppercase shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-700 active:scale-95"
-                        >
-                            {admissionSlipProcessing
-                                ? 'Submitting...'
-                                : 'Submit Request'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            />
 
             <div className="mx-auto max-w-7xl px-3 pt-6 pb-8 sm:px-6 lg:px-8">
                 <div className="space-y-6 sm:space-y-8">

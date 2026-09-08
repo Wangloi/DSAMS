@@ -1,4 +1,5 @@
 import { AppShell } from '@/components/app-shell';
+import PendingEvaluationsGateModal from '@/components/PendingEvaluationsGateModal';
 import type { AppLayoutProps } from '@/types';
 import { StudentHeader } from './StudentHeader';
 
@@ -9,6 +10,7 @@ export default function StudentLayout({
     return (
         <AppShell variant="header">
             <StudentHeader />
+            <PendingEvaluationsGateModal />
             <div className="relative min-h-screen overflow-x-hidden bg-slate-50 transition-colors duration-500 dark:bg-[#020617]">
                 {/* Visual Depth Layers - Mesh Gradients */}
                 <div className="pointer-events-none fixed inset-0 overflow-hidden">

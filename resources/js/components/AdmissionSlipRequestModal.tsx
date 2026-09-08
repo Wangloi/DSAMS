@@ -2,31 +2,39 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
+    DialogContent,
     DialogDescription,
     DialogFooter,
-    DialogHeader,
-    DialogOverlay,
-    DialogPortal,
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { CreateSlipFormState } from '@/pages/admin-dashboard/admission-slip/types';
 import { router } from '@inertiajs/react';
-import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { XIcon } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { PlusCircle } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import type { SweetAlertResult } from 'sweetalert2';
 import Swal from 'sweetalert2';
+
+export type CreateSlipFormState = {
+    userId: string;
+    studentName: string;
+    programYear: string;
+    dateIssued: string;
+    caseText: string;
+    reasonText: string;
+    validUntil: string;
+};
 
 type Props = {
     open: boolean;
     setOpen: (open: boolean) => void;
-    errors: Record<string, string>;
-    mode: 'admin' | 'student' | 'dsa';
+    errors?: Record<string, string>;
+    mode?: 'admin' | 'student' | 'dsa';
     onSubmit?: (data: Record<string, any>) => void;
     initialData?: Partial<CreateSlipFormState>;
     user?: {
+        id?: string | number;
+        student_id?: string;
         name?: string;
         course?: string;
         year_level?: string | number;
@@ -36,8 +44,8 @@ type Props = {
 export function AdmissionSlipRequestModal({
     open,
     setOpen,
-    errors,
-    mode,
+    errors = {},
+    mode = 'student',
     onSubmit,
     initialData,
     user = null,
@@ -51,21 +59,25 @@ export function AdmissionSlipRequestModal({
         return d.toISOString().slice(0, 10);
     }, []);
 
-    const emptyForm: CreateSlipFormState = useMemo(
-        () => ({
-            userId: '',
-            studentName: user?.name ?? '',
-            programYear:
-                mode === 'student' && user
-                    ? [user.course, user.year_level].filter(Boolean).join(' ')
-                    : '',
+    const emptyForm: CreateSlipFormState = useMemo(() => {
+        const resolvedUserId =
+            user?.student_id || (user?.id ? String(user.id) : '');
+        const resolvedName = user?.name ?? '';
+        const resolvedProgramYear =
+            user
+                ? [user.course, user.year_level].filter(Boolean).join(' ')
+                : '';
+
+        return {
+            userId: mode === 'student' ? resolvedUserId : '',
+            studentName: mode === 'student' ? resolvedName : '',
+            programYear: mode === 'student' ? resolvedProgramYear : '',
             dateIssued: today,
             caseText: '',
             reasonText: '',
             validUntil: todayPlus7,
-        }),
-        [user?.name, mode, user, today, todayPlus7],
-    );
+        };
+    }, [user, mode, today, todayPlus7]);
 
     const [form, setForm] = useState<CreateSlipFormState>(() => ({
         ...emptyForm,
@@ -74,10 +86,10 @@ export function AdmissionSlipRequestModal({
     const [lookupStatus, setLookupStatus] = useState<
         'idle' | 'loading' | 'found' | 'not_found'
     >('idle');
-    const [suggestions, setSuggestions] = useState<
-        Array<{ id: string; name: string }>
+    const [searchResults, setSearchResults] = useState<
+        { id: string; name: string }[]
     >([]);
-    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [processing, setProcessing] = useState(false);
 
     // Reset to emptyForm when the modal opens
@@ -85,6 +97,8 @@ export function AdmissionSlipRequestModal({
         if (open) {
             setForm({ ...emptyForm, ...stableInitialData });
             setLookupStatus('idle');
+            setSearchResults([]);
+            setIsDropdownOpen(false);
             setProcessing(false);
         }
     }, [open, emptyForm, stableInitialData]);
@@ -96,128 +110,42 @@ export function AdmissionSlipRequestModal({
         return base.toISOString().slice(0, 10);
     };
 
-    const closeModal = () => {
-        setOpen(false);
-    };
-
-    const lastSearchRef = useRef<string>('');
-
-    const handleStudentSearch = (value: string) => {
-        const trimmed = value.trim();
-
-        // Prevent duplicate API calls
-        if (trimmed === lastSearchRef.current) {
+    const handleSearch = async (query: string) => {
+        if (!query.trim()) {
+            setSearchResults([]);
+            setIsDropdownOpen(false);
             return;
         }
-        lastSearchRef.current = trimmed;
 
+        try {
+            const res = await fetch(
+                `/admin/students/search?q=${encodeURIComponent(query)}`,
+                {
+                    headers: { Accept: 'application/json' },
+                },
+            );
+            if (res.ok) {
+                const data = await res.json();
+                setSearchResults(data.students || []);
+                setIsDropdownOpen(true);
+            }
+        } catch {
+            setSearchResults([]);
+        }
+    };
+
+    const lookupStudent = async (studentId: string) => {
+        const trimmed = String(studentId ?? '').trim();
         if (!trimmed) {
             setLookupStatus('idle');
-            setSuggestions([]);
-            setShowSuggestions(false);
             setForm((p) => ({ ...p, studentName: '', programYear: '' }));
             return;
         }
 
         setLookupStatus('loading');
-        setSuggestions([]);
-        setShowSuggestions(false);
-
-        // Debounce the lookup
-        setTimeout(async () => {
-            try {
-                // First try lookup by exact ID
-                const idRes = await fetch(
-                    `/admin/students/lookup?student_id=${encodeURIComponent(trimmed)}`,
-                    {
-                        headers: {
-                            Accept: 'application/json',
-                        },
-                        credentials: 'same-origin',
-                    },
-                );
-
-                if (idRes.ok) {
-                    const data = (await idRes.json()) as {
-                        student_id?: string;
-                        name?: string;
-                    };
-                    setLookupStatus('idle');
-                    setSuggestions([
-                        {
-                            id: trimmed,
-                            name: String(data?.name ?? ''),
-                        },
-                    ]);
-                    setShowSuggestions(true);
-                    return;
-                }
-
-                // If exact ID lookup fails, try search for partial matches
-                const searchRes = await fetch(
-                    `/admin/students/search?q=${encodeURIComponent(trimmed)}`,
-                    {
-                        headers: {
-                            Accept: 'application/json',
-                        },
-                        credentials: 'same-origin',
-                    },
-                );
-
-                if (searchRes.ok) {
-                    const searchData = (await searchRes.json()) as {
-                        students?: Array<{ id: string; name: string }>;
-                    };
-                    const students = searchData.students ?? [];
-
-                    if (students.length === 0) {
-                        setLookupStatus('not_found');
-                        setSuggestions([]);
-                        setShowSuggestions(false);
-                        return;
-                    }
-
-                    const needle = trimmed.toLowerCase();
-
-                    // Show all partial matches (case-insensitive)
-                    const filteredStudents = students.filter(
-                        (student) =>
-                            student.id.toLowerCase().includes(needle) ||
-                            student.name.toLowerCase().includes(needle),
-                    );
-
-                    if (filteredStudents.length > 0) {
-                        setSuggestions(filteredStudents);
-                        setShowSuggestions(true);
-                        setLookupStatus('idle');
-                    } else {
-                        setLookupStatus('not_found');
-                        setSuggestions([]);
-                        setShowSuggestions(false);
-                    }
-                } else {
-                    setLookupStatus('not_found');
-                    setSuggestions([]);
-                    setShowSuggestions(false);
-                }
-            } catch (error) {
-                console.error('Student search error:', error);
-                setLookupStatus('not_found');
-                setSuggestions([]);
-                setShowSuggestions(false);
-            }
-        }, 300);
-    };
-
-    const selectStudent = async (student: { id: string; name: string }) => {
-        setForm((p) => ({ ...p, userId: student.id }));
-        setSuggestions([]);
-        setShowSuggestions(false);
-
-        // Get full student data
         try {
-            const fullLookupRes = await fetch(
-                `/admin/students/lookup?student_id=${encodeURIComponent(student.id)}`,
+            const res = await fetch(
+                `/admin/students/lookup?student_id=${encodeURIComponent(trimmed)}`,
                 {
                     headers: {
                         Accept: 'application/json',
@@ -226,300 +154,393 @@ export function AdmissionSlipRequestModal({
                 },
             );
 
-            if (fullLookupRes.ok) {
-                const fullData = (await fullLookupRes.json()) as {
-                    name?: string;
-                    course?: string;
-                    year_level?: string | number;
-                };
-                const programYear = [fullData.course, fullData.year_level]
-                    .filter(Boolean)
-                    .join(' ');
-                setForm((p) => ({
-                    ...p,
-                    studentName: String(fullData?.name ?? ''),
-                    programYear,
-                }));
-                setLookupStatus('found');
-            } else {
+            if (!res.ok) {
                 setLookupStatus('not_found');
+                setForm((p) => ({ ...p, studentName: '', programYear: '' }));
+                return;
             }
+
+            const data = (await res.json()) as {
+                name?: string;
+                course?: string;
+                year_level?: string | number;
+            };
+            const programYear = [data.course, data.year_level]
+                .filter(Boolean)
+                .join(' ');
+            setForm((p) => ({
+                ...p,
+                studentName: String(data?.name ?? ''),
+                programYear,
+            }));
+            setLookupStatus('found');
         } catch {
             setLookupStatus('not_found');
+            setForm((p) => ({ ...p, studentName: '', programYear: '' }));
         }
     };
 
-    const submitForm = () => {
-        if (onSubmit) {
-            onSubmit({
-                userId: form.userId,
-                student_name: form.studentName,
-                program_year_level: form.programYear,
-                date_issued: form.dateIssued,
-                case_text: form.caseText,
-                reason_text: form.reasonText,
-                valid_until: form.validUntil,
+    const closeModal = () => {
+        setOpen(false);
+        setForm(emptyForm);
+    };
+
+    const submitSlip = () => {
+        // Client-side validation
+        const valErrors: string[] = [];
+        if (!form.studentName.trim()) valErrors.push('Student name is required');
+        if (!form.programYear.trim()) valErrors.push('Program year is required');
+        if (!form.dateIssued.trim()) valErrors.push('Date issued is required');
+        if (!form.caseText.trim()) valErrors.push('Case text is required');
+        if (!form.reasonText.trim()) valErrors.push('Reason text is required');
+        if (!form.validUntil.trim())
+            valErrors.push('Valid until date is required');
+
+        if (valErrors.length) {
+            Swal.fire({
+                title: 'Validation error',
+                html: valErrors.join('<br/>'),
+                icon: 'error',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#3085d6',
             });
             return;
         }
 
-        // Default admin submission
-        setProcessing(true);
+        if (onSubmit) {
+            onSubmit({
+                user_id: form.userId,
+                student_id: form.userId,
+                student_name: form.studentName.trim(),
+                program_year_level: form.programYear.trim(),
+                date_issued: form.dateIssued.trim(),
+                case_text: form.caseText.trim(),
+                reason_text: form.reasonText.trim(),
+                valid_until: form.validUntil.trim(),
+            });
+            return;
+        }
+
+        // Confirmation & submission
         setOpen(false);
         Swal.fire({
-            title: 'Confirm Create Slip',
-            text: 'Are you sure you want to create this admission slip?',
+            title:
+                mode === 'student'
+                    ? 'Confirm Request Slip'
+                    : 'Confirm Create Slip',
+            text:
+                mode === 'student'
+                    ? 'Are you sure you want to submit this admission slip request?'
+                    : 'Are you sure you want to create this admission slip?',
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, create',
+            confirmButtonText:
+                mode === 'student' ? 'Yes, submit' : 'Yes, create',
             cancelButtonText: 'Cancel',
         }).then((result: SweetAlertResult) => {
             if (result.isConfirmed) {
+                setProcessing(true);
                 const route =
-                    mode === 'dsa'
-                        ? '/dsa/admission-slip'
-                        : '/admin/admission-slip';
+                    mode === 'student'
+                        ? '/student/admission-slip'
+                        : mode === 'dsa'
+                          ? '/dsa/admission-slip'
+                          : '/admin/admission-slip';
+
                 router.post(
                     route,
                     {
-                        student_name: form.studentName,
-                        program_year_level: form.programYear,
-                        date_issued: form.dateIssued,
-                        case_text: form.caseText,
-                        reason_text: form.reasonText,
-                        valid_until: form.validUntil,
+                        student_id: form.userId,
+                        student_name: form.studentName.trim(),
+                        program_year_level: form.programYear.trim(),
+                        date_issued: form.dateIssued.trim(),
+                        case_text: form.caseText.trim(),
+                        reason_text: form.reasonText.trim(),
+                        valid_until: form.validUntil.trim(),
                     },
                     {
                         preserveScroll: true,
                         onSuccess: () => {
                             setOpen(false);
+                            setForm(emptyForm);
                         },
-                        onFinish: () => setProcessing(false),
+                        onError: () => {
+                            setOpen(true);
+                        },
+                        onFinish: () => {
+                            setProcessing(false);
+                        },
                     },
                 );
             } else {
-                setProcessing(false);
                 setOpen(true);
             }
         });
     };
 
+    const isStudent = mode === 'student';
+
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogPortal>
-                <DialogOverlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
-                <DialogPrimitive.Content asChild>
-                    <div className="fixed inset-0 z-50 flex items-center justify-center gap-4 overflow-hidden px-4">
-                        <div
-                            className={
-                                'relative flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white p-0 shadow-2xl duration-200 dark:border-slate-700 dark:bg-slate-800 ' +
-                                (mode === 'admin' || mode === 'dsa'
-                                    ? 'max-h-[90vh] w-full max-w-2xl'
-                                    : 'max-h-[90vh] w-[96vw] max-w-2xl')
-                            }
-                        >
-                            <div className="shrink-0 bg-gradient-to-r from-[#0b2d66] to-[#1e40af] px-6 py-6 text-white">
-                                <DialogHeader className="space-y-1">
-                                    <DialogTitle className="text-xl font-bold text-white">
-                                        {mode === 'dsa'
-                                            ? 'Create New Admission Slip'
-                                            : mode === 'admin'
-                                              ? 'Create New Admission Slip'
-                                              : 'Request Admission Slip'}
-                                    </DialogTitle>
-                                    <DialogDescription className="text-sm text-white/80">
-                                        {mode === 'dsa'
-                                            ? 'Fill out the details to create a new admission slip for a student.'
-                                            : mode === 'admin'
-                                              ? 'Fill out the details to create a new admission slip for a student.'
-                                              : 'Fill out the details to request your admission slip.'}
-                                    </DialogDescription>
-                                </DialogHeader>
-                            </div>
+            <DialogContent className="flex max-h-[90vh] w-[96vw] max-w-2xl flex-col overflow-hidden rounded-3xl border-0 bg-white p-0 shadow-2xl dark:bg-slate-900">
+                <div className="relative bg-gradient-to-br from-[#0b2d66] to-[#1e40af] px-8 py-8 text-white">
+                    <div className="absolute top-0 right-0 h-64 w-64 translate-x-1/2 -translate-y-1/2 rounded-full bg-white/5 blur-3xl" />
+                    <div className="relative flex items-center gap-6">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/20 bg-white/10 shadow-inner backdrop-blur-xl">
+                            <PlusCircle className="h-8 w-8 text-blue-300" />
+                        </div>
+                        <div>
+                            <DialogTitle className="text-2xl font-black tracking-tight text-white">
+                                {isStudent
+                                    ? 'Request Admission Slip'
+                                    : mode === 'dsa'
+                                      ? 'Create Walk-in Slip'
+                                      : 'Create Walk-in Slip'}
+                            </DialogTitle>
+                            <DialogDescription className="mt-1 text-xs font-medium text-blue-100/70">
+                                {isStudent
+                                    ? 'Fill out details below to submit your admission slip request.'
+                                    : 'Fill out details below to generate a new walk-in admission slip.'}
+                            </DialogDescription>
+                        </div>
+                    </div>
+                </div>
 
-                            <div className="flex-1 space-y-5 overflow-x-hidden overflow-y-auto px-6 py-6">
-                                {(mode === 'admin' || mode === 'dsa') && (
-                                    <div className="space-y-2">
-                                        <Label
-                                            htmlFor="studentSearch"
-                                            className="text-sm font-semibold text-slate-700 dark:text-slate-300"
-                                        >
-                                            Search Student *
-                                        </Label>
-                                        <div className="relative">
-                                            <Input
-                                                id="studentSearch"
-                                                value={form.userId}
-                                                onChange={(e) => {
-                                                    const value =
-                                                        e.target.value;
-                                                    setForm((p) => ({
-                                                        ...p,
-                                                        userId: value,
-                                                    }));
-                                                    handleStudentSearch(value);
-                                                }}
-                                                placeholder="Enter student ID or name to search"
-                                                className="h-11 w-full border-slate-200 bg-slate-50 text-slate-900 focus:ring-[#1e40af] dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-                                            />
-                                            {lookupStatus === 'loading' && (
-                                                <div className="absolute top-1/2 right-3 -translate-y-1/2">
-                                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600 dark:border-slate-600" />
-                                                </div>
-                                            )}
-                                        </div>
-                                        {lookupStatus === 'found' && (
-                                            <p className="mt-1 flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
-                                                Student identified successfully
-                                            </p>
-                                        )}
-                                        {lookupStatus === 'not_found' && (
-                                            <p className="mt-1 flex items-center gap-1 text-[11px] font-medium text-rose-600 dark:text-rose-400">
-                                                <span className="h-1.5 w-1.5 rounded-full bg-rose-600" />
-                                                No matches found for this ID
-                                            </p>
-                                        )}
-                                    </div>
-                                )}
-
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <Label
-                                            htmlFor="studentName"
-                                            className="text-sm font-semibold text-slate-700 dark:text-slate-300"
-                                        >
-                                            Student Name
-                                        </Label>
-                                        <Input
-                                            id="studentName"
-                                            value={form.studentName}
-                                            onChange={(e) =>
-                                                setForm((p) => ({
-                                                    ...p,
-                                                    studentName: e.target.value,
-                                                }))
-                                            }
-                                            className="h-10 border-slate-200 bg-slate-50 text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-                                            readOnly={
-                                                mode === 'student' ||
-                                                mode === 'admin'
-                                            }
-                                            placeholder="Student name will appear here"
-                                        />
-                                        <InputError
-                                            message={errors.student_name}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label
-                                            htmlFor="programYear"
-                                            className="text-sm font-semibold text-slate-700 dark:text-slate-300"
-                                        >
-                                            Program & Year
-                                        </Label>
-                                        <Input
-                                            id="programYear"
-                                            value={form.programYear}
-                                            onChange={(e) =>
-                                                setForm((p) => ({
-                                                    ...p,
-                                                    programYear: e.target.value,
-                                                }))
-                                            }
-                                            className="h-10 border-slate-200 bg-slate-50 text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-                                            readOnly={
-                                                mode === 'student' ||
-                                                mode === 'admin'
-                                            }
-                                            placeholder="Course info will appear here"
-                                        />
-                                        <InputError
-                                            message={errors.program_year_level}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <Label
-                                            htmlFor="dateIssued"
-                                            className="text-sm font-semibold text-slate-700 dark:text-slate-300"
-                                        >
-                                            Date Issued
-                                        </Label>
-                                        <Input
-                                            id="dateIssued"
-                                            type="date"
-                                            value={form.dateIssued}
-                                            onChange={(e) =>
-                                                setForm((p) => ({
-                                                    ...p,
-                                                    dateIssued: e.target.value,
-                                                }))
-                                            }
-                                            className="h-10 border-slate-200 bg-white text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-                                            readOnly={mode === 'student'}
-                                        />
-                                        <InputError
-                                            message={errors.date_issued}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label
-                                            htmlFor="validUntil"
-                                            className="text-sm font-semibold text-slate-700 dark:text-slate-300"
-                                        >
-                                            Valid Until
-                                        </Label>
-                                        <Input
-                                            id="validUntil"
-                                            type="date"
-                                            value={form.validUntil}
-                                            onChange={(e) =>
-                                                setForm((p) => ({
-                                                    ...p,
-                                                    validUntil: e.target.value,
-                                                }))
-                                            }
-                                            className="h-10 border-slate-200 bg-white text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-                                        />
-                                        <InputError
-                                            message={errors.valid_until}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label
-                                        htmlFor="caseText"
-                                        className="text-sm font-semibold text-slate-700 dark:text-slate-300"
-                                    >
-                                        Case *
-                                    </Label>
+                <div className="min-h-0 flex-1 space-y-6 overflow-y-auto p-8">
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        <div className="relative grid gap-2.5">
+                            <Label
+                                htmlFor="userId"
+                                className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
+                            >
+                                User ID
+                            </Label>
+                            {isStudent ? (
+                                <Input
+                                    id="userId"
+                                    value={form.userId || 'N/A'}
+                                    readOnly
+                                    className="text-slate-750 h-11 cursor-not-allowed rounded-xl border-slate-200 bg-slate-100 px-4 dark:border-slate-800 dark:bg-slate-800/80"
+                                />
+                            ) : (
+                                <>
                                     <Input
-                                        id="caseText"
-                                        value={form.caseText}
-                                        onChange={(e) =>
+                                        id="userId"
+                                        value={form.userId}
+                                        onChange={(e) => {
+                                            const v = e.target.value;
                                             setForm((p) => ({
                                                 ...p,
-                                                caseText: e.target.value,
-                                            }))
-                                        }
-                                        placeholder="Specific reason/case for this admission slip"
-                                        className="h-10 border-slate-200 bg-white text-slate-900 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+                                                userId: v,
+                                            }));
+                                            handleSearch(v);
+                                        }}
+                                        onBlur={() => {
+                                            setTimeout(
+                                                () => setIsDropdownOpen(false),
+                                                200,
+                                            );
+                                            lookupStudent(form.userId);
+                                        }}
+                                        onFocus={() => {
+                                            if (searchResults.length > 0)
+                                                setIsDropdownOpen(true);
+                                        }}
+                                        placeholder="Enter student ID"
+                                        autoComplete="off"
+                                        className="h-11 rounded-xl border-slate-200 bg-slate-50 px-4 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50"
                                     />
-                                    <InputError message={errors.case_text} />
-                                </div>
 
-                                <div className="space-y-3">
-                                    <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                        Reason *
-                                    </Label>
-                                    <div className="mt-1 grid grid-cols-1 gap-3 md:grid-cols-2">
-                                        {[
+                                    {isDropdownOpen &&
+                                        searchResults.length > 0 && (
+                                            <div className="absolute top-[75px] left-0 z-[100] mt-1 max-h-60 w-full overflow-auto rounded-2xl border border-slate-200 bg-white py-2 shadow-2xl dark:border-slate-700 dark:bg-slate-800">
+                                                {searchResults.map(
+                                                    (student) => (
+                                                        <button
+                                                            key={student.id}
+                                                            type="button"
+                                                            className="flex w-full flex-col px-4 py-2 text-left text-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
+                                                            onClick={() => {
+                                                                setForm(
+                                                                    (p) => ({
+                                                                        ...p,
+                                                                        userId: student.id,
+                                                                    }),
+                                                                );
+                                                                setIsDropdownOpen(
+                                                                    false,
+                                                                );
+                                                                lookupStudent(
+                                                                    student.id,
+                                                                );
+                                                            }}
+                                                        >
+                                                            <span className="font-bold text-slate-800 dark:text-slate-200">
+                                                                {student.id}
+                                                            </span>
+                                                            <span className="text-xs text-slate-500 dark:text-slate-400">
+                                                                {student.name}
+                                                            </span>
+                                                        </button>
+                                                    ),
+                                                )}
+                                            </div>
+                                        )}
+
+                                    <div className="ml-1 text-[10px] font-bold text-slate-400">
+                                        {lookupStatus === 'loading'
+                                            ? 'Looking up...'
+                                            : lookupStatus === 'found'
+                                              ? '✓ Student found'
+                                              : lookupStatus === 'not_found'
+                                                ? '✗ Student not found'
+                                                : ''}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        <div className="grid gap-2.5">
+                            <Label
+                                htmlFor="studentName"
+                                className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
+                            >
+                                Name
+                            </Label>
+                            <Input
+                                id="studentName"
+                                value={form.studentName}
+                                readOnly
+                                placeholder="Student name will appear here"
+                                className="text-slate-750 h-11 cursor-not-allowed rounded-xl border-slate-200 bg-slate-100 px-4 dark:border-slate-800 dark:bg-slate-800/80"
+                            />
+                            <InputError message={errors.student_name} />
+                        </div>
+
+                        <div className="grid gap-2.5">
+                            <Label
+                                htmlFor="programYear"
+                                className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
+                            >
+                                Program/Year Level
+                            </Label>
+                            <Input
+                                id="programYear"
+                                value={form.programYear}
+                                readOnly
+                                placeholder="Program and year level will appear here"
+                                className="text-slate-750 h-11 cursor-not-allowed rounded-xl border-slate-200 bg-slate-100 px-4 dark:border-slate-800 dark:bg-slate-800/80"
+                            />
+                            <InputError message={errors.program_year_level} />
+                        </div>
+
+                        <div className="grid gap-2.5">
+                            <Label
+                                htmlFor="dateIssued"
+                                className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
+                            >
+                                Date Issued
+                            </Label>
+                            <Input
+                                id="dateIssued"
+                                type="date"
+                                value={form.dateIssued}
+                                onChange={(e) => {
+                                    const v = e.target.value;
+                                    setForm((p) => ({
+                                        ...p,
+                                        dateIssued: v,
+                                        validUntil: v ? addDaysIso(v, 7) : '',
+                                    }));
+                                }}
+                                className="h-11 rounded-xl border-slate-200 bg-slate-50 px-4 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50"
+                            />
+                            <InputError message={errors.date_issued} />
+                        </div>
+
+                        <div className="grid gap-2.5">
+                            <Label
+                                htmlFor="validUntil"
+                                className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
+                            >
+                                Valid Until
+                            </Label>
+                            <Input
+                                id="validUntil"
+                                type="date"
+                                value={form.validUntil}
+                                readOnly
+                                className="text-slate-750 h-11 cursor-not-allowed rounded-xl border-slate-200 bg-slate-100 px-4 dark:border-slate-800 dark:bg-slate-800/80"
+                            />
+                            <InputError message={errors.valid_until} />
+                        </div>
+                    </div>
+
+                    <div className="grid gap-2.5">
+                        <Label
+                            htmlFor="caseText"
+                            className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
+                        >
+                            Case / Reason Title
+                        </Label>
+                        <Input
+                            id="caseText"
+                            value={form.caseText}
+                            onChange={(e) =>
+                                setForm((p) => ({
+                                    ...p,
+                                    caseText: e.target.value,
+                                }))
+                            }
+                            placeholder="Enter case"
+                            className="h-11 rounded-xl border-slate-200 bg-slate-50 px-4 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50"
+                        />
+                        <InputError message={errors.case_text} />
+                    </div>
+
+                    <div className="grid gap-2.5">
+                        <Label className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400">
+                            Reason *
+                        </Label>
+                        <div className="mt-1 ml-1 grid grid-cols-1 gap-3 md:grid-cols-2">
+                            {[
+                                'Illness / Not Feeling Well',
+                                'Medical / Dental Appointment',
+                                'Family Emergency',
+                                'Bereavement in the Family',
+                                'Transportation Problem',
+                                'Bad Weather / Calamity',
+                                'Official School Activity',
+                                'Financial Concern',
+                            ].map((r) => {
+                                const checked = form.reasonText === r;
+                                return (
+                                    <label
+                                        key={r}
+                                        className="flex cursor-pointer items-center space-x-2.5 text-sm font-medium text-slate-700 dark:text-slate-300"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={checked}
+                                            onChange={() =>
+                                                setForm((p) => ({
+                                                    ...p,
+                                                    reasonText: r,
+                                                }))
+                                            }
+                                            className="h-4.5 w-4.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <span>{r}</span>
+                                    </label>
+                                );
+                            })}
+                            <label className="flex cursor-pointer items-center space-x-2.5 text-sm font-medium text-slate-700 dark:text-slate-300">
+                                <input
+                                    type="checkbox"
+                                    checked={
+                                        ![
                                             'Illness / Not Feeling Well',
                                             'Medical / Dental Appointment',
                                             'Family Emergency',
@@ -528,170 +549,102 @@ export function AdmissionSlipRequestModal({
                                             'Bad Weather / Calamity',
                                             'Official School Activity',
                                             'Financial Concern',
-                                        ].map((r) => {
-                                            const checked =
-                                                form.reasonText === r;
-                                            return (
-                                                <label
-                                                    key={r}
-                                                    className="flex cursor-pointer items-center space-x-2.5 text-sm font-medium text-slate-700 dark:text-slate-300"
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={checked}
-                                                        onChange={() =>
-                                                            setForm((p) => ({
-                                                                ...p,
-                                                                reasonText: r,
-                                                            }))
-                                                        }
-                                                        className="h-4.5 w-4.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                                                    />
-                                                    <span>{r}</span>
-                                                </label>
-                                            );
-                                        })}
-                                        <label className="flex cursor-pointer items-center space-x-2.5 text-sm font-medium text-slate-700 dark:text-slate-300">
-                                            <input
-                                                type="checkbox"
-                                                checked={
-                                                    ![
-                                                        'Illness / Not Feeling Well',
-                                                        'Medical / Dental Appointment',
-                                                        'Family Emergency',
-                                                        'Bereavement in the Family',
-                                                        'Transportation Problem',
-                                                        'Bad Weather / Calamity',
-                                                        'Official School Activity',
-                                                        'Financial Concern',
-                                                    ].includes(
-                                                        form.reasonText,
-                                                    ) && form.reasonText !== ''
-                                                }
-                                                onChange={() =>
-                                                    setForm((p) => ({
-                                                        ...p,
-                                                        reasonText: 'Others: ',
-                                                    }))
-                                                }
-                                                className="h-4.5 w-4.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                                            />
-                                            <span>Others</span>
-                                        </label>
-                                    </div>
-
-                                    {![
-                                        'Illness / Not Feeling Well',
-                                        'Medical / Dental Appointment',
-                                        'Family Emergency',
-                                        'Bereavement in the Family',
-                                        'Transportation Problem',
-                                        'Bad Weather / Calamity',
-                                        'Official School Activity',
-                                        'Financial Concern',
-                                    ].includes(form.reasonText) &&
-                                        form.reasonText !== '' && (
-                                            <div className="mt-2 animate-in space-y-1.5 duration-200 fade-in">
-                                                <Label
-                                                    htmlFor="reasonText_other"
-                                                    className="text-xs font-bold tracking-widest text-slate-400 uppercase"
-                                                >
-                                                    Specify Reason Details *
-                                                </Label>
-                                                <textarea
-                                                    id="reasonText_other"
-                                                    value={
-                                                        form.reasonText.startsWith(
-                                                            'Others: ',
-                                                        )
-                                                            ? form.reasonText.replace(
-                                                                  'Others: ',
-                                                                  '',
-                                                              )
-                                                            : form.reasonText
-                                                    }
-                                                    onChange={(e) =>
-                                                        setForm((p) => ({
-                                                            ...p,
-                                                            reasonText:
-                                                                'Others: ' +
-                                                                e.target.value,
-                                                        }))
-                                                    }
-                                                    placeholder="Specify other reason details..."
-                                                    rows={2}
-                                                    className="flex w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
-                                                />
-                                            </div>
-                                        )}
-                                    <InputError message={errors.reason_text} />
-                                </div>
-                            </div>
-
-                            <DialogFooter className="shrink-0 border-t border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-600 dark:bg-slate-700">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={closeModal}
-                                    disabled={processing}
-                                    className="h-10 border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="button"
-                                    onClick={submitForm}
-                                    disabled={processing}
-                                    className="h-10 min-w-[120px] bg-blue-600 text-white hover:bg-blue-700"
-                                >
-                                    {processing
-                                        ? 'Processing...'
-                                        : mode === 'admin'
-                                          ? 'Create Slip'
-                                          : 'Submit Request'}
-                                </Button>
-                            </DialogFooter>
-
-                            <DialogPrimitive.Close className="absolute top-6 right-6 rounded-full p-1 text-white/70 transition-colors hover:bg-white/10 hover:text-white">
-                                <XIcon className="h-5 w-5" />
-                                <span className="sr-only">Close</span>
-                            </DialogPrimitive.Close>
+                                        ].includes(form.reasonText) &&
+                                        form.reasonText !== ''
+                                    }
+                                    onChange={() =>
+                                        setForm((p) => ({
+                                            ...p,
+                                            reasonText: 'Others: ',
+                                        }))
+                                    }
+                                    className="h-4.5 w-4.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span>Others</span>
+                            </label>
                         </div>
 
-                        {mode === 'admin' &&
-                            showSuggestions &&
-                            suggestions.length > 0 && (
-                                <div className="hidden h-fit w-72 animate-in self-center overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl duration-200 slide-in-from-left-2 lg:block dark:border-slate-700 dark:bg-slate-800">
-                                    <div className="flex items-center justify-between border-b border-slate-200 bg-slate-100 px-4 py-3 dark:border-slate-600 dark:bg-slate-700">
-                                        <span className="text-xs font-bold tracking-wider text-slate-700 uppercase dark:text-slate-300">
-                                            Search Results
-                                        </span>
-                                        <span className="rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] text-slate-500 dark:border-slate-600 dark:bg-slate-600 dark:text-slate-300">
-                                            {suggestions.length} found
-                                        </span>
-                                    </div>
-                                    <div className="max-h-[60vh] overflow-y-auto">
-                                        {suggestions.map((s) => (
-                                            <button
-                                                key={s.id}
-                                                type="button"
-                                                className="flex w-full flex-col gap-0.5 border-b border-slate-50 px-4 py-3 text-left text-slate-900 transition-colors last:border-0 hover:bg-slate-50 dark:border-slate-700 dark:text-white dark:hover:bg-slate-700"
-                                                onClick={() => selectStudent(s)}
-                                            >
-                                                <span className="truncate text-sm font-semibold text-slate-900">
-                                                    {s.name}
-                                                </span>
-                                                <span className="text-xs font-medium text-blue-600">
-                                                    #{s.id}
-                                                </span>
-                                            </button>
-                                        ))}
-                                    </div>
+                        {![
+                            'Illness / Not Feeling Well',
+                            'Medical / Dental Appointment',
+                            'Family Emergency',
+                            'Bereavement in the Family',
+                            'Transportation Problem',
+                            'Bad Weather / Calamity',
+                            'Official School Activity',
+                            'Financial Concern',
+                        ].includes(form.reasonText) &&
+                            form.reasonText !== '' && (
+                                <div className="mt-2 animate-in space-y-1.5 duration-200 fade-in">
+                                    <Label
+                                        htmlFor="reasonText_other"
+                                        className="ml-1 text-[9px] font-bold tracking-widest text-slate-400 uppercase"
+                                    >
+                                        Specify Reason Details *
+                                    </Label>
+                                    <textarea
+                                        id="reasonText_other"
+                                        value={
+                                            form.reasonText.startsWith(
+                                                'Others: ',
+                                            )
+                                                ? form.reasonText.replace(
+                                                      'Others: ',
+                                                      '',
+                                                  )
+                                                : form.reasonText
+                                        }
+                                        onChange={(e) =>
+                                            setForm((p) => ({
+                                                ...p,
+                                                reasonText:
+                                                    'Others: ' + e.target.value,
+                                            }))
+                                        }
+                                        placeholder="Specify other reason details..."
+                                        rows={2}
+                                        className="dark:border-slate-850 min-h-16 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 shadow-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:outline-none dark:bg-slate-800/50 dark:text-white"
+                                    />
                                 </div>
                             )}
+                        <InputError message={errors.reason_text} />
                     </div>
-                </DialogPrimitive.Content>
-            </DialogPortal>
+                </div>
+
+                <DialogFooter className="gap-3 border-t border-slate-100 bg-slate-50/50 px-8 py-6 dark:border-slate-800 dark:bg-slate-900/50">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={closeModal}
+                        disabled={processing}
+                        className="rounded-xl px-6 text-[10px] font-black tracking-widest text-slate-500 uppercase transition-all hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        type="button"
+                        className="rounded-xl bg-blue-600 px-8 text-[10px] font-black tracking-widest text-white uppercase shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-700 active:scale-95 disabled:opacity-50"
+                        onClick={submitSlip}
+                        disabled={
+                            processing ||
+                            !form.studentName.trim() ||
+                            !form.programYear.trim() ||
+                            !form.dateIssued.trim() ||
+                            !form.caseText.trim() ||
+                            !form.reasonText.trim() ||
+                            !form.validUntil.trim()
+                        }
+                    >
+                        {processing
+                            ? isStudent
+                                ? 'Submitting...'
+                                : 'Creating...'
+                            : isStudent
+                              ? 'Submit Request'
+                              : 'Create'}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
         </Dialog>
     );
 }
