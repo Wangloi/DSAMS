@@ -70,6 +70,11 @@ class AdminDashboardController extends Controller
 
         $totalEvents = Event::query()->whereNull('archived_at')->count();
 
+        $hasEventToday = Event::query()
+            ->whereNull('archived_at')
+            ->whereDate('event_date', Carbon::today())
+            ->exists();
+
         $todayAttendance = 0;
         if (Schema::hasTable('attendances')) {
             $todayAttendance = Attendance::query()
@@ -98,7 +103,7 @@ class AdminDashboardController extends Controller
 
         return [
             ['title' => 'Total Events', 'value' => $totalEvents],
-            ['title' => "Today's Attendance", 'value' => $todayAttendance],
+            ['title' => "Today's Attendance", 'value' => $todayAttendance, 'hasEventToday' => $hasEventToday || ($todayAttendance > 0)],
             ['title' => 'Active Cases', 'value' => $activeCases],
             ['title' => 'Admission Slips', 'value' => $admissionSlips],
             ['title' => 'Evaluation Surveys', 'value' => $evaluationsCount],

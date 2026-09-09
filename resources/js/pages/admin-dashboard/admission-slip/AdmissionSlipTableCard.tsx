@@ -15,7 +15,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { Archive, Eye, FileText, Search, X } from 'lucide-react';
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import type { SlipRow } from './types';
@@ -27,7 +27,7 @@ type Props = {
     setPageIndex: Dispatch<SetStateAction<number>>;
     pageSize: number;
     setPageSize: Dispatch<SetStateAction<number>>;
-    printSlip: (s: SlipRow) => void;
+    printSlip: (s: SlipRow, deanName?: string) => void;
     searchQuery?: string;
     setSearchQuery?: Dispatch<SetStateAction<string>>;
     onEdit?: (slip: SlipRow) => void;
@@ -70,6 +70,9 @@ export default function AdmissionSlipTableCard({
     viewSlipId,
     allSlips = [],
 }: Props) {
+    const { props: pageProps } = usePage<any>();
+    const deanName = pageProps.deanName || pageProps.auth?.user?.name || 'Rey John N. Bongcas';
+
     const [viewOpen, setViewOpen] = useState(false);
     const [viewingSlip, setViewingSlip] = useState<SlipRow | null>(null);
 
@@ -196,7 +199,7 @@ export default function AdmissionSlipTableCard({
                                         {
                                             preserveScroll: true,
                                             onSuccess: () => {
-                                                printSlip(viewingSlip);
+                                                printSlip(viewingSlip, deanName);
                                                 setViewOpen(false);
                                             },
                                         },

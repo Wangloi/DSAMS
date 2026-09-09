@@ -22,6 +22,15 @@ export type AdmissionSlipRecord = {
 
 export type PageProps = {
     slips: AdmissionSlipRecord[];
+    deanName?: string;
+    auth?: {
+        user?: {
+            id?: number | string;
+            name?: string;
+            email?: string;
+            role?: string;
+        };
+    };
     errors?: Record<string, string>;
 };
 

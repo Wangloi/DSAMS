@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AdmissionSlip;
 use App\Models\ActivityLog;
+use App\Models\AdminUser;
+use App\Models\AdmissionSlip;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,12 +22,16 @@ class DSAAdmissionSlipController extends Controller
             abort(403, 'Unauthorized access');
         }
 
+        $admin = AdminUser::query()->first();
+        $deanName = $admin?->name ?? 'Rey John N. Bongcas';
+
         $slips = AdmissionSlip::with('student')
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
         return Inertia::render('dsa-dashboard/admission-slip/index', [
             'slips' => $slips,
+            'deanName' => $deanName,
             'unreadNotifications' => $user->unreadNotifications ?? [],
         ]);
     }

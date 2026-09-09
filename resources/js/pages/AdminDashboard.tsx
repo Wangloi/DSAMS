@@ -64,6 +64,7 @@ type Props = {
     kpis?: {
         title: string;
         value: number;
+        hasEventToday?: boolean;
     }[];
     attendanceTrend?: {
         name: string;
@@ -149,6 +150,7 @@ export default function AdminDashboard({
     user,
     recentActivities,
     incomingEvents,
+    kpis: propKpis,
 }: Props) {
     const page = usePage();
     const status =
@@ -195,8 +197,8 @@ export default function AdminDashboard({
         },
     ];
 
-    const kpiValues = (arguments[0] as Props).kpis ?? [
-        { title: "Today's Attendance", value: 320 },
+    const kpiValues = propKpis ?? [
+        { title: "Today's Attendance", value: 320, hasEventToday: true },
         { title: 'Admission Slips', value: 45 },
         { title: 'Active Cases', value: 8 },
         { title: 'Evaluation Surveys', value: 12 },
@@ -209,6 +211,7 @@ export default function AdminDashboard({
         return {
             ...config,
             value: stat.value,
+            hasEventToday: stat.hasEventToday,
         };
     });
 
@@ -307,6 +310,10 @@ export default function AdminDashboard({
                     {/* ── KPI STAT CARDS (Top Priority Stats) ── */}
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         {kpis.map((kpi) => {
+                            const isNoEventToday =
+                                kpi.title === "Today's Attendance" &&
+                                (kpi as any).hasEventToday === false;
+
                             const themeMap: Record<
                                 string,
                                 {
@@ -319,9 +326,12 @@ export default function AdminDashboard({
                             > = {
                                 "Today's Attendance": {
                                     glow: 'bg-blue-500/5',
-                                    subtext: 'Scanned Today',
-                                    subtextColor:
-                                        'text-blue-600 dark:text-blue-400',
+                                    subtext: isNoEventToday
+                                        ? 'No event today'
+                                        : 'Scanned Today',
+                                    subtextColor: isNoEventToday
+                                        ? 'text-slate-400 dark:text-slate-500 font-medium'
+                                        : 'text-blue-600 dark:text-blue-400',
                                     iconBg: 'bg-blue-500/10 text-blue-600 ring-1 ring-blue-200/50 dark:bg-blue-500/20 dark:text-blue-400 dark:ring-blue-900/30',
                                     barGradient: 'from-blue-400 to-blue-600',
                                 },

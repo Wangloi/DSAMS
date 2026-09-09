@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AdmissionSlip;
 use App\Models\ActivityLog;
+use App\Models\AdminUser;
+use App\Models\AdmissionSlip;
 use App\Models\Student;
 use App\Notifications\AdmissionSlipStatusUpdated;
 use Illuminate\Http\RedirectResponse;
@@ -18,6 +19,9 @@ class AdminAdmissionSlipController extends Controller
 {
     public function index(): Response
     {
+        $admin = AdminUser::query()->first();
+        $deanName = $admin?->name ?? 'Rey John N. Bongcas';
+
         return Inertia::render('admin-dashboard/admission-slip/index', [
             'slips' => AdmissionSlip::query()
                 ->where('is_archived', false)
@@ -32,6 +36,7 @@ class AdminAdmissionSlipController extends Controller
                     'valid_until',
                     'status',
                 ]),
+            'deanName' => $deanName,
         ]);
     }
 

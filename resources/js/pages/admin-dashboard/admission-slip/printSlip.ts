@@ -1,6 +1,6 @@
 import type { SlipRow } from './types';
 
-export default function printSlip(s: SlipRow) {
+export default function printSlip(s: SlipRow, deanName?: string) {
     const escapeHtml = (v: string) =>
         v
             .replaceAll('&', '&amp;')
@@ -8,6 +8,8 @@ export default function printSlip(s: SlipRow) {
             .replaceAll('>', '&gt;')
             .replaceAll('"', '&quot;')
             .replaceAll("'", '&#039;');
+
+    const effectiveDeanName = (deanName || 'Rey John N. Bongcas').trim().toUpperCase();
 
     const win = window.open('', '_blank', 'width=450,height=600');
     if (!win) return;
@@ -30,101 +32,125 @@ export default function printSlip(s: SlipRow) {
     }
     body {
       font-family: 'Courier New', Courier, monospace, Arial, sans-serif;
+      font-weight: bold;
       color: #000;
       background-color: #fff;
       font-size: 11px;
       line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
     .container {
       width: 80mm;
-      padding: 4mm 6mm;
+      padding: 5mm 6mm;
     }
     .logo-container {
       display: flex;
       justify-content: center;
-      gap: 12px;
-      margin-bottom: 6px;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 8px;
     }
     .logo {
-      width: 36px;
-      height: 36px;
-      object-fit: cover;
-      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      image-rendering: -webkit-optimize-contrast;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     .header-text {
       text-align: center;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
     .school {
-      font-weight: bold;
-      font-size: 9.5px;
-      line-height: 1.2;
+      font-weight: 900;
+      font-size: 10.5px;
+      line-height: 1.25;
+      color: #000;
+      letter-spacing: 0.2px;
     }
     .sub {
-      font-size: 8px;
-      color: #444;
-      margin-top: 1px;
+      font-size: 9px;
+      font-weight: bold;
+      color: #000;
+      margin-top: 2px;
     }
     .dept {
-      font-weight: bold;
-      font-size: 9px;
+      font-weight: 900;
+      font-size: 10px;
+      color: #000;
       margin-top: 3px;
+      letter-spacing: 0.2px;
     }
     .divider {
-      border-top: 1px dashed #000;
-      margin: 8px 0;
+      border-top: 2px dashed #000;
+      margin: 10px 0;
     }
     .title {
-      font-weight: bold;
-      font-size: 13px;
+      font-weight: 900;
+      font-size: 15px;
       text-align: center;
-      margin: 6px 0 10px 0;
-      letter-spacing: 0.5px;
+      margin: 8px 0 12px 0;
+      letter-spacing: 1px;
+      color: #000;
     }
     .info-item {
-      margin-bottom: 6px;
-      font-size: 10.5px;
+      margin-bottom: 8px;
+      font-size: 11px;
     }
     .info-label {
-      font-weight: bold;
-      font-size: 8.5px;
-      color: #444;
+      font-weight: 900;
+      font-size: 9.5px;
+      color: #000;
       text-transform: uppercase;
       display: block;
+      letter-spacing: 0.5px;
     }
     .info-value {
-      margin-top: 1px;
-      padding-left: 2px;
+      font-weight: bold;
+      font-size: 11.5px;
+      color: #000;
+      margin-top: 2px;
+      padding-left: 1px;
       word-break: break-word;
+      line-height: 1.3;
     }
     .signature-section {
-      margin-top: 20px;
+      margin-top: 24px;
       text-align: center;
     }
     .sig-line {
-      border-bottom: 1px solid #000;
-      width: 75%;
+      border-bottom: 2px solid #000;
+      width: 80%;
       margin: 0 auto;
-      height: 18px;
+      height: 20px;
     }
     .sig-label {
-      font-size: 8px;
-      margin-top: 4px;
+      font-size: 8.5px;
+      font-weight: 900;
+      color: #000;
+      margin-top: 5px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
     .dean-section {
-      margin-top: 24px;
+      margin-top: 26px;
       text-align: center;
-      font-size: 9.5px;
+      font-size: 10px;
     }
     .dean-name {
-      font-weight: bold;
+      font-weight: 900;
+      font-size: 11.5px;
+      color: #000;
+      letter-spacing: 0.3px;
     }
     .dean-title {
       font-style: italic;
-      font-size: 8.5px;
-      margin-top: 1px;
+      font-weight: bold;
+      font-size: 9.5px;
+      color: #000;
+      margin-top: 2px;
     }
 
     /* Screen preview rendering style */
@@ -142,8 +168,21 @@ export default function printSlip(s: SlipRow) {
       .container {
         background-color: #fff;
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-        border: 1px solid #e2e8f0;
+        border: 1px solid #cbd5e1;
         border-radius: 8px;
+      }
+    }
+
+    @media print {
+      body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .container {
+        width: 100%;
+        padding: 4mm 6mm;
+        box-shadow: none !important;
+        border: none !important;
       }
     }
   </style>
@@ -166,23 +205,23 @@ export default function printSlip(s: SlipRow) {
     <div class="title">ADMISSION SLIP</div>
 
     <div class="info-item">
-      <span class="info-label">Name:</span>
+      <span class="info-label">NAME:</span>
       <div class="info-value">${escapeHtml(s.studentName)}</div>
     </div>
     <div class="info-item">
-      <span class="info-label">Program/Year Level:</span>
+      <span class="info-label">PROGRAM/YEAR LEVEL:</span>
       <div class="info-value">${escapeHtml(s.programYear)}</div>
     </div>
     <div class="info-item">
-      <span class="info-label">Case:</span>
+      <span class="info-label">CASE:</span>
       <div class="info-value">${escapeHtml(s.caseText)}</div>
     </div>
     <div class="info-item">
-      <span class="info-label">Reason:</span>
+      <span class="info-label">REASON:</span>
       <div class="info-value">${escapeHtml(s.reasonText)}</div>
     </div>
     <div class="info-item">
-      <span class="info-label">Valid Until:</span>
+      <span class="info-label">VALID UNTIL:</span>
       <div class="info-value">${escapeHtml(s.validUntil)}</div>
     </div>
 
@@ -192,7 +231,7 @@ export default function printSlip(s: SlipRow) {
     </div>
 
     <div class="dean-section">
-      <div class="dean-name">MANUEL N. OCLARIT JR.</div>
+      <div class="dean-name">${escapeHtml(effectiveDeanName)}</div>
       <div class="dean-title">Dean of Student Affairs</div>
     </div>
   </div>

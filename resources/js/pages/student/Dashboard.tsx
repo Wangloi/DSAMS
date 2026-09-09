@@ -1643,187 +1643,155 @@ export default function StudentDashboard({
                     {/* THREE CIRCULAR STATS CARDS */}
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                         {/* Card 1: Attendance Rate */}
-                        <div className="group relative flex items-center justify-between overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 text-left shadow-lg backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/30">
-                            <div className="space-y-1.5 font-sans">
-                                <span className="block text-[9px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
-                                    Attendance Rate
-                                </span>
-                                <h3 className="text-2xl font-black text-slate-900 dark:text-white">
-                                    {events.length > 0
-                                        ? Math.round(
-                                              ((serverStats?.event_attendance ??
-                                                  0) /
-                                                  events.length) *
-                                                  100,
-                                          )
-                                        : 0}
-                                    %
-                                </h3>
-                                <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                                    Attended{' '}
-                                    {serverStats?.event_attendance ?? 0} out of{' '}
-                                    {events.length} events
-                                </p>
-                            </div>
-                            <div className="relative flex shrink-0 items-center justify-center">
-                                <svg className="h-18 w-18 -rotate-90 transform">
-                                    <circle
-                                        cx="36"
-                                        cy="36"
-                                        r="32"
-                                        className="stroke-slate-100 dark:stroke-slate-800"
-                                        strokeWidth="6.5"
-                                        fill="transparent"
-                                    />
-                                    <circle
-                                        cx="36"
-                                        cy="36"
-                                        r="32"
-                                        className="stroke-blue-500 transition-all duration-1000 ease-out"
-                                        strokeWidth="6.5"
-                                        fill="transparent"
-                                        strokeDasharray={2 * Math.PI * 32}
-                                        strokeDashoffset={
-                                            2 * Math.PI * 32 -
-                                            (Math.min(
-                                                100,
-                                                events.length > 0
-                                                    ? Math.round(
-                                                          ((serverStats?.event_attendance ??
-                                                              0) /
-                                                              events.length) *
-                                                              100,
-                                                      )
-                                                    : 0,
-                                            ) /
-                                                100) *
-                                                (2 * Math.PI * 32)
-                                        }
-                                        strokeLinecap="round"
-                                    />
-                                </svg>
-                                <div className="absolute flex items-center justify-center rounded-full bg-blue-500/5 p-2 text-blue-500">
-                                    <QrCode className="h-5 w-5" />
+                        <div className="group relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white/80 p-5 sm:p-6 shadow-sm backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-500/10 dark:border-slate-800/80 dark:bg-slate-900/60 dark:hover:border-blue-700/60 dark:hover:shadow-blue-900/20">
+                            {/* Ambient Glow */}
+                            <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-gradient-to-br from-blue-500/15 via-indigo-500/10 to-transparent blur-2xl transition-all duration-500 group-hover:scale-150 group-hover:opacity-100" />
+
+                            <div className="relative flex items-center justify-between gap-4">
+                                <div className="flex-1 space-y-2">
+                                    <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-200/60 bg-blue-50/80 px-2.5 py-0.5 text-[9px] font-black tracking-widest text-blue-600 uppercase dark:border-blue-800/60 dark:bg-blue-950/40 dark:text-blue-400">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+                                        Attendance Rate
+                                    </div>
+                                    <div>
+                                        <h3 className="flex items-baseline gap-1 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl dark:text-white">
+                                            {events.length > 0
+                                                ? Math.round(
+                                                      ((serverStats?.event_attendance ??
+                                                          0) /
+                                                          events.length) *
+                                                          100,
+                                                  )
+                                                : 0}
+                                            <span className="text-lg font-bold text-blue-500 dark:text-blue-400">
+                                                %
+                                            </span>
+                                        </h3>
+                                        <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                            Attended{' '}
+                                            <span className="font-bold text-slate-800 dark:text-slate-200">
+                                                {serverStats?.event_attendance ?? 0}
+                                            </span>{' '}
+                                            of{' '}
+                                            <span className="font-bold text-slate-800 dark:text-slate-200">
+                                                {events.length}
+                                            </span>{' '}
+                                            events
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Logo / Icon Badge */}
+                                <div className="flex h-14 w-14 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-2xl sm:rounded-3xl border border-blue-200/60 bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-indigo-500/10 text-blue-600 shadow-sm backdrop-blur-md transition-all duration-300 group-hover:scale-110 group-hover:shadow-md group-hover:shadow-blue-500/20 dark:border-blue-800/60 dark:bg-blue-950/40 dark:text-blue-400">
+                                    <QrCode className="h-7 w-7 sm:h-8 sm:w-8" />
                                 </div>
                             </div>
                         </div>
 
                         {/* Card 2: Conduct Standing */}
-                        <div className="group relative flex items-center justify-between overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 text-left shadow-lg backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/30">
-                            <div className="space-y-1.5 font-sans">
-                                <span className="block text-[9px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
-                                    Conduct Standing
-                                </span>
-                                <h3
-                                    className={cn(
-                                        'text-2xl font-black tracking-wide uppercase',
-                                        (serverStats?.active_incidents ?? 0) ===
-                                            0
-                                            ? 'text-emerald-600 dark:text-emerald-400'
-                                            : 'dark:text-rose-450 text-rose-600',
-                                    )}
-                                >
-                                    {(serverStats?.active_incidents ?? 0) === 0
-                                        ? 'Good'
-                                        : 'Warning'}
-                                </h3>
-                                <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                                    {(serverStats?.active_incidents ?? 0) === 0
-                                        ? 'No active disciplinary reports'
-                                        : `${serverStats?.active_incidents} active incident report(s)`}
-                                </p>
-                            </div>
-                            <div className="relative flex shrink-0 items-center justify-center">
-                                <svg className="h-18 w-18 -rotate-90 transform">
-                                    <circle
-                                        cx="36"
-                                        cy="36"
-                                        r="32"
-                                        className="stroke-slate-100 dark:stroke-slate-800"
-                                        strokeWidth="6.5"
-                                        fill="transparent"
-                                    />
-                                    <circle
-                                        cx="36"
-                                        cy="36"
-                                        r="32"
+                        <div className="group relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white/80 p-5 sm:p-6 shadow-sm backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-emerald-300 hover:shadow-xl hover:shadow-emerald-500/10 dark:border-slate-800/80 dark:bg-slate-900/60 dark:hover:border-emerald-700/60 dark:hover:shadow-emerald-900/20">
+                            {/* Ambient Glow */}
+                            <div
+                                className={cn(
+                                    'pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full blur-2xl transition-all duration-500 group-hover:scale-150 group-hover:opacity-100',
+                                    (serverStats?.active_incidents ?? 0) === 0
+                                        ? 'bg-gradient-to-br from-emerald-500/15 via-teal-500/10 to-transparent'
+                                        : 'bg-gradient-to-br from-rose-500/15 via-amber-500/10 to-transparent',
+                                )}
+                            />
+
+                            <div className="relative flex items-center justify-between gap-4">
+                                <div className="flex-1 space-y-2">
+                                    <div
                                         className={cn(
-                                            'transition-all duration-1000 ease-out',
+                                            'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[9px] font-black tracking-widest uppercase',
                                             (serverStats?.active_incidents ??
                                                 0) === 0
-                                                ? 'stroke-emerald-500'
-                                                : 'stroke-rose-500',
+                                                ? 'border-emerald-200/60 bg-emerald-50/80 text-emerald-600 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-400'
+                                                : 'border-rose-200/60 bg-rose-50/80 text-rose-600 dark:border-rose-800/60 dark:bg-rose-950/40 dark:text-rose-400',
                                         )}
-                                        strokeWidth="6.5"
-                                        fill="transparent"
-                                        strokeDasharray={2 * Math.PI * 32}
-                                        strokeDashoffset={
-                                            (serverStats?.active_incidents ??
+                                    >
+                                        <span
+                                            className={cn(
+                                                'h-1.5 w-1.5 rounded-full',
+                                                (serverStats?.active_incidents ??
+                                                    0) === 0
+                                                    ? 'bg-emerald-500 animate-pulse'
+                                                    : 'bg-rose-500 animate-ping',
+                                            )}
+                                        />
+                                        Conduct Standing
+                                    </div>
+                                    <div>
+                                        <h3
+                                            className={cn(
+                                                'text-2xl font-black tracking-wide uppercase sm:text-3xl',
+                                                (serverStats?.active_incidents ??
+                                                    0) === 0
+                                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                                    : 'text-rose-600 dark:text-rose-400',
+                                            )}
+                                        >
+                                            {(serverStats?.active_incidents ??
                                                 0) === 0
-                                                ? 0
-                                                : 0.7 * (2 * Math.PI * 32)
-                                        }
-                                        strokeLinecap="round"
-                                    />
-                                </svg>
+                                                ? 'Good'
+                                                : 'Warning'}
+                                        </h3>
+                                        <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                            {(serverStats?.active_incidents ??
+                                                0) === 0
+                                                ? 'No active disciplinary reports'
+                                                : `${serverStats?.active_incidents} active incident report(s)`}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Logo / Icon Badge */}
                                 <div
                                     className={cn(
-                                        'bg-opacity-5 absolute flex items-center justify-center rounded-full p-2',
-                                        (serverStats?.active_incidents ?? 0) ===
-                                            0
-                                            ? 'bg-emerald-500/5 text-emerald-500'
-                                            : 'bg-rose-500/5 text-rose-500',
+                                        'flex h-14 w-14 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-2xl sm:rounded-3xl border shadow-sm backdrop-blur-md transition-all duration-300 group-hover:scale-110 group-hover:shadow-md',
+                                        (serverStats?.active_incidents ?? 0) === 0
+                                            ? 'border-emerald-200/60 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-teal-500/10 text-emerald-600 group-hover:shadow-emerald-500/20 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-400'
+                                            : 'border-rose-200/60 bg-gradient-to-br from-rose-500/10 via-rose-500/5 to-amber-500/10 text-rose-600 group-hover:shadow-rose-500/20 dark:border-rose-800/60 dark:bg-rose-950/40 dark:text-rose-400',
                                     )}
                                 >
-                                    {(serverStats?.active_incidents ?? 0) ===
-                                    0 ? (
-                                        <ShieldCheck className="h-5 w-5" />
+                                    {(serverStats?.active_incidents ??
+                                        0) === 0 ? (
+                                        <ShieldCheck className="h-7 w-7 sm:h-8 sm:w-8" />
                                     ) : (
-                                        <AlertTriangle className="h-5 w-5 animate-pulse" />
+                                        <AlertTriangle className="h-7 w-7 sm:h-8 sm:w-8 animate-pulse" />
                                     )}
                                 </div>
                             </div>
                         </div>
 
                         {/* Card 3: Campus Events */}
-                        <div className="group relative flex items-center justify-between overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 text-left shadow-lg backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/30">
-                            <div className="space-y-1.5 font-sans">
-                                <span className="block text-[9px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
-                                    Scheduled Events
-                                </span>
-                                <h3 className="text-2xl font-black text-slate-900 dark:text-white">
-                                    {events.length} Events
-                                </h3>
-                                <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                                    View and check schedule of school events
-                                </p>
-                            </div>
-                            <div className="relative flex shrink-0 items-center justify-center">
-                                <svg className="h-18 w-18 -rotate-90 transform">
-                                    <circle
-                                        cx="36"
-                                        cy="36"
-                                        r="32"
-                                        className="stroke-slate-100 dark:stroke-slate-800"
-                                        strokeWidth="6.5"
-                                        fill="transparent"
-                                    />
-                                    <circle
-                                        cx="36"
-                                        cy="36"
-                                        r="32"
-                                        className="stroke-indigo-500"
-                                        strokeWidth="6.5"
-                                        fill="transparent"
-                                        strokeDasharray={2 * Math.PI * 32}
-                                        strokeDashoffset={
-                                            0.4 * (2 * Math.PI * 32)
-                                        }
-                                        strokeLinecap="round"
-                                    />
-                                </svg>
-                                <div className="absolute flex items-center justify-center rounded-full bg-indigo-500/5 p-2 text-indigo-500">
-                                    <Calendar className="h-5 w-5" />
+                        <div className="group relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white/80 p-5 sm:p-6 shadow-sm backdrop-blur-2xl transition-all duration-300 hover:-translate-y-1 hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-500/10 dark:border-slate-800/80 dark:bg-slate-900/60 dark:hover:border-indigo-700/60 dark:hover:shadow-indigo-900/20">
+                            {/* Ambient Glow */}
+                            <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-gradient-to-br from-indigo-500/15 via-purple-500/10 to-transparent blur-2xl transition-all duration-500 group-hover:scale-150 group-hover:opacity-100" />
+
+                            <div className="relative flex items-center justify-between gap-4">
+                                <div className="flex-1 space-y-2">
+                                    <div className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200/60 bg-indigo-50/80 px-2.5 py-0.5 text-[9px] font-black tracking-widest text-indigo-600 uppercase dark:border-indigo-800/60 dark:bg-indigo-950/40 dark:text-indigo-400">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                                        Scheduled Events
+                                    </div>
+                                    <div>
+                                        <h3 className="flex items-baseline gap-1.5 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl dark:text-white">
+                                            {events.length}
+                                            <span className="text-lg font-bold text-indigo-500 dark:text-indigo-400">
+                                                Events
+                                            </span>
+                                        </h3>
+                                        <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                            View and check schedule of school events
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Logo / Icon Badge */}
+                                <div className="flex h-14 w-14 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-2xl sm:rounded-3xl border border-indigo-200/60 bg-gradient-to-br from-indigo-500/10 via-indigo-500/5 to-purple-500/10 text-indigo-600 shadow-sm backdrop-blur-md transition-all duration-300 group-hover:scale-110 group-hover:shadow-md group-hover:shadow-indigo-500/20 dark:border-indigo-800/60 dark:bg-indigo-950/40 dark:text-indigo-400">
+                                    <Calendar className="h-7 w-7 sm:h-8 sm:w-8" />
                                 </div>
                             </div>
                         </div>
