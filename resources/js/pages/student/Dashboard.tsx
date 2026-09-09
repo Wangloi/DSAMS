@@ -716,59 +716,6 @@ export default function StudentDashboard({
         );
     };
 
-    const stats: StatCard[] = useMemo(
-        () => [
-            {
-                label: 'Active Incidents',
-                value: serverStats?.active_incidents?.toString() || '0',
-                sublabel: 'Under Review',
-                icon: <AlertTriangle className="h-6 w-6" />,
-                accent: 'bg-rose-500',
-                theme: {
-                    text: 'text-rose-600 dark:text-rose-400',
-                    iconBg: 'bg-rose-500/10 dark:bg-rose-500/20',
-                    iconText: 'text-rose-600 dark:text-rose-400',
-                    border: 'border-rose-100 dark:border-rose-500/20',
-                },
-                trend:
-                    serverStats?.active_incidents &&
-                    serverStats.active_incidents > 0
-                        ? `+${serverStats.active_incidents}`
-                        : '0',
-            },
-            {
-                label: 'Event Attendance',
-                value: serverStats?.event_attendance?.toString() || '0',
-                sublabel: 'Events Attended',
-                icon: <QrCode className="h-6 w-6" />,
-                accent: 'bg-blue-500',
-                theme: {
-                    text: 'text-blue-600 dark:text-blue-400',
-                    iconBg: 'bg-blue-500/10 dark:bg-blue-500/20',
-                    iconText: 'text-blue-600 dark:text-blue-400',
-                    border: 'border-blue-100 dark:border-blue-500/20',
-                },
-                trend: serverStats?.event_attendance
-                    ? `+${serverStats.event_attendance}`
-                    : '0',
-            },
-            {
-                label: 'Campus Events',
-                value: events.length.toString(),
-                sublabel: 'Scheduled Events',
-                icon: <Calendar className="h-6 w-6" />,
-                accent: 'bg-emerald-500',
-                theme: {
-                    text: 'text-emerald-600 dark:text-emerald-400',
-                    iconBg: 'bg-emerald-500/10 dark:bg-emerald-500/20',
-                    iconText: 'text-emerald-600 dark:text-emerald-400',
-                    border: 'border-emerald-100 dark:border-emerald-500/20',
-                },
-                trend: events.length > 0 ? `+${events.length}` : '0',
-            },
-        ],
-        [serverStats, events],
-    );
 
     const evaluationRows: EvaluationRow[] = serverEvaluations || [];
 
@@ -1561,7 +1508,7 @@ export default function StudentDashboard({
                                             <span className="bg-gradient-to-r from-blue-200 via-indigo-100 to-white bg-clip-text text-transparent">
                                                 {displayName}
                                             </span>
-                                            ! 👋
+                                            !
                                         </h1>
                                         <p className="max-w-lg text-xs leading-relaxed font-semibold text-blue-100/70">
                                             Your academic standing is active and

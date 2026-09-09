@@ -205,13 +205,11 @@ export default function AdminDashboard({
     ];
 
     const kpis = kpiConfig.map((config) => {
-        const stat = kpiValues.find((v) => v.title === config.title) || {
-            value: 0,
-        };
+        const stat = kpiValues.find((v) => v.title === config.title);
         return {
             ...config,
-            value: stat.value,
-            hasEventToday: stat.hasEventToday,
+            value: stat?.value ?? 0,
+            hasEventToday: stat?.hasEventToday,
         };
     });
 
@@ -283,7 +281,7 @@ export default function AdminDashboard({
                                 <div>
                                     <h1 className="text-2xl font-black tracking-tight text-white">
                                         Welcome Back,{' '}
-                                        {user?.name || 'Administrator'}! 👋
+                                        {user?.name || 'Administrator'}!
                                     </h1>
                                     <p className="mt-0.5 text-sm font-medium text-blue-200/80">
                                         System Command Center • Incoming Events

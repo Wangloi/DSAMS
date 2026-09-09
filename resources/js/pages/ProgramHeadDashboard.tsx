@@ -255,7 +255,7 @@ export default function ProgramHeadDashboard({ user }: Props) {
                             <div>
                                 <h1 className="text-2xl leading-tight font-black tracking-tight text-white">
                                     Welcome Back, {user?.name || 'Program Head'}
-                                    ! 👋
+                                    !
                                 </h1>
                                 <div className="mt-0.5 flex flex-col gap-2 sm:flex-row sm:items-center">
                                     <p className="text-sm font-medium text-blue-200/80">
