@@ -180,6 +180,7 @@ class StudentNotificationPresenter
             'title' => $title,
             'subtitle' => $subtitle,
             'timeAgo' => $notification->created_at?->diffForHumans() ?? '',
+            'created_at' => $notification->created_at?->toISOString() ?? $notification->created_at?->toDateTimeString(),
             'is_read' => $notification->read_at !== null,
         ];
     }

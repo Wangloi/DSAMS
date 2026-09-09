@@ -31,6 +31,15 @@ class AppNotification extends Model
         'updated_at' => 'datetime',
     ];
 
+    protected $appends = [
+        'timeAgo',
+    ];
+
+    public function getTimeAgoAttribute(): string
+    {
+        return $this->created_at ? $this->created_at->diffForHumans() : '';
+    }
+
     /**
      * Polymorphic relation to user / student / admin / program head
      */

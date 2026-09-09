@@ -74,6 +74,17 @@ export default function StudentNotifications({
             <Head title="Notifications" />
 
             <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+                {/* Back Navigation */}
+                <Link
+                    href={studentDashboard()}
+                    className="group mb-6 inline-flex items-center gap-2 text-xs font-black tracking-widest text-[#0b2d66] uppercase transition-colors hover:text-[#1e40af] dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                    <div className="rounded-xl border border-slate-200/80 bg-white p-2 shadow-sm transition-all duration-200 group-hover:-translate-x-0.5 group-hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:group-hover:bg-slate-800">
+                        <ChevronLeft className="h-4 w-4" />
+                    </div>
+                    Back to Dashboard
+                </Link>
+
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>

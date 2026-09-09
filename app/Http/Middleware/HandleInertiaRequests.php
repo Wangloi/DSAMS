@@ -221,6 +221,7 @@ class HandleInertiaRequests extends Middleware
                     'subtitle' => $subtitle,
                     'url' => (string) ($data['url'] ?? ''),
                     'timeAgo' => $notification->created_at?->diffForHumans() ?? '',
+                    'created_at' => $notification->created_at?->toISOString() ?? $notification->created_at?->toDateTimeString(),
                     'is_read' => $notification->read_at !== null,
                 ];
             });

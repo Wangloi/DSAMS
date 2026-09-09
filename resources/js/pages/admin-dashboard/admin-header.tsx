@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/sheet';
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useInitials } from '@/hooks/use-initials';
-import { cn } from '@/lib/utils';
+import { cn, formatTimeAgo } from '@/lib/utils';
 import { adminDashboard, adminNotifications, adminHelp } from '@/routes';
 import type { SharedData } from '@/types';
 import { Link, router, usePage } from '@inertiajs/react';
@@ -416,7 +416,7 @@ export function AdminHeader() {
                                             n.is_read ||
                                             locallyRead.includes(String(n.id));
                                         const displaySubtitle = n.subtitle || n.message;
-                                        const displayTime = n.timeAgo || (n.created_at ? 'Just now' : undefined);
+                                        const displayTime = n.timeAgo || (n.created_at ? formatTimeAgo(n.created_at) : undefined);
                                         return (
                                             <div
                                                 key={n.id}

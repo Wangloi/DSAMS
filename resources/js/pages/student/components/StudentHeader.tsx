@@ -16,7 +16,7 @@ import {
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useAppearance } from '@/hooks/use-appearance';
 import { useInitials } from '@/hooks/use-initials';
-import { cn } from '@/lib/utils';
+import { cn, formatTimeAgo } from '@/lib/utils';
 import {
     studentAttendanceScannerPortal,
     studentDashboard,
@@ -343,7 +343,7 @@ export function StudentHeader() {
                                             n.is_read ||
                                             locallyRead.includes(String(n.id));
                                         const displaySubtitle = n.subtitle || n.message;
-                                        const displayTime = n.timeAgo || (n.created_at ? 'Just now' : undefined);
+                                        const displayTime = n.timeAgo || (n.created_at ? formatTimeAgo(n.created_at) : undefined);
                                         return (
                                             <div
                                                 key={n.id}

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Bell, X, ExternalLink, CheckCircle2, AlertTriangle, Info, Calendar, Clock } from 'lucide-react';
 import type { AppNotificationItem } from '@/types/notification';
+import { formatTimeAgo } from '@/lib/utils';
 
 interface NotificationPopupProps {
     notification: AppNotificationItem | null;
@@ -121,7 +122,7 @@ export default function NotificationPopup({
 
                         <div className="mt-3 flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px]">
                             <span className="font-semibold text-slate-400">
-                                Just now
+                                {formatTimeAgo(notification.created_at, 'Just now')}
                             </span>
 
                             <div className="flex items-center gap-1.5">

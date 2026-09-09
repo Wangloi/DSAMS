@@ -25,7 +25,7 @@ import { UserMenuContent } from '@/components/user-menu-content';
 import { useInitials } from '@/hooks/use-initials';
 import { MobileNavigation } from '@/pages/admin-dashboard/mobile-navigation';
 import type { SharedData } from '@/types';
-import { cn } from '@/lib/utils';
+import { cn, formatTimeAgo } from '@/lib/utils';
 import { Link, router, usePage } from '@inertiajs/react';
 import axios from 'axios';
 import { programHeadHelp, programHeadNotifications } from '@/routes';
@@ -437,7 +437,7 @@ export function ProgramHeadHeader() {
                                             n.is_read ||
                                             locallyRead.includes(String(n.id));
                                         const displaySubtitle = n.subtitle || n.message;
-                                        const displayTime = n.timeAgo || (n.created_at ? 'Just now' : undefined);
+                                        const displayTime = n.timeAgo || (n.created_at ? formatTimeAgo(n.created_at) : undefined);
                                         return (
                                             <div
                                                 key={n.id}
