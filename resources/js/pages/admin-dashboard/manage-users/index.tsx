@@ -1,71 +1,21 @@
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
-} from '@/components/ui/dialog';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import {
-    adminDashboard,
-    adminManageUsers,
-    adminProgramsArchive,
-    adminProgramsStore,
-    adminProgramsUnarchive,
-} from '@/routes';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Head, usePage } from '@inertiajs/react';
+import { adminDashboard, adminManageUsers } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
-import { Head, router, useForm, usePage } from '@inertiajs/react';
-import {
-    Archive,
-    BookOpen,
-    CheckCircle,
-    ChevronDown,
-    Edit,
-    Eye,
-    GraduationCap,
-    KeyRound,
-    Layers,
-    Pencil,
-    Plus,
-    Search,
-    Trash2,
-    UserCheck,
-    UserPlus,
-    Users,
-    UserX,
-    XCircle,
-} from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
 import Swal from 'sweetalert2';
+
 import AdminLayout from '../admin-layout';
 import AddEditUserDialog from './AddEditUserDialog';
 import AddProgramHeadDialog from './AddProgramHeadDialog';
-import BulkAddUsersDialog from './BulkAddUsersDialog';
 import BulkActionsModal from './BulkActionsModal';
-import type { PageProps } from './types';
+import BulkAddUsersDialog from './BulkAddUsersDialog';
+import { BulkYearLevelDialog } from './BulkYearLevelDialog';
+import { ManagePasswordResetsTab } from './ManagePasswordResetsTab';
+import { ManageProgramsTab } from './ManageProgramsTab';
+import { ManageUsersHeroHeader } from './ManageUsersHeroHeader';
+import { ManageUsersStatsCards } from './ManageUsersStatsCards';
+import { ManageUsersTableCard } from './ManageUsersTableCard';
+import type { PageProps, ProgramRow, UserRow } from './types';
 import { useManageUsers } from './useManageUsers';
 import ViewStudentDialog from './ViewStudentDialog';
 
@@ -79,19 +29,6 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: adminManageUsers(),
     },
 ];
-
-type ProgramRow = {
-    id: string;
-    name: string;
-    code: string;
-    department: string;
-    description: string;
-    duration: string;
-    status: 'active' | 'inactive';
-    studentCount: number;
-    createdAt: string;
-    updatedAt: string;
-};
 
 export default function AdminManageUsersPage() {
     const { props } = usePage<PageProps>();
@@ -165,16 +102,18 @@ export default function AdminManageUsersPage() {
             .map((p) => p[0]?.toUpperCase())
             .join('');
 
-    const roleCounts = students.reduce(
-        (acc, u) => {
-            const roleRaw = (u.role ?? 'Student').toLowerCase();
-            if (roleRaw.includes('admin')) acc.admin += 1;
-            else if (roleRaw.includes('program')) acc.programHead += 1;
-            else acc.student += 1;
-            return acc;
-        },
-        { student: 0, programHead: 0, admin: 0 },
-    );
+    const roleCounts = useMemo(() => {
+        return students.reduce(
+            (acc, u) => {
+                const roleRaw = (u.role ?? 'Student').toLowerCase();
+                if (roleRaw.includes('admin')) acc.admin += 1;
+                else if (roleRaw.includes('program')) acc.programHead += 1;
+                else acc.student += 1;
+                return acc;
+            },
+            { student: 0, programHead: 0, admin: 0 },
+        );
+    }, [students]);
 
     const totalUsers = students.length;
 
@@ -193,20 +132,13 @@ export default function AdminManageUsersPage() {
         openEditModal,
         submit,
         submitProgramHead,
-        approveStudent,
-        rejectStudent,
-        setPendingStudent,
-        approveProgramHead,
-        rejectProgramHead,
-        setPendingProgramHead,
     } = useManageUsers(errors);
 
     const [activeById, setActiveById] = useState<Record<number, boolean>>({});
 
-    // ── Users tab state ────────────────────────────────────────────────────────
-    const isProgramHeadRow = (u: (typeof students)[number]) =>
+    const isProgramHeadRow = (u: UserRow) =>
         String((u as any)?.userType ?? '').toLowerCase() === 'program_head';
-    const isAdminRow = (u: (typeof students)[number]) =>
+    const isAdminRow = (u: UserRow) =>
         String((u as any)?.userType ?? '').toLowerCase() === 'admin';
 
     const [roleFilter, setRoleFilter] = useState<string>('all');
@@ -216,16 +148,136 @@ export default function AdminManageUsersPage() {
     const [courseFilter, setCourseFilter] = useState<'all' | string>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [pageIndex, setPageIndex] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
     const [viewOpen, setViewOpen] = useState(false);
-    const [viewStudent, setViewStudent] = useState<
-        (typeof students)[number] | null
-    >(null);
+    const [viewStudent, setViewStudent] = useState<UserRow | null>(null);
     const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
     const [bulkAddOpen, setBulkAddOpen] = useState(false);
     const [bulkModalOpen, setBulkModalOpen] = useState(false);
     const [bulkYearLevelOpen, setBulkYearLevelOpen] = useState(false);
-    const [targetYearLevel, setTargetYearLevel] = useState<string>('3rd Year');
-    const [isUpdatingYearLevel, setIsUpdatingYearLevel] = useState(false);
+    const [isCreateProgramModalOpen, setIsCreateProgramModalOpen] = useState(false);
+
+    useEffect(() => {
+        setActiveById((prev) => {
+            const next = { ...prev };
+            for (const u of students) {
+                if (next[u.id] === undefined) next[u.id] = u.is_active ?? true;
+            }
+            return next;
+        });
+    }, [students]);
+
+    const isActive = useMemo(() => {
+        return (userId: number) => activeById[userId] !== false;
+    }, [activeById]);
+
+    const availableCourses = useMemo(() => {
+        const list = ['BSIT', 'BSBA', 'BEED', 'BSED', 'BSCrim', 'BSHM'];
+        students.forEach((s) => {
+            const c = String(s.course ?? '').trim();
+            if (c && !list.includes(c) && !c.toLowerCase().includes('admin')) {
+                list.push(c);
+            }
+        });
+        return list.filter((c) => !c.toLowerCase().includes('admin'));
+    }, [students]);
+
+    const filteredStudents = useMemo(() => {
+        const q = searchQuery.trim().toLowerCase();
+
+        const matchesRole = (u: UserRow) => {
+            const roleRaw = String(u.role ?? 'Student').toLowerCase();
+            if (roleRaw.includes('admin')) return false;
+
+            if (roleFilter === 'all') return true;
+            if (roleFilter === 'students')
+                return (
+                    !roleRaw.includes('admin') && !roleRaw.includes('program')
+                );
+            if (roleFilter === 'program') return roleRaw.includes('program');
+            if (
+                [
+                    '1st Year',
+                    '2nd Year',
+                    '3rd Year',
+                    '4th Year',
+                    'Irregular',
+                ].includes(roleFilter)
+            ) {
+                return (u.year_level ?? '') === roleFilter;
+            }
+            return true;
+        };
+
+        const matchesStatus = (u: UserRow) => {
+            if (statusFilter === 'all') return true;
+            if (isProgramHeadRow(u)) return statusFilter === 'active';
+            const active = isActive(u.id);
+            return statusFilter === 'active' ? active : !active;
+        };
+
+        const matchesCourse = (u: UserRow) => {
+            if (courseFilter === 'all') return true;
+            return (
+                String(u.course ?? '')
+                    .trim()
+                    .toLowerCase() === courseFilter.trim().toLowerCase()
+            );
+        };
+
+        const matchesSearch = (u: UserRow) => {
+            if (!q) return true;
+            const haystack = [
+                u.student_id,
+                u.name,
+                u.email,
+                u.course,
+                u.year_level,
+                u.role ?? '',
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+            return haystack.includes(q);
+        };
+
+        return [...students]
+            .filter(
+                (u) =>
+                    matchesRole(u) &&
+                    matchesStatus(u) &&
+                    matchesCourse(u) &&
+                    matchesSearch(u),
+            )
+            .sort((a, b) => {
+                const nameA = (a.last_name || a.name || '')
+                    .trim()
+                    .toLowerCase();
+                const nameB = (b.last_name || b.name || '')
+                    .trim()
+                    .toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+    }, [students, roleFilter, statusFilter, courseFilter, searchQuery, isActive]);
+
+    const totalPages = Math.max(
+        1,
+        Math.ceil(filteredStudents.length / pageSize),
+    );
+
+    useEffect(() => {
+        setPageIndex((p) => Math.min(Math.max(p, 1), totalPages));
+    }, [totalPages]);
+
+    useEffect(() => {
+        setSelectedUserIds([]);
+    }, [pageIndex, roleFilter, statusFilter, searchQuery]);
+
+    const pagedStudents = useMemo(() => {
+        const clamped = Math.min(Math.max(pageIndex, 1), totalPages);
+        const start = (clamped - 1) * pageSize;
+        return filteredStudents.slice(start, start + pageSize);
+    }, [filteredStudents, pageIndex, totalPages, pageSize]);
 
     const handleSelectAll = (checked: boolean) => {
         const pageIds = pagedStudents
@@ -259,218 +311,13 @@ export default function AdminManageUsersPage() {
         setSelectedUserIds((prev) => Array.from(new Set([...prev, ...ids])));
     };
 
-    // ── Programs tab state ─────────────────────────────────────────────────────
-    const [progStatusFilter, setProgStatusFilter] = useState<
-        'all' | 'active' | 'inactive'
-    >('all');
-    const [progDeptFilter, setProgDeptFilter] = useState<'all' | string>('all');
-    const [progSearch, setProgSearch] = useState('');
-    const [progPageIndex, setProgPageIndex] = useState(1);
-    const [progPageSize, setProgPageSize] = useState(10);
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-
-    const {
-        data: progData,
-        setData: setProgData,
-        post: progPost,
-        processing: progProcessing,
-        errors: progErrors,
-        reset: progReset,
-    } = useForm({
-        name: '',
-        code: '',
-        department: '',
-        description: '',
-        duration: '',
-        is_active: true,
-    });
-
-    function handleProgSubmit(e: React.FormEvent) {
-        e.preventDefault();
-        progPost(adminProgramsStore(), {
-            onSuccess: () => {
-                setIsCreateModalOpen(false);
-                progReset();
-            },
-        });
-    }
-
-    const progFilteredRows = useMemo(() => {
-        const q = progSearch.toLowerCase().trim();
-        return programs.filter((r) => {
-            const matchSearch =
-                !q ||
-                [r.name, r.code, r.department, r.description]
-                    .filter(Boolean)
-                    .join(' ')
-                    .toLowerCase()
-                    .includes(q);
-            const matchStatus =
-                progStatusFilter === 'all' || r.status === progStatusFilter;
-            const matchDept =
-                progDeptFilter === 'all' || r.department === progDeptFilter;
-            return matchSearch && matchStatus && matchDept;
-        });
-    }, [programs, progSearch, progStatusFilter, progDeptFilter]);
-
-    const progTotalPages = Math.max(
-        1,
-        Math.ceil(progFilteredRows.length / progPageSize),
-    );
-
-    const progPagedRows = useMemo(() => {
-        const clamped = Math.min(Math.max(progPageIndex, 1), progTotalPages);
-        return progFilteredRows.slice(
-            (clamped - 1) * progPageSize,
-            clamped * progPageSize,
+    const pendingResetsCount = useMemo(() => {
+        return (
+            (props.passwordResetRequests as any[])?.filter(
+                (r: any) => r.status === 'pending',
+            ).length ?? 0
         );
-    }, [progFilteredRows, progPageIndex, progTotalPages, progPageSize]);
-
-    const progStats = useMemo(
-        () => ({
-            total: programs.length,
-            active: programs.filter((r) => r.status === 'active').length,
-            inactive: programs.filter((r) => r.status === 'inactive').length,
-            departments: [...new Set(programs.map((r) => r.department))].length,
-        }),
-        [programs],
-    );
-
-    const progDepartments = useMemo(
-        () => [...new Set(programs.map((r) => r.department))].sort(),
-        [programs],
-    );
-
-    useEffect(() => {
-        setActiveById((prev) => {
-            const next = { ...prev };
-            for (const u of students) {
-                if (next[u.id] === undefined) next[u.id] = u.is_active ?? true;
-            }
-            return next;
-        });
-    }, [students]);
-
-    useEffect(() => {
-        if (searchQuery.trim().toLowerCase() === 'admin@example.com') {
-            setSearchQuery('');
-        }
-    }, [searchQuery]);
-
-    const isActive = useMemo(() => {
-        return (userId: number) => activeById[userId] !== false;
-    }, [activeById]);
-
-    const availableCourses = useMemo(() => {
-        const list = ['BSIT', 'BSBA', 'BEED', 'BSED', 'BSCrim', 'BSHM'];
-        students.forEach((s) => {
-            const c = String(s.course ?? '').trim();
-            if (c && !list.includes(c) && !c.toLowerCase().includes('admin')) {
-                list.push(c);
-            }
-        });
-        return list.filter((c) => !c.toLowerCase().includes('admin'));
-    }, [students]);
-
-    const filteredStudents = useMemo(() => {
-        const q = searchQuery.trim().toLowerCase();
-
-        const matchesRole = (u: (typeof students)[number]) => {
-            const roleRaw = String(u.role ?? 'Student').toLowerCase();
-            // Exclude System Admin accounts from the user table list
-            if (roleRaw.includes('admin')) return false;
-
-            if (roleFilter === 'all') return true;
-            if (roleFilter === 'students')
-                return (
-                    !roleRaw.includes('admin') && !roleRaw.includes('program')
-                );
-            if (roleFilter === 'program') return roleRaw.includes('program');
-            // Year level filters
-            if (
-                [
-                    '1st Year',
-                    '2nd Year',
-                    '3rd Year',
-                    '4th Year',
-                    'Irregular',
-                ].includes(roleFilter)
-            ) {
-                return (u.year_level ?? '') === roleFilter;
-            }
-            return true;
-        };
-
-        const matchesStatus = (u: (typeof students)[number]) => {
-            if (statusFilter === 'all') return true;
-            if (isProgramHeadRow(u)) return statusFilter === 'active';
-            const active = isActive(u.id);
-            return statusFilter === 'active' ? active : !active;
-        };
-
-        const matchesCourse = (u: (typeof students)[number]) => {
-            if (courseFilter === 'all') return true;
-            return (
-                String(u.course ?? '')
-                    .trim()
-                    .toLowerCase() === courseFilter.trim().toLowerCase()
-            );
-        };
-
-        const matchesSearch = (u: (typeof students)[number]) => {
-            if (!q) return true;
-            const haystack = [
-                u.student_id,
-                u.name,
-                u.email,
-                u.course,
-                u.year_level,
-                u.role ?? '',
-            ]
-                .filter(Boolean)
-                .join(' ')
-                .toLowerCase();
-            return haystack.includes(q);
-        };
-
-        return [...students]
-            .filter(
-                (u) =>
-                    matchesRole(u) &&
-                    matchesStatus(u) &&
-                    matchesCourse(u) &&
-                    matchesSearch(u),
-            )
-            .sort((a, b) => {
-                const nameA = (a.last_name || a.name || '')
-                    .trim()
-                    .toLowerCase();
-                const nameB = (b.last_name || b.name || '')
-                    .trim()
-                    .toLowerCase();
-                return nameA.localeCompare(nameB);
-            });
-    }, [students, roleFilter, statusFilter, courseFilter, searchQuery]);
-
-    const [pageSize, setPageSize] = useState(10);
-    const totalPages = Math.max(
-        1,
-        Math.ceil(filteredStudents.length / pageSize),
-    );
-
-    useEffect(() => {
-        setPageIndex((p) => Math.min(Math.max(p, 1), totalPages));
-    }, [totalPages]);
-
-    useEffect(() => {
-        setSelectedUserIds([]);
-    }, [pageIndex, roleFilter, statusFilter, searchQuery]);
-
-    const pagedStudents = useMemo(() => {
-        const clamped = Math.min(Math.max(pageIndex, 1), totalPages);
-        const start = (clamped - 1) * pageSize;
-        return filteredStudents.slice(start, start + pageSize);
-    }, [filteredStudents, pageIndex, totalPages]);
+    }, [props.passwordResetRequests]);
 
     return (
         <AdminLayout breadcrumbs={breadcrumbs}>
@@ -478,1690 +325,132 @@ export default function AdminManageUsersPage() {
             <div className="min-h-[calc(100vh-4rem)] bg-slate-100 dark:bg-slate-900">
                 <div className="flex w-full flex-col gap-6 px-6 py-6">
                     {/* ── Hero Header ── */}
-                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] p-6 shadow-xl shadow-blue-900/20">
-                        <div className="pointer-events-none absolute -top-12 -right-12 h-56 w-56 rounded-full bg-white/5" />
-                        <div className="pointer-events-none absolute -top-4 -right-4 h-32 w-32 rounded-full bg-white/5" />
-                        <div className="pointer-events-none absolute bottom-0 left-1/3 h-48 w-48 -translate-y-1/4 rounded-full bg-blue-400/10 blur-2xl" />
-                        <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/10 text-white shadow-inner ring-1 ring-white/20 backdrop-blur-sm">
-                                    {activeTab === 'users' ? (
-                                        <Users className="h-7 w-7" />
-                                    ) : activeTab === 'programs' ? (
-                                        <GraduationCap className="h-7 w-7" />
-                                    ) : (
-                                        <KeyRound className="h-7 w-7" />
-                                    )}
-                                </div>
-                                <div>
-                                    <h1 className="text-2xl font-black tracking-tight text-white">
-                                        {activeTab === 'users' &&
-                                            'Manage Users'}
-                                        {activeTab === 'programs' &&
-                                            'Academic Programs'}
-                                        {activeTab === 'password-resets' &&
-                                            'Password Resets'}
-                                    </h1>
-                                    <p className="mt-0.5 text-sm font-medium text-blue-200/80">
-                                        {activeTab === 'users' &&
-                                            'Manage user accounts, roles, and permissions'}
-                                        {activeTab === 'programs' &&
-                                            'Manage curriculums, departments, and course offerings'}
-                                        {activeTab === 'password-resets' &&
-                                            'Review and approve pending password reset requests'}
-                                    </p>
-                                </div>
-                            </div>
+                    <ManageUsersHeroHeader
+                        activeTab={activeTab}
+                        switchTab={switchTab}
+                        totalUsers={totalUsers}
+                        totalPrograms={programs.length}
+                        pendingResetsCount={pendingResetsCount}
+                        openCreateModal={openCreateModal}
+                        openCreatePHModal={openCreatePHModal}
+                        openBulkModal={() => setBulkModalOpen(true)}
+                        openCreateProgramModal={() =>
+                            setIsCreateProgramModalOpen(true)
+                        }
+                    />
 
-                            {/* Right side: Tab buttons & Action buttons inside banner */}
-                            <div className="flex flex-wrap items-center gap-3 self-start lg:self-auto">
-                                {/* Tab switcher logos inside banner */}
-                                <div className="flex items-center rounded-xl bg-white/10 p-1 ring-1 ring-white/20 backdrop-blur-md">
-                                    <button
-                                        type="button"
-                                        onClick={() => switchTab('users')}
-                                        title="Users"
-                                        aria-label="Users"
-                                        className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
-                                            activeTab === 'users'
-                                                ? 'bg-white text-[#1e3a8a] shadow-sm'
-                                                : 'text-white/80 hover:bg-white/10 hover:text-white'
-                                        }`}
-                                    >
-                                        <UserCheck className="h-5 w-5" />
-                                        <span
-                                            className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                                                activeTab === 'users'
-                                                    ? 'bg-[#1e3a8a]/10 text-[#1e3a8a]'
-                                                    : 'bg-white/10 text-white'
-                                            }`}
-                                        >
-                                            {totalUsers}
-                                        </span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => switchTab('programs')}
-                                        title="Programs"
-                                        aria-label="Programs"
-                                        className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
-                                            activeTab === 'programs'
-                                                ? 'bg-white text-[#1e3a8a] shadow-sm'
-                                                : 'text-white/80 hover:bg-white/10 hover:text-white'
-                                        }`}
-                                    >
-                                        <GraduationCap className="h-5 w-5" />
-                                        <span
-                                            className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                                                activeTab === 'programs'
-                                                    ? 'bg-[#1e3a8a]/10 text-[#1e3a8a]'
-                                                    : 'bg-white/10 text-white'
-                                            }`}
-                                        >
-                                            {progStats.total}
-                                        </span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            switchTab('password-resets')
-                                        }
-                                        title="Password Resets"
-                                        aria-label="Password Resets"
-                                        className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
-                                            activeTab === 'password-resets'
-                                                ? 'bg-white text-[#1e3a8a] shadow-sm'
-                                                : 'text-white/80 hover:bg-white/10 hover:text-white'
-                                        }`}
-                                    >
-                                        <KeyRound className="h-5 w-5" />
-                                        <span
-                                            className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                                                activeTab === 'password-resets'
-                                                    ? 'bg-[#1e3a8a]/10 text-[#1e3a8a]'
-                                                    : 'bg-white/10 text-white'
-                                            }`}
-                                        >
-                                            {(
-                                                props.passwordResetRequests as any[]
-                                            )?.filter(
-                                                (r: any) =>
-                                                    r.status === 'pending',
-                                            ).length ?? 0}
-                                        </span>
-                                    </button>
-                                </div>
-
-                                {/* Action buttons */}
-                                {activeTab === 'users' ? (
-                                    <div className="flex items-center gap-2">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button className="h-11 gap-2 rounded-xl bg-white px-5 font-bold text-[#1e3a8a] shadow-md transition-all duration-200 hover:bg-blue-50 hover:shadow-lg">
-                                                    <UserPlus className="h-5 w-5" />
-                                                    Add User
-                                                    <ChevronDown className="ml-1 h-4 w-4 opacity-70" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent
-                                                align="end"
-                                                className="w-56 rounded-xl border border-slate-100 bg-white p-1.5 shadow-xl"
-                                            >
-                                                <DropdownMenuItem
-                                                    onClick={openCreateModal}
-                                                    className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-900"
-                                                >
-                                                    <UserPlus className="h-4.5 w-4.5 text-blue-600" />
-                                                    Add Student / Officer
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={openCreatePHModal}
-                                                    className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-900"
-                                                >
-                                                    <GraduationCap className="h-4.5 w-4.5 text-[#1e3a8a]" />
-                                                    Add Program Head
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={() => setBulkModalOpen(true)}
-                                                    className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-900"
-                                                >
-                                                    <Layers className="h-4.5 w-4.5 text-blue-600" />
-                                                    Bulk Actions Manager
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-
-                                        <AddEditUserDialog
-                                            open={open}
-                                            onOpenChange={setOpen}
-                                            editingUser={editingUser}
-                                            hasAnyError={hasAnyError}
-                                            errors={errors}
-                                            form={form}
-                                            setForm={setForm}
-                                            onClose={closeModal}
-                                            onSubmit={submit}
-                                            onOpenBulkAdd={() =>
-                                                setBulkAddOpen(true)
-                                            }
-                                        />
-                                        <AddProgramHeadDialog
-                                            open={phOpen}
-                                            onOpenChange={setPhOpen}
-                                            editingUser={editingUser}
-                                            hasAnyError={hasAnyError}
-                                            errors={errors}
-                                            form={form}
-                                            setForm={setForm}
-                                            onClose={closeModal}
-                                            onSubmit={submitProgramHead}
-                                        />
-                                        <BulkAddUsersDialog
-                                            open={bulkAddOpen}
-                                            onOpenChange={setBulkAddOpen}
-                                        />
-                                        <BulkActionsModal
-                                            open={bulkModalOpen}
-                                            onOpenChange={setBulkModalOpen}
-                                            users={students as any}
-                                            selectedUserIds={selectedUserIds}
-                                            setSelectedUserIds={setSelectedUserIds}
-                                            availablePrograms={availableCourses}
-                                            onSuccess={() => setSelectedUserIds([])}
-                                        />
-                                        <Dialog
-                                            open={bulkYearLevelOpen}
-                                            onOpenChange={setBulkYearLevelOpen}
-                                        >
-                                            <DialogContent className="sm:max-w-md">
-                                                <DialogHeader>
-                                                    <DialogTitle className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
-                                                        <GraduationCap className="h-5 w-5 text-amber-600" />
-                                                        Change Year Level
-                                                    </DialogTitle>
-                                                    <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-                                                        Update the year level for{' '}
-                                                        <span className="font-bold text-slate-900 dark:text-white">
-                                                            {selectedUserIds.length}
-                                                        </span>{' '}
-                                                        selected student(s) (e.g., promote 2nd Year to 3rd Year).
-                                                    </DialogDescription>
-                                                </DialogHeader>
-
-                                                <div className="space-y-4 py-3">
-                                                    <div className="space-y-2">
-                                                        <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                                                            Target Year Level
-                                                        </Label>
-                                                        <Select
-                                                            value={targetYearLevel}
-                                                            onValueChange={setTargetYearLevel}
-                                                        >
-                                                            <SelectTrigger className="w-full">
-                                                                <SelectValue placeholder="Select Year Level" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="1st Year">1st Year</SelectItem>
-                                                                <SelectItem value="2nd Year">2nd Year</SelectItem>
-                                                                <SelectItem value="3rd Year">3rd Year</SelectItem>
-                                                                <SelectItem value="4th Year">4th Year</SelectItem>
-                                                                <SelectItem value="Irregular">Irregular</SelectItem>
-                                                                <SelectItem value="Graduated">Graduated</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </div>
-                                                </div>
-
-                                                <DialogFooter className="gap-2 sm:gap-0">
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        onClick={() => setBulkYearLevelOpen(false)}
-                                                    >
-                                                        Cancel
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        className="bg-[#1e3a8a] text-white hover:bg-blue-900"
-                                                        disabled={isUpdatingYearLevel}
-                                                        onClick={() => {
-                                                            setIsUpdatingYearLevel(true);
-                                                            router.post(
-                                                                '/admin/manage-users/bulk/year-level',
-                                                                {
-                                                                    ids: selectedUserIds,
-                                                                    year_level: targetYearLevel,
-                                                                },
-                                                                {
-                                                                    preserveScroll: true,
-                                                                    onSuccess: () => {
-                                                                        setSelectedUserIds([]);
-                                                                        setBulkYearLevelOpen(false);
-                                                                        setIsUpdatingYearLevel(false);
-                                                                        Swal.fire({
-                                                                            icon: 'success',
-                                                                            title: 'Year Level Updated',
-                                                                            text: `Successfully updated student(s) to ${targetYearLevel}.`,
-                                                                            timer: 2000,
-                                                                            showConfirmButton: false,
-                                                                        });
-                                                                    },
-                                                                    onError: () => {
-                                                                        setIsUpdatingYearLevel(false);
-                                                                    },
-                                                                },
-                                                            );
-                                                        }}
-                                                    >
-                                                        {isUpdatingYearLevel ? 'Updating...' : 'Update Year Level'}
-                                                    </Button>
-                                                </DialogFooter>
-                                            </DialogContent>
-                                        </Dialog>
-                                    </div>
-                                ) : activeTab === 'programs' ? (
-                                    <Button
-                                        onClick={() =>
-                                            setIsCreateModalOpen(true)
-                                        }
-                                        className="h-11 gap-2 rounded-xl bg-white px-5 font-bold text-[#1e3a8a] shadow-md transition-all duration-200 hover:bg-blue-50"
-                                    >
-                                        <Plus className="h-5 w-5" />
-                                        Add Program
-                                    </Button>
-                                ) : null}
-                            </div>
-                        </div>
-                    </div>
-                    {/* ── USERS TAB ──────────────────────────────────────────────────────────── */}
+                    {/* ── USERS TAB ── */}
                     {activeTab === 'users' && (
                         <>
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                                {/* Students Card */}
-                                <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
-                                    <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-emerald-500/5" />
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div>
-                                            <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
-                                                Students
-                                            </p>
-                                            <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
-                                                {roleCounts.student}
-                                            </p>
-                                            <p className="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                                                Total Active
-                                            </p>
-                                        </div>
-                                        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-200/50 transition-transform duration-300 group-hover:scale-110 dark:bg-emerald-500/20 dark:text-emerald-400 dark:ring-emerald-900/30">
-                                            <Users className="h-5 w-5" />
-                                        </div>
-                                    </div>
-                                    <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                        <div className="h-full w-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600" />
-                                    </div>
-                                </div>
+                            <ManageUsersStatsCards roleCounts={roleCounts} />
 
-                                {/* Program Heads Card */}
-                                <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
-                                    <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-amber-500/5" />
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div>
-                                            <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
-                                                Program Heads
-                                            </p>
-                                            <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
-                                                {roleCounts.programHead}
-                                            </p>
-                                            <p className="mt-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
-                                                Assigned
-                                            </p>
-                                        </div>
-                                        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-500/10 text-amber-600 ring-1 ring-amber-200/50 transition-transform duration-300 group-hover:scale-110 dark:bg-amber-500/20 dark:text-amber-400 dark:ring-amber-900/30">
-                                            <Users className="h-5 w-5" />
-                                        </div>
-                                    </div>
-                                    <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                        <div className="h-full w-full rounded-full bg-gradient-to-r from-amber-400 to-amber-600" />
-                                    </div>
-                                </div>
-
-                                {/* Administrators Card */}
-                                <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
-                                    <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-blue-500/5" />
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div>
-                                            <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
-                                                Administrators
-                                            </p>
-                                            <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
-                                                {roleCounts.admin}
-                                            </p>
-                                            <p className="mt-1 text-xs font-semibold text-blue-600 dark:text-blue-400">
-                                                System Admins
-                                            </p>
-                                        </div>
-                                        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-500/10 text-blue-600 ring-1 ring-blue-200/50 transition-transform duration-300 group-hover:scale-110 dark:bg-blue-500/20 dark:text-blue-400 dark:ring-blue-900/30">
-                                            <Users className="h-5 w-5" />
-                                        </div>
-                                    </div>
-                                    <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                        <div className="h-full w-full rounded-full bg-gradient-to-r from-blue-400 to-blue-600" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <Card className="border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#0B192C]/50">
-                                <CardHeader className="p-2.5 px-4">
-                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                        <div>
-                                            <CardTitle className="text-lg font-bold text-slate-800 dark:text-white">
-                                                User List
-                                            </CardTitle>
-                                            <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                                                Total: {totalUsers} users
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-wrap items-center gap-1.5">
-                                            <div className="relative min-w-[180px] sm:w-[220px]">
-                                                <Search className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                                                <input
-                                                    type="text"
-                                                    name="fake_username"
-                                                    autoComplete="username"
-                                                    tabIndex={-1}
-                                                    className="hidden"
-                                                />
-                                                <input
-                                                    type="password"
-                                                    name="fake_password"
-                                                    autoComplete="current-password"
-                                                    tabIndex={-1}
-                                                    className="hidden"
-                                                />
-                                                <Input
-                                                    placeholder="Search user..."
-                                                    className="h-8.5 border border-slate-200 bg-white pl-8 text-xs dark:border-slate-600 dark:bg-slate-800"
-                                                    name="manage_users_search"
-                                                    type="search"
-                                                    autoComplete="new-password"
-                                                    autoCorrect="off"
-                                                    spellCheck={false}
-                                                    value={searchQuery}
-                                                    onChange={(e) =>
-                                                        setSearchQuery(
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                />
-                                            </div>
-
-                                             <Select
-                                                 value={roleFilter}
-                                                 onValueChange={(v) => {
-                                                     setRoleFilter(v as any);
-                                                     setPageIndex(1);
-                                                 }}
-                                             >
-                                                 <SelectTrigger className="h-8.5 w-[140px] border border-slate-200 bg-white text-xs dark:border-slate-600 dark:bg-slate-800">
-                                                     <SelectValue placeholder="All Users" />
-                                                 </SelectTrigger>
-                                                 <SelectContent>
-                                                     <SelectItem value="all">
-                                                         All Users
-                                                     </SelectItem>
-                                                     <SelectItem value="students">
-                                                         Students
-                                                     </SelectItem>
-                                                     <SelectItem value="program">
-                                                         Program Heads
-                                                     </SelectItem>
-                                                     <SelectItem value="1st Year">
-                                                         1st Year
-                                                     </SelectItem>
-                                                     <SelectItem value="2nd Year">
-                                                         2nd Year
-                                                     </SelectItem>
-                                                     <SelectItem value="3rd Year">
-                                                         3rd Year
-                                                     </SelectItem>
-                                                     <SelectItem value="4th Year">
-                                                         4th Year
-                                                     </SelectItem>
-                                                     <SelectItem value="Irregular">
-                                                         Irregular
-                                                     </SelectItem>
-                                                 </SelectContent>
-                                             </Select>
-
-                                             <Select
-                                                 value={courseFilter}
-                                                 onValueChange={(v) => {
-                                                     setCourseFilter(v);
-                                                     setPageIndex(1);
-                                                 }}
-                                             >
-                                                 <SelectTrigger className="h-8.5 w-[130px] border border-slate-200 bg-white text-xs dark:border-slate-600 dark:bg-slate-800">
-                                                     <SelectValue placeholder="All Courses" />
-                                                 </SelectTrigger>
-                                                 <SelectContent>
-                                                     <SelectItem value="all">
-                                                         All Courses
-                                                     </SelectItem>
-                                                     {availableCourses.map(
-                                                         (c) => (
-                                                             <SelectItem
-                                                                 key={c}
-                                                                 value={c}
-                                                             >
-                                                                 {c}
-                                                             </SelectItem>
-                                                         ),
-                                                     )}
-                                                 </SelectContent>
-                                             </Select>
-
-                                             <Button
-                                                 type="button"
-                                                 className="h-8.5 bg-[#1e3a8a] text-white hover:bg-blue-900 font-bold text-xs shadow-sm gap-1.5"
-                                                 onClick={() => setBulkModalOpen(true)}
-                                             >
-                                                 <Layers className="h-4 w-4" />
-                                                 Bulk Actions
-                                             </Button>
-
-
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                                {selectedUserIds.length > 0 && (
-                                    <div className="flex items-center justify-between border-y border-emerald-200 bg-emerald-50/50 px-6 py-3 transition-all dark:border-emerald-800/30 dark:bg-emerald-900/10">
-                                        <div className="text-sm font-semibold text-emerald-800 dark:text-emerald-400">
-                                            {selectedUserIds.length} user(s)
-                                            selected
-                                        </div>
-                                        <div>
-                                             <Button
-                                                 type="button"
-                                                 className="bg-gradient-to-r from-[#0B192C] via-[#1E3E62] to-[#1e3a8a] text-white hover:opacity-95 font-bold shadow-md shadow-slate-950/20 text-xs px-4"
-                                                 onClick={() => setBulkModalOpen(true)}
-                                             >
-                                                 <Layers className="mr-2 h-4 w-4 text-amber-400" />
-                                                 Bulk Actions
-                                             </Button>
-                                        </div>
-                                    </div>
-                                )}
-                                <CardContent
-                                    className={
-                                        selectedUserIds.length > 0 ? 'pt-4' : ''
-                                    }
-                                >
-                                    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#0B192C]/50">
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full min-w-max border-collapse text-left text-sm">
-                                                <thead className="border-b border-slate-100 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
-                                                    <tr>
-                                                        <th className="w-20 px-6 py-4">
-                                                            <div className="flex items-center gap-1">
-                                                                <Checkbox
-                                                                    checked={
-                                                                        pagedStudents.length >
-                                                                            0 &&
-                                                                        pagedStudents.every(
-                                                                            (
-                                                                                u,
-                                                                            ) =>
-                                                                                selectedUserIds.includes(
-                                                                                    Number(
-                                                                                        (
-                                                                                            u as any
-                                                                                        )
-                                                                                            .id,
-                                                                                    ),
-                                                                                ),
-                                                                        )
-                                                                    }
-                                                                    onCheckedChange={(
-                                                                        checked,
-                                                                    ) =>
-                                                                        handleSelectAll(
-                                                                            checked as boolean,
-                                                                        )
-                                                                    }
-                                                                    aria-label="Select all"
-                                                                />
-                                                                <DropdownMenu>
-                                                                    <DropdownMenuTrigger
-                                                                        asChild
-                                                                    >
-                                                                        <button className="text-slate-400 hover:text-slate-600 focus:outline-none dark:text-slate-500 dark:hover:text-slate-300">
-                                                                            <ChevronDown className="h-3 w-3" />
-                                                                        </button>
-                                                                    </DropdownMenuTrigger>
-                                                                    <DropdownMenuContent align="start">
-                                                                        <DropdownMenuLabel className="text-xs text-slate-500 uppercase">
-                                                                            Select
-                                                                            By
-                                                                            Year
-                                                                        </DropdownMenuLabel>
-                                                                        <DropdownMenuSeparator />
-                                                                        {[
-                                                                            '1st Year',
-                                                                            '2nd Year',
-                                                                            '3rd Year',
-                                                                            '4th Year',
-                                                                            'Irregular',
-                                                                        ].map(
-                                                                            (
-                                                                                level,
-                                                                            ) => (
-                                                                                <DropdownMenuItem
-                                                                                    key={
-                                                                                        level
-                                                                                    }
-                                                                                    onClick={() =>
-                                                                                        handleSelectByYear(
-                                                                                            level,
-                                                                                        )
-                                                                                    }
-                                                                                    className="cursor-pointer"
-                                                                                >
-                                                                                    {
-                                                                                        level
-                                                                                    }
-                                                                                </DropdownMenuItem>
-                                                                            ),
-                                                                        )}
-                                                                        <DropdownMenuSeparator />
-                                                                        <DropdownMenuItem
-                                                                            onClick={() =>
-                                                                                setSelectedUserIds(
-                                                                                    [],
-                                                                                )
-                                                                            }
-                                                                            className="cursor-pointer text-red-600 focus:text-red-700"
-                                                                        >
-                                                                            Clear
-                                                                            Selection
-                                                                        </DropdownMenuItem>
-                                                                    </DropdownMenuContent>
-                                                                </DropdownMenu>
-                                                            </div>
-                                                        </th>
-                                                        <th className="w-12 px-2 py-4 text-[10px] font-bold tracking-wider uppercase">
-                                                            #
-                                                        </th>
-                                                        <th className="px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
-                                                            User ID
-                                                        </th>
-                                                        <th className="min-w-[260px] px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
-                                                            Full Name
-                                                        </th>
-                                                        <th className="px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
-                                                            Role
-                                                        </th>
-                                                        <th className="px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
-                                                            Year Level
-                                                        </th>
-                                                        <th className="px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
-                                                            Department / Program
-                                                        </th>
-                                                        <th className="px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
-                                                            Action
-                                                        </th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                                    {pagedStudents.length ===
-                                                    0 ? (
-                                                        <tr>
-                                                            <td
-                                                                colSpan={8}
-                                                                className="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400"
-                                                            >
-                                                                No users found.
-                                                            </td>
-                                                        </tr>
-                                                    ) : (
-                                                        pagedStudents.map(
-                                                            (u, idx) => (
-                                                                <tr
-                                                                    key={u.id}
-                                                                    className="transition-colors duration-200 hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
-                                                                >
-                                                                    <td className="px-4 py-4">
-                                                                        <Checkbox
-                                                                            checked={selectedUserIds.includes(
-                                                                                Number(
-                                                                                    (
-                                                                                        u as any
-                                                                                    )
-                                                                                        .id,
-                                                                                ),
-                                                                            )}
-                                                                            onCheckedChange={(
-                                                                                checked,
-                                                                            ) =>
-                                                                                handleSelectRow(
-                                                                                    Number(
-                                                                                        (
-                                                                                            u as any
-                                                                                        )
-                                                                                            .id,
-                                                                                    ),
-                                                                                    checked as boolean,
-                                                                                )
-                                                                            }
-                                                                            aria-label={`Select ${u.name}`}
-                                                                        />
-                                                                    </td>
-                                                                    <td className="px-2 py-4 text-slate-500 dark:text-slate-400">
-                                                                        {(Math.min(
-                                                                            Math.max(
-                                                                                pageIndex,
-                                                                                1,
-                                                                            ),
-                                                                            totalPages,
-                                                                        ) -
-                                                                            1) *
-                                                                            pageSize +
-                                                                            idx +
-                                                                            1}
-                                                                    </td>
-                                                                    <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">
-                                                                        {
-                                                                            u.student_id
-                                                                        }
-                                                                    </td>
-                                                                    <td className="px-6 py-4">
-                                                                        <div className="flex items-center gap-3">
-                                                                            <Avatar className="size-10 ring-2 ring-white dark:ring-slate-800">
-                                                                                <AvatarFallback className="bg-slate-100 text-xs font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-                                                                                    {getInitials(
-                                                                                        u.name,
-                                                                                    )}
-                                                                                </AvatarFallback>
-                                                                            </Avatar>
-                                                                            <div>
-                                                                                <div className="font-bold text-slate-900 dark:text-white">
-                                                                                    {
-                                                                                        u.name
-                                                                                    }
-                                                                                </div>
-                                                                                <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                                                                                    {
-                                                                                        u.email
-                                                                                    }
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    </td>
-                                                                    <td className="px-6 py-4">
-                                                                        <span
-                                                                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold tracking-tight uppercase ${
-                                                                                u.role
-                                                                                    ?.toLowerCase()
-                                                                                    .includes(
-                                                                                        'admin',
-                                                                                    )
-                                                                                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                                                                    : u.role
-                                                                                            ?.toLowerCase()
-                                                                                            .includes(
-                                                                                                'program',
-                                                                                            )
-                                                                                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                                                                                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                                                                            }`}
-                                                                        >
-                                                                            {u.role ??
-                                                                                'Student'}
-                                                                        </span>
-                                                                    </td>
-                                                                    <td className="px-6 py-4">
-                                                                        {u.year_level ? (
-                                                                            <span className="inline-flex items-center rounded-md bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 border border-amber-200/80 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/40">
-                                                                                {u.year_level}
-                                                                            </span>
-                                                                        ) : (
-                                                                            <span className="text-slate-400 text-xs">—</span>
-                                                                        )}
-                                                                    </td>
-                                                                    <td className="px-6 py-4 font-medium text-slate-600 dark:text-slate-400">
-                                                                        <div className="font-semibold text-slate-800 dark:text-slate-200">
-                                                                            {String(
-                                                                                u.course ??
-                                                                                    '',
-                                                                            ).trim() ||
-                                                                                '—'}
-                                                                        </div>
-                                                                    </td>
-
-                                                                    <td className="px-4 py-3">
-                                                                        <div className="flex items-center gap-3">
-                                                                            <Button
-                                                                                type="button"
-                                                                                variant="outline"
-                                                                                size="icon"
-                                                                                className="h-8 w-8 border-slate-300 bg-white transition-colors hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700"
-                                                                                onClick={() => {
-                                                                                    if (
-                                                                                        isProgramHeadRow(
-                                                                                            u,
-                                                                                        ) ||
-                                                                                        isAdminRow(
-                                                                                            u,
-                                                                                        )
-                                                                                    ) {
-                                                                                        return;
-                                                                                    }
-                                                                                    setViewStudent(
-                                                                                        u,
-                                                                                    );
-                                                                                    setViewOpen(
-                                                                                        true,
-                                                                                    );
-                                                                                }}
-                                                                                aria-label="View"
-                                                                            >
-                                                                                <Eye className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                                                                            </Button>
-                                                                            <Button
-                                                                                type="button"
-                                                                                variant="outline"
-                                                                                size="icon"
-                                                                                className="h-8 w-8 border-slate-300 bg-white transition-colors hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700"
-                                                                                onClick={() => {
-                                                                                    if (
-                                                                                        isProgramHeadRow(
-                                                                                            u,
-                                                                                        ) ||
-                                                                                        isAdminRow(
-                                                                                            u,
-                                                                                        )
-                                                                                    ) {
-                                                                                        return;
-                                                                                    }
-                                                                                    openEditModal(
-                                                                                        u,
-                                                                                    );
-                                                                                }}
-                                                                                aria-label="Edit"
-                                                                            >
-                                                                                <Pencil className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                                                                            </Button>
-                                                                        </div>
-                                                                    </td>
-                                                                </tr>
-                                                            ),
-                                                        )
-                                                    )}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-4 flex flex-col gap-2 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between dark:text-slate-400">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex items-center gap-1.5">
-                                                <span>Rows per page:</span>
-                                                <select
-                                                    value={pageSize}
-                                                    onChange={(e) => {
-                                                        setPageSize(
-                                                            Number(
-                                                                e.target.value,
-                                                            ),
-                                                        );
-                                                        setPageIndex(1);
-                                                    }}
-                                                    className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
-                                                >
-                                                    {[10, 25, 50, 100, 255].map(
-                                                        (size) => (
-                                                            <option
-                                                                key={size}
-                                                                value={size}
-                                                            >
-                                                                {size}
-                                                            </option>
-                                                        ),
-                                                    )}
-                                                </select>
-                                            </div>
-                                            <span className="text-slate-400 dark:text-slate-600">
-                                                |
-                                            </span>
-                                            <span>
-                                                Showing{' '}
-                                                {filteredStudents.length === 0
-                                                    ? 0
-                                                    : (Math.min(
-                                                          Math.max(
-                                                              pageIndex,
-                                                              1,
-                                                          ),
-                                                          totalPages,
-                                                      ) -
-                                                          1) *
-                                                          pageSize +
-                                                      1}{' '}
-                                                to{' '}
-                                                {Math.min(
-                                                    Math.min(
-                                                        Math.max(pageIndex, 1),
-                                                        totalPages,
-                                                    ) * pageSize,
-                                                    filteredStudents.length,
-                                                )}{' '}
-                                                of {filteredStudents.length}{' '}
-                                                entries
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <button
-                                                type="button"
-                                                className="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100 disabled:opacity-50"
-                                                onClick={() =>
-                                                    setPageIndex((p) =>
-                                                        Math.max(1, p - 1),
-                                                    )
-                                                }
-                                                disabled={pageIndex <= 1}
-                                            >
-                                                Prev
-                                            </button>
-                                            {(() => {
-                                                let startPage = Math.max(
-                                                    1,
-                                                    pageIndex - 1,
-                                                );
-                                                let endPage = Math.min(
-                                                    totalPages,
-                                                    startPage + 2,
-                                                );
-                                                if (endPage - startPage < 2) {
-                                                    startPage = Math.max(
-                                                        1,
-                                                        endPage - 2,
-                                                    );
-                                                }
-                                                const pages = [];
-                                                for (
-                                                    let i = startPage;
-                                                    i <= endPage;
-                                                    i++
-                                                ) {
-                                                    pages.push(i);
-                                                }
-                                                return pages.map((num) => (
-                                                    <button
-                                                        key={num}
-                                                        type="button"
-                                                        onClick={() =>
-                                                            setPageIndex(num)
-                                                        }
-                                                        className={
-                                                            'rounded-md px-2 py-1 ' +
-                                                            (pageIndex === num
-                                                                ? 'bg-[#23509A] text-white dark:bg-blue-600'
-                                                                : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800')
-                                                        }
-                                                    >
-                                                        {num}
-                                                    </button>
-                                                ));
-                                            })()}
-                                            <button
-                                                type="button"
-                                                className="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100 disabled:opacity-50"
-                                                onClick={() =>
-                                                    setPageIndex((p) =>
-                                                        Math.min(
-                                                            totalPages,
-                                                            p + 1,
-                                                        ),
-                                                    )
-                                                }
-                                                disabled={
-                                                    pageIndex >= totalPages
-                                                }
-                                            >
-                                                Next
-                                            </button>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                            <ManageUsersTableCard
+                                totalUsers={totalUsers}
+                                searchQuery={searchQuery}
+                                setSearchQuery={setSearchQuery}
+                                roleFilter={roleFilter}
+                                setRoleFilter={setRoleFilter}
+                                courseFilter={courseFilter}
+                                setCourseFilter={setCourseFilter}
+                                availableCourses={availableCourses}
+                                selectedUserIds={selectedUserIds}
+                                setSelectedUserIds={setSelectedUserIds}
+                                handleSelectAll={handleSelectAll}
+                                handleSelectRow={handleSelectRow}
+                                handleSelectByYear={handleSelectByYear}
+                                pagedStudents={pagedStudents}
+                                filteredStudents={filteredStudents}
+                                pageSize={pageSize}
+                                setPageSize={setPageSize}
+                                pageIndex={pageIndex}
+                                setPageIndex={setPageIndex}
+                                totalPages={totalPages}
+                                onViewUser={(user) => {
+                                    setViewStudent(user);
+                                    setViewOpen(true);
+                                }}
+                                onEditUser={openEditModal}
+                                onOpenBulkModal={() => setBulkModalOpen(true)}
+                                getInitials={getInitials}
+                                isProgramHeadRow={isProgramHeadRow}
+                                isAdminRow={isAdminRow}
+                            />
                         </>
-                    )}{' '}
-                    {/* end activeTab === 'users' */}
-                    {/* ── PROGRAMS TAB ─────────────────────────────────────── */}
+                    )}
+
+                    {/* ── PROGRAMS TAB ── */}
                     {activeTab === 'programs' && (
-                        <>
-                            {/* Stats cards */}
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                                <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
-                                    <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-blue-500/5" />
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div>
-                                            <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
-                                                Total Programs
-                                            </p>
-                                            <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
-                                                {progStats.total}
-                                            </p>
-                                            <p className="mt-1 text-xs font-semibold text-blue-600 dark:text-blue-400">
-                                                All Offerings
-                                            </p>
-                                        </div>
-                                        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-blue-500/10 text-blue-600 ring-1 ring-blue-200/50 transition-transform duration-300 group-hover:scale-110 dark:bg-blue-500/20 dark:text-blue-400 dark:ring-blue-900/30">
-                                            <BookOpen className="h-5 w-5" />
-                                        </div>
-                                    </div>
-                                    <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                        <div className="h-full w-full rounded-full bg-gradient-to-r from-blue-400 to-blue-600" />
-                                    </div>
-                                </div>
+                        <ManageProgramsTab
+                            programs={programs}
+                            isCreateModalOpen={isCreateProgramModalOpen}
+                            setIsCreateModalOpen={setIsCreateProgramModalOpen}
+                        />
+                    )}
 
-                                <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
-                                    <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-emerald-500/5" />
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div>
-                                            <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
-                                                Active
-                                            </p>
-                                            <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
-                                                {progStats.active}
-                                            </p>
-                                            <p className="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                                                Curriculums
-                                            </p>
-                                        </div>
-                                        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-200/50 transition-transform duration-300 group-hover:scale-110 dark:bg-emerald-500/20 dark:text-emerald-400 dark:ring-emerald-900/30">
-                                            <Users className="h-5 w-5" />
-                                        </div>
-                                    </div>
-                                    <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                        <div className="h-full w-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600" />
-                                    </div>
-                                </div>
-
-                                <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
-                                    <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-amber-500/5" />
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div>
-                                            <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
-                                                Inactive
-                                            </p>
-                                            <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
-                                                {progStats.inactive}
-                                            </p>
-                                            <p className="mt-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
-                                                Archived/Disabled
-                                            </p>
-                                        </div>
-                                        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-500/10 text-amber-600 ring-1 ring-amber-200/50 transition-transform duration-300 group-hover:scale-110 dark:bg-amber-500/20 dark:text-amber-400 dark:ring-amber-900/30">
-                                            <BookOpen className="h-5 w-5" />
-                                        </div>
-                                    </div>
-                                    <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                        <div className="h-full w-full rounded-full bg-gradient-to-r from-amber-400 to-amber-600" />
-                                    </div>
-                                </div>
-
-                                <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
-                                    <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-purple-500/5" />
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div>
-                                            <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
-                                                Departments
-                                            </p>
-                                            <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
-                                                {progStats.departments}
-                                            </p>
-                                            <p className="mt-1 text-xs font-semibold text-purple-600 dark:text-purple-400">
-                                                Academic Units
-                                            </p>
-                                        </div>
-                                        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-purple-500/10 text-purple-600 ring-1 ring-purple-200/50 transition-transform duration-300 group-hover:scale-110 dark:bg-purple-500/20 dark:text-purple-400 dark:ring-purple-900/30">
-                                            <Users className="h-5 w-5" />
-                                        </div>
-                                    </div>
-                                    <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                        <div className="h-full w-full rounded-full bg-gradient-to-r from-purple-400 to-purple-600" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Programs table card */}
-                            <Card className="border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-[#0B192C]/50">
-                                <CardHeader className="pb-3">
-                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                        <CardTitle className="text-sm text-slate-800 dark:text-white">
-                                            All Programs
-                                        </CardTitle>
-                                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:items-center">
-                                            <Select
-                                                value={progDeptFilter}
-                                                onValueChange={(v) =>
-                                                    setProgDeptFilter(v as any)
-                                                }
-                                            >
-                                                <SelectTrigger className="h-9 bg-white dark:bg-slate-700">
-                                                    <SelectValue placeholder="All Departments" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="all">
-                                                        All Departments
-                                                    </SelectItem>
-                                                    {progDepartments.map(
-                                                        (dept) => (
-                                                            <SelectItem
-                                                                key={dept}
-                                                                value={dept}
-                                                            >
-                                                                {dept}
-                                                            </SelectItem>
-                                                        ),
-                                                    )}
-                                                </SelectContent>
-                                            </Select>
-                                            <div className="relative col-span-2">
-                                                <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                                <Input
-                                                    placeholder="Search programs..."
-                                                    className="h-9 bg-white pl-9 dark:bg-slate-700 dark:text-slate-300"
-                                                    value={progSearch}
-                                                    onChange={(e) =>
-                                                        setProgSearch(
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="pt-0">
-                                    {progPagedRows.length === 0 ? (
-                                        <div className="py-12 text-center text-slate-500 dark:text-slate-400">
-                                            No programs found.
-                                        </div>
-                                    ) : (
-                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                            {progPagedRows.map((r) => (
-                                                <Card
-                                                    key={r.id}
-                                                    className="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white/80 shadow-sm backdrop-blur transition-all duration-200 hover:shadow-md dark:border-slate-700 dark:bg-[#0B192C]/50"
-                                                >
-                                                    {/* Card header gradient */}
-                                                    <div className="relative rounded-t-2xl bg-gradient-to-r from-[#0b2d66] via-[#103875] to-[#1e40af] px-5 pt-5 pb-4">
-                                                        <div className="min-w-0 pr-24">
-                                                            <div className="flex flex-wrap items-center gap-2">
-                                                                <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-1">
-                                                                    <div className="font-mono text-[11px] text-white/90">
-                                                                        {r.code}
-                                                                    </div>
-                                                                </div>
-                                                                <Badge
-                                                                    className={
-                                                                        r.status ===
-                                                                        'active'
-                                                                            ? 'bg-emerald-600 hover:bg-emerald-600'
-                                                                            : 'bg-amber-500 hover:bg-amber-500'
-                                                                    }
-                                                                >
-                                                                    {r.status}
-                                                                </Badge>
-                                                            </div>
-                                                            <h3 className="mt-3 truncate text-base font-semibold tracking-tight text-white">
-                                                                {r.name}
-                                                            </h3>
-                                                            {r.description ? (
-                                                                <p className="mt-1 line-clamp-2 text-sm text-white/80">
-                                                                    {
-                                                                        r.description
-                                                                    }
-                                                                </p>
-                                                            ) : (
-                                                                <p className="mt-1 line-clamp-2 text-sm text-white/70">
-                                                                    No
-                                                                    description
-                                                                    available
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="mt-4 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent dark:via-slate-700" />
-
-                                                    {/* Card body */}
-                                                    <div className="px-5 pt-4 pb-14">
-                                                        <div className="grid grid-cols-3 gap-3">
-                                                            <div>
-                                                                <div className="text-[11px] font-medium tracking-wide text-slate-500 uppercase dark:text-slate-400">
-                                                                    Department
-                                                                </div>
-                                                                <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-                                                                    {
-                                                                        r.department
-                                                                    }
-                                                                </div>
-                                                            </div>
-                                                            <div>
-                                                                <div className="text-[11px] font-medium tracking-wide text-slate-500 uppercase dark:text-slate-400">
-                                                                    Duration
-                                                                </div>
-                                                                <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-                                                                    {r.duration}
-                                                                </div>
-                                                            </div>
-                                                            <div>
-                                                                <div className="text-[11px] font-medium tracking-wide text-slate-500 uppercase dark:text-slate-400">
-                                                                    Students
-                                                                </div>
-                                                                <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-                                                                    {
-                                                                        r.studentCount
-                                                                    }
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div className="pointer-events-none mt-4 h-1 w-0 bg-gradient-to-r from-[#0b2d66] via-[#23509A] to-[#1e40af] transition-all duration-200 group-hover:w-full" />
-
-                                                        {/* Actions */}
-                                                        <div className="absolute right-4 bottom-4 flex items-center gap-2">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() =>
-                                                                    router.visit(
-                                                                        `/admin/programs/${r.id}`,
-                                                                    )
-                                                                }
-                                                                className="inline-flex items-center justify-center rounded-lg border border-blue-200/60 p-2 text-blue-700 hover:bg-blue-50 hover:text-blue-800 dark:border-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/40"
-                                                                aria-label="View"
-                                                            >
-                                                                <Eye className="h-4 w-4" />
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() =>
-                                                                    router.visit(
-                                                                        `/admin/programs/${r.id}/edit`,
-                                                                    )
-                                                                }
-                                                                className="inline-flex items-center justify-center rounded-lg border border-emerald-200/60 p-2 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 dark:border-emerald-900/40 dark:text-emerald-300 dark:hover:bg-emerald-900/40"
-                                                                aria-label="Edit"
-                                                            >
-                                                                <Edit className="h-4 w-4" />
-                                                            </button>
-                                                            {r.status ===
-                                                            'active' ? (
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() =>
-                                                                        router.post(
-                                                                            adminProgramsArchive(
-                                                                                r.id,
-                                                                            ),
-                                                                        )
-                                                                    }
-                                                                    className="inline-flex items-center justify-center rounded-lg border border-amber-200/60 p-2 text-amber-700 hover:bg-amber-50 hover:text-amber-800 dark:border-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/40"
-                                                                    aria-label="Archive"
-                                                                >
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                </button>
-                                                            ) : (
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() =>
-                                                                        router.post(
-                                                                            adminProgramsUnarchive(
-                                                                                r.id,
-                                                                            ),
-                                                                        )
-                                                                    }
-                                                                    className="inline-flex items-center justify-center rounded-lg border border-blue-200/60 p-2 text-blue-700 hover:bg-blue-50 hover:text-blue-800 dark:border-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/40"
-                                                                    aria-label="Unarchive"
-                                                                >
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </Card>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {/* Pagination */}
-                                    <div className="mt-3 flex flex-col gap-2 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between dark:text-slate-400">
-                                        <div>
-                                            Showing{' '}
-                                            {progFilteredRows.length === 0
-                                                ? 0
-                                                : (Math.min(
-                                                      Math.max(
-                                                          progPageIndex,
-                                                          1,
-                                                      ),
-                                                      progTotalPages,
-                                                  ) -
-                                                      1) *
-                                                      progPageSize +
-                                                  1}{' '}
-                                            to{' '}
-                                            {Math.min(
-                                                Math.min(
-                                                    Math.max(progPageIndex, 1),
-                                                    progTotalPages,
-                                                ) * progPageSize,
-                                                progFilteredRows.length,
-                                            )}{' '}
-                                            of {progFilteredRows.length} entries
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
-                                                Show
-                                                <select
-                                                    value={progPageSize}
-                                                    onChange={(e) =>
-                                                        setProgPageSize(
-                                                            Number(
-                                                                e.target.value,
-                                                            ) || 5,
-                                                        )
-                                                    }
-                                                    className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
-                                                >
-                                                    <option value={5}>5</option>
-                                                    <option value={10}>
-                                                        10
-                                                    </option>
-                                                    <option value={15}>
-                                                        15
-                                                    </option>
-                                                    <option value={20}>
-                                                        20
-                                                    </option>
-                                                </select>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <button
-                                                    type="button"
-                                                    className="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-700"
-                                                    onClick={() =>
-                                                        setProgPageIndex((p) =>
-                                                            Math.max(1, p - 1),
-                                                        )
-                                                    }
-                                                    disabled={
-                                                        progPageIndex <= 1
-                                                    }
-                                                >
-                                                    Prev
-                                                </button>
-                                                {Array.from({
-                                                    length: progTotalPages,
-                                                })
-                                                    .slice(0, 5)
-                                                    .map((_, idx) => {
-                                                        const num = idx + 1;
-                                                        return (
-                                                            <button
-                                                                key={num}
-                                                                type="button"
-                                                                onClick={() =>
-                                                                    setProgPageIndex(
-                                                                        num,
-                                                                    )
-                                                                }
-                                                                className={
-                                                                    'rounded-md px-2 py-1 ' +
-                                                                    (progPageIndex ===
-                                                                    num
-                                                                        ? 'bg-[#23509A] text-white'
-                                                                        : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700')
-                                                                }
-                                                            >
-                                                                {num}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                <button
-                                                    type="button"
-                                                    className="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-700"
-                                                    onClick={() =>
-                                                        setProgPageIndex((p) =>
-                                                            Math.min(
-                                                                progTotalPages,
-                                                                p + 1,
-                                                            ),
-                                                        )
-                                                    }
-                                                    disabled={
-                                                        progPageIndex >=
-                                                        progTotalPages
-                                                    }
-                                                >
-                                                    Next
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </>
-                    )}{' '}
-                    {/* end activeTab === 'programs' */}
-                    {/* ── PASSWORD RESETS TAB ──────────────────────────────────────────────────────────── */}
+                    {/* ── PASSWORD RESETS TAB ── */}
                     {activeTab === 'password-resets' && (
-                        <Card className="border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#0B192C]/50">
-                            <CardHeader>
-                                <CardTitle className="text-lg font-semibold text-slate-800 dark:text-white">
-                                    Pending Password Reset Requests
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
-                                    <table className="w-full min-w-max text-left text-sm text-slate-600 dark:text-slate-400">
-                                        <thead className="bg-slate-50 text-xs tracking-wider text-slate-500 uppercase dark:bg-slate-800 dark:text-slate-400">
-                                            <tr>
-                                                <th className="px-4 py-3 font-medium">
-                                                    User Email
-                                                </th>
-                                                <th className="px-4 py-3 font-medium">
-                                                    User Type
-                                                </th>
-                                                <th className="px-4 py-3 font-medium">
-                                                    Requested At
-                                                </th>
-                                                <th className="px-4 py-3 text-right font-medium">
-                                                    Actions
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-200 bg-white dark:divide-slate-700 dark:bg-slate-900/50">
-                                            {(
-                                                props.passwordResetRequests as any[]
-                                            )
-                                                ?.filter(
-                                                    (r: any) =>
-                                                        r.status === 'pending',
-                                                )
-                                                .map((request: any) => (
-                                                    <tr
-                                                        key={request.id}
-                                                        className="hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                                                    >
-                                                        <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
-                                                            {request.email}
-                                                        </td>
-                                                        <td className="px-4 py-3 capitalize">
-                                                            {request.user_type.replace(
-                                                                '_',
-                                                                ' ',
-                                                            )}
-                                                        </td>
-                                                        <td className="px-4 py-3">
-                                                            {new Date(
-                                                                request.created_at,
-                                                            ).toLocaleString()}
-                                                        </td>
-                                                        <td className="space-x-2 px-4 py-3 text-right">
-                                                            <Button
-                                                                size="sm"
-                                                                className="bg-emerald-600 text-white hover:bg-emerald-700"
-                                                                onClick={() => {
-                                                                    if (
-                                                                        confirm(
-                                                                            'Are you sure you want to approve this request and reset the password to the default static password?',
-                                                                        )
-                                                                    ) {
-                                                                        router.post(
-                                                                            `/admin/password-resets/${request.id}/approve`,
-                                                                        );
-                                                                    }
-                                                                }}
-                                                            >
-                                                                Approve
-                                                            </Button>
-                                                            <Button
-                                                                size="sm"
-                                                                variant="destructive"
-                                                                onClick={() => {
-                                                                    if (
-                                                                        confirm(
-                                                                            'Are you sure you want to reject this request?',
-                                                                        )
-                                                                    ) {
-                                                                        router.post(
-                                                                            `/admin/password-resets/${request.id}/reject`,
-                                                                        );
-                                                                    }
-                                                                }}
-                                                            >
-                                                                Reject
-                                                            </Button>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            {(!props.passwordResetRequests ||
-                                                (
-                                                    props.passwordResetRequests as any[]
-                                                ).filter(
-                                                    (r: any) =>
-                                                        r.status === 'pending',
-                                                ).length === 0) && (
-                                                <tr>
-                                                    <td
-                                                        colSpan={4}
-                                                        className="px-4 py-8 text-center text-slate-500"
-                                                    >
-                                                        No pending password
-                                                        reset requests.
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </CardContent>
-                        </Card>
+                        <ManagePasswordResetsTab
+                            passwordResetRequests={
+                                props.passwordResetRequests as any
+                            }
+                        />
                     )}
                 </div>
             </div>
 
-            {/* View Student Dialog (Users tab) */}
+            {/* Dialogs */}
             <ViewStudentDialog
                 open={viewOpen}
                 onOpenChange={setViewOpen}
                 student={viewStudent as any}
             />
 
-            <Dialog
-                open={isCreateModalOpen}
-                onOpenChange={setIsCreateModalOpen}
-            >
-                <DialogContent className="overflow-hidden border-slate-200 bg-white p-0 shadow-2xl sm:max-w-2xl dark:border-slate-700 dark:bg-slate-800">
-                    {/* Header */}
-                    <div className="bg-gradient-to-r from-[#0b2d66] to-[#1e40af] px-6 py-5 text-white">
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2 text-xl font-bold text-white">
-                                <BookOpen className="h-6 w-6 text-blue-200" />
-                                Create New Program
-                            </DialogTitle>
-                            <DialogDescription className="mt-1 text-sm text-white/80">
-                                Add a new academic program to the curriculum database.
-                            </DialogDescription>
-                        </DialogHeader>
-                    </div>
+            <AddEditUserDialog
+                open={open}
+                onOpenChange={setOpen}
+                editingUser={editingUser}
+                hasAnyError={hasAnyError}
+                errors={errors}
+                form={form}
+                setForm={setForm}
+                onClose={closeModal}
+                onSubmit={submit}
+                onOpenBulkAdd={() => setBulkAddOpen(true)}
+            />
 
-                    <form onSubmit={handleProgSubmit}>
-                        <div className="space-y-6 px-6 py-6">
-                            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label
-                                        htmlFor="prog-name"
-                                        className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                                    >
-                                        Program Name *
-                                    </Label>
-                                    <Input
-                                        id="prog-name"
-                                        type="text"
-                                        value={progData.name}
-                                        onChange={(e) =>
-                                            setProgData('name', e.target.value)
-                                        }
-                                        className="bg-white dark:bg-slate-700 dark:text-slate-300"
-                                        placeholder="e.g., Bachelor of Science in Computer Science"
-                                        required
-                                    />
-                                    {progErrors.name && (
-                                        <p className="text-sm text-red-600 dark:text-red-400">
-                                            {progErrors.name}
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="space-y-2">
-                                    <Label
-                                        htmlFor="prog-code"
-                                        className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                                    >
-                                        Program Code *
-                                    </Label>
-                                    <Input
-                                        id="prog-code"
-                                        type="text"
-                                        value={progData.code}
-                                        onChange={(e) =>
-                                            setProgData('code', e.target.value)
-                                        }
-                                        className="bg-white font-mono dark:bg-slate-700 dark:text-slate-300"
-                                        placeholder="e.g., BSCS"
-                                        required
-                                    />
-                                    {progErrors.code && (
-                                        <p className="text-sm text-red-600 dark:text-red-400">
-                                            {progErrors.code}
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="space-y-2">
-                                    <Label
-                                        htmlFor="prog-dept"
-                                        className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                                    >
-                                        Department
-                                    </Label>
-                                    <Input
-                                        id="prog-dept"
-                                        type="text"
-                                        value={progData.department}
-                                        onChange={(e) =>
-                                            setProgData(
-                                                'department',
-                                                e.target.value,
-                                            )
-                                        }
-                                        className="bg-white dark:bg-slate-700 dark:text-slate-300"
-                                        placeholder="e.g., College of Engineering"
-                                    />
-                                    {progErrors.department && (
-                                        <p className="text-sm text-red-600 dark:text-red-400">
-                                            {progErrors.department}
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="space-y-2">
-                                    <Label
-                                        htmlFor="prog-duration"
-                                        className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                                    >
-                                        Duration
-                                    </Label>
-                                    <Input
-                                        id="prog-duration"
-                                        type="text"
-                                        value={progData.duration}
-                                        onChange={(e) =>
-                                            setProgData('duration', e.target.value)
-                                        }
-                                        className="bg-white dark:bg-slate-700 dark:text-slate-300"
-                                        placeholder="e.g., 4 years"
-                                    />
-                                    {progErrors.duration && (
-                                        <p className="text-sm text-red-600 dark:text-red-400">
-                                            {progErrors.duration}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <Label
-                                    htmlFor="prog-desc"
-                                    className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                                >
-                                    Description
-                                </Label>
-                                <Textarea
-                                    id="prog-desc"
-                                    value={progData.description}
-                                    onChange={(e) =>
-                                        setProgData('description', e.target.value)
-                                    }
-                                    className="min-h-[100px] bg-white dark:bg-slate-700 dark:text-slate-300"
-                                    placeholder="Enter a detailed description of the program..."
-                                    rows={4}
-                                />
-                                {progErrors.description && (
-                                    <p className="text-sm text-red-600 dark:text-red-400">
-                                        {progErrors.description}
-                                    </p>
-                                )}
-                            </div>
-                            <div className="flex items-center space-x-3">
-                                <Checkbox
-                                    id="prog-active"
-                                    checked={progData.is_active}
-                                    onCheckedChange={(checked: boolean) =>
-                                        setProgData('is_active', checked)
-                                    }
-                                />
-                                <Label
-                                    htmlFor="prog-active"
-                                    className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                                >
-                                    Active Program
-                                </Label>
-                            </div>
-                        </div>
+            <AddProgramHeadDialog
+                open={phOpen}
+                onOpenChange={setPhOpen}
+                editingUser={editingUser}
+                hasAnyError={hasAnyError}
+                errors={errors}
+                form={form}
+                setForm={setForm}
+                onClose={closeModal}
+                onSubmit={submitProgramHead}
+            />
 
-                        <DialogFooter className="border-t border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-700 dark:bg-slate-800">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => {
-                                    setIsCreateModalOpen(false);
-                                    progReset();
-                                }}
-                                className="border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                type="submit"
-                                disabled={progProcessing}
-                                className="bg-blue-600 text-white hover:bg-blue-700"
-                            >
-                                {progProcessing ? 'Creating...' : 'Create Program'}
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
+            <BulkAddUsersDialog
+                open={bulkAddOpen}
+                onOpenChange={setBulkAddOpen}
+            />
+
+            <BulkActionsModal
+                open={bulkModalOpen}
+                onOpenChange={setBulkModalOpen}
+                users={students as any}
+                selectedUserIds={selectedUserIds}
+                setSelectedUserIds={setSelectedUserIds}
+                availablePrograms={availableCourses}
+                onSuccess={() => setSelectedUserIds([])}
+            />
+
+            <BulkYearLevelDialog
+                open={bulkYearLevelOpen}
+                onOpenChange={setBulkYearLevelOpen}
+                selectedUserIds={selectedUserIds}
+                onSuccess={() => setSelectedUserIds([])}
+            />
         </AdminLayout>
     );
 }

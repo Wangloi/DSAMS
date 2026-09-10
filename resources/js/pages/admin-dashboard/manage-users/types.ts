@@ -44,8 +44,31 @@ export type UserRow = {
     officer_features?: string[] | null;
 };
 
+export type ProgramRow = {
+    id: string;
+    name: string;
+    code: string;
+    department: string;
+    description: string;
+    duration: string;
+    status: 'active' | 'inactive';
+    studentCount: number;
+    createdAt: string;
+    updatedAt: string;
+};
+
+export type PasswordResetRequest = {
+    id: number;
+    email: string;
+    user_type: string;
+    status: string;
+    created_at: string;
+};
+
 export type PageProps = {
     students: UserRow[];
+    programs?: ProgramRow[];
+    passwordResetRequests?: PasswordResetRequest[];
     errors?: Record<string, string>;
     flash?: {
         success?: string | null;
