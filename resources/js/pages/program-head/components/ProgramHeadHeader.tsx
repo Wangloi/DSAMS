@@ -299,7 +299,10 @@ export function ProgramHeadHeader() {
                 </Link>
 
                 {/* Right side actions */}
-                <div className="ml-auto flex items-center gap-2 sm:gap-3">
+                <div className="ml-auto flex items-center gap-1.5 sm:gap-3">
+                    {/* Dark/Light Theme Quick Toggle */}
+                    <ThemeToggle variant="header" />
+
                     {/* Help Support Guide */}
                     <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
                         <DialogTrigger asChild>

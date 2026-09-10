@@ -23,6 +23,7 @@ import {
     SheetTrigger,
 } from '@/components/ui/sheet';
 import { UserMenuContent } from '@/components/user-menu-content';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { useInitials } from '@/hooks/use-initials';
 import { cn, formatTimeAgo } from '@/lib/utils';
 import { adminDashboard, adminNotifications, adminHelp } from '@/routes';
@@ -277,7 +278,10 @@ export function AdminHeader() {
                 </Link>
 
                 {/* Right side actions */}
-                <div className="ml-auto flex items-center gap-2 sm:gap-3">
+                <div className="ml-auto flex items-center gap-1.5 sm:gap-3">
+                    {/* Dark/Light Theme Quick Toggle */}
+                    <ThemeToggle variant="header" />
+
                     {/* Help Support Guide */}
                     <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
                         <DialogTrigger asChild>

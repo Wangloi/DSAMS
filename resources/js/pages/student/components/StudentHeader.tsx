@@ -14,6 +14,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { UserMenuContent } from '@/components/user-menu-content';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAppearance } from '@/hooks/use-appearance';
 import { useInitials } from '@/hooks/use-initials';
 import { cn, formatTimeAgo } from '@/lib/utils';
@@ -217,6 +218,9 @@ export function StudentHeader() {
                 </Link>
 
                 <div className="ml-auto flex items-center gap-1 sm:gap-2">
+                    {/* Dark/Light Theme Quick Toggle */}
+                    <ThemeToggle variant="header" />
+
                     {/* Help Support Guide */}
                     <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
                         <DialogTrigger asChild>

@@ -7,6 +7,7 @@ import {
 import { UserInfo } from '@/components/user-info';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { logout } from '@/routes';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import type { User } from '@/types';
 import { Link, router } from '@inertiajs/react';
 import { LogOut, Settings } from 'lucide-react';
@@ -49,6 +50,10 @@ export function UserMenuContent({ user, logoutUrl }: Props) {
                         Settings
                     </Link>
                 </DropdownMenuItem>
+
+                <div className="px-1 py-0.5">
+                    <ThemeToggle variant="dropdown" />
+                </div>
             </DropdownMenuGroup>
             <DropdownMenuSeparator className="bg-slate-100 dark:bg-white/10" />
             <DropdownMenuGroup className="p-1">
