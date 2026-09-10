@@ -2,7 +2,6 @@ import { Button } from '@/components/ui/button';
 import {
     Sidebar,
     SidebarContent,
-    SidebarFooter,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
@@ -16,7 +15,6 @@ import {
     studentAdmissionSlipIndex,
 } from '@/routes';
 
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { Link, usePage } from '@inertiajs/react';
 import {
     Award,
@@ -150,12 +148,6 @@ export function StudentSidebar() {
                     </SidebarMenu>
                 </div>
             </SidebarContent>
-
-            <SidebarFooter className="border-t border-slate-200 p-2 dark:border-slate-800">
-                <div className="group-data-[collapsible=icon]:hidden">
-                    <ThemeToggle variant="sidebar" />
-                </div>
-            </SidebarFooter>
         </Sidebar>
     );
 }
