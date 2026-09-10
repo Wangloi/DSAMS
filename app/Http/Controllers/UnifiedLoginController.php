@@ -46,6 +46,7 @@ class UnifiedLoginController extends Controller
             }
             $request->session()->regenerate();
             $request->session()->flash('status', $successMessages['student']);
+            $request->session()->flash('success', $successMessages['student']);
             return redirect()->intended($dashboardRoutes['student']);
         }
         if (Auth::guard('student')->attempt(['email' => $identifier, 'password' => $password], $remember)) {
@@ -61,6 +62,7 @@ class UnifiedLoginController extends Controller
             }
             $request->session()->regenerate();
             $request->session()->flash('status', $successMessages['student']);
+            $request->session()->flash('success', $successMessages['student']);
             return redirect()->intended($dashboardRoutes['student']);
         }
 
@@ -68,6 +70,7 @@ class UnifiedLoginController extends Controller
         if (Auth::guard('admin')->attempt(['email' => $identifier, 'password' => $password], $remember)) {
             $request->session()->regenerate();
             $request->session()->flash('status', $successMessages['admin']);
+            $request->session()->flash('success', $successMessages['admin']);
             return redirect()->intended($dashboardRoutes['admin']);
         }
 
@@ -85,6 +88,7 @@ class UnifiedLoginController extends Controller
             }
             $request->session()->regenerate();
             $request->session()->flash('status', $successMessages['program_head']);
+            $request->session()->flash('success', $successMessages['program_head']);
             return redirect()->intended($dashboardRoutes['program_head']);
         }
 

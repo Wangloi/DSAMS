@@ -16,9 +16,9 @@ export default function LandingPage({
     return (
         <>
             <Head title="DSAMS" />
-            <div className="min-h-screen bg-[#FBFBFB] text-[#000000]">
+            <div className="min-h-screen w-full overflow-x-hidden bg-[#FBFBFB] text-[#000000]">
                 <LandingNavbar isAuthed={isAuthed} />
-                <div className="pt-16">
+                <div className="w-full overflow-x-hidden pt-16">
                     <LandingHero canRegister={canRegister} />
                     <LandingFeaturesCarousel />
                     <LandingAbout />

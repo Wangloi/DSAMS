@@ -62,23 +62,23 @@ export default function LandingNavbar({ isAuthed }: { isAuthed: boolean }) {
 
     return (
         <header className="fixed top-0 z-50 w-full border-b border-[#23509A]/10 bg-[#FBFBFB]/95 backdrop-blur-md">
-            <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-8">
-                <div className="flex items-center gap-2 sm:gap-3">
-                    <div className="flex items-center gap-1 sm:gap-2">
+            <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
+                <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
+                    <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                         <img
                             src="/images/SRCB.png"
                             alt="SRCB Logo"
-                            className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-white object-cover"
+                            className="h-7 w-7 sm:h-9 sm:w-9 rounded-full bg-white object-cover"
                         />
                         <img
                             src="/images/DSA.png"
                             alt="DSA Logo"
-                            className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-white object-cover"
+                            className="h-7 w-7 sm:h-9 sm:w-9 rounded-full bg-white object-cover"
                         />
                     </div>
-                    <div className="leading-tight">
-                        <div className="flex items-center gap-1.5 sm:gap-2">
-                            <div className="text-base font-extrabold tracking-wide text-[#000D6A] sm:text-lg">
+                    <div className="leading-tight truncate">
+                        <div className="flex items-center gap-1 sm:gap-2">
+                            <div className="text-sm font-extrabold tracking-wide text-[#000D6A] sm:text-lg">
                                 OSAMS
                             </div>
                             <span className="hidden text-[#000D6A]/30 sm:inline">/</span>
@@ -89,13 +89,13 @@ export default function LandingNavbar({ isAuthed }: { isAuthed: boolean }) {
                                 Student Affairs Management
                             </span>
                         </div>
-                        <div className="hidden text-[10px] font-semibold text-[#000D6A]/80 sm:block">
+                        <div className="hidden text-[10px] font-semibold text-[#000D6A]/80 sm:block truncate">
                             St. Rita's College of Balingasag
                         </div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2 sm:gap-3">
+                <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
                     {/* Desktop Navigation */}
                     <nav className="hidden items-center gap-4 text-sm font-medium md:flex lg:gap-8">
                         <Link href="/#home" className={navItemClass('/#home')}>
@@ -130,10 +130,27 @@ export default function LandingNavbar({ isAuthed }: { isAuthed: boolean }) {
                         </Link>
                     </nav>
 
+                    {/* Auth Button */}
+                    {isAuthed ? (
+                        <Link
+                            href={dashboard()}
+                            className="rounded-xl bg-[#23509A] px-3 py-1.5 text-xs font-semibold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#000D6A] hover:shadow-lg active:translate-y-0 sm:px-4 sm:py-2 sm:text-sm shrink-0"
+                        >
+                            Dashboard
+                        </Link>
+                    ) : (
+                        <Link
+                            href={login()}
+                            className="rounded-xl bg-[#23509A] px-3 py-1.5 text-xs font-semibold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#000D6A] hover:shadow-lg active:translate-y-0 sm:px-4 sm:py-2 sm:text-sm shrink-0"
+                        >
+                            Sign In
+                        </Link>
+                    )}
+
                     {/* Mobile Menu Button */}
                     <button
                         onClick={toggleMenu}
-                        className="rounded-lg p-2 text-[#000D6A] transition-colors duration-200 hover:bg-[#23509A]/10 md:hidden"
+                        className="rounded-lg p-1.5 sm:p-2 text-[#000D6A] transition-colors duration-200 hover:bg-[#23509A]/10 md:hidden shrink-0"
                         aria-label="Toggle menu"
                     >
                         {isMenuOpen ? (
@@ -142,29 +159,12 @@ export default function LandingNavbar({ isAuthed }: { isAuthed: boolean }) {
                             <Menu className="h-5 w-5" />
                         )}
                     </button>
-
-                    {/* Auth Button */}
-                    {isAuthed ? (
-                        <Link
-                            href={dashboard()}
-                            className="rounded-xl bg-[#23509A] px-3 py-1.5 text-xs font-semibold text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#000D6A] hover:shadow-xl active:translate-y-0 sm:px-5 sm:py-2 sm:text-sm"
-                        >
-                            Dashboard
-                        </Link>
-                    ) : (
-                        <Link
-                            href={login()}
-                            className="rounded-xl bg-[#23509A] px-3 py-1.5 text-xs font-semibold text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#000D6A] hover:shadow-xl active:translate-y-0 sm:px-5 sm:py-2 sm:text-sm"
-                        >
-                            Sign In
-                        </Link>
-                    )}
                 </div>
             </div>
 
             {/* Mobile Menu */}
             {isMenuOpen && (
-                <div className="border-t border-[#23509A]/10 bg-[#FBFBFB]/95 backdrop-blur-md md:hidden">
+                <div className="border-t border-[#23509A]/10 bg-[#FBFBFB]/98 backdrop-blur-md md:hidden max-h-[calc(100vh-4rem)] overflow-y-auto">
                     <div className="space-y-4 px-4 py-6">
                         <Link
                             href="/#home"

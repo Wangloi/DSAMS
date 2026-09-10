@@ -4,6 +4,7 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import '../css/app.css';
+import Swal from 'sweetalert2';
 import { AuthLoadingOverlay } from './components/AuthLoadingOverlay';
 import { initializeTheme } from './hooks/use-appearance';
 
@@ -22,6 +23,8 @@ function GlobalAppWrapper({ App, props }: { App: any; props: any }) {
     } | null>(null);
 
     useEffect(() => {
+        let activeAction: 'signing-in' | 'signing-out' | null = null;
+
         const removeStartListener = router.on('start', (event) => {
             const url = event.detail.visit.url;
             const pathname = typeof url === 'string' ? url : url.pathname;
@@ -29,7 +32,8 @@ function GlobalAppWrapper({ App, props }: { App: any; props: any }) {
 
             // Only trigger loading overlay on POST requests (form submissions), not links/GET requests
             if (method === 'post') {
-                if (pathname.includes('/logout')) {
+                if (pathname.includes('/logout') || pathname.includes('/student-logout')) {
+                    activeAction = 'signing-out';
                     setLoadingState({ visible: true, state: 'signing-out' });
                 } else if (
                     pathname.includes('/login') ||
@@ -39,9 +43,58 @@ function GlobalAppWrapper({ App, props }: { App: any; props: any }) {
                     pathname.includes('/two-factor-challenge') ||
                     pathname.includes('/register')
                 ) {
+                    activeAction = 'signing-in';
                     setLoadingState({ visible: true, state: 'signing-in' });
                 }
             }
+        });
+
+        const removeSuccessListener = router.on('success', (event) => {
+            if (activeAction === 'signing-in') {
+                const pageProps = (event.detail.page?.props as any) || {};
+                const userName =
+                    pageProps?.auth?.user?.name ||
+                    pageProps?.user?.name ||
+                    '';
+                const flashMessage =
+                    pageProps?.flash?.success || pageProps?.flash?.status;
+                const message =
+                    flashMessage ||
+                    (userName
+                        ? `Welcome back, ${userName}!`
+                        : 'You have signed in successfully.');
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Login Successful!',
+                    text: message,
+                    timer: 2000,
+                    timerProgressBar: true,
+                    showConfirmButton: false,
+                    customClass: {
+                        popup: 'rounded-3xl p-6 shadow-2xl font-sans border border-slate-100 dark:border-slate-800 dark:bg-[#051139]',
+                        title: 'text-2xl font-black text-[#0b2d66] dark:text-white',
+                        htmlContainer:
+                            'text-sm text-slate-600 dark:text-slate-300 font-medium mt-2',
+                    },
+                });
+            } else if (activeAction === 'signing-out') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Signed Out',
+                    text: 'You have been safely logged out.',
+                    timer: 1500,
+                    timerProgressBar: true,
+                    showConfirmButton: false,
+                    customClass: {
+                        popup: 'rounded-3xl p-6 shadow-2xl font-sans border border-slate-100 dark:border-slate-800 dark:bg-[#051139]',
+                        title: 'text-2xl font-black text-[#0b2d66] dark:text-white',
+                        htmlContainer:
+                            'text-sm text-slate-600 dark:text-slate-300 font-medium mt-2',
+                    },
+                });
+            }
+            activeAction = null;
         });
 
         const removeFinishListener = router.on('finish', () => {
@@ -50,6 +103,7 @@ function GlobalAppWrapper({ App, props }: { App: any; props: any }) {
 
         return () => {
             removeStartListener();
+            removeSuccessListener();
             removeFinishListener();
         };
     }, []);

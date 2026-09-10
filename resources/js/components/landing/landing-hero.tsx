@@ -7,7 +7,7 @@ export default function LandingHero({ canRegister }: { canRegister: boolean }) {
     return (
         <section
             id="home"
-            className="relative flex min-h-screen items-center overflow-hidden"
+            className="relative flex min-h-[calc(100vh-4rem)] lg:min-h-screen w-full items-center overflow-hidden"
         >
             {/* Video Background */}
             <VideoBackground />
@@ -27,11 +27,11 @@ export default function LandingHero({ canRegister }: { canRegister: boolean }) {
             </div>
 
             <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div className="relative grid min-h-[85vh] lg:min-h-screen items-center gap-12 py-28 lg:py-0 lg:grid-cols-2 lg:gap-16">
+                <div className="relative grid min-h-[80vh] lg:min-h-screen items-center gap-10 py-12 sm:py-16 lg:py-0 lg:grid-cols-2 lg:gap-16">
                     {/* Content */}
-                    <div className="order-1 space-y-6 text-white sm:space-y-8 lg:order-1">
+                    <div className="order-1 space-y-6 text-white sm:space-y-8 lg:order-1 text-center sm:text-left">
                         <div className="space-y-4 sm:space-y-6">
-                            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-white/80 backdrop-blur-md sm:px-4 sm:py-2 sm:text-sm w-fit">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-white/80 backdrop-blur-md sm:px-4 sm:py-2 sm:text-sm w-fit mx-auto sm:mx-0">
                                 <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 <span className="hidden sm:inline">
                                     Modern Student Management System
@@ -39,15 +39,15 @@ export default function LandingHero({ canRegister }: { canRegister: boolean }) {
                                 <span className="sm:hidden">OSAMS</span>
                             </div>
 
-                            <h1 className="text-3xl leading-tight font-bold sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl">
+                            <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-extrabold leading-tight tracking-tight">
                                 Streamline Student Affairs with
-                                <span className="bg-gradient-to-r from-[#8CE4FF] to-[#261CC1] bg-clip-text text-transparent">
+                                <span className="bg-gradient-to-r from-[#8CE4FF] to-[#6da7ff] bg-clip-text text-transparent">
                                     {' '}
                                     OSA Management
                                 </span>
                             </h1>
 
-                            <p className="max-w-xl text-sm leading-relaxed text-white/90 sm:text-base md:text-lg lg:text-xl">
+                            <p className="max-w-xl mx-auto sm:mx-0 text-sm leading-relaxed text-white/90 sm:text-base md:text-lg">
                                 The Office of Student Affairs (OSA) manages
                                 student activities, discipline, and attendance,
                                 ensuring student welfare and maintaining campus
@@ -56,10 +56,10 @@ export default function LandingHero({ canRegister }: { canRegister: boolean }) {
                         </div>
 
                         {/* CTA Buttons */}
-                        <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:pt-4">
+                        <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:pt-4 w-full">
                             <Link
                                 href={login()}
-                                className="group inline-flex items-center justify-center gap-2 rounded-xl bg-[#23509A] px-6 py-3 text-base font-semibold text-white shadow-xl transition-all duration-300 hover:-translate-y-1 hover:bg-white hover:text-[#23509A] hover:shadow-2xl sm:px-8 sm:py-4 sm:text-lg"
+                                className="group inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#23509A] px-6 py-3.5 text-sm sm:text-base font-semibold text-white shadow-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-white hover:text-[#23509A] hover:shadow-2xl active:translate-y-0"
                             >
                                 Get Started
                                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1 sm:h-5 sm:w-5" />
@@ -68,7 +68,7 @@ export default function LandingHero({ canRegister }: { canRegister: boolean }) {
                             {canRegister && (
                                 <Link
                                     href={register()}
-                                    className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white bg-transparent px-6 py-3 text-base font-semibold text-white transition-all duration-300 hover:-translate-y-1 hover:bg-white hover:text-[#000D6A] hover:shadow-xl sm:px-8 sm:py-4 sm:text-lg"
+                                    className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border-2 border-white bg-transparent px-6 py-3.5 text-sm sm:text-base font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-white hover:text-[#000D6A] hover:shadow-xl active:translate-y-0"
                                 >
                                     Sign Up
                                 </Link>
@@ -77,57 +77,57 @@ export default function LandingHero({ canRegister }: { canRegister: boolean }) {
                     </div>
 
                     {/* Visual */}
-                    <div className="relative order-2 lg:order-2">
-                        <div className="relative mx-auto max-w-xs sm:max-w-sm lg:max-w-lg xl:max-w-xl">
+                    <div className="relative order-2 lg:order-2 px-2 sm:px-4">
+                        <div className="relative mx-auto w-full max-w-[300px] xs:max-w-[340px] sm:max-w-sm lg:max-w-lg xl:max-w-xl">
                             {/* Main Card */}
-                            <div className="rounded-2xl bg-white/95 p-6 shadow-2xl ring-1 ring-white/20 backdrop-blur-sm sm:p-8">
+                            <div className="rounded-2xl sm:rounded-3xl bg-white/95 p-4 sm:p-6 lg:p-8 shadow-2xl ring-1 ring-white/20 backdrop-blur-md">
                                 <div className="space-y-4 sm:space-y-6">
                                     {/* Header */}
                                     <div className="flex items-center gap-3">
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#23509A] sm:h-12 sm:w-12">
+                                        <div className="flex h-9 w-9 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-[#23509A] shrink-0">
                                             <img
                                                 src="/images/DSA.png"
                                                 alt="DSA"
-                                                className="h-5 w-5 rounded object-cover sm:h-6 sm:w-6"
+                                                className="h-5 w-5 sm:h-6 sm:w-6 rounded object-cover"
                                             />
                                         </div>
-                                        <div>
-                                            <h3 className="text-sm font-semibold text-[#000D6A] sm:text-base">
+                                        <div className="min-w-0">
+                                            <h3 className="text-xs sm:text-base font-semibold text-[#000D6A] truncate">
                                                 OSAMS Dashboard
                                             </h3>
-                                            <p className="text-xs text-[#000000]/60 sm:text-sm">
+                                            <p className="text-[10px] sm:text-xs text-[#000000]/60">
                                                 Real-time monitoring
                                             </p>
                                         </div>
                                     </div>
 
                                     {/* Stats Cards */}
-                                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                                        <div className="rounded-lg bg-[#23509A]/10 p-3 sm:p-4">
-                                            <div className="text-xl font-bold text-[#23509A] sm:text-2xl">
+                                    <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
+                                        <div className="rounded-lg sm:rounded-xl bg-[#23509A]/10 p-2.5 sm:p-4">
+                                            <div className="text-lg font-bold text-[#23509A] sm:text-2xl">
                                                 98%
                                             </div>
-                                            <div className="text-xs text-[#000000]/70 sm:text-sm">
+                                            <div className="text-[10px] sm:text-xs text-[#000000]/70 font-medium">
                                                 Attendance
                                             </div>
                                         </div>
-                                        <div className="rounded-lg bg-[#000D6A]/10 p-3 sm:p-4">
-                                            <div className="text-xl font-bold text-[#000D6A] sm:text-2xl">
+                                        <div className="rounded-lg sm:rounded-xl bg-[#000D6A]/10 p-2.5 sm:p-4">
+                                            <div className="text-lg font-bold text-[#000D6A] sm:text-2xl">
                                                 24
                                             </div>
-                                            <div className="text-xs text-[#000000]/70 sm:text-sm">
+                                            <div className="text-[10px] sm:text-xs text-[#000000]/70 font-medium">
                                                 Active Events
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Progress Bar */}
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between text-xs sm:text-sm">
+                                    <div className="space-y-1.5 sm:space-y-2">
+                                        <div className="flex justify-between text-[11px] sm:text-xs">
                                             <span className="text-[#000000]/70">
                                                 Today's Progress
                                             </span>
-                                            <span className="font-medium text-[#23509A]">
+                                            <span className="font-semibold text-[#23509A]">
                                                 85%
                                             </span>
                                         </div>
@@ -139,23 +139,23 @@ export default function LandingHero({ canRegister }: { canRegister: boolean }) {
                             </div>
 
                             {/* Floating Cards */}
-                            <div className="absolute -top-2 -right-2 rounded-xl bg-[#000D6A] p-2.5 text-white shadow-xl sm:-top-6 sm:-right-6 sm:p-4">
-                                <div className="flex items-center gap-1.5 sm:gap-3">
-                                    <CheckCircle className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
-                                    <span className="text-xs sm:text-sm font-medium">
+                            <div className="absolute -top-3 right-0 sm:-top-5 sm:-right-4 rounded-xl bg-[#000D6A] px-2.5 py-1.5 sm:p-3.5 text-white shadow-xl ring-1 ring-white/10">
+                                <div className="flex items-center gap-1.5 sm:gap-2.5">
+                                    <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-400" />
+                                    <span className="text-[11px] sm:text-xs font-semibold whitespace-nowrap">
                                         Live Updates
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="absolute -bottom-2 -left-2 rounded-xl bg-[#23509A] p-2.5 text-white shadow-xl sm:-bottom-6 sm:-left-6 sm:p-4">
-                                <div className="flex items-center gap-1.5 sm:gap-3">
-                                    <div className="flex h-5 w-5 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-white/20">
-                                        <span className="text-[10px] sm:text-sm font-bold">
+                            <div className="absolute -bottom-3 left-0 sm:-bottom-5 sm:-left-4 rounded-xl bg-[#23509A] px-2.5 py-1.5 sm:p-3.5 text-white shadow-xl ring-1 ring-white/10">
+                                <div className="flex items-center gap-1.5 sm:gap-2.5">
+                                    <div className="flex h-5 w-5 sm:h-7 sm:w-7 items-center justify-center rounded-lg bg-white/20">
+                                        <span className="text-[10px] sm:text-xs font-bold">
                                             QR
                                         </span>
                                     </div>
-                                    <span className="text-xs sm:text-sm font-medium">
+                                    <span className="text-[11px] sm:text-xs font-semibold whitespace-nowrap">
                                         Scan Ready
                                     </span>
                                 </div>

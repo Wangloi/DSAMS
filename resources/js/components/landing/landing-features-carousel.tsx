@@ -150,12 +150,12 @@ export default function LandingFeaturesCarousel() {
     const scrollByAmount = (dir: -1 | 1) => {
         const el = trackRef.current;
         if (!el) return;
-        const amount = Math.max(360, Math.floor(el.clientWidth * 0.9));
+        const amount = Math.max(280, Math.floor(el.clientWidth * 0.85));
         el.scrollBy({ left: dir * amount, behavior: 'smooth' });
     };
 
     return (
-        <section id="features" className="relative overflow-hidden bg-gradient-to-bl from-slate-50 via-blue-50/50 to-[#000D6A]/12 py-24 lg:py-32">
+        <section id="features" className="relative overflow-hidden bg-gradient-to-bl from-slate-50 via-blue-50/50 to-[#000D6A]/12 py-14 sm:py-20 lg:py-32">
             {/* Background grid mesh in soft blue */}
             <div className="absolute inset-0 bg-[linear-gradient(to_right,#23509a0d_1px,transparent_1px),linear-gradient(to_bottom,#23509a0d_1px,transparent_1px)] bg-[size:20px_32px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_80%,transparent_100%)] pointer-events-none" />
 
@@ -164,24 +164,24 @@ export default function LandingFeaturesCarousel() {
             <div className="absolute bottom-0 right-1/4 h-[600px] w-[600px] rounded-full bg-gradient-to-br from-indigo-500/15 to-blue-600/15 blur-3xl pointer-events-none" />
 
             <div id="services" className="absolute -top-16" />
-            <div className="relative mx-auto w-full max-w-7xl px-4 lg:px-8">
+            <div className="relative mx-auto w-full max-w-7xl px-3 sm:px-6 lg:px-8">
                 {/* Header Section */}
-                <div className="mb-16 space-y-6 text-center">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-[#23509A]/10 px-4 py-2 text-sm font-semibold text-[#23509A]">
+                <div className="mb-10 sm:mb-16 space-y-4 sm:space-y-6 text-center">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-[#23509A]/10 px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-[#23509A]">
                         <span className="h-2 w-2 rounded-full bg-[#23509A] animate-pulse" />
                         Services & Capabilities
                     </div>
-                    <h2 className="text-3xl font-extrabold tracking-tight text-[#000D6A] sm:text-4xl lg:text-5xl">
+                    <h2 className="text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[#000D6A]">
                         Key Features of OSAMS
                     </h2>
-                    <p className="mx-auto max-w-2xl text-base text-slate-500 sm:text-lg">
+                    <p className="mx-auto max-w-2xl text-sm sm:text-base lg:text-lg text-slate-500">
                         Discover the powerful tools that streamline student
                         affairs management and enhance campus efficiency
                         with our all-in-one unified solution.
                     </p>
                 </div>
 
-                <div className="relative mt-16">
+                <div className="relative mt-8 sm:mt-16">
                     {/* Navigation Buttons */}
                     <button
                         type="button"
@@ -194,15 +194,15 @@ export default function LandingFeaturesCarousel() {
 
                     <div
                         ref={trackRef}
-                        className="flex snap-x snap-mandatory gap-8 overflow-x-auto px-4 pb-8 [-ms-overflow-style:none] [scrollbar-width:none] lg:px-12 [&::-webkit-scrollbar]:hidden"
+                        className="flex snap-x snap-mandatory gap-4 sm:gap-6 lg:gap-8 overflow-x-auto px-2 sm:px-4 pb-6 sm:pb-8 [-ms-overflow-style:none] [scrollbar-width:none] lg:px-12 [&::-webkit-scrollbar]:hidden scroll-smooth"
                     >
                         {features.map((feature, index) => (
                             <article
                                 key={feature.title}
-                                className="group relative w-[310px] sm:w-[350px] shrink-0 snap-center overflow-hidden rounded-3xl bg-white shadow-[0_10px_35px_rgba(35,80,154,0.05)] border border-[#23509A]/5 transition-all duration-500 ease-out hover:-translate-y-3 hover:shadow-[0_20px_50px_rgba(35,80,154,0.12)] flex flex-col justify-between"
+                                className="group relative w-[82vw] xs:w-[300px] sm:w-[340px] md:w-[360px] max-w-[360px] shrink-0 snap-center overflow-hidden rounded-2xl sm:rounded-3xl bg-white shadow-[0_10px_35px_rgba(35,80,154,0.05)] border border-[#23509A]/5 transition-all duration-500 ease-out hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(35,80,154,0.12)] flex flex-col justify-between"
                             >
                                 {/* Image and Floating Badge */}
-                                <div className="relative h-52 w-full overflow-hidden">
+                                <div className="relative h-44 sm:h-52 w-full overflow-hidden">
                                     <img
                                         src={feature.imageSrc}
                                         alt={feature.title}
@@ -213,47 +213,47 @@ export default function LandingFeaturesCarousel() {
                                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent" />
                                     
                                     {/* Category Pill */}
-                                    <div className="absolute bottom-4 left-6 flex items-center gap-2">
-                                        <div className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white backdrop-blur-md border border-white/10">
+                                    <div className="absolute bottom-3 left-4 sm:bottom-4 sm:left-6 flex items-center gap-2">
+                                        <div className="rounded-full bg-white/20 px-2.5 py-0.5 sm:px-3 sm:py-1 text-[11px] sm:text-xs font-semibold text-white backdrop-blur-md border border-white/10">
                                             Feature {index + 1}
                                         </div>
                                     </div>
 
                                     {/* Icon Badge */}
                                     <div
-                                        className="absolute top-4 right-4 z-10 flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-lg backdrop-blur-md transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110"
+                                        className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl sm:rounded-2xl text-white shadow-lg backdrop-blur-md transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110"
                                         style={{
                                             background: `linear-gradient(135deg, ${feature.color}, ${feature.color}dd)`,
                                             boxShadow: `0 8px 20px -6px ${feature.color}`,
                                         }}
                                     >
-                                        {feature.icon}
+                                        <div className="scale-75 sm:scale-100">{feature.icon}</div>
                                     </div>
                                 </div>
 
                                 {/* Content */}
-                                <div className="flex flex-1 flex-col p-6 sm:p-8">
-                                    <h3 className="mb-3 text-xl font-extrabold tracking-tight text-[#000D6A] transition-colors duration-300 group-hover:text-[#23509A]">
+                                <div className="flex flex-1 flex-col p-4 sm:p-6 lg:p-8">
+                                    <h3 className="mb-2 sm:mb-3 text-lg sm:text-xl font-extrabold tracking-tight text-[#000D6A] transition-colors duration-300 group-hover:text-[#23509A]">
                                         {feature.title}
                                     </h3>
-                                    <p className="mb-6 flex-1 text-sm leading-relaxed text-slate-500">
+                                    <p className="mb-4 sm:mb-6 flex-1 text-xs sm:text-sm leading-relaxed text-slate-500">
                                         {feature.description}
                                     </p>
 
                                     {/* Capabilities tag grid */}
                                     <div className="mt-auto">
-                                        <div className="flex flex-wrap gap-2">
+                                        <div className="flex flex-wrap gap-1.5 sm:gap-2">
                                             {feature.capabilities.map((capability, capIndex) => (
                                                 <span
                                                     key={capIndex}
-                                                    className="inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-semibold transition-all duration-300"
+                                                    className="inline-flex items-center rounded-md sm:rounded-lg px-2 py-0.5 sm:px-2.5 sm:py-1 text-[11px] sm:text-xs font-semibold transition-all duration-300"
                                                     style={{
                                                         backgroundColor: `${feature.color}0c`,
                                                         color: feature.color,
                                                         border: `1px solid ${feature.color}15`,
                                                     }}
                                                 >
-                                                    <CheckCircle className="mr-1.5 h-3.5 w-3.5 flex-shrink-0" style={{ color: feature.color }} />
+                                                    <CheckCircle className="mr-1 sm:mr-1.5 h-3 w-3 sm:h-3.5 sm:w-3.5 flex-shrink-0" style={{ color: feature.color }} />
                                                     {capability}
                                                 </span>
                                             ))}
@@ -275,39 +275,41 @@ export default function LandingFeaturesCarousel() {
                 </div>
 
                 {/* Dots Indicator */}
-                <div className="mt-8 flex justify-center gap-3 lg:hidden">
+                <div className="mt-6 flex justify-center gap-2 lg:hidden">
                     {features.map((_, index) => (
                         <button
                             key={index}
-                            className="h-2 w-2 rounded-full bg-[#23509A]/20 transition-all duration-300 hover:bg-[#23509A]"
+                            className="h-2 w-2 rounded-full bg-[#23509A]/20 transition-all duration-300 hover:bg-[#23509A] active:scale-125"
                             onClick={() => {
                                 const el = trackRef.current;
                                 if (!el) return;
-                                const cardWidth = 350 + 32; // card width + gap
+                                const firstCard = el.querySelector('article');
+                                const cardWidth = firstCard ? firstCard.clientWidth + 16 : 300;
                                 el.scrollTo({
                                     left: index * cardWidth,
                                     behavior: 'smooth',
                                 });
                             }}
+                            aria-label={`Go to slide ${index + 1}`}
                         />
                     ))}
                 </div>
 
                 {/* Bottom CTA Card */}
-                <div className="mt-20">
-                    <div className="mx-auto max-w-4xl rounded-3xl bg-gradient-to-br from-white to-[#FBFBFB] p-8 md:p-12 shadow-[0_15px_40px_rgba(0,0,0,0.02)] border border-[#23509A]/10 text-center relative overflow-hidden">
+                <div className="mt-12 sm:mt-20">
+                    <div className="mx-auto max-w-4xl rounded-2xl sm:rounded-3xl bg-gradient-to-br from-white to-[#FBFBFB] p-5 sm:p-8 md:p-12 shadow-[0_15px_40px_rgba(0,0,0,0.02)] border border-[#23509A]/10 text-center relative overflow-hidden">
                         {/* Gradient background glows inside card */}
                         <div className="absolute -right-10 -bottom-10 h-40 w-40 rounded-full bg-[#23509A]/5 blur-2xl" />
                         <div className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-[#000D6A]/5 blur-2xl" />
                         
-                        <div className="relative z-10 space-y-6">
-                            <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#23509A] to-[#000D6A] text-white shadow-lg">
-                                <Database className="h-8 w-8" />
+                        <div className="relative z-10 space-y-4 sm:space-y-6">
+                            <div className="inline-flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#23509A] to-[#000D6A] text-white shadow-lg">
+                                <Database className="h-6 w-6 sm:h-8 sm:w-8" />
                             </div>
-                            <h3 className="text-2xl font-extrabold text-[#000D6A] sm:text-3xl">
+                            <h3 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-[#000D6A]">
                                 All-in-One Integrated Solution
                             </h3>
-                            <p className="mx-auto max-w-2xl text-base sm:text-lg leading-relaxed text-slate-500">
+                            <p className="mx-auto max-w-2xl text-xs sm:text-base md:text-lg leading-relaxed text-slate-500">
                                 OSAMS integrates all student affairs operations into a unified,
                                 real-time database. Say goodbye to scattered files and manual coordination,
                                 and embrace automated workflows built for modern education.

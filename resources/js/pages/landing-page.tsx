@@ -18,13 +18,15 @@ interface Props {
 
 export default function LandingPage({ isAuthed, canRegister, stats }: Props) {
     return (
-        <div>
+        <div className="w-full overflow-x-hidden bg-[#FBFBFB]">
             <LandingNavbar isAuthed={isAuthed} />
-            <LandingHero canRegister={canRegister} />
-            <LandingAbout stats={stats} />
-            <LandingFeaturesCarousel />
-            <LandingCta canRegister={canRegister} stats={stats} />
-            <LandingFooter />
+            <div className="w-full overflow-x-hidden pt-16">
+                <LandingHero canRegister={canRegister} />
+                <LandingAbout stats={stats} />
+                <LandingFeaturesCarousel />
+                <LandingCta canRegister={canRegister} stats={stats} />
+                <LandingFooter />
+            </div>
         </div>
     );
 }
