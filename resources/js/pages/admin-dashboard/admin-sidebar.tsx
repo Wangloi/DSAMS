@@ -10,6 +10,7 @@ import {
     useSidebar,
 } from '@/components/ui/sidebar';
 import { useAppearance } from '@/hooks/use-appearance';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Link, usePage } from '@inertiajs/react';
 import {
     Activity,
@@ -103,63 +104,6 @@ const adminNavItems: NavItem[] = [
         icon: Activity,
     },
 ];
-
-// Theme toggle component (matches hooks/use-appearance.tsx)
-function ThemeToggle() {
-    const { appearance, updateAppearance } = useAppearance();
-
-    return (
-        <div className="inline-flex items-center gap-1 rounded-lg bg-neutral-100 p-1 dark:bg-neutral-800">
-            <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => updateAppearance('light')}
-                className={
-                    appearance === 'light'
-                        ? 'h-8 w-8 rounded-md bg-white shadow-xs dark:bg-neutral-700 dark:text-neutral-100'
-                        : 'h-8 w-8 rounded-md text-neutral-500 hover:bg-neutral-200/60 hover:text-black dark:text-neutral-400 dark:hover:bg-neutral-700/60'
-                }
-                aria-label="Set appearance to Light"
-                title="Light"
-            >
-                <Sun className="h-4 w-4" />
-            </Button>
-
-            <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => updateAppearance('dark')}
-                className={
-                    appearance === 'dark'
-                        ? 'h-8 w-8 rounded-md bg-white shadow-xs dark:bg-neutral-700 dark:text-neutral-100'
-                        : 'h-8 w-8 rounded-md text-neutral-500 hover:bg-neutral-200/60 hover:text-black dark:text-neutral-400 dark:hover:bg-neutral-700/60'
-                }
-                aria-label="Set appearance to Dark"
-                title="Dark"
-            >
-                <Moon className="h-4 w-4" />
-            </Button>
-
-            <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => updateAppearance('system')}
-                className={
-                    appearance === 'system'
-                        ? 'h-8 w-8 rounded-md bg-white shadow-xs dark:bg-neutral-700 dark:text-neutral-100'
-                        : 'h-8 w-8 rounded-md text-neutral-500 hover:bg-neutral-200/60 hover:text-black dark:text-neutral-400 dark:hover:bg-neutral-700/60'
-                }
-                aria-label="Set appearance to System"
-                title="System"
-            >
-                <span className="text-[10px] font-semibold">Sys</span>
-            </Button>
-        </div>
-    );
-}
 
 // Toggle button component for sidebar
 function SidebarToggle() {
@@ -332,7 +276,11 @@ export function AdminSidebar() {
                 </div>
             </SidebarContent>
 
-            <SidebarFooter className="border-t border-slate-200 dark:border-slate-800"></SidebarFooter>
+            <SidebarFooter className="border-t border-slate-200 p-2 dark:border-slate-800">
+                <div className="group-data-[collapsible=icon]:hidden">
+                    <ThemeToggle variant="sidebar" />
+                </div>
+            </SidebarFooter>
         </Sidebar>
     );
 }

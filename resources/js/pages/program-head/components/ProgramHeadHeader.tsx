@@ -22,6 +22,7 @@ import {
     SheetTrigger,
 } from '@/components/ui/sheet';
 import { UserMenuContent } from '@/components/user-menu-content';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { useInitials } from '@/hooks/use-initials';
 import { MobileNavigation } from '@/pages/admin-dashboard/mobile-navigation';
 import type { SharedData } from '@/types';

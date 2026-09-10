@@ -17,6 +17,7 @@ import {
     programHeadViolations,
 } from '@/routes';
 
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Link, usePage } from '@inertiajs/react';
 import {
     CalendarDays,
@@ -202,7 +203,11 @@ export function ProgramHeadSidebar() {
                 </div>
             </SidebarContent>
 
-            <SidebarFooter className="border-t border-slate-200 dark:border-slate-800"></SidebarFooter>
+            <SidebarFooter className="border-t border-slate-200 p-2 dark:border-slate-800">
+                <div className="group-data-[collapsible=icon]:hidden">
+                    <ThemeToggle variant="sidebar" />
+                </div>
+            </SidebarFooter>
         </Sidebar>
     );
 }
