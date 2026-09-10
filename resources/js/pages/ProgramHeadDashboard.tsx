@@ -295,12 +295,12 @@ export default function ProgramHeadDashboard({ user }: Props) {
                     {/* Total Students */}
                     <div
                         onClick={() => router.visit('/program-head/students')}
-                        className="group relative cursor-pointer overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800"
+                        className="group relative cursor-pointer overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200/80 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-slate-800/90 dark:ring-1 dark:ring-slate-700/80 dark:shadow-md dark:hover:bg-slate-800"
                     >
                         <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-indigo-500/5" />
                         <div className="flex items-start justify-between gap-3">
                             <div>
-                                <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
+                                <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-400">
                                     Total Students
                                 </p>
                                 <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
@@ -314,7 +314,7 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                 <Users className="h-5 w-5" />
                             </div>
                         </div>
-                        <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                        <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700/60">
                             <div className="h-full w-full rounded-full bg-gradient-to-r from-indigo-400 to-indigo-600" />
                         </div>
                         <div className="mt-3 flex items-center gap-1.5 text-[11px] font-black tracking-wider text-indigo-600 uppercase transition-all duration-200 group-hover:text-indigo-700 dark:text-indigo-400 dark:group-hover:text-indigo-300">
@@ -326,12 +326,12 @@ export default function ProgramHeadDashboard({ user }: Props) {
                     {/* Present Today */}
                     <div
                         onClick={() => router.visit('/program-head/attendance')}
-                        className="group relative cursor-pointer overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800"
+                        className="group relative cursor-pointer overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200/80 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-slate-800/90 dark:ring-1 dark:ring-slate-700/80 dark:shadow-md dark:hover:bg-slate-800"
                     >
                         <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-emerald-500/5" />
                         <div className="flex items-start justify-between gap-3">
                             <div>
-                                <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
+                                <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-400">
                                     Present Today
                                 </p>
                                 <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
@@ -345,7 +345,7 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                 <CalendarCheck className="h-5 w-5" />
                             </div>
                         </div>
-                        <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                        <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700/60">
                             <div className="h-full w-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600" />
                         </div>
                         <div className="mt-3 flex items-center gap-1.5 text-[11px] font-black tracking-wider text-emerald-600 uppercase transition-all duration-200 group-hover:text-emerald-700 dark:text-emerald-400 dark:group-hover:text-emerald-300">
@@ -357,12 +357,12 @@ export default function ProgramHeadDashboard({ user }: Props) {
                     {/* Incident Records */}
                     <div
                         onClick={() => router.visit('/program-head/violations')}
-                        className="group relative cursor-pointer overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800"
+                        className="group relative cursor-pointer overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200/80 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-slate-800/90 dark:ring-1 dark:ring-slate-700/80 dark:shadow-md dark:hover:bg-slate-800"
                     >
                         <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-rose-500/5" />
                         <div className="flex items-start justify-between gap-3">
                             <div>
-                                <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
+                                <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-400">
                                     Incident Records
                                 </p>
                                 <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
@@ -376,7 +376,7 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                 <ShieldAlert className="h-5 w-5" />
                             </div>
                         </div>
-                        <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                        <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700/60">
                             <div className="h-full w-full rounded-full bg-gradient-to-r from-rose-400 to-rose-600" />
                         </div>
                         <div className="mt-3 flex items-center gap-1.5 text-[11px] font-black tracking-wider text-rose-600 uppercase transition-all duration-200 group-hover:text-rose-700 dark:text-rose-400 dark:group-hover:text-rose-300">
@@ -389,8 +389,8 @@ export default function ProgramHeadDashboard({ user }: Props) {
                 {/* ── Mid Row: Attendance + Violations Chart ───────────────────── */}
                 <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
                     {/* Upcoming Events – 3 cols */}
-                    <Card className="flex h-[380px] flex-col overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-lg shadow-blue-900/5 lg:col-span-3 dark:border-slate-800 dark:bg-[#0B192C]/70">
-                        <CardHeader className="dark:border-slate-850 flex flex-row items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-blue-50/50 via-white to-transparent px-5 pt-4 pb-3.5 dark:from-slate-800/40 dark:via-transparent">
+                    <Card className="flex h-[380px] flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-lg shadow-blue-900/5 lg:col-span-3 dark:border-slate-700/80 dark:bg-slate-800/90 dark:shadow-black/20">
+                        <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-blue-50/50 via-white to-transparent px-5 pt-4 pb-3.5 dark:border-slate-700/80 dark:from-slate-800 dark:via-slate-800/60 dark:to-transparent">
                             <div className="flex items-center gap-3">
                                 <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-600 text-white shadow-md shadow-blue-500/20">
                                     <CalendarDays className="h-4.5 w-4.5" />
@@ -416,7 +416,7 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                 <button
                                     type="button"
                                     onClick={() => router.reload()}
-                                    className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-all duration-200 hover:bg-slate-50 hover:text-slate-950 dark:border-slate-700 dark:bg-[#0B192C]/50 dark:text-slate-400 dark:hover:text-white"
+                                    className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-all duration-200 hover:bg-slate-50 hover:text-slate-950 dark:border-slate-700 dark:bg-slate-700/60 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white"
                                     aria-label="Refresh Data"
                                     title="Refresh Events"
                                 >
@@ -633,8 +633,8 @@ export default function ProgramHeadDashboard({ user }: Props) {
                     </Card>
 
                     {/* Attendance Overview – 2 cols */}
-                    <Card className="flex min-h-[385px] flex-col overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-lg shadow-blue-900/5 lg:col-span-2 dark:border-slate-800 dark:bg-[#0B192C]/70">
-                        <CardHeader className="dark:border-slate-850 flex flex-row items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-blue-50/50 via-white to-transparent px-5 pt-4 pb-3.5 dark:from-slate-800/40 dark:via-transparent">
+                    <Card className="flex min-h-[385px] flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-lg shadow-blue-900/5 lg:col-span-2 dark:border-slate-700/80 dark:bg-slate-800/90 dark:shadow-black/20">
+                        <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-blue-50/50 via-white to-transparent px-5 pt-4 pb-3.5 dark:border-slate-700/80 dark:from-slate-800 dark:via-slate-800/60 dark:to-transparent">
                             <div className="flex items-center gap-3">
                                 <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-white shadow-md transition-all ${
                                     activeTab === 'live'
@@ -658,14 +658,14 @@ export default function ProgramHeadDashboard({ user }: Props) {
                             </div>
 
                             {/* Tab selector */}
-                            <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-0.5 dark:bg-slate-800">
+                            <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-0.5 dark:bg-slate-700/60">
                                 <button
                                     type="button"
                                     onClick={() => setActiveTab('recent')}
                                     className={`rounded-lg px-2.5 py-1 text-[10px] font-extrabold tracking-wide uppercase transition-all ${
                                         activeTab === 'recent'
-                                            ? 'bg-white text-blue-900 shadow-sm dark:bg-slate-700 dark:text-white'
-                                            : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                                            ? 'bg-white text-blue-900 shadow-sm dark:bg-slate-800 dark:text-white'
+                                            : 'text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-white'
                                     }`}
                                 >
                                     Recent
@@ -681,8 +681,8 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                     }}
                                     className={`relative flex items-center gap-1 rounded-lg px-2.5 py-1 text-[10px] font-extrabold tracking-wide uppercase transition-all ${
                                         activeTab === 'live'
-                                            ? 'bg-white text-blue-900 shadow-sm dark:bg-slate-700 dark:text-white'
-                                            : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                                            ? 'bg-white text-blue-900 shadow-sm dark:bg-slate-800 dark:text-white'
+                                            : 'text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-white'
                                     }`}
                                 >
                                     <span>Live Monitor</span>
@@ -706,7 +706,7 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                         {recentEvents.slice(0, 4).map((ev: any) => (
                                             <div
                                                 key={ev.id}
-                                                className="group relative rounded-xl border border-slate-100 bg-slate-50/30 p-3 transition-all duration-200 hover:border-blue-100 hover:bg-blue-50/10 dark:border-white/5 dark:bg-white/5 dark:hover:border-slate-800 dark:hover:bg-slate-800/10"
+                                                className="group relative rounded-xl border border-slate-100 bg-slate-50/30 p-3 transition-all duration-200 hover:border-blue-100 hover:bg-blue-50/10 dark:border-slate-700/60 dark:bg-slate-750/70 dark:hover:border-slate-600 dark:hover:bg-slate-700/50"
                                             >
                                                 <div className="flex items-start justify-between gap-4">
                                                     <div className="space-y-0.5">
@@ -725,7 +725,7 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                                             setMonitorEventId(String(ev.id));
                                                             setActiveTab('live');
                                                         }}
-                                                        className="flex items-center gap-1 rounded-lg bg-blue-50 px-2 py-1 text-[9px] font-black text-blue-700 transition hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-400 dark:hover:bg-blue-950/70"
+                                                        className="flex items-center gap-1 rounded-lg bg-blue-50 px-2 py-1 text-[9px] font-black text-blue-700 transition hover:bg-blue-100 dark:bg-blue-950/60 dark:text-blue-400 dark:hover:bg-blue-900/60"
                                                     >
                                                         <Zap className="h-3 w-3 text-blue-600 dark:text-blue-400" />
                                                         Monitor
@@ -733,7 +733,7 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                                 </div>
 
                                                 {/* Progress Bar showing Present vs Absent */}
-                                                <div className="relative mt-2.5 flex h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-850">
+                                                <div className="relative mt-2.5 flex h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
                                                     <div
                                                         className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
                                                         style={{ width: `${ev.present_rate ?? 0}%` }}
@@ -766,7 +766,7 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                         <select
                                             value={monitorEventId}
                                             onChange={(e) => setMonitorEventId(e.target.value)}
-                                            className="h-9 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-850 shadow-sm focus:border-blue-500 focus:outline-none dark:border-slate-800 dark:bg-[#0B192C] dark:text-white"
+                                            className="h-9 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-850 shadow-sm focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-750 dark:text-white"
                                         >
                                             {allSelectableEvents.map((ev) => (
                                                 <option key={ev.id} value={ev.id}>
@@ -781,7 +781,7 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                                 variant="outline"
                                                 size="icon"
                                                 onClick={() => setMonitoringEnabled((prev) => !prev)}
-                                                className="h-9 w-9 rounded-xl border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-800 dark:bg-[#0B192C]"
+                                                className="h-9 w-9 rounded-xl border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-750 dark:hover:bg-slate-700"
                                                 title={monitoringEnabled ? 'Pause Live Polling' : 'Resume Live Polling'}
                                             >
                                                 {monitoringEnabled ? (
@@ -797,19 +797,19 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                                 size="icon"
                                                 disabled={loadingLive || !monitorEventId}
                                                 onClick={fetchLiveLogs}
-                                                className={`h-9 w-9 rounded-xl border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-800 dark:bg-[#0B192C] ${
+                                                className={`h-9 w-9 rounded-xl border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-750 dark:hover:bg-slate-700 ${
                                                     loadingLive ? 'animate-spin' : ''
                                                 }`}
                                                 title="Manual Sync"
                                             >
-                                                <RefreshCw className="h-3.5 w-3.5 text-slate-500" />
+                                                <RefreshCw className="h-3.5 w-3.5 text-slate-500 dark:text-slate-300" />
                                             </Button>
                                         </div>
                                     </div>
 
                                     {/* Stats Row */}
                                     <div className="grid grid-cols-3 gap-2">
-                                        <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-2.5 text-center dark:border-white/5 dark:bg-white/5">
+                                        <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-2.5 text-center dark:border-slate-700/60 dark:bg-slate-750/70">
                                             <span className="block text-[8px] font-black uppercase text-slate-400 tracking-wider">
                                                 Total Scans
                                             </span>
@@ -817,7 +817,7 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                                 {liveCounts.total}
                                             </span>
                                         </div>
-                                        <div className="rounded-xl border border-emerald-100 bg-emerald-50/20 p-2.5 text-center dark:border-emerald-950/20 dark:bg-emerald-950/10">
+                                        <div className="rounded-xl border border-emerald-100 bg-emerald-50/20 p-2.5 text-center dark:border-emerald-900/40 dark:bg-emerald-950/30">
                                             <span className="block text-[8px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">
                                                 Present
                                             </span>
@@ -825,7 +825,7 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                                 {liveCounts.present}
                                             </span>
                                         </div>
-                                        <div className="rounded-xl border border-amber-100 bg-amber-50/20 p-2.5 text-center dark:border-amber-950/20 dark:bg-amber-950/10">
+                                        <div className="rounded-xl border border-amber-100 bg-amber-50/20 p-2.5 text-center dark:border-amber-900/40 dark:bg-amber-950/30">
                                             <span className="block text-[8px] font-black uppercase text-amber-600 dark:text-amber-400 tracking-wider">
                                                 Late
                                             </span>
@@ -840,7 +840,7 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                         <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-wider text-slate-400">
                                             <span>Recent Scan Feed</span>
                                             {lastUpdatedLive ? (
-                                                <span className="text-slate-400 dark:text-slate-500">
+                                                <span className="text-slate-400 dark:text-slate-400">
                                                     Synced {lastUpdatedLive}
                                                 </span>
                                             ) : (
@@ -850,18 +850,18 @@ export default function ProgramHeadDashboard({ user }: Props) {
 
                                         <div className="space-y-1.5 max-h-[140px] overflow-y-auto scrollbar-none pr-1">
                                             {liveRows.length === 0 ? (
-                                                <div className="flex flex-col items-center justify-center gap-1.5 py-4 text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/10">
+                                                <div className="flex flex-col items-center justify-center gap-1.5 py-4 text-slate-400 border border-dashed border-slate-200 dark:border-slate-700/80 rounded-xl bg-slate-50/10">
                                                     <span className="relative flex h-1.5 w-1.5">
-                                                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-slate-450 opacity-75"></span>
+                                                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-slate-400 opacity-75"></span>
                                                         <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-slate-400"></span>
                                                     </span>
-                                                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-550">Waiting for attendance check-ins...</p>
+                                                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-400">Waiting for attendance check-ins...</p>
                                                 </div>
                                             ) : (
                                                 liveRows.slice(0, 3).map((row) => (
                                                     <div
                                                         key={row.id}
-                                                        className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-2 shadow-sm dark:border-slate-850 dark:bg-[#0C1E35] transition-all hover:bg-slate-50 dark:hover:bg-slate-800/20"
+                                                        className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-2 shadow-sm dark:border-slate-700/60 dark:bg-slate-750/90 transition-all hover:bg-slate-50 dark:hover:bg-slate-700/50"
                                                     >
                                                         <div className="min-w-0">
                                                             <p className="truncate text-xs font-bold text-slate-850 dark:text-slate-100">
@@ -874,8 +874,8 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                                         <div className="text-right shrink-0">
                                                             <span className={`inline-block rounded-lg px-2 py-0.5 text-[9px] font-black uppercase ${
                                                                 row.status?.toLowerCase() === 'late'
-                                                                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
-                                                                    : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+                                                                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400'
+                                                                    : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400'
                                                             }`}>
                                                                 {row.status}
                                                             </span>
@@ -909,8 +909,8 @@ export default function ProgramHeadDashboard({ user }: Props) {
                 {/* ── Bottom Row: Violations Breakdown + Quick Reports ──────────────── */}
                 <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                     {/* Violations by Year Level */}
-                    <Card className="flex flex-col overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-lg shadow-blue-900/5 dark:border-slate-800 dark:bg-[#0B192C]/70">
-                        <CardHeader className="dark:border-slate-850 flex flex-row items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-blue-50/50 via-white to-transparent px-5 pt-4 pb-3.5 dark:from-slate-800/40 dark:via-transparent">
+                    <Card className="flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-lg shadow-blue-900/5 dark:border-slate-700/80 dark:bg-slate-800/90 dark:shadow-black/20">
+                        <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-blue-50/50 via-white to-transparent px-5 pt-4 pb-3.5 dark:border-slate-700/80 dark:from-slate-800 dark:via-slate-800/60 dark:to-transparent">
                             <div className="flex items-center gap-3">
                                 <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-600 text-white shadow-md shadow-blue-500/20">
                                     <BarChart2 className="h-4.5 w-4.5" />
@@ -946,11 +946,11 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                                 key={item.label}
                                                 className="group flex flex-1 flex-col items-center gap-3"
                                             >
-                                                <div className="relative h-32 w-full overflow-hidden rounded-xl border border-slate-100 bg-slate-50 dark:border-white/5 dark:bg-white/5">
+                                                <div className="relative h-32 w-full overflow-hidden rounded-xl border border-slate-100 bg-slate-50 dark:border-slate-700/60 dark:bg-slate-750/70">
                                                     <div
                                                         className="absolute right-0 bottom-0 left-0 rounded-t-lg bg-gradient-to-t from-blue-600 to-indigo-500 transition-all duration-1000 group-hover:brightness-110"
                                                         style={{
-                                                            height: `${heightPct}%`,
+                                                             height: `${heightPct}%`,
                                                         }}
                                                     />
                                                     <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
@@ -973,7 +973,7 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                 </div>
                             )}
 
-                            <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4 dark:border-white/5">
+                            <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4 dark:border-slate-700/60">
                                 <div className="flex items-center gap-2">
                                     <div className="h-2 w-2 rounded-full bg-rose-500" />
                                     <span className="text-xs font-bold tracking-tight text-slate-500 uppercase dark:text-slate-400">
@@ -986,7 +986,7 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                 <Button
                                     asChild
                                     size="sm"
-                                    className="h-9 rounded-xl bg-slate-900 px-6 text-[10px] font-black tracking-widest text-white uppercase shadow-lg transition-all hover:bg-blue-600 active:scale-95 dark:bg-white dark:text-slate-900 dark:hover:bg-blue-600"
+                                    className="h-9 rounded-xl bg-slate-900 px-6 text-[10px] font-black tracking-widest text-white uppercase shadow-lg transition-all hover:bg-blue-600 active:scale-95 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-blue-600 dark:hover:text-white"
                                 >
                                     <Link href="/program-head/violations">
                                         Records
@@ -998,8 +998,8 @@ export default function ProgramHeadDashboard({ user }: Props) {
                     </Card>
 
                     {/* Quick Reports */}
-                    <Card className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-lg shadow-blue-900/5 dark:border-slate-800 dark:bg-[#0B192C]/70">
-                        <CardHeader className="dark:border-slate-850 flex flex-row items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-blue-50/50 via-white to-transparent px-5 pt-4 pb-3.5 dark:from-slate-800/40 dark:via-transparent">
+                    <Card className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-lg shadow-blue-900/5 dark:border-slate-700/80 dark:bg-slate-800/90 dark:shadow-black/20">
+                        <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-blue-50/50 via-white to-transparent px-5 pt-4 pb-3.5 dark:border-slate-700/80 dark:from-slate-800 dark:via-slate-800/60 dark:to-transparent">
                             <div className="flex items-center gap-3">
                                 <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-600 text-white shadow-md shadow-blue-500/20">
                                     <FileText className="h-4.5 w-4.5" />
@@ -1017,7 +1017,7 @@ export default function ProgramHeadDashboard({ user }: Props) {
 
                         <CardContent className="space-y-4 p-6">
                             {/* Attendance Report */}
-                            <div className="flex items-center gap-5 rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition-all duration-300 hover:bg-white hover:shadow-md dark:border-white/5 dark:bg-white/5 dark:hover:bg-white/10">
+                            <div className="flex items-center gap-5 rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition-all duration-300 hover:bg-white hover:shadow-md dark:border-slate-700/60 dark:bg-slate-750/70 dark:hover:bg-slate-700/60">
                                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400">
                                     <FileText className="h-6 w-6" />
                                 </div>

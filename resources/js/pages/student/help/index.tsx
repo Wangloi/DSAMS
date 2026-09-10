@@ -106,7 +106,7 @@ export default function StudentHelpPage() {
                         <div className="space-y-6 lg:col-span-2">
                             {/* Attendance Guide */}
                             {(activeSection === 'all' || activeSection === 'attendance') && (
-                                <Card className="rounded-2xl border-slate-200/60 dark:border-slate-800 bg-white dark:bg-[#0B192C]">
+                                <Card className="rounded-2xl border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800/90">
                                     <CardHeader className="flex flex-row items-center gap-3 space-y-0 border-b border-slate-100 pb-4 dark:border-slate-800">
                                         <div className="rounded-lg bg-blue-50 p-2.5 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
                                             <QrCode className="h-5 w-5" />
@@ -136,7 +136,7 @@ export default function StudentHelpPage() {
 
                             {/* Evaluations Guide */}
                             {(activeSection === 'all' || activeSection === 'evaluations') && (
-                                <Card className="rounded-2xl border-slate-200/60 dark:border-slate-800 bg-white dark:bg-[#0B192C]">
+                                <Card className="rounded-2xl border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800/90">
                                     <CardHeader className="flex flex-row items-center gap-3 space-y-0 border-b border-slate-100 pb-4 dark:border-slate-800">
                                         <div className="rounded-lg bg-purple-50 p-2.5 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400">
                                             <FileText className="h-5 w-5" />
@@ -166,7 +166,7 @@ export default function StudentHelpPage() {
 
                             {/* Clearance Guide */}
                             {(activeSection === 'all' || activeSection === 'clearance') && (
-                                <Card className="rounded-2xl border-slate-200/60 dark:border-slate-800 bg-white dark:bg-[#0B192C]">
+                                <Card className="rounded-2xl border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800/90">
                                     <CardHeader className="flex flex-row items-center gap-3 space-y-0 border-b border-slate-100 pb-4 dark:border-slate-800">
                                         <div className="rounded-lg bg-rose-50 p-2.5 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
                                             <Shield className="h-5 w-5" />
@@ -203,7 +203,7 @@ export default function StudentHelpPage() {
                                     </h3>
                                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                         {faqs.map((f, i) => (
-                                            <Card key={i} className="rounded-2xl border-slate-200/60 dark:border-slate-800 bg-white dark:bg-[#0B192C]/50 backdrop-blur-xs">
+                                            <Card key={i} className="rounded-2xl border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800/90 shadow-sm">
                                                 <CardHeader className="pb-2">
                                                     <CardTitle className="text-xs font-bold text-slate-800 dark:text-white">Q: {f.q}</CardTitle>
                                                 </CardHeader>

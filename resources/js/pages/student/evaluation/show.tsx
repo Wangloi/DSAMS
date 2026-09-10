@@ -205,17 +205,17 @@ export default function StudentEvaluationShow() {
                             </div>
 
                             {/* PROGRESS BAR CARD */}
-                            <div className="mb-6 flex items-center gap-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-200/40 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/40 dark:shadow-none">
+                            <div className="mb-6 flex items-center gap-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-200/40 backdrop-blur-xl dark:border-slate-700/80 dark:bg-slate-800/90 dark:shadow-black/20">
                                 <div className="flex-1">
                                     <div className="mb-2 flex items-end justify-between">
-                                        <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
+                                        <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-400">
                                             Progress
                                         </span>
                                         <span className="text-xs font-black tracking-widest text-[#0b2d66] uppercase dark:text-blue-400">
                                             {answeredCount} of {questions.length} Answered
                                         </span>
                                     </div>
-                                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
                                         <div
                                             className="h-2 rounded-full bg-gradient-to-r from-[#0b2d66] to-[#1e40af] transition-all duration-700 ease-out"
                                             style={{ width: `${progressPercentage}%` }}
@@ -230,7 +230,7 @@ export default function StudentEvaluationShow() {
                             </div>
 
                             {questions.length === 0 ? (
-                                <div className="rounded-3xl border border-slate-100 bg-white p-12 text-center shadow-lg dark:border-slate-800 dark:bg-slate-900/40">
+                                <div className="rounded-3xl border border-slate-100 bg-white p-12 text-center shadow-lg dark:border-slate-700/80 dark:bg-slate-800/90 dark:shadow-black/20">
                                     <AlertCircle className="mx-auto mb-4 h-12 w-12 text-slate-300" />
                                     <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300">
                                         No questions available
@@ -254,7 +254,7 @@ export default function StudentEvaluationShow() {
                                             <div key={q.id} className="space-y-4">
                                                 {/* Section Header if new section or Standard */}
                                                 {isNewSection && q.section && (
-                                                    <div className="mt-8 mb-4 overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50/90 via-slate-50 to-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-800/60 dark:from-slate-800">
+                                                    <div className="mt-8 mb-4 overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50/90 via-slate-50 to-white p-5 shadow-sm dark:border-slate-700/80 dark:bg-slate-800/80 dark:from-slate-800">
                                                         <div className="flex flex-col gap-1">
                                                             <div className="flex items-center gap-2">
                                                                 <span className="inline-block h-2 w-2 rounded-full bg-[#0b2d66] dark:bg-blue-400"></span>
@@ -271,7 +271,7 @@ export default function StudentEvaluationShow() {
 
                                                         {/* Standard 1 Rating Legend */}
                                                         {q.type === 'rating' && (
-                                                            <div className="mt-4 grid grid-cols-5 gap-1.5 rounded-xl border border-blue-200/60 bg-white/90 p-2.5 text-center dark:border-slate-700 dark:bg-slate-900/60">
+                                                            <div className="mt-4 grid grid-cols-5 gap-1.5 rounded-xl border border-blue-200/60 bg-white/90 p-2.5 text-center dark:border-slate-700 dark:bg-slate-750">
                                                                 <div className="rounded-lg bg-blue-50/80 p-1.5 dark:bg-slate-800">
                                                                     <span className="block text-xs font-black text-[#0b2d66] dark:text-blue-300">1</span>
                                                                     <span className="text-[10px] font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400">Poor</span>
@@ -300,10 +300,10 @@ export default function StudentEvaluationShow() {
                                                 {/* Question Card */}
                                                 <div
                                                     className={cn(
-                                                        'group relative overflow-hidden rounded-2xl border bg-white/80 p-5 shadow-sm backdrop-blur-xl transition-all duration-300 sm:p-6 dark:bg-slate-900/40',
+                                                        'group relative overflow-hidden rounded-2xl border bg-white/80 p-5 shadow-sm backdrop-blur-xl transition-all duration-300 sm:p-6 dark:bg-slate-800/90',
                                                         isAnswered
-                                                            ? 'border-blue-500/20 shadow-blue-500/5 dark:border-blue-500/10'
-                                                            : 'border-slate-200/60 dark:border-slate-800',
+                                                            ? 'border-blue-500/30 shadow-blue-500/5 dark:border-blue-500/30'
+                                                            : 'border-slate-200/60 dark:border-slate-700/80',
                                                     )}
                                                 >
                                                     {/* Question Header */}

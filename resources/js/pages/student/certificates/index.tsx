@@ -387,7 +387,7 @@ export default function CertificatesPage() {
                                     {availableCertificates.map((cert) => (
                                         <Card
                                             key={cert.event_id}
-                                            className="group overflow-hidden rounded-2xl border-none bg-white shadow-lg backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-blue-500/5 dark:bg-slate-900/40"
+                                            className="group overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-lg backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-blue-500/5 dark:border-slate-700/80 dark:bg-slate-800/90 dark:shadow-black/20"
                                         >
                                             <div className="relative p-6">
                                                 <div className="mb-6 flex items-start justify-between gap-4">
@@ -529,7 +529,7 @@ export default function CertificatesPage() {
                         </div>
 
                         {filteredCertificates.length === 0 ? (
-                            <Card className="group/empty overflow-hidden rounded-2xl border-none bg-white/80 shadow-lg backdrop-blur-xl dark:bg-slate-900/40">
+                            <Card className="group/empty overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 shadow-lg backdrop-blur-xl dark:border-slate-700/80 dark:bg-slate-800/90 dark:shadow-black/20">
                                 <CardContent className="relative py-20 text-center">
                                     <div className="absolute top-1/2 left-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-500/5 blur-[80px] transition-transform duration-1000 group-hover/empty:scale-110" />
 
@@ -572,7 +572,7 @@ export default function CertificatesPage() {
                                 {filteredCertificates.map((certificate) => (
                                     <Card
                                         key={certificate.id}
-                                        className="group relative overflow-hidden rounded-2xl border-none bg-white shadow-lg backdrop-blur-xl transition-all duration-500 hover:-translate-y-1.5 hover:shadow-blue-500/10 dark:bg-slate-900/40"
+                                        className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-lg backdrop-blur-xl transition-all duration-500 hover:-translate-y-1.5 hover:shadow-blue-500/10 dark:border-slate-700/80 dark:bg-slate-800/90 dark:shadow-black/20"
                                     >
                                         {/* Accent Top Border */}
                                         <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-blue-600 to-indigo-600 opacity-40 transition-opacity group-hover:opacity-100" />

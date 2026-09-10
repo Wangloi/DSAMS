@@ -1594,10 +1594,10 @@ export default function StudentDashboard({
                             </Badge>
                         </div>
 
-                        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/60 bg-white/70 p-3.5 sm:p-6 shadow-xl backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/40">
+                        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/60 bg-white/70 p-3.5 sm:p-6 shadow-xl backdrop-blur-xl dark:border-slate-700/80 dark:bg-slate-850/60 dark:bg-slate-800/60">
                             {/* Timeline vertical track (visible on tablet/desktop) */}
                             {events.length > 0 && (
-                                <div className="pointer-events-none absolute top-8 bottom-8 left-[38px] hidden w-0.5 border-l border-dashed border-slate-300 sm:block dark:border-slate-800" />
+                                <div className="pointer-events-none absolute top-8 bottom-8 left-[38px] hidden w-0.5 border-l border-dashed border-slate-300 sm:block dark:border-slate-700" />
                             )}
 
                             <div className="space-y-3 sm:space-y-8">
@@ -1630,7 +1630,7 @@ export default function StudentDashboard({
                                             </div>
 
                                             {/* Card Content */}
-                                            <div className="w-full flex-1 rounded-2xl border border-slate-200/80 bg-white/80 p-3.5 sm:p-4 shadow-xs transition-all duration-300 hover:border-blue-500/30 hover:bg-white hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900/40 dark:hover:border-slate-700 dark:hover:bg-slate-900/80">
+                                            <div className="w-full flex-1 rounded-2xl border border-slate-200/80 bg-white/80 p-3.5 sm:p-4 shadow-xs transition-all duration-300 hover:border-blue-500/30 hover:bg-white hover:shadow-md dark:border-slate-700/80 dark:bg-slate-800/90 dark:hover:border-slate-600 dark:hover:bg-slate-800">
                                                 <div className="flex flex-col gap-3.5 md:flex-row md:items-center md:justify-between">
                                                     <div className="min-w-0 flex-1 space-y-2">
                                                         {/* Header: Title and Badges */}
@@ -1904,7 +1904,7 @@ export default function StudentDashboard({
                                     });
                                 }
                             }}
-                            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 text-left shadow-lg backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-violet-500/15 active:scale-[0.98] dark:border-slate-800/40 dark:bg-slate-900/30"
+                            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 text-left shadow-lg backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-violet-500/15 active:scale-[0.98] dark:border-slate-700/80 dark:bg-slate-800/90 dark:hover:bg-slate-800"
                         >
                             <div className="pointer-events-none absolute top-0 right-0 -mt-10 -mr-10 h-24 w-24 rounded-full bg-violet-500/5 blur-xl" />
                             <div className="flex h-full flex-col items-start justify-between gap-4">
@@ -1943,7 +1943,7 @@ export default function StudentDashboard({
                         {/* ACTION: REPORT INCIDENT */}
                         <div
                             onClick={() => setReportIncidentOpen(true)}
-                            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 text-left shadow-lg backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-rose-500/15 active:scale-[0.98] dark:border-slate-800/40 dark:bg-slate-900/30"
+                            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 text-left shadow-lg backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-rose-500/15 active:scale-[0.98] dark:border-slate-700/80 dark:bg-slate-800/90 dark:hover:bg-slate-800"
                         >
                             <div className="pointer-events-none absolute top-0 right-0 -mt-10 -mr-10 h-24 w-24 rounded-full bg-rose-500/5 blur-xl" />
                             <div className="flex h-full flex-col items-start justify-between gap-4">
@@ -1979,7 +1979,7 @@ export default function StudentDashboard({
                                 e.preventDefault();
                                 setAdmissionSlipOpen(true);
                             }}
-                            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 text-left shadow-lg backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-blue-500/15 active:scale-[0.98] dark:border-slate-800/40 dark:bg-slate-900/30"
+                            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 text-left shadow-lg backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-blue-500/15 active:scale-[0.98] dark:border-slate-700/80 dark:bg-slate-800/90 dark:hover:bg-slate-800"
                         >
                             <div className="pointer-events-none absolute top-0 right-0 -mt-10 -mr-10 h-24 w-24 rounded-full bg-blue-500/5 blur-xl" />
                             <div className="flex h-full flex-col items-start justify-between gap-4">
@@ -2012,7 +2012,7 @@ export default function StudentDashboard({
                         {/* ACTION: E-CERTIFICATES */}
                         <div
                             onClick={() => router.visit(studentCertificates())}
-                            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 text-left shadow-lg backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-emerald-500/15 active:scale-[0.98] dark:border-slate-800/40 dark:bg-slate-900/30"
+                            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200/60 bg-white/70 p-5 text-left shadow-lg backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:shadow-emerald-500/15 active:scale-[0.98] dark:border-slate-700/80 dark:bg-slate-800/90 dark:hover:bg-slate-800"
                         >
                             <div className="pointer-events-none absolute top-0 right-0 -mt-10 -mr-10 h-24 w-24 rounded-full bg-emerald-500/5 blur-xl" />
                             <div className="flex h-full flex-col items-start justify-between gap-4">

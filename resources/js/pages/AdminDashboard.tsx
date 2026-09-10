@@ -368,14 +368,14 @@ export default function AdminDashboard({
                                 <div
                                     key={kpi.title}
                                     onClick={() => router.visit(kpi.href)}
-                                    className="group relative cursor-pointer overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800"
+                                    className="group relative cursor-pointer overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200/80 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-slate-800/90 dark:ring-1 dark:ring-slate-700/80 dark:shadow-md dark:hover:bg-slate-800"
                                 >
                                     <div
                                         className={`pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full ${theme.glow}`}
                                     />
                                     <div className="flex items-start justify-between gap-3">
                                         <div>
-                                            <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
+                                            <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-400">
                                                 {kpi.title}
                                             </p>
                                             <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
@@ -395,7 +395,7 @@ export default function AdminDashboard({
                                             })}
                                         </div>
                                     </div>
-                                    <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                    <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700/60">
                                         <div
                                             className={`h-full w-full bg-gradient-to-r ${theme.barGradient} rounded-full`}
                                         />
@@ -408,8 +408,8 @@ export default function AdminDashboard({
                     {/* ── INCOMING EVENTS & QUICK ACTIONS SECTION ── */}
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
                         {/* Incoming & Active Events (9 cols) */}
-                        <Card className="flex flex-col justify-between overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-lg shadow-blue-900/5 lg:col-span-9 dark:border-slate-800 dark:bg-[#0B192C]/70">
-                            <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-blue-50/50 via-white to-transparent px-5 pt-4 pb-3.5 dark:border-slate-800 dark:from-slate-800/40 dark:via-transparent">
+                        <Card className="flex flex-col justify-between overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-lg shadow-blue-900/5 lg:col-span-9 dark:border-slate-700/80 dark:bg-slate-800/90 dark:shadow-black/20">
+                            <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-blue-50/50 via-white to-transparent px-5 pt-4 pb-3.5 dark:border-slate-700/80 dark:from-slate-800 dark:via-slate-800/60 dark:to-transparent">
                                 <div className="flex items-center gap-3">
                                     <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-600 text-white shadow-md shadow-blue-500/20">
                                         <CalendarDays className="h-4.5 w-4.5" />
@@ -435,7 +435,7 @@ export default function AdminDashboard({
                                     <button
                                         type="button"
                                         onClick={() => router.reload()}
-                                        className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-all duration-200 hover:bg-slate-50 hover:text-slate-950 dark:border-slate-700 dark:bg-[#0B192C]/50 dark:text-slate-400 dark:hover:text-white"
+                                        className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-all duration-200 hover:bg-slate-50 hover:text-slate-950 dark:border-slate-700 dark:bg-slate-700/60 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white"
                                         aria-label="Refresh Data"
                                         title="Refresh Events"
                                     >
@@ -666,22 +666,22 @@ export default function AdminDashboard({
                         </Card>
 
                         {/* Tight Ultra-Compact Quick Actions (3 cols) */}
-                        <Card className="flex h-fit flex-col border border-slate-200 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md lg:col-span-3 dark:border-slate-700 dark:bg-[#0B192C]/50">
-                            <CardHeader className="border-b border-slate-100 px-3 py-2.5 dark:border-slate-700/50">
+                        <Card className="flex h-fit flex-col border border-slate-200/80 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md lg:col-span-3 dark:border-slate-700/80 dark:bg-slate-800/90 dark:shadow-black/20">
+                            <CardHeader className="border-b border-slate-100 px-3 py-2.5 dark:border-slate-700/80 dark:bg-slate-800/60">
                                 <CardTitle className="flex items-center gap-1.5 text-[11px] font-extrabold tracking-wider text-slate-800 uppercase dark:text-white">
-                                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#23509A]" />
+                                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-blue-500" />
                                     Quick Actions
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="flex flex-col gap-1 p-2">
+                            <CardContent className="flex flex-col gap-1.5 p-2">
                                 <Link
                                     href={adminEvents()}
-                                    className="group dark:from-slate-850 flex items-center gap-2 rounded-lg border border-slate-100 bg-gradient-to-r from-sky-50/70 to-blue-50/30 px-2.5 py-1.5 transition-all duration-200 hover:border-sky-300 hover:shadow-sm dark:border-slate-700/50 dark:to-slate-800 dark:hover:border-sky-800"
+                                    className="group flex items-center gap-2 rounded-lg border border-slate-100 bg-gradient-to-r from-sky-50/70 to-blue-50/30 px-2.5 py-2 transition-all duration-200 hover:border-sky-300 hover:shadow-sm dark:border-slate-700/80 dark:bg-slate-750/70 dark:hover:border-sky-500/60 dark:hover:bg-slate-700"
                                 >
-                                    <div className="shrink-0 rounded bg-sky-500/10 p-1 text-sky-600 dark:bg-sky-500/20 dark:text-sky-400">
+                                    <div className="shrink-0 rounded-md bg-sky-500/10 p-1 text-sky-600 dark:bg-sky-500/20 dark:text-sky-400">
                                         <CalendarDays className="h-3.5 w-3.5" />
                                     </div>
-                                    <span className="truncate text-[11px] font-bold text-slate-800 dark:text-slate-200">
+                                    <span className="truncate text-[11px] font-bold text-slate-800 dark:text-slate-100">
                                         Create Event
                                     </span>
                                 </Link>
@@ -690,48 +690,48 @@ export default function AdminDashboard({
                                     href={
                                         adminAdmissionSlip() + '?open_add=true'
                                     }
-                                    className="group dark:from-slate-850 flex items-center gap-2 rounded-lg border border-slate-100 bg-gradient-to-r from-emerald-50/70 to-teal-50/30 px-2.5 py-1.5 transition-all duration-200 hover:border-emerald-300 hover:shadow-sm dark:border-slate-700/50 dark:to-slate-800 dark:hover:border-emerald-800"
+                                    className="group flex items-center gap-2 rounded-lg border border-slate-100 bg-gradient-to-r from-emerald-50/70 to-teal-50/30 px-2.5 py-2 transition-all duration-200 hover:border-emerald-300 hover:shadow-sm dark:border-slate-700/80 dark:bg-slate-750/70 dark:hover:border-emerald-500/60 dark:hover:bg-slate-700"
                                 >
-                                    <div className="shrink-0 rounded bg-emerald-500/10 p-1 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
+                                    <div className="shrink-0 rounded-md bg-emerald-500/10 p-1 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
                                         <Ticket className="h-3.5 w-3.5" />
                                     </div>
-                                    <span className="truncate text-[11px] font-bold text-slate-800 dark:text-slate-200">
+                                    <span className="truncate text-[11px] font-bold text-slate-800 dark:text-slate-100">
                                         Admission Slip
                                     </span>
                                 </Link>
 
                                 <Link
                                     href={adminIncidentsViolations()}
-                                    className="group dark:from-slate-850 flex items-center gap-2 rounded-lg border border-slate-100 bg-gradient-to-r from-rose-50/70 to-red-50/30 px-2.5 py-1.5 transition-all duration-200 hover:border-rose-300 hover:shadow-sm dark:border-slate-700/50 dark:to-slate-800 dark:hover:border-rose-800"
+                                    className="group flex items-center gap-2 rounded-lg border border-slate-100 bg-gradient-to-r from-rose-50/70 to-red-50/30 px-2.5 py-2 transition-all duration-200 hover:border-rose-300 hover:shadow-sm dark:border-slate-700/80 dark:bg-slate-750/70 dark:hover:border-rose-500/60 dark:hover:bg-slate-700"
                                 >
-                                    <div className="shrink-0 rounded bg-rose-500/10 p-1 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400">
+                                    <div className="shrink-0 rounded-md bg-rose-500/10 p-1 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400">
                                         <Briefcase className="h-3.5 w-3.5" />
                                     </div>
-                                    <span className="truncate text-[11px] font-bold text-slate-800 dark:text-slate-200">
+                                    <span className="truncate text-[11px] font-bold text-slate-800 dark:text-slate-100">
                                         Log Violation
                                     </span>
                                 </Link>
 
                                 <Link
                                     href={adminManageUsers()}
-                                    className="group dark:from-slate-850 flex items-center gap-2 rounded-lg border border-slate-100 bg-gradient-to-r from-amber-50/70 to-yellow-50/30 px-2.5 py-1.5 transition-all duration-200 hover:border-amber-300 hover:shadow-sm dark:border-slate-700/50 dark:to-slate-800 dark:hover:border-amber-800"
+                                    className="group flex items-center gap-2 rounded-lg border border-slate-100 bg-gradient-to-r from-amber-50/70 to-yellow-50/30 px-2.5 py-2 transition-all duration-200 hover:border-amber-300 hover:shadow-sm dark:border-slate-700/80 dark:bg-slate-750/70 dark:hover:border-amber-500/60 dark:hover:bg-slate-700"
                                 >
-                                    <div className="shrink-0 rounded bg-amber-500/10 p-1 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
+                                    <div className="shrink-0 rounded-md bg-amber-500/10 p-1 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
                                         <UserRoundCog className="h-3.5 w-3.5" />
                                     </div>
-                                    <span className="truncate text-[11px] font-bold text-slate-800 dark:text-slate-200">
+                                    <span className="truncate text-[11px] font-bold text-slate-800 dark:text-slate-100">
                                         Manage Users
                                     </span>
                                 </Link>
 
                                 <Link
                                     href={adminReports()}
-                                    className="group dark:from-slate-850 flex items-center gap-2 rounded-lg border border-slate-100 bg-gradient-to-r from-violet-50/70 to-purple-50/30 px-2.5 py-1.5 transition-all duration-200 hover:border-violet-300 hover:shadow-sm dark:border-slate-700/50 dark:to-slate-800 dark:hover:border-violet-800"
+                                    className="group flex items-center gap-2 rounded-lg border border-slate-100 bg-gradient-to-r from-violet-50/70 to-purple-50/30 px-2.5 py-2 transition-all duration-200 hover:border-violet-300 hover:shadow-sm dark:border-slate-700/80 dark:bg-slate-750/70 dark:hover:border-violet-500/60 dark:hover:bg-slate-700"
                                 >
-                                    <div className="shrink-0 rounded bg-violet-500/10 p-1 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400">
+                                    <div className="shrink-0 rounded-md bg-violet-500/10 p-1 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400">
                                         <FileText className="h-3.5 w-3.5" />
                                     </div>
-                                    <span className="truncate text-[11px] font-bold text-slate-800 dark:text-slate-200">
+                                    <span className="truncate text-[11px] font-bold text-slate-800 dark:text-slate-100">
                                         Reports
                                     </span>
                                 </Link>
@@ -741,8 +741,8 @@ export default function AdminDashboard({
 
                     {/* ── CHARTS SECTION ── */}
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-                        <Card className="flex h-[380px] flex-col overflow-hidden border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:shadow-md lg:col-span-7 dark:border-slate-800 dark:bg-[#0B192C]/60">
-                            <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 bg-slate-50/50 px-5 pt-4 pb-3 dark:border-slate-800/80 dark:bg-slate-900/20">
+                        <Card className="flex h-[380px] flex-col overflow-hidden border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:shadow-md lg:col-span-7 dark:border-slate-700/80 dark:bg-slate-800/90 dark:shadow-black/20">
+                            <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 bg-slate-50/50 px-5 pt-4 pb-3 dark:border-slate-700/80 dark:bg-slate-800/50">
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <CardTitle className="text-sm font-black text-slate-800 dark:text-white">
@@ -803,7 +803,7 @@ export default function AdminDashboard({
                                             strokeDasharray="3 3"
                                             vertical={false}
                                             stroke="#f1f5f9"
-                                            className="dark:stroke-slate-800"
+                                            className="dark:stroke-slate-700/50"
                                         />
                                         <XAxis
                                             dataKey="name"
@@ -811,7 +811,7 @@ export default function AdminDashboard({
                                             axisLine={false}
                                             tick={{
                                                 fontSize: 11,
-                                                fill: '#64748b',
+                                                fill: '#94a3b8',
                                                 fontWeight: 600,
                                             }}
                                         />
@@ -820,7 +820,7 @@ export default function AdminDashboard({
                                             axisLine={false}
                                             tick={{
                                                 fontSize: 11,
-                                                fill: '#64748b',
+                                                fill: '#94a3b8',
                                             }}
                                         />
                                         <Tooltip
@@ -831,19 +831,19 @@ export default function AdminDashboard({
                                         <Area
                                             type="monotone"
                                             dataKey="value"
-                                            stroke="#2563eb"
+                                            stroke="#3b82f6"
                                             strokeWidth={3}
                                             fillOpacity={1}
                                             fill="url(#attendanceGradient)"
                                             dot={{
                                                 r: 4,
-                                                fill: '#1e40af',
+                                                fill: '#2563eb',
                                                 strokeWidth: 2,
                                                 stroke: '#ffffff',
                                             }}
                                             activeDot={{
                                                 r: 7,
-                                                stroke: '#2563eb',
+                                                stroke: '#3b82f6',
                                                 strokeWidth: 3,
                                                 fill: '#ffffff',
                                             }}
@@ -853,8 +853,8 @@ export default function AdminDashboard({
                             </CardContent>
                         </Card>
 
-                        <Card className="flex h-[360px] flex-col border border-slate-200 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md lg:col-span-5 dark:border-slate-700 dark:bg-[#0B192C]/50">
-                            <CardHeader className="px-5 pt-4 pb-2">
+                        <Card className="flex h-[380px] flex-col border border-slate-200/80 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md lg:col-span-5 dark:border-slate-700/80 dark:bg-slate-800/90 dark:shadow-black/20">
+                            <CardHeader className="border-b border-slate-100 bg-slate-50/50 px-5 pt-4 pb-3 dark:border-slate-700/80 dark:bg-slate-800/50">
                                 <CardTitle className="text-sm font-bold text-slate-800 dark:text-white">
                                     Violation Breakdown
                                 </CardTitle>
@@ -887,7 +887,7 @@ export default function AdminDashboard({
                                         <Legend
                                             wrapperStyle={{
                                                 fontSize: 11,
-                                                color: '#64748b',
+                                                color: '#94a3b8',
                                             }}
                                         />
                                     </PieChart>
@@ -897,8 +897,8 @@ export default function AdminDashboard({
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-                        <Card className="flex h-[360px] flex-col border border-slate-200 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md lg:col-span-12 dark:border-slate-700 dark:bg-[#0B192C]/50">
-                            <CardHeader className="px-5 pt-4 pb-2">
+                        <Card className="flex h-[360px] flex-col border border-slate-200/80 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md lg:col-span-12 dark:border-slate-700/80 dark:bg-slate-800/90 dark:shadow-black/20">
+                            <CardHeader className="border-b border-slate-100 bg-slate-50/50 px-5 pt-4 pb-3 dark:border-slate-700/80 dark:bg-slate-800/50">
                                 <CardTitle className="text-sm font-bold text-slate-800 dark:text-white">
                                     Evaluation Ratings
                                 </CardTitle>
@@ -917,18 +917,19 @@ export default function AdminDashboard({
                                         <CartesianGrid
                                             strokeDasharray="3 3"
                                             stroke="#e2e8f0"
+                                            className="dark:stroke-slate-700/50"
                                         />
                                         <XAxis
                                             dataKey="name"
                                             tick={{
                                                 fontSize: 12,
-                                                fill: '#64748b',
+                                                fill: '#94a3b8',
                                             }}
                                         />
                                         <YAxis
                                             tick={{
                                                 fontSize: 12,
-                                                fill: '#64748b',
+                                                fill: '#94a3b8',
                                             }}
                                         />
                                         <Tooltip
@@ -938,7 +939,7 @@ export default function AdminDashboard({
                                         />
                                         <Bar
                                             dataKey="value"
-                                            fill="#23509A"
+                                            fill="#3b82f6"
                                             radius={[4, 4, 0, 0]}
                                         />
                                     </BarChart>
@@ -949,11 +950,11 @@ export default function AdminDashboard({
 
                     {/* Recent Activity Section */}
                     <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-                        <Card className="flex flex-col border border-slate-200 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md lg:col-span-12 dark:border-slate-700 dark:bg-[#0B192C]/50">
-                            <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 bg-slate-50/50 px-5 pt-4 pb-3 dark:border-slate-800/80 dark:bg-slate-900/20">
+                        <Card className="flex flex-col border border-slate-200/80 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md lg:col-span-12 dark:border-slate-700/80 dark:bg-slate-800/90 dark:shadow-black/20">
+                            <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 bg-slate-50/50 px-5 pt-4 pb-3 dark:border-slate-700/80 dark:bg-slate-800/50">
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <History className="h-4.5 w-4.5 text-[#23509A] dark:text-blue-400" />
+                                        <History className="h-4.5 w-4.5 text-blue-600 dark:text-blue-400" />
                                         <CardTitle className="text-sm font-black text-slate-800 dark:text-white">
                                             Recent Activity Logs
                                         </CardTitle>
@@ -966,7 +967,7 @@ export default function AdminDashboard({
                             <CardContent className="px-5 py-4 flex-1">
                                 <div className="space-y-4">
                                     {!recentActivities || recentActivities.length === 0 ? (
-                                        <p className="text-xs text-slate-400 italic py-4 text-center">
+                                        <p className="text-xs text-slate-400 italic py-4 text-center dark:text-slate-500">
                                             No recent activities logged.
                                         </p>
                                     ) : (
@@ -983,7 +984,7 @@ export default function AdminDashboard({
                                                             )}
                                                             <div className="relative flex space-x-3">
                                                                 <div>
-                                                                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 ring-4 ring-white dark:ring-slate-900">
+                                                                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400 ring-4 ring-white dark:ring-slate-800">
                                                                         <span className="text-[10px] font-black uppercase">
                                                                             {activity.module.substring(0, 2) || 'AC'}
                                                                         </span>
@@ -991,7 +992,7 @@ export default function AdminDashboard({
                                                                 </div>
                                                                 <div className="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
                                                                     <div>
-                                                                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                                                        <p className="text-xs font-bold text-slate-800 dark:text-slate-100">
                                                                             {activity.title}
                                                                         </p>
                                                                         <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">

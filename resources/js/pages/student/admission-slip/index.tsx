@@ -23,7 +23,7 @@ export default function StudentAdmissionSlipIndex() {
             <Head title="Admission Slip Request" />
 
             <div className="mx-auto max-w-4xl px-4 pt-6 pb-12 sm:px-6 lg:px-8">
-                <Card className="mx-auto max-w-2xl overflow-hidden rounded-3xl border border-slate-200/80 bg-white/80 shadow-xl backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/80">
+                <Card className="mx-auto max-w-2xl overflow-hidden rounded-3xl border border-slate-200/80 bg-white/80 shadow-xl backdrop-blur-xl dark:border-slate-700/80 dark:bg-slate-800/90 dark:shadow-black/20">
                     <div className="relative bg-gradient-to-br from-[#0b2d66] to-[#1e40af] px-8 py-8 text-white">
                         <div className="absolute top-0 right-0 h-64 w-64 translate-x-1/2 -translate-y-1/2 rounded-full bg-white/5 blur-3xl" />
                         <div className="relative flex items-center gap-6">
