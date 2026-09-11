@@ -349,9 +349,9 @@ export default function EditAdmissionSlipDialog({
                                                 'Others: ',
                                             )
                                                 ? form.reasonText.replace(
-                                                      'Others: ',
-                                                      '',
-                                                  )
+                                                    'Others: ',
+                                                    '',
+                                                )
                                                 : form.reasonText
                                         }
                                         onChange={(e) =>
@@ -399,3 +399,4 @@ export default function EditAdmissionSlipDialog({
         </Dialog>
     );
 }
+

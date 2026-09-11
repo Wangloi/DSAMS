@@ -1,8 +1,8 @@
 import {
     adminDashboard,
     adminIncidentsViolations,
-    adminIncidentsViolationsBatch,
     adminIncidentsViolationsArchive,
+    adminIncidentsViolationsBatch,
     adminIncidentsViolationsShow,
     adminIncidentsViolationsStore,
     adminIncidentsViolationsUpdate,
@@ -11,28 +11,22 @@ import {
 } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
-import {
-    AlertTriangle,
-    CheckCircle2,
-    ChevronRight,
-    RotateCcw,
-} from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import Swal from 'sweetalert2';
 import AdminLayout from '../admin-layout';
+import CallingSlipModal from './CallingSlipModal';
+import DisciplinaryResolutionModal from './DisciplinaryResolutionModal';
+import IncidentBatchActionBar from './IncidentBatchActionBar';
 import IncidentReportDialog from './IncidentReportDialog';
-import IncidentStatsCard from './IncidentStatsCard';
+import IncidentStatsCards from './IncidentStatsCards';
 import IncidentTable from './IncidentTable';
 import IncidentTableHeader from './IncidentTableHeader';
-import Pagination from './Pagination';
-import CallingSlipModal from './CallingSlipModal';
 import InvestigationDialog from './InvestigationDialog';
-import DisciplinaryResolutionModal from './DisciplinaryResolutionModal';
+import Pagination from './Pagination';
 import { STUDENT_CALLING_PHASES } from './StudentCallingProcessFlow';
 import type {
     IncidentRow,
     IncidentStats,
-    KpiCard,
     StatusFilter,
     TypeFilter,
     Violation,
@@ -87,7 +81,6 @@ export default function AdminIncidentsViolationsPage() {
     const [dialogMode, setDialogMode] = useState<'create' | 'view' | 'edit'>(
         'create',
     );
-    const [detailModalOpen, setDetailModalOpen] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [callingSlipIncident, setCallingSlipIncident] = useState<IncidentRow | null>(null);
     const [investigationIncident, setInvestigationIncident] = useState<IncidentRow | null>(null);
@@ -275,7 +268,7 @@ export default function AdminIncidentsViolationsPage() {
         });
     };
 
-    /** #4: Quick phase advance from the table */
+    /** Quick phase advance from the table */
     const handleAdvancePhase = (row: IncidentRow) => {
         const currentPhase = row.calling_phase ?? 1;
         const nextPhase = Math.min(currentPhase + 1, 5);
@@ -315,7 +308,7 @@ export default function AdminIncidentsViolationsPage() {
         });
     };
 
-    /** #5: Batch operations */
+    /** Batch operations */
     const handleToggleSelect = (id: number) => {
         setSelectedIds((prev) => {
             const next = new Set(prev);
@@ -368,52 +361,6 @@ export default function AdminIncidentsViolationsPage() {
         });
     };
 
-    const kpiData: KpiCard[] = [
-        {
-            title: 'Total Cases',
-            value: stats.total,
-            change: '',
-            accent: 'bg-blue-600',
-            iconWrap:
-                'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300',
-        },
-        {
-            title: 'Pending Cases',
-            value: stats.pending,
-            change: '',
-            accent: 'bg-amber-500',
-            iconWrap:
-                'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300',
-        },
-        {
-            title: 'Ongoing Cases',
-            value: stats.ongoing,
-            change: '',
-            accent: 'bg-sky-500',
-            iconWrap:
-                'bg-sky-50 dark:bg-sky-900/20 text-sky-700 dark:text-sky-300',
-        },
-        {
-            title: 'Resolved Cases',
-            value: stats.resolved,
-            change: '',
-            accent: 'bg-emerald-600',
-            iconWrap:
-                'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300',
-        },
-    ];
-
-    const breadcrumbs: BreadcrumbItem[] = [
-        {
-            title: 'Admin Dashboard',
-            href: adminDashboard(),
-        },
-        {
-            title: 'Violation Registry & History',
-            href: adminIncidentsViolations(),
-        },
-    ];
-
     return (
         <AdminLayout breadcrumbs={breadcrumbs}>
             <Head title="Incidents & Violations" />
@@ -422,69 +369,16 @@ export default function AdminIncidentsViolationsPage() {
                     <IncidentTableHeader onNewIncident={handleNewIncident} />
 
                     {/* Status KPI Cards */}
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-                        {kpiData.map((kpi) => (
-                            <IncidentStatsCard key={kpi.title} kpi={kpi} />
-                        ))}
-                    </div>
+                    <IncidentStatsCards stats={stats} />
 
                     {/* Batch Action Bar */}
-                    {selectedIds.size > 0 && (
-                        <div className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-300 bg-blue-50/95 px-4 py-3 shadow-md backdrop-blur-sm dark:border-blue-800 dark:bg-blue-950/80">
-                            <div className="flex items-center gap-2 text-xs font-bold text-blue-900 dark:text-blue-200">
-                                <CheckCircle2 className="h-4 w-4" />
-                                <span>{selectedIds.size} case(s) selected</span>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                                {/* Advance to next phase */}
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        const phases = pagedRows
-                                            .filter((r) => selectedIds.has(r.id))
-                                            .map((r) => r.calling_phase ?? 1);
-                                        const maxPhase = Math.max(...phases);
-                                        const target = Math.min(maxPhase + 1, 8);
-                                        handleBatchAction('advance_phase', String(target));
-                                    }}
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-[#0B192C] px-3 py-1.5 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-blue-900"
-                                >
-                                    <ChevronRight className="h-3.5 w-3.5" />
-                                    Advance Phase
-                                </button>
-
-                                {/* Set Resolved */}
-                                <button
-                                    type="button"
-                                    onClick={() => handleBatchAction('set_status', 'Resolved')}
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-emerald-700"
-                                >
-                                    <CheckCircle2 className="h-3.5 w-3.5" />
-                                    Set Resolved
-                                </button>
-
-                                {/* Set Escalated */}
-                                <button
-                                    type="button"
-                                    onClick={() => handleBatchAction('set_status', 'Escalated')}
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-rose-700"
-                                >
-                                    <AlertTriangle className="h-3.5 w-3.5" />
-                                    Set Escalated
-                                </button>
-
-                                {/* Clear Selection */}
-                                <button
-                                    type="button"
-                                    onClick={() => setSelectedIds(new Set())}
-                                    className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-700 shadow-sm transition-all hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-                                >
-                                    <RotateCcw className="h-3 w-3" />
-                                    Clear
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                    <IncidentBatchActionBar
+                        selectedCount={selectedIds.size}
+                        pagedRows={pagedRows}
+                        selectedIds={selectedIds}
+                        onBatchAction={handleBatchAction}
+                        onClearSelection={() => setSelectedIds(new Set())}
+                    />
 
                     <IncidentTable
                         incidents={pagedRows}
