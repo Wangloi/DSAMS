@@ -35,18 +35,22 @@ export function BulkYearLevelDialog({
 }: BulkYearLevelDialogProps) {
     const [targetYearLevel, setTargetYearLevel] = useState<string>('3rd Year');
     const [isUpdatingYearLevel, setIsUpdatingYearLevel] = useState(false);
-
     const handleUpdate = () => {
+        const targetElem = (document.getElementById('bulk-year-level-modal-dialog') || document.body) as HTMLElement;
+
         if (selectedUserIds.length === 0) {
             Swal.fire({
+                target: targetElem,
                 icon: 'warning',
                 title: 'No Users Selected',
                 text: 'Please select at least one student.',
+                confirmButtonColor: '#0B192C',
             });
             return;
         }
 
         Swal.fire({
+            target: targetElem,
             title: 'Are you sure?',
             text: `Are you sure you want to update ${selectedUserIds.length} student(s) to "${targetYearLevel}"?`,
             icon: 'question',
@@ -55,6 +59,11 @@ export function BulkYearLevelDialog({
             cancelButtonColor: '#64748b',
             confirmButtonText: 'Yes, update year level',
             cancelButtonText: 'Cancel',
+            heightAuto: false,
+            customClass: {
+                container: 'pointer-events-auto !z-[99999]',
+                popup: '!rounded-2xl !shadow-2xl',
+            },
         }).then((result) => {
             if (result.isConfirmed) {
                 setIsUpdatingYearLevel(true);
@@ -78,9 +87,10 @@ export function BulkYearLevelDialog({
                                 showConfirmButton: false,
                             });
                         },
-                        onError: () => {
+                        onError: (err) => {
                             setIsUpdatingYearLevel(false);
                             Swal.fire({
+                                target: targetElem,
                                 icon: 'error',
                                 title: 'Error',
                                 text: 'Failed to update year level. Please try again.',
@@ -94,7 +104,8 @@ export function BulkYearLevelDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent id="bulk-year-level-modal-dialog" className="sm:max-w-md relative">
+
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
                         <GraduationCap className="h-5 w-5 text-amber-600" />

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
 use Endroid\QrCode\Builder\Builder;
 use App\Services\StudentNotificationDispatcher;
 
@@ -629,7 +630,7 @@ class AdminEventsController extends Controller
     {
         $conflict = Event::findScheduleConflict((string) $event->event_date, (string) $event->location, (string) $event->event_time, $event->id);
         if ($conflict) {
-            $formattedDate = $event->event_date?->format('Y-m-d') ?? '';
+            $formattedDate = $event->event_date ? Carbon::parse($event->event_date)->format('Y-m-d') : '';
             return redirect()->back()->with('error', "Cannot approve request! Venue '{$event->location}' is already booked on {$formattedDate} at {$conflict->event_time} for '{$conflict->event_name}'.");
         }
 

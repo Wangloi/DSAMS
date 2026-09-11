@@ -151,11 +151,15 @@ export default function BulkActionsModal({
     };
 
     const handleApplyAction = () => {
+        const targetElem = (document.getElementById('bulk-actions-modal-dialog') || document.body) as HTMLElement;
+
         if (selectedUserIds.length === 0) {
             Swal.fire({
+                target: targetElem,
                 icon: 'warning',
                 title: 'No Users Selected',
                 text: 'Please select at least one user to perform bulk action.',
+                confirmButtonColor: '#0B192C',
             });
             return;
         }
@@ -192,6 +196,7 @@ export default function BulkActionsModal({
         }
 
         Swal.fire({
+            target: targetElem,
             title: 'Are you sure?',
             text: confirmText,
             icon: 'question',
@@ -200,6 +205,11 @@ export default function BulkActionsModal({
             cancelButtonColor: '#64748b',
             confirmButtonText: 'Yes, apply action',
             cancelButtonText: 'Cancel',
+            heightAuto: false,
+            customClass: {
+                container: 'pointer-events-auto !z-[99999]',
+                popup: '!rounded-2xl !shadow-2xl',
+            },
         }).then((result) => {
             if (result.isConfirmed) {
                 setIsSubmitting(true);
@@ -223,6 +233,7 @@ export default function BulkActionsModal({
                         setIsSubmitting(false);
                         console.error('Bulk action error:', err);
                         Swal.fire({
+                            target: targetElem,
                             icon: 'error',
                             title: 'Error',
                             text: 'Failed to apply bulk action. Please try again.',
@@ -235,23 +246,7 @@ export default function BulkActionsModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-4xl max-w-4xl overflow-hidden p-0 gap-0 bg-white dark:bg-[#0B192C] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl">
-                {/* Header with System Primary Navy Gradient Banner */}
-                <div className="bg-gradient-to-r from-[#0B192C] via-[#1E3E62] to-[#1e3a8a] px-6 py-4 flex items-center justify-between text-white border-b border-slate-800/40">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 backdrop-blur-md ring-1 ring-white/20 text-amber-400 shadow-inner">
-                            <Layers className="h-5 w-5" />
-                        </div>
-                        <div>
-                            <DialogTitle className="text-base font-bold tracking-tight text-white flex items-center gap-2">
-                                Bulk User Actions Manager
-                            </DialogTitle>
-                            <DialogDescription className="text-xs text-slate-300/90 font-normal">
-                                Batch update student year levels, programs, entry status, or officer roles.
-                            </DialogDescription>
-                        </div>
-                    </div>
-                </div>
+            <DialogContent id="bulk-actions-modal-dialog" className="sm:max-w-4xl max-w-4xl overflow-hidden p-0 gap-0 bg-white dark:bg-[#0B192C] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl relative">
 
                 {/* 2-Column Main Area (Fits directly without vertical scrolling) */}
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-5 p-5 bg-slate-50/50 dark:bg-[#0B192C]/80">

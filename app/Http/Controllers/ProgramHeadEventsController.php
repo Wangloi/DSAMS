@@ -6,6 +6,7 @@ use App\Models\AdminUser;
 use App\Models\Event;
 use App\Notifications\ActivityPlanSubmittedAdmin;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -128,7 +129,7 @@ class ProgramHeadEventsController extends Controller
                     'event_name' => (string) ($event->event_name ?? ''),
                     'organizer' => (string) ($event->organizer ?? ''),
                     'location' => (string) ($event->location ?? ''),
-                    'event_date' => $event->event_date?->format('Y-m-d') ?? '',
+                    'event_date' => $event->event_date ? Carbon::parse($event->event_date)->format('Y-m-d') : '',
                     'event_time' => (string) ($event->event_time ?? ''),
                     'status' => $lifecycleStatus,
                     'approval_status' => (string) ($event->approval_status ?? 'approved'),
