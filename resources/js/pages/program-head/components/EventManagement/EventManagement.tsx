@@ -195,13 +195,29 @@ export default function EventManagement() {
                 e.location.toLowerCase().includes(q) ||
                 (e.organizer ?? '').toLowerCase().includes(q);
 
-            const effectiveStatus = (e.approval_status === 'pending' || e.approval_status === 'rejected')
-                ? e.approval_status
-                : e.status;
+            const isCompleted = e.status === 'completed';
 
-            const matchesStatus = !statusFilter || effectiveStatus === statusFilter || e.status === statusFilter || e.approval_status === statusFilter;
+            // When user explicitly selects 'completed', show only completed events
+            if (statusFilter === 'completed') {
+                return matchesSearch && isCompleted;
+            }
 
-            return matchesSearch && matchesStatus;
+            // When a specific active status filter is selected
+            if (statusFilter) {
+                const effectiveStatus = (e.approval_status === 'pending' || e.approval_status === 'rejected')
+                    ? e.approval_status
+                    : e.status;
+
+                const matchesStatus =
+                    effectiveStatus === statusFilter ||
+                    e.status === statusFilter ||
+                    e.approval_status === statusFilter;
+
+                return matchesSearch && matchesStatus && !isCompleted;
+            }
+
+            // Default (Active Events view): hide completed/done events
+            return matchesSearch && !isCompleted;
         });
     }, [events, searchTerm, statusFilter]);
 
@@ -344,13 +360,14 @@ function formatToIsoStart(dateStr: string, timeStr: string): string {
 
     const kpiData = [
         {
-            title: 'Total Events',
-            value: summary.total,
+            title: 'Total Active',
+            value: summary.total - summary.completed,
             icon: CalendarDays,
             theme: 'indigo',
-            subText: 'All Events',
+            subText: 'Active Events',
             gradient: 'from-indigo-400 to-indigo-600',
             bgCircle: 'bg-indigo-500/5',
+            filter: '' as EventStatus | '',
         },
         {
             title: 'Upcoming',
@@ -360,6 +377,7 @@ function formatToIsoStart(dateStr: string, timeStr: string): string {
             subText: 'Scheduled',
             gradient: 'from-amber-400 to-amber-600',
             bgCircle: 'bg-amber-500/5',
+            filter: 'upcoming' as EventStatus,
         },
         {
             title: 'Pending',
@@ -369,15 +387,17 @@ function formatToIsoStart(dateStr: string, timeStr: string): string {
             subText: 'Awaiting Approval',
             gradient: 'from-rose-400 to-rose-600',
             bgCircle: 'bg-rose-500/5',
+            filter: 'pending' as EventStatus,
         },
         {
             title: 'Completed',
             value: summary.completed,
             icon: CheckCircle2,
             theme: 'emerald',
-            subText: 'Finished',
+            subText: 'Finished / Done',
             gradient: 'from-emerald-400 to-emerald-600',
             bgCircle: 'bg-emerald-500/5',
+            filter: 'completed' as EventStatus,
         },
     ];
 
@@ -458,7 +478,11 @@ function formatToIsoStart(dateStr: string, timeStr: string): string {
                         {kpiData.map((kpi) => (
                             <div
                                 key={kpi.title}
-                                className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800"
+                                onClick={() => {
+                                    setStatusFilter(kpi.filter);
+                                    setViewMode('list');
+                                }}
+                                className="group relative cursor-pointer overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800"
                             >
                                 <div
                                     className={cn(
@@ -692,7 +716,11 @@ function formatToIsoStart(dateStr: string, timeStr: string): string {
                                             Events list
                                         </h3>
                                         <p className="text-xs text-slate-500">
-                                            Filtered list of events
+                                            {statusFilter === 'completed'
+                                                ? `Showing ${filteredEvents.length} completed event(s)`
+                                                : statusFilter
+                                                  ? `Filtered by ${statusFilter} (${filteredEvents.length} events)`
+                                                  : `Showing ${filteredEvents.length} active event(s) (completed hidden)`}
                                         </p>
                                     </div>
                                     <div className="flex flex-wrap items-center gap-3">
@@ -713,21 +741,21 @@ function formatToIsoStart(dateStr: string, timeStr: string): string {
                                         </div>
 
                                         <Select
-                                            value={statusFilter || 'all'}
+                                            value={statusFilter || 'active'}
                                             onValueChange={(value) =>
                                                 setStatusFilter(
-                                                    value === 'all'
+                                                    value === 'active'
                                                         ? ''
                                                         : (value as EventStatus),
                                                 )
                                             }
                                         >
-                                            <SelectTrigger className="h-9 w-[140px] border border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-800">
-                                                <SelectValue placeholder="All Status" />
+                                            <SelectTrigger className="h-9 w-[150px] border border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-800">
+                                                <SelectValue placeholder="Active Events" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="all">
-                                                    All Status
+                                                <SelectItem value="active">
+                                                    Active Events
                                                 </SelectItem>
                                                 <SelectItem value="upcoming">
                                                     Upcoming
@@ -735,8 +763,11 @@ function formatToIsoStart(dateStr: string, timeStr: string): string {
                                                 <SelectItem value="ongoing">
                                                     Ongoing
                                                 </SelectItem>
+                                                <SelectItem value="pending">
+                                                    Pending
+                                                </SelectItem>
                                                 <SelectItem value="completed">
-                                                    Completed
+                                                    Completed (Done)
                                                 </SelectItem>
                                             </SelectContent>
                                         </Select>
