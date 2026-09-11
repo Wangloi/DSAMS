@@ -41,7 +41,7 @@ class ProgramHeadEventsController extends Controller
             'description' => ['nullable', 'string'],
             'courses' => ['nullable', 'array'],
             'year_levels' => ['nullable', 'array'],
-            'activity_plan' => ['nullable', 'file', 'mimes:pdf,doc,docx,png,jpg,jpeg', 'max:10240'],
+            'activity_plan' => ['nullable', 'file', 'extensions:pdf,doc,docx,png,jpg,jpeg', 'max:20480'],
         ]);
 
         // Check for schedule conflict at venue/time

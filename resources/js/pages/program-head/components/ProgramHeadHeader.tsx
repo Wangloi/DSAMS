@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/sheet';
 import { UserMenuContent } from '@/components/user-menu-content';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { DetailedHelpCenterModal } from '@/components/DetailedHelpCenterModal';
 import { useInitials } from '@/hooks/use-initials';
 import { MobileNavigation } from '@/pages/admin-dashboard/mobile-navigation';
 import type { SharedData } from '@/types';
@@ -304,97 +305,23 @@ export function ProgramHeadHeader() {
                     {/* Dark/Light Theme Quick Toggle */}
                     <ThemeToggle variant="header" />
 
-                    {/* Help Support Guide */}
-                    <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
-                        <DialogTrigger asChild>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="relative h-9 w-9 rounded-full text-white hover:bg-white/15 hover:text-white sm:h-10 sm:w-10"
-                                title="Program Head Help & Support"
-                            >
-                                <HelpCircle className="h-4 w-4 sm:h-5 sm:w-5" />
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 text-slate-900 shadow-xl dark:border-white/10 dark:bg-[#0B192C] dark:text-white">
-                            <div className="relative overflow-hidden bg-gradient-to-br from-[#0c2d66] to-[#1e40af] px-6 py-8 text-white">
-                                <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/5 pointer-events-none" />
-                                <div className="relative flex items-center gap-3">
-                                    <div className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 text-white backdrop-blur-md">
-                                        <LifeBuoy className="h-5 w-5" />
-                                    </div>
-                                    <div>
-                                        <DialogTitle className="text-base font-bold">
-                                            Program Head Help Guide
-                                        </DialogTitle>
-                                        <DialogDescription className="text-xs text-blue-200/80">
-                                            Quick references and department management support
-                                        </DialogDescription>
-                                    </div>
-                                </div>
-                            </div>
+                    {/* Detailed Help Center Modal */}
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setHelpOpen(true)}
+                        className="relative h-9 w-9 rounded-full text-white hover:bg-white/15 hover:text-white sm:h-10 sm:w-10"
+                        title="Program Head Help & Guidelines Center"
+                    >
+                        <HelpCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                    </Button>
 
-                            <div className="p-5 space-y-4">
-                                <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                                    Welcome to the OSAMS Program Head Support. Access student verification workflows, activity telemetry, or open full guides.
-                                </p>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-800/40">
-                                        <div className="mt-0.5 rounded-lg bg-blue-50 p-1.5 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
-                                            <Users className="h-3.5 w-3.5" />
-                                        </div>
-                                        <div>
-                                            <h4 className="text-[11px] font-bold text-slate-800 dark:text-white">Roster</h4>
-                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal mt-0.5">Validate student profiles</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-800/40">
-                                        <div className="mt-0.5 rounded-lg bg-emerald-50 p-1.5 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
-                                            <QrCode className="h-3.5 w-3.5" />
-                                        </div>
-                                        <div>
-                                            <h4 className="text-[11px] font-bold text-slate-800 dark:text-white">Attendance</h4>
-                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal mt-0.5">Real-time scan monitoring</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-800/40">
-                                        <div className="mt-0.5 rounded-lg bg-rose-50 p-1.5 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
-                                            <Shield className="h-3.5 w-3.5" />
-                                        </div>
-                                        <div>
-                                            <h4 className="text-[11px] font-bold text-slate-800 dark:text-white">Clearance</h4>
-                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal mt-0.5">Log department infractions</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-800/40">
-                                        <div className="mt-0.5 rounded-lg bg-purple-50 p-1.5 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400">
-                                            <FileText className="h-3.5 w-3.5" />
-                                        </div>
-                                        <div>
-                                            <h4 className="text-[11px] font-bold text-slate-800 dark:text-white">Reports</h4>
-                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal mt-0.5">Department statistics & CSV</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="border-t border-slate-100 pt-4 dark:border-slate-800">
-                                    <Link
-                                        href={programHeadHelp()}
-                                        onClick={() => setHelpOpen(false)}
-                                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/10 transition-all hover:bg-blue-700 hover:shadow-lg"
-                                    >
-                                        View Full System Guide & Docs
-                                        <ArrowRight className="h-3.5 w-3.5" />
-                                    </Link>
-                                </div>
-                            </div>
-                        </DialogContent>
-                    </Dialog>
+                    <DetailedHelpCenterModal
+                        open={helpOpen}
+                        onOpenChange={setHelpOpen}
+                        role="program_head"
+                    />
                     {/* Notifications */}
                     <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild>

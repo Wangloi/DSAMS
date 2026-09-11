@@ -278,18 +278,21 @@ export default function EventManagement() {
 
         setIsSubmittingPlan(true);
 
-        const formData = new FormData();
-        formData.append('event_name', activityPlanTitle);
-        formData.append('location', activityPlanLocation);
-        formData.append('event_date', activityPlanDate);
-        formData.append('event_time', activityPlanTime || '08:00');
-        formData.append('description', activityPlanDescription || '');
+        const payload: Record<string, any> = {
+            event_name: activityPlanTitle.trim(),
+            location: activityPlanLocation.trim(),
+            event_date: activityPlanDate,
+            event_time: activityPlanTime || '08:00',
+            description: activityPlanDescription.trim(),
+        };
 
         if (activityPlanFile) {
-            formData.append('activity_plan', activityPlanFile);
+            payload.activity_plan = activityPlanFile;
         }
 
-        router.post('/program-head/calendar-events', formData, {
+        router.post('/program-head/calendar-events', payload, {
+            forceFormData: true,
+            preserveScroll: true,
             onSuccess: () => {
                 setIsSubmittingPlan(false);
                 Swal.fire({
@@ -306,14 +309,21 @@ export default function EventManagement() {
                 setActivityPlanFile(null);
                 setShowActivityPlanModal(false);
             },
-            onError: () => {
+            onError: (errors) => {
                 setIsSubmittingPlan(false);
+                const firstError = Object.values(errors)[0];
+                const errorMsg = Array.isArray(firstError)
+                    ? firstError.join('\n')
+                    : String(firstError || 'Please check your inputs and try again.');
                 Swal.fire({
                     title: 'Submission Failed',
-                    text: 'Please check your inputs and try again.',
+                    text: errorMsg,
                     icon: 'error',
                     confirmButtonColor: '#dc2626',
                 });
+            },
+            onFinish: () => {
+                setIsSubmittingPlan(false);
             },
         });
     };
@@ -1018,12 +1028,31 @@ function formatToIsoStart(dateStr: string, timeStr: string): string {
                                         {activityPlanFile ? activityPlanFile.name : 'Click to upload activity proposal document'}
                                     </p>
                                     <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
-                                        Supports PDF, DOC, DOCX, PNG, JPG (Max 10MB)
+                                        Supports PDF, DOC, DOCX, PNG, JPG (Max 20MB)
                                     </p>
                                     <input
                                         type="file"
-                                        accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
-                                        onChange={(e) => setActivityPlanFile(e.target.files?.[0] ?? null)}
+                                        accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
+                                        onClick={(e) => {
+                                            (e.target as HTMLInputElement).value = '';
+                                        }}
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0] ?? null;
+                                            if (file) {
+                                                if (file.size > 20 * 1024 * 1024) {
+                                                    Swal.fire({
+                                                        title: 'File Too Large',
+                                                        text: 'The selected file exceeds the 20MB size limit. Please choose a smaller file.',
+                                                        icon: 'warning',
+                                                        confirmButtonColor: '#1e40af',
+                                                    });
+                                                    return;
+                                                }
+                                                setActivityPlanFile(file);
+                                            } else {
+                                                setActivityPlanFile(null);
+                                            }
+                                        }}
                                         className="absolute inset-0 cursor-pointer opacity-0"
                                     />
                                 </div>
@@ -1197,7 +1226,7 @@ function formatToIsoStart(dateStr: string, timeStr: string): string {
                             )}
 
                             {/* Attached Activity Plan Document Download */}
-                            {selectedEvent.activity_plan_path && isOwnProgramEvent && (
+                            {selectedEvent.activity_plan_path && (
                                 <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4 dark:border-blue-900/40 dark:bg-blue-950/20">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
