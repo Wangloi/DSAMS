@@ -572,12 +572,6 @@ export default function StudentsList({ user, program, students }: Props) {
                                                 <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
                                                     Year Level
                                                 </th>
-                                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
-                                                    Account Status
-                                                </th>
-                                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
-                                                    Verification Status
-                                                </th>
                                                 <th className="px-6 py-4 text-right text-[10px] font-bold tracking-wider uppercase">
                                                     Actions
                                                 </th>
@@ -650,41 +644,6 @@ export default function StudentsList({ user, program, students }: Props) {
                                                                     {
                                                                         student.year_level
                                                                     }
-                                                                </Badge>
-                                                            </td>
-                                                            <td className="px-6 py-4 text-left">
-                                                                {student.is_active ? (
-                                                                    <Badge
-                                                                        variant="outline"
-                                                                        className="border-emerald-200 bg-emerald-50 text-[10px] font-black tracking-widest text-emerald-700 uppercase dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400"
-                                                                    >
-                                                                        Active
-                                                                    </Badge>
-                                                                ) : (
-                                                                    <Badge
-                                                                        variant="outline"
-                                                                        className="border-slate-200 bg-slate-50 text-[10px] font-black tracking-widest text-slate-700 uppercase dark:border-slate-800 dark:bg-slate-900/20 dark:text-slate-400"
-                                                                    >
-                                                                        Inactive
-                                                                    </Badge>
-                                                                )}
-                                                            </td>
-                                                            <td className="px-6 py-4 text-left">
-                                                                <Badge
-                                                                    variant="outline"
-                                                                    className={
-                                                                        student.status ===
-                                                                        'approved'
-                                                                            ? 'border-emerald-200 bg-emerald-50 text-[10px] font-black tracking-widest text-emerald-700 uppercase dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400'
-                                                                            : student.status ===
-                                                                                'rejected'
-                                                                              ? 'border-red-200 bg-red-50 text-[10px] font-black tracking-widest text-red-700 uppercase dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400'
-                                                                              : 'border-amber-200 bg-amber-50 text-[10px] font-black tracking-widest text-amber-700 uppercase dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-400'
-                                                                    }
-                                                                >
-                                                                    {student.status
-                                                                        ? student.status
-                                                                        : 'Pending'}
                                                                 </Badge>
                                                             </td>
                                                             <td className="px-6 py-4 text-right">
