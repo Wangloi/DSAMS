@@ -37,32 +37,59 @@ export function BulkYearLevelDialog({
     const [isUpdatingYearLevel, setIsUpdatingYearLevel] = useState(false);
 
     const handleUpdate = () => {
-        setIsUpdatingYearLevel(true);
-        router.post(
-            '/admin/manage-users/bulk/year-level',
-            {
-                ids: selectedUserIds,
-                year_level: targetYearLevel,
-            },
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    onOpenChange(false);
-                    setIsUpdatingYearLevel(false);
-                    onSuccess();
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Year Level Updated',
-                        text: `Successfully updated student(s) to ${targetYearLevel}.`,
-                        timer: 2000,
-                        showConfirmButton: false,
-                    });
-                },
-                onError: () => {
-                    setIsUpdatingYearLevel(false);
-                },
-            },
-        );
+        if (selectedUserIds.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'No Users Selected',
+                text: 'Please select at least one student.',
+            });
+            return;
+        }
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: `Are you sure you want to update ${selectedUserIds.length} student(s) to "${targetYearLevel}"?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#0B192C',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Yes, update year level',
+            cancelButtonText: 'Cancel',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                setIsUpdatingYearLevel(true);
+                router.post(
+                    '/admin/manage-users/bulk/year-level',
+                    {
+                        ids: selectedUserIds,
+                        year_level: targetYearLevel,
+                    },
+                    {
+                        preserveScroll: true,
+                        onSuccess: () => {
+                            onOpenChange(false);
+                            setIsUpdatingYearLevel(false);
+                            onSuccess();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Year Level Updated',
+                                text: `Successfully updated student(s) to ${targetYearLevel}.`,
+                                timer: 2000,
+                                showConfirmButton: false,
+                            });
+                        },
+                        onError: () => {
+                            setIsUpdatingYearLevel(false);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Failed to update year level. Please try again.',
+                            });
+                        },
+                    },
+                );
+            }
+        });
     };
 
     return (

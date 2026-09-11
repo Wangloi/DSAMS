@@ -160,53 +160,76 @@ export default function BulkActionsModal({
             return;
         }
 
-        setIsSubmitting(true);
-
         let endpoint = '/admin/manage-users/bulk/year-level';
         let payload: any = { ids: selectedUserIds };
+        let confirmText = `Are you sure you want to update ${selectedUserIds.length} student(s)?`;
         let successTitle = 'Bulk Action Completed';
         let successText = `Successfully updated ${selectedUserIds.length} student(s).`;
 
         if (actionType === 'year_level') {
             endpoint = '/admin/manage-users/bulk/year-level';
             payload.year_level = targetYearLevel;
+            confirmText = `Are you sure you want to update ${selectedUserIds.length} student(s) to "${targetYearLevel}"?`;
             successTitle = 'Year Level Updated';
             successText = `Successfully updated ${selectedUserIds.length} student(s) to ${targetYearLevel}.`;
         } else if (actionType === 'program') {
             endpoint = '/admin/manage-users/bulk/program';
             payload.program = targetProgram;
+            confirmText = `Are you sure you want to transfer ${selectedUserIds.length} student(s) to "${targetProgram}"?`;
             successTitle = 'Program/Course Updated';
             successText = `Successfully updated ${selectedUserIds.length} student(s) to ${targetProgram}.`;
         } else if (actionType === 'entry_status') {
             endpoint = '/admin/manage-users/bulk/entry-status';
             payload.entry_status = targetEntryStatus;
+            confirmText = `Are you sure you want to set entry status to "${targetEntryStatus}" for ${selectedUserIds.length} student(s)?`;
             successTitle = 'Entry Status Updated';
             successText = `Successfully updated ${selectedUserIds.length} student(s) to ${targetEntryStatus}.`;
         } else if (actionType === 'reset_officer_role') {
             endpoint = '/admin/manage-users/bulk/reset-officer-role';
+            confirmText = `Are you sure you want to reset officer roles to Student for ${selectedUserIds.length} student(s)?`;
             successTitle = 'Officer Roles Reset';
             successText = `Successfully reset officer role to Student for ${selectedUserIds.length} student(s).`;
         }
 
-        router.post(endpoint, payload, {
-            preserveScroll: true,
-            onSuccess: () => {
-                setIsSubmitting(false);
-                onOpenChange(false);
-                onSuccess();
+        Swal.fire({
+            title: 'Are you sure?',
+            text: confirmText,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#0B192C',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Yes, apply action',
+            cancelButtonText: 'Cancel',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                setIsSubmitting(true);
 
-                Swal.fire({
-                    icon: 'success',
-                    title: successTitle,
-                    text: successText,
-                    timer: 2000,
-                    showConfirmButton: false,
+                router.post(endpoint, payload, {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        setIsSubmitting(false);
+                        onOpenChange(false);
+                        onSuccess();
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: successTitle,
+                            text: successText,
+                            timer: 2000,
+                            showConfirmButton: false,
+                        });
+                    },
+                    onError: (err) => {
+                        setIsSubmitting(false);
+                        console.error('Bulk action error:', err);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Failed to apply bulk action. Please try again.',
+                        });
+                    },
                 });
-            },
-            onError: (err) => {
-                setIsSubmitting(false);
-                console.error('Bulk action error:', err);
-            },
+            }
         });
     };
 
