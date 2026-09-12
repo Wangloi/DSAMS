@@ -303,20 +303,6 @@ export default function Login({
                                             )}
                                             Sign in
                                         </Button>
-
-                                        {/* Register link */}
-                                        {canRegister && (
-                                            <div className="pt-2 text-center text-xs text-slate-300/90">
-                                                Don&apos;t have an account?{' '}
-                                                <Link
-                                                    href="/register"
-                                                    tabIndex={6}
-                                                    className="ml-1 font-bold text-white underline underline-offset-4 hover:text-blue-200"
-                                                >
-                                                    Register here
-                                                </Link>
-                                            </div>
-                                        )}
                                     </div>
 
                                     {status && (

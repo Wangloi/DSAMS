@@ -332,20 +332,6 @@ export default function ProgramHeadLogin({
                                                             Admin
                                                         </TextLink>
                                                     </div>
-
-                                                    {canRegister && (
-                                                        <div className="text-center text-sm text-slate-600">
-                                                            Don&apos;t have an
-                                                            account?{' '}
-                                                            <Link
-                                                                href="/register"
-                                                                tabIndex={6}
-                                                                className="font-medium text-blue-700 hover:text-blue-600"
-                                                            >
-                                                                Register here
-                                                            </Link>
-                                                        </div>
-                                                    )}
                                                 </div>
 
                                                 {status && (
