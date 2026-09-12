@@ -135,39 +135,38 @@ export default function Login({
             </div>
 
             {/* Right: Modern Form Panel */}
-            <div className="relative z-10 flex h-svh w-full shrink-0 flex-col justify-center overflow-y-auto border-l border-white/10 bg-gradient-to-b from-[#1b2f8a] via-[#162775] to-[#101d5c] px-6 py-12 shadow-2xl sm:px-12 md:w-[480px] lg:w-[540px]">
-                <div className="mx-auto w-full max-w-sm space-y-8">
+            <div className="relative z-10 flex min-h-svh w-full shrink-0 flex-col justify-center overflow-y-auto border-l border-white/10 bg-gradient-to-b from-[#1b2f8a] via-[#162775] to-[#101d5c] px-5 py-8 shadow-2xl sm:px-10 sm:py-12 md:h-svh md:w-[480px] lg:w-[540px]">
+                <div className="mx-auto w-full max-w-sm space-y-6 sm:space-y-8">
                     {/* Mobile back link & logos */}
-                    <div className="flex items-center justify-between md:hidden">
+                    <div className="flex items-center justify-between gap-3 md:hidden">
                         <Link
                             href={landing()}
-                            className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs text-white/80 transition-colors hover:text-white"
+                            className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/90 backdrop-blur-md transition-colors hover:bg-white/20 hover:text-white"
                         >
                             <ArrowLeft className="h-3.5 w-3.5" />
-                            Back
+                            <span>Home</span>
                         </Link>
-                        <div className="flex items-center gap-2 rounded-full bg-white/20 p-1.5 backdrop-blur-md">
+                        <div className="flex items-center gap-2 rounded-full bg-white/15 p-1.5 backdrop-blur-md">
                             <img
                                 src="/images/SRCB.png"
                                 alt="SRCB"
-                                className="h-8 w-8 rounded-full bg-white object-contain p-0.5"
+                                className="h-7 w-7 rounded-full bg-white object-contain p-0.5 shadow-xs"
                             />
                             <img
                                 src="/images/OSA_Logo2.png"
                                 alt="OSA Logo"
-                                className="h-8 w-8 rounded-full bg-white object-contain p-0.5"
+                                className="h-7 w-7 rounded-full bg-white object-contain p-0.5 shadow-xs"
                             />
                         </div>
                     </div>
 
                     {/* Panel Title Header */}
-                    <div className="space-y-2 text-left">
-                        <h2 className="text-3xl font-extrabold tracking-tight text-white">
+                    <div className="space-y-1.5 text-left">
+                        <h2 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
                             Welcome back
                         </h2>
-                        <p className="text-sm text-slate-300/90">
-                            Please enter your credentials to access your
-                            account.
+                        <p className="text-xs text-slate-300/90 sm:text-sm">
+                            Please enter your credentials to access your account.
                         </p>
                     </div>
 
@@ -176,23 +175,23 @@ export default function Login({
                         action="/login"
                         method="post"
                         resetOnSuccess={['password']}
-                        className="space-y-5"
+                        className="space-y-4 sm:space-y-5"
                     >
                         {({ processing, errors }) => {
                             return (
                                 <>
                                     <AuthErrorAlert errors={errors} />
-                                    <div className="space-y-4">
+                                    <div className="space-y-3.5 sm:space-y-4">
                                         {/* Identifier Input */}
-                                        <div className="space-y-2">
+                                        <div className="space-y-1.5">
                                             <Label
                                                 htmlFor="identifier"
-                                                className="text-xs font-semibold tracking-wider text-slate-200 uppercase"
+                                                className="text-[11px] font-bold tracking-wider text-slate-200 uppercase sm:text-xs"
                                             >
                                                 ID Number or Email
                                             </Label>
                                             <div className="group relative">
-                                                <User className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-300" />
+                                                <User className="absolute top-1/2 left-3.5 h-4.5 w-4.5 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-300 sm:left-4 sm:h-5 sm:w-5" />
                                                 <Input
                                                     id="identifier"
                                                     type="text"
@@ -201,7 +200,7 @@ export default function Login({
                                                     tabIndex={1}
                                                     autoFocus
                                                     placeholder="Enter ID number or email"
-                                                    className="h-12 rounded-xl border-white/20 bg-white/10 pl-11 text-white placeholder-slate-400 transition-all focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-400/30"
+                                                    className="h-11 rounded-xl border-white/20 bg-white/10 pl-10 text-base text-white placeholder-slate-400 transition-all focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-400/30 sm:h-12 sm:pl-11 sm:text-sm"
                                                 />
                                             </div>
                                             <InputError
@@ -210,17 +209,17 @@ export default function Login({
                                         </div>
 
                                         {/* Password Input */}
-                                        <div className="space-y-2">
+                                        <div className="space-y-1.5">
                                             <div className="flex items-center justify-between">
                                                 <Label
                                                     htmlFor="password"
-                                                    className="text-xs font-semibold tracking-wider text-slate-200 uppercase"
+                                                    className="text-[11px] font-bold tracking-wider text-slate-200 uppercase sm:text-xs"
                                                 >
                                                     Password
                                                 </Label>
                                             </div>
                                             <div className="group relative">
-                                                <Lock className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-300" />
+                                                <Lock className="absolute top-1/2 left-3.5 h-4.5 w-4.5 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-300 sm:left-4 sm:h-5 sm:w-5" />
                                                 <Input
                                                     id="password"
                                                     type={
@@ -232,7 +231,7 @@ export default function Login({
                                                     required
                                                     tabIndex={2}
                                                     placeholder="Enter your password"
-                                                    className="h-12 rounded-xl border-white/20 bg-white/10 pr-11 pl-11 text-white placeholder-slate-400 transition-all focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-400/30"
+                                                    className="h-11 rounded-xl border-white/20 bg-white/10 pr-10 pl-10 text-base text-white placeholder-slate-400 transition-all focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-400/30 sm:h-12 sm:pr-11 sm:pl-11 sm:text-sm"
                                                 />
                                                 <button
                                                     type="button"
@@ -241,7 +240,7 @@ export default function Login({
                                                             !showPassword,
                                                         )
                                                     }
-                                                    className="absolute top-1/2 right-4 -translate-y-1/2 p-1 text-slate-400 transition-colors hover:text-white"
+                                                    className="absolute top-1/2 right-3 -translate-y-1/2 p-1.5 text-slate-400 transition-colors hover:text-white sm:right-4"
                                                     aria-label={
                                                         showPassword
                                                             ? 'Hide password'
@@ -249,9 +248,9 @@ export default function Login({
                                                     }
                                                 >
                                                     {showPassword ? (
-                                                        <EyeOff className="h-5 w-5" />
+                                                        <EyeOff className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
                                                     ) : (
-                                                        <Eye className="h-5 w-5" />
+                                                        <Eye className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
                                                     )}
                                                 </button>
                                             </div>
@@ -261,8 +260,8 @@ export default function Login({
                                         </div>
 
                                         {/* Options: Remember & Forgot */}
-                                        <div className="flex items-center justify-between pt-1">
-                                            <div className="flex items-center gap-2.5">
+                                        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                                            <div className="flex items-center gap-2">
                                                 <Checkbox
                                                     id="remember"
                                                     name="remember"
@@ -280,7 +279,7 @@ export default function Login({
                                             {canResetPassword && (
                                                 <TextLink
                                                     href={forgotPassword()}
-                                                    className="text-xs font-medium text-blue-200 transition-colors hover:text-white"
+                                                    className="text-xs font-semibold text-blue-200 transition-colors hover:text-white"
                                                     tabIndex={5}
                                                 >
                                                     Forgot password?
@@ -291,7 +290,7 @@ export default function Login({
                                         {/* Submit Button */}
                                         <Button
                                             type="submit"
-                                            className="mt-2 h-12 w-full rounded-xl bg-white text-sm font-bold text-[#1b2f8a] shadow-lg shadow-black/20 transition-all hover:scale-[1.01] hover:bg-slate-100 active:scale-[0.99]"
+                                            className="mt-2 h-11 w-full rounded-xl bg-white text-sm font-bold text-[#1b2f8a] shadow-lg shadow-black/20 transition-all hover:scale-[1.01] hover:bg-slate-100 active:scale-[0.99] sm:h-12"
                                             tabIndex={4}
                                             disabled={processing}
                                             data-test="login-button"
@@ -299,7 +298,7 @@ export default function Login({
                                             {processing ? (
                                                 <Spinner />
                                             ) : (
-                                                <LogIn className="mr-2 h-5 w-5" />
+                                                <LogIn className="mr-2 h-4.5 w-4.5 sm:h-5 sm:w-5" />
                                             )}
                                             Sign in
                                         </Button>

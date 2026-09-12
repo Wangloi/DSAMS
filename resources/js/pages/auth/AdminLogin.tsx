@@ -112,61 +112,74 @@ export default function AdminLogin({
 
             <Head title="Admin Login" />
 
-            <div className="relative flex min-h-svh items-center justify-center px-4 py-10">
-                <div className="w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-xl">
+            <div className="relative flex min-h-svh items-center justify-center px-3 py-6 sm:px-6 sm:py-10">
+                <div className="w-full max-w-4xl overflow-hidden rounded-2xl sm:rounded-3xl bg-white shadow-2xl">
                     <div className="grid grid-cols-1 md:grid-cols-2">
                         <div className="relative hidden flex-col bg-[#1b2f8a] text-white md:flex">
                             <Link
                                 href="/"
-                                className="inline-flex items-center gap-2 px-4 py-4 text-sm text-white/80 transition-colors hover:text-white"
+                                className="inline-flex items-center gap-2 px-6 py-5 text-sm font-semibold text-white/80 transition-colors hover:text-white"
                             >
                                 <ArrowLeft className="h-4 w-4" />
-                                Back
+                                Back to Home
                             </Link>
 
-                            <div className="flex flex-1 flex-col justify-center px-12 pb-12">
+                            <div className="flex flex-1 flex-col justify-center px-10 pb-12">
                                 <div className="flex w-full items-center justify-center gap-4">
                                     <img
                                         src="/images/SRCB.png"
                                         alt="SRCB"
-                                        className="h-20 w-20 rounded-full bg-white/10 object-cover p-1"
+                                        className="h-18 w-18 rounded-full bg-white/10 object-contain p-1 shadow-inner"
                                     />
                                     <img
                                         src="/images/DSA.jpg"
                                         alt="DSA"
-                                        className="h-20 w-20 rounded-full bg-white/10 object-cover p-1"
+                                        className="h-18 w-18 rounded-full bg-white/10 object-contain p-1 shadow-inner"
                                     />
                                 </div>
 
-                                <div className="mt-10 space-y-4 text-center">
-                                    <div className="text-3xl leading-tight font-semibold">
+                                <div className="mt-8 space-y-3 text-center">
+                                    <div className="text-2xl lg:text-3xl leading-tight font-black">
                                         Office of Student Affairs
                                         <br />
                                         Management System
                                     </div>
-                                    <div className="text-sm text-white/80">
-                                        Your gateway to student affairs
-                                        management
+                                    <div className="text-xs sm:text-sm text-blue-200/90 font-medium">
+                                        Administrator Control Portal
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="px-8 py-12 sm:px-12">
-                            <div className="max-w-md">
-                                <Link
-                                    href="/"
-                                    className="mb-6 inline-flex items-center gap-2 text-sm text-slate-600 transition-colors hover:text-slate-900 md:hidden"
-                                >
-                                    <ArrowLeft className="h-4 w-4" />
-                                    Back
-                                </Link>
+                        <div className="px-5 py-8 sm:px-10 sm:py-12">
+                            <div className="mx-auto max-w-md">
+                                <div className="mb-6 flex items-center justify-between gap-3 md:hidden">
+                                    <Link
+                                        href="/"
+                                        className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-200"
+                                    >
+                                        <ArrowLeft className="h-3.5 w-3.5" />
+                                        <span>Home</span>
+                                    </Link>
+                                    <div className="flex items-center gap-2">
+                                        <img
+                                            src="/images/SRCB.png"
+                                            alt="SRCB"
+                                            className="h-7 w-7 rounded-full bg-slate-50 object-contain p-0.5 shadow-xs"
+                                        />
+                                        <img
+                                            src="/images/DSA.jpg"
+                                            alt="DSA"
+                                            className="h-7 w-7 rounded-full bg-slate-50 object-contain p-0.5 shadow-xs"
+                                        />
+                                    </div>
+                                </div>
 
-                                <div className="text-slate-90 text-3xl font-semibold">
+                                <div className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
                                     Welcome back, Admin
                                 </div>
-                                <div className="text-slate-60 mt-1 text-sm">
-                                    Sign in to access your dashboard
+                                <div className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
+                                    Sign in to access the administrator dashboard
                                 </div>
 
                                 {isBlocked && (
@@ -210,7 +223,7 @@ export default function AdminLogin({
                                     action="/admin-login"
                                     method="post"
                                     resetOnSuccess={['password']}
-                                    className="mt-8"
+                                    className="mt-6 sm:mt-8"
                                 >
                                     {({
                                         processing,
@@ -225,16 +238,16 @@ export default function AdminLogin({
                                         return (
                                             <>
                                                 <AuthErrorAlert errors={errors} />
-                                                <div className="space-y-5">
-                                                    <div className="space-y-2">
+                                                <div className="space-y-4 sm:space-y-5">
+                                                    <div className="space-y-1.5">
                                                         <Label
                                                             htmlFor="email"
-                                                            className="text-sm text-slate-700"
+                                                            className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-700"
                                                         >
-                                                            Username
+                                                            Username / Email
                                                         </Label>
-                                                        <div className="relative">
-                                                            <User className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                                                        <div className="group relative">
+                                                            <User className="absolute top-1/2 left-3.5 h-4.5 w-4.5 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-600 sm:left-4 sm:h-5 sm:w-5" />
                                                             <Input
                                                                 id="email"
                                                                 type="email"
@@ -243,8 +256,8 @@ export default function AdminLogin({
                                                                 autoFocus
                                                                 tabIndex={1}
                                                                 autoComplete="email"
-                                                                placeholder="Enter your username"
-                                                                className="h-12 rounded-lg border border-slate-200 bg-slate-100 pl-11 text-slate-900 placeholder-slate-500"
+                                                                placeholder="Enter your email"
+                                                                className="h-11 sm:h-12 rounded-xl border border-slate-200 bg-slate-50/80 pl-10 sm:pl-11 text-base sm:text-sm text-slate-900 placeholder-slate-400 transition-all focus:bg-white focus-visible:border-blue-600 focus-visible:ring-2 focus-visible:ring-blue-600/20"
                                                             />
                                                         </div>
                                                         <InputError
@@ -254,15 +267,15 @@ export default function AdminLogin({
                                                         />
                                                     </div>
 
-                                                    <div className="space-y-2">
+                                                    <div className="space-y-1.5">
                                                         <Label
                                                             htmlFor="password"
-                                                            className="text-sm text-slate-700"
+                                                            className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-700"
                                                         >
                                                             Password
                                                         </Label>
-                                                        <div className="relative">
-                                                            <Lock className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                                                        <div className="group relative">
+                                                            <Lock className="absolute top-1/2 left-3.5 h-4.5 w-4.5 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-600 sm:left-4 sm:h-5 sm:w-5" />
                                                             <Input
                                                                 id="password"
                                                                 type="password"
@@ -271,7 +284,7 @@ export default function AdminLogin({
                                                                 tabIndex={2}
                                                                 autoComplete="current-password"
                                                                 placeholder="Enter your password"
-                                                                className="h-12 rounded-lg border border-slate-200 bg-slate-100 pl-11 text-slate-900 placeholder-slate-500"
+                                                                className="h-11 sm:h-12 rounded-xl border border-slate-200 bg-slate-50/80 pl-10 sm:pl-11 text-base sm:text-sm text-slate-900 placeholder-slate-400 transition-all focus:bg-white focus-visible:border-blue-600 focus-visible:ring-2 focus-visible:ring-blue-600/20"
                                                             />
                                                         </div>
                                                         <InputError
@@ -281,16 +294,17 @@ export default function AdminLogin({
                                                         />
                                                     </div>
 
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-3">
+                                                    <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+                                                        <div className="flex items-center gap-2">
                                                             <Checkbox
                                                                 id="remember"
                                                                 name="remember"
                                                                 tabIndex={3}
+                                                                className="rounded border-slate-300"
                                                             />
                                                             <Label
                                                                 htmlFor="remember"
-                                                                className="text-sm text-slate-700"
+                                                                className="cursor-pointer text-xs font-medium text-slate-600"
                                                             >
                                                                 Remember me
                                                             </Label>
@@ -299,7 +313,7 @@ export default function AdminLogin({
                                                         {canResetPassword && (
                                                             <TextLink
                                                                 href={forgotPassword()}
-                                                                className="text-sm text-blue-700"
+                                                                className="text-xs font-semibold text-blue-600 hover:text-blue-700"
                                                                 tabIndex={5}
                                                             >
                                                                 Forgot password?
@@ -309,7 +323,7 @@ export default function AdminLogin({
 
                                                     <Button
                                                         type="submit"
-                                                        className="h-11 w-full rounded-lg bg-[#2f4fd0] text-white hover:bg-[#2746c2]"
+                                                        className="mt-1 h-11 sm:h-12 w-full rounded-xl bg-[#1b2f8a] text-sm font-bold text-white shadow-md shadow-blue-900/20 hover:bg-[#162775] active:scale-[0.99] transition-all"
                                                         tabIndex={4}
                                                         disabled={
                                                             processing ||
@@ -329,25 +343,25 @@ export default function AdminLogin({
                                                             <Spinner />
                                                         ) : (
                                                             <>
-                                                                <LogIn className="mr-2 h-5 w-5" />{' '}
+                                                                <LogIn className="mr-2 h-4.5 w-4.5 sm:h-5 sm:w-5" />{' '}
                                                                 Sign in
                                                             </>
                                                         )}
                                                     </Button>
 
-                                                    <div className="text-center text-sm text-slate-600">
-                                                        Not an Admin?{' '}
+                                                    <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1 text-center text-xs text-slate-500">
+                                                        <span>Not an Admin?</span>
                                                         <TextLink
                                                             href={login()}
-                                                            className="text-blue-700"
+                                                            className="font-bold text-blue-600 hover:underline"
                                                             tabIndex={7}
                                                         >
                                                             Student
-                                                        </TextLink>{' '}
-                                                        or{' '}
+                                                        </TextLink>
+                                                        <span>or</span>
                                                         <TextLink
                                                             href={programHeadLogin()}
-                                                            className="text-blue-700"
+                                                            className="font-bold text-blue-600 hover:underline"
                                                             tabIndex={8}
                                                         >
                                                             Program Head
