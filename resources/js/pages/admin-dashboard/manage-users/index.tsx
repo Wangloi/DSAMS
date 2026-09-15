@@ -431,6 +431,7 @@ export default function AdminManageUsersPage() {
                 setForm={setForm}
                 onClose={closeModal}
                 onSubmit={submitProgramHead}
+                programs={programs}
             />
 
             <AddAdminDialog

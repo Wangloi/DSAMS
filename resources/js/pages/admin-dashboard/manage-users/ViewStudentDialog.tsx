@@ -1,7 +1,17 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Printer } from 'lucide-react';
+import {
+    Building2,
+    CheckCircle2,
+    GraduationCap,
+    Mail,
+    Printer,
+    ShieldCheck,
+    Sparkles,
+    User,
+    X,
+} from 'lucide-react';
 import { useMemo } from 'react';
 import type { UserRow } from './types';
 
@@ -16,8 +26,105 @@ export default function ViewStudentDialog({
     onOpenChange,
     student,
 }: Props) {
+    const isProgramHead =
+        student?.userType === 'program_head' ||
+        String(student?.role ?? '').toLowerCase().includes('program');
+
     const printableHtml = useMemo(() => {
         if (!student) return '';
+
+        if (isProgramHead) {
+            return `<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Program Head Information Profile</title>
+<style>
+    body { font-family: Arial, Helvetica, sans-serif; padding: 40px; color: #0f172a; font-size: 11px; line-height: 1.5; background: #fff; }
+    .header { display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 2px solid #0b2d66; padding-bottom: 12px; margin-bottom: 15px; }
+    .logo-left { height: 75px; width: 75px; object-fit: contain; }
+    .logo-right { height: 75px; width: 75px; object-fit: contain; }
+    .header-text { flex: 1; text-align: center; }
+    .header-text h2 { font-size: 13px; font-weight: 900; margin: 0; color: #0b2d66; }
+    .header-text p { margin: 2px 0; color: #334155; font-size: 10px; }
+    .title { text-align: center; margin: 20px 0; }
+    .title h1 { font-size: 16px; font-weight: 900; color: #0b2d66; margin: 0; letter-spacing: 1px; }
+    .title p { font-size: 10px; font-weight: 600; color: #64748b; margin: 4px 0 0; }
+    table.info-table { width: 100%; border-collapse: collapse; border: 1px solid #bfdbfe; margin-bottom: 20px; }
+    table.info-table td { border: 1px solid #bfdbfe; padding: 10px 12px; vertical-align: middle; }
+    table.info-table td.k { width: 200px; font-weight: bold; color: #0b2d66; background: #eff6ff; font-size: 11px; }
+    .signature-block { margin-top: 50px; text-align: center; }
+    .signature-line { border-bottom: 1px solid #cbd5e1; width: 240px; margin: 0 auto 4px; font-weight: bold; color: #0b2d66; text-transform: uppercase; padding-bottom: 2px; }
+    .signature-label { font-size: 8px; color: #94a3b8; font-weight: bold; text-transform: uppercase; }
+    .footer { margin-top: 50px; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 15px; }
+    .footer h3 { font-family: Georgia, serif; font-weight: bold; color: #0b2d66; font-style: italic; margin: 0; font-size: 12px; }
+    .footer p { font-size: 9px; color: #64748b; font-style: italic; margin: 3px 0 0; }
+    @media print { body { padding: 0; } }
+</style>
+</head>
+<body>
+<div class="header">
+    <img src="/images/SRCB.png" class="logo-left" alt="SRCB Logo" />
+    <div class="header-text">
+        <h2>ST. RITA'S COLLEGE OF BALINGASAG, INC.</h2>
+        <p>Balingasag, Misamis Oriental</p>
+        <p>Email: ritarian@srcb.edu.ph | Website: www.srcb.edu.ph</p>
+        <p>Tel. (088)323-7159 / Mobile: +63-929-734-0012 (SMART); +63-975-637-9948 (Globe)</p>
+    </div>
+    <img src="/images/DSA.png" class="logo-right" alt="DSA Logo" />
+</div>
+<div class="title">
+    <h1>PROGRAM HEAD INFORMATION PROFILE</h1>
+    <p>Official Academic Faculty Record</p>
+</div>
+<table class="info-table">
+    <tr>
+        <td class="k">FULL NAME:</td>
+        <td style="font-weight: 700; font-size: 12px;">${student.name}</td>
+    </tr>
+    <tr>
+        <td class="k">EMAIL ADDRESS:</td>
+        <td>${student.email}</td>
+    </tr>
+    <tr>
+        <td class="k">ASSIGNED PROGRAM:</td>
+        <td style="font-weight: 700;">${student.course || student.program || 'N/A'}</td>
+    </tr>
+    <tr>
+        <td class="k">ACCOUNT ID:</td>
+        <td>${student.student_id || 'PH-' + ((student as any).program_head_id || student.id)}</td>
+    </tr>
+    <tr>
+        <td class="k">SYSTEM ROLE:</td>
+        <td>Program Head</td>
+    </tr>
+    <tr>
+        <td class="k">ACCOUNT STATUS:</td>
+        <td>${student.is_active ? 'Active' : 'Inactive'}</td>
+    </tr>
+    <tr>
+        <td class="k">VERIFICATION STATUS:</td>
+        <td style="text-transform: capitalize;">${student.status || 'Verified'}</td>
+    </tr>
+</table>
+<div class="signature-block">
+    <div class="signature-line">${student.name}</div>
+    <div class="signature-label">Program Head Signature</div>
+</div>
+<div class="footer">
+    <h3>Office of Student Affairs</h3>
+    <p>2nd Level, St. Rita Building, St. Rita's College of Balingasag</p>
+</div>
+<script>
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            window.print();
+        }, 300);
+    });
+</script>
+</body>
+</html>`;
+        }
 
         const year1 = student.year_level === '1st Year' ? '[x]' : '[ ]';
         const year2 = student.year_level === '2nd Year' ? '[x]' : '[ ]';
@@ -312,10 +419,204 @@ export default function ViewStudentDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[92vh] w-full !max-w-4xl flex-col overflow-hidden rounded-3xl border-0 bg-slate-100 p-0 shadow-2xl dark:bg-slate-900">
+            <DialogContent className="flex max-h-[92vh] w-full !max-w-4xl flex-col overflow-hidden rounded-3xl border-0 bg-slate-100 p-0 shadow-2xl dark:bg-slate-900 [&>button]:hidden">
                 {!student ? (
                     <div className="p-8 text-center text-slate-500">
-                        No student selected.
+                        No record selected.
+                    </div>
+                ) : isProgramHead ? (
+                    <div className="flex max-h-[92vh] flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
+                        {/* Executive Header Banner */}
+                        <div className="relative overflow-hidden bg-gradient-to-r from-[#000D6A] via-[#102A83] to-[#23509A] px-6 py-6 text-white shadow-md sm:px-8">
+                            <div className="pointer-events-none absolute -top-12 -right-12 h-44 w-44 rounded-full bg-cyan-400/20 blur-3xl" />
+                            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-[#8CE4FF] shadow-inner ring-1 ring-white/30 backdrop-blur-md">
+                                        <GraduationCap className="h-8 w-8" />
+                                        <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-[#102A83]">
+                                            <Sparkles className="h-3 w-3 text-white" />
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <h2 className="text-xl font-black tracking-tight text-white sm:text-2xl">
+                                                {student.name}
+                                            </h2>
+                                            <span className="rounded-full bg-blue-400/20 px-2.5 py-0.5 text-[10px] font-bold text-[#8CE4FF] uppercase tracking-wider backdrop-blur-xs">
+                                                Program Head
+                                            </span>
+                                        </div>
+                                        <p className="mt-0.5 text-xs text-blue-100/80">
+                                            Academic Department Leadership • {student.course || student.program || 'Designated Department'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2.5 self-end sm:self-auto">
+                                    <Button
+                                        type="button"
+                                        onClick={print}
+                                        className="h-9 gap-1.5 rounded-xl bg-white/15 px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-white/25 active:scale-98"
+                                    >
+                                        <Printer className="h-4 w-4 text-[#8CE4FF]" />
+                                        Print Record
+                                    </Button>
+                                    <button
+                                        type="button"
+                                        onClick={() => onOpenChange(false)}
+                                        className="rounded-full bg-white/10 p-2 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Program Head Body Content */}
+                        <div className="scrollbar-thin flex-1 space-y-6 overflow-y-auto p-6 sm:p-8">
+                            {/* Key Badges & Account Metrics Strip */}
+                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                                    <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Assigned Program</span>
+                                    <div className="mt-1 text-sm font-black text-[#000D6A] dark:text-[#8CE4FF]">
+                                        {student.course || student.program || 'N/A'}
+                                    </div>
+                                </div>
+                                <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                                    <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Faculty ID</span>
+                                    <div className="mt-1 font-mono text-sm font-bold text-slate-800 dark:text-slate-200">
+                                        {student.student_id || `PH-${(student as any).program_head_id || student.id}`}
+                                    </div>
+                                </div>
+                                <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                                    <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Account Status</span>
+                                    <div className="mt-1 flex items-center gap-1.5">
+                                        <span className={`h-2 w-2 rounded-full ${student.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                                            {student.is_active ? 'Active' : 'Inactive'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                                    <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Access Role</span>
+                                    <div className="mt-1 text-sm font-bold text-blue-700 dark:text-blue-400">
+                                        Program Head
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Section Cards */}
+                            <div className="grid gap-6 sm:grid-cols-2">
+                                {/* Card 1: Department Information */}
+                                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                                    <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3 dark:border-slate-800">
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-[#23509A] dark:bg-blue-950/50 dark:text-[#8CE4FF]">
+                                            <Building2 className="h-4 w-4" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xs font-bold tracking-wider text-slate-700 uppercase dark:text-slate-300">
+                                                Academic Department
+                                            </h3>
+                                            <p className="text-[11px] text-slate-400">Assigned college scope</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4 space-y-3 text-xs">
+                                        <div className="flex items-center justify-between border-b border-slate-100 py-2 dark:border-slate-800/60">
+                                            <span className="text-slate-500">Program Code:</span>
+                                            <span className="font-bold text-slate-900 dark:text-white">
+                                                {student.course || student.program || 'N/A'}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between border-b border-slate-100 py-2 dark:border-slate-800/60">
+                                            <span className="text-slate-500">Academic Hierarchy:</span>
+                                            <span className="font-semibold text-slate-700 dark:text-slate-300">
+                                                Higher Education Department
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between py-2">
+                                            <span className="text-slate-500">Institution:</span>
+                                            <span className="font-semibold text-slate-700 dark:text-slate-300">
+                                                St. Rita's College of Balingasag
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Card 2: Contact & Credentials */}
+                                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                                    <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3 dark:border-slate-800">
+                                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400">
+                                            <Mail className="h-4 w-4" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xs font-bold tracking-wider text-slate-700 uppercase dark:text-slate-300">
+                                                Contact & Credentials
+                                            </h3>
+                                            <p className="text-[11px] text-slate-400">Official institutional login</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4 space-y-3 text-xs">
+                                        <div className="flex items-center justify-between border-b border-slate-100 py-2 dark:border-slate-800/60">
+                                            <span className="text-slate-500">Official Email:</span>
+                                            <span className="font-semibold text-slate-900 dark:text-white">
+                                                {student.email}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between border-b border-slate-100 py-2 dark:border-slate-800/60">
+                                            <span className="text-slate-500">Account Type:</span>
+                                            <span className="font-semibold text-slate-700 dark:text-slate-300">
+                                                Faculty Leadership
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between py-2">
+                                            <span className="text-slate-500">Login Portal:</span>
+                                            <span className="font-semibold text-[#23509A] dark:text-[#8CE4FF]">
+                                                /program-head-login
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Section 3: Responsibilities & Scope */}
+                            <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/70 to-indigo-50/40 p-5 shadow-xs dark:border-blue-900/40 dark:from-blue-950/30 dark:to-indigo-950/20">
+                                <div className="flex items-start gap-3.5">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#23509A] text-white shadow-sm dark:bg-[#0B4DFF]">
+                                        <ShieldCheck className="h-5 w-5" />
+                                    </div>
+                                    <div className="space-y-1.5 text-xs">
+                                        <h4 className="font-bold text-slate-900 dark:text-white">
+                                            Designated Departmental Responsibilities
+                                        </h4>
+                                        <p className="leading-relaxed text-slate-600 dark:text-slate-300 text-[11.5px]">
+                                            This Program Head possesses administrative jurisdiction over students enrolled in <strong>{student.course || student.program || 'their assigned program'}</strong>. They are authorized to monitor student rosters, evaluate attendance for campus activities, and process departmental incident clearance endorsements.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Program Head Footer */}
+                        <div className="flex items-center justify-end gap-3 border-t border-slate-200 bg-white px-6 py-4 dark:border-slate-800 dark:bg-slate-900 sm:px-8">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => onOpenChange(false)}
+                                className="rounded-xl border-slate-200 px-5 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                            >
+                                Close Profile
+                            </Button>
+                            <Button
+                                type="button"
+                                onClick={print}
+                                className="gap-1.5 rounded-xl bg-gradient-to-r from-[#000D6A] via-[#102A83] to-[#23509A] px-5 text-xs font-bold text-white shadow-md hover:brightness-110"
+                            >
+                                <Printer className="h-4 w-4" />
+                                Print Record
+                            </Button>
+                        </div>
                     </div>
                 ) : (
                     <>
@@ -414,26 +715,26 @@ export default function ViewStudentDialog({
                                         alt="DSA Logo"
                                     />
                                 </div>
-
-                                {/* Form Title */}
-                                <div className="my-5 text-center">
-                                    <h1 className="text-lg font-black tracking-wider text-[#0b2d66] md:text-xl dark:text-blue-400">
-                                        STUDENT INFORMATION SHEET
-                                    </h1>
-                                    <p className="mt-1 text-[10px] font-semibold tracking-widest text-slate-400 uppercase md:text-xs">
-                                        Academic Year 2024 &ndash; 2025
-                                    </p>
-                                </div>
-
-                                {/* Checkbox / Program Grid */}
-                                <div className="mb-6 overflow-hidden rounded-xl border border-blue-200 text-xs dark:border-blue-900">
-                                    <div className="grid grid-cols-[180px_1fr] border-b border-blue-200 dark:border-blue-900">
-                                        <div className="flex flex-col justify-center border-r border-blue-200 bg-blue-50/50 p-3 font-bold text-[#0b2d66] dark:border-blue-900 dark:bg-blue-950/20 dark:text-blue-400">
-                                            <span>ENTRY STATUS</span>
-                                            <span className="text-[9px] font-normal text-slate-400 italic">
-                                                (please check)
-                                            </span>
+                                    <>
+                                        {/* Form Title */}
+                                        <div className="my-5 text-center">
+                                            <h1 className="text-lg font-black tracking-wider text-[#0b2d66] md:text-xl dark:text-blue-400">
+                                                STUDENT INFORMATION SHEET
+                                            </h1>
+                                            <p className="mt-1 text-[10px] font-semibold tracking-widest text-slate-400 uppercase md:text-xs">
+                                                Academic Year 2024 &ndash; 2025
+                                            </p>
                                         </div>
+
+                                        {/* Checkbox / Program Grid */}
+                                        <div className="mb-6 overflow-hidden rounded-xl border border-blue-200 text-xs dark:border-blue-900">
+                                            <div className="grid grid-cols-[180px_1fr] border-b border-blue-200 dark:border-blue-900">
+                                                <div className="flex flex-col justify-center border-r border-blue-200 bg-blue-50/50 p-3 font-bold text-[#0b2d66] dark:border-blue-900 dark:bg-blue-950/20 dark:text-blue-400">
+                                                    <span>ENTRY STATUS</span>
+                                                    <span className="text-[9px] font-normal text-slate-400 italic">
+                                                        (please check)
+                                                    </span>
+                                                </div>
                                         <div className="grid grid-cols-2 gap-2 p-3 text-slate-700 sm:grid-cols-4 dark:text-slate-300">
                                             <div className="flex items-center gap-1.5">
                                                 <span className="font-mono text-sm font-bold text-[#0b2d66] dark:text-blue-400">
@@ -819,7 +1120,9 @@ export default function ViewStudentDialog({
                                             heddsa@srcb.edu.ph
                                         </a>
                                     </p>
-                                </div>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </>

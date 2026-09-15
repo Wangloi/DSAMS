@@ -115,16 +115,18 @@ export function getEventColor(courses: string[]): string {
     return '#3b82f6'; // default
 }
 
+import { deriveEventLifecycleStatus } from './deriveEventLifecycleStatus';
+
 export function getEventLifecycleStatus(event: Event): string {
-    if (event.status === 'completed') {
+    if (event.status === 'completed' || (event as any).status === 'ended') {
         return 'completed';
     }
     if (event.event_date) {
-        const dateStr = String(event.event_date).split('T')[0];
-        const todayStr = new Date().toISOString().split('T')[0];
-        if (dateStr < todayStr) return 'completed';
-        if (dateStr > todayStr) return 'upcoming';
-        return 'ongoing';
+        return deriveEventLifecycleStatus(
+            String(event.event_date),
+            event.event_time,
+            event.registration_end_time,
+        );
     }
     return event.status || 'upcoming';
 }

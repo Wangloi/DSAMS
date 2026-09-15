@@ -23,3 +23,11 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# MIME types for video files
+<IfModule mod_mime.c>
+    AddType video/mp4 .mp4 .MP4 .m4v
+    AddType video/webm .webm
+    AddType video/ogg .ogv
+</IfModule>
+

@@ -67,37 +67,109 @@ class Event extends Model
     protected static function booted(): void
     {
         static::saving(function (Event $event) {
-            $raw = $event->attributes['event_date'] ?? null;
-            if ($raw !== null && $raw !== '') {
-                $event->attributes['status'] = self::deriveLifecycleStatusFromDate($raw);
+            $rawDate = $event->attributes['event_date'] ?? null;
+            $rawTime = $event->attributes['event_time'] ?? null;
+            $rawEnd = $event->attributes['registration_end_time'] ?? null;
+            if ($rawDate !== null && $rawDate !== '') {
+                $event->attributes['status'] = self::deriveLifecycleStatusFromDate($rawDate, $rawTime, $rawEnd);
             }
         });
     }
 
     /**
-     * Compare event calendar date to "today" in the app timezone:
-     * before today → completed, today → ongoing, after today → upcoming.
+     * Compare event calendar date and time boundaries:
+     * past date or ended time → completed, active time today → ongoing, future → upcoming.
      *
      * @param  \Carbon\CarbonInterface|string|null  $date
+     * @param  string|null  $eventTime
+     * @param  string|null  $registrationEndTime
      */
-    public static function deriveLifecycleStatusFromDate($date): string
+    public static function deriveLifecycleStatusFromDate($date, ?string $eventTime = null, ?string $registrationEndTime = null): string
     {
         if ($date === null || $date === '') {
             return 'upcoming';
         }
 
         try {
-            $eventDay = Carbon::parse($date)->startOfDay();
+            $formattedDate = Carbon::parse($date)->format('Y-m-d');
+            $eventDay = Carbon::parse($formattedDate)->startOfDay();
         } catch (\Throwable) {
             return 'upcoming';
         }
-        $today = Carbon::now()->startOfDay();
 
+        $now = Carbon::now();
+        $today = $now->copy()->startOfDay();
+
+        // 1. Past dates are always completed / ended
         if ($eventDay->lt($today)) {
             return 'completed';
         }
+
+        // 2. Future dates are upcoming
         if ($eventDay->gt($today)) {
             return 'upcoming';
+        }
+
+        // 3. Event is scheduled for today: Check specific cutoff / end times
+        // Check registration_end_time first
+        if (!empty($registrationEndTime)) {
+            try {
+                $cutoff = Carbon::parse($formattedDate . ' ' . $registrationEndTime);
+                if ($now->greaterThanOrEqualTo($cutoff)) {
+                    return 'completed';
+                }
+            } catch (\Throwable) {
+                // ignore parsing error
+            }
+        }
+
+        // Check event_time for end time or time range (e.g. "08:00 AM - 05:00 PM")
+        if (!empty($eventTime)) {
+            $timeStr = trim((string) $eventTime);
+
+            if (str_contains($timeStr, '-') || str_contains($timeStr, '–') || str_contains($timeStr, 'to')) {
+                $delimiters = ['-', '–', 'to'];
+                $parts = [];
+                foreach ($delimiters as $delim) {
+                    if (str_contains($timeStr, $delim)) {
+                        $parts = explode($delim, $timeStr);
+                        break;
+                    }
+                }
+
+                if (count($parts) >= 2) {
+                    $endTimeStr = trim($parts[1]);
+                    try {
+                        $endTime = Carbon::parse($formattedDate . ' ' . $endTimeStr);
+                        if ($now->greaterThanOrEqualTo($endTime)) {
+                            return 'completed';
+                        }
+                    } catch (\Throwable) {
+                        // ignore
+                    }
+
+                    $startTimeStr = trim($parts[0]);
+                    try {
+                        $startTime = Carbon::parse($formattedDate . ' ' . $startTimeStr);
+                        if ($now->lessThan($startTime)) {
+                            return 'upcoming';
+                        }
+
+                        return 'ongoing';
+                    } catch (\Throwable) {
+                        // ignore
+                    }
+                }
+            } else {
+                try {
+                    $startTime = Carbon::parse($formattedDate . ' ' . $timeStr);
+                    if ($now->lessThan($startTime)) {
+                        return 'upcoming';
+                    }
+                } catch (\Throwable) {
+                    // ignore
+                }
+            }
         }
 
         return 'ongoing';
@@ -181,7 +253,10 @@ class Event extends Model
                 : 'upcoming';
         }
 
-        return self::deriveLifecycleStatusFromDate($raw);
+        $rawTime = $this->attributes['event_time'] ?? null;
+        $rawEnd = $this->attributes['registration_end_time'] ?? null;
+
+        return self::deriveLifecycleStatusFromDate($raw, $rawTime, $rawEnd);
     }
 
     /**

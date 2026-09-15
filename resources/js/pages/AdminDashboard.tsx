@@ -96,7 +96,7 @@ type Props = {
         organizer: string;
         totalAttendees: number;
         presentCount: number;
-        status: 'upcoming' | 'ongoing' | 'completed';
+        status: 'upcoming' | 'ongoing' | 'completed' | 'ended' | string;
         location: string;
     }[];
 };
@@ -675,10 +675,12 @@ export default function AdminDashboard({
                                                                     <span
                                                                         className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold shadow-sm ${
                                                                             row.status ===
-                                                                            'completed'
+                                                                                'completed' ||
+                                                                            row.status ===
+                                                                                'ended'
                                                                                 ? 'border border-slate-200 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
                                                                                 : row.status ===
-                                                                                    'ongoing'
+                                                                                      'ongoing'
                                                                                   ? 'animate-pulse border border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
                                                                                   : 'border border-blue-200 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400'
                                                                         }`}
@@ -686,18 +688,23 @@ export default function AdminDashboard({
                                                                         <span
                                                                             className={`h-1.5 w-1.5 rounded-full ${
                                                                                 row.status ===
-                                                                                'completed'
+                                                                                    'completed' ||
+                                                                                row.status ===
+                                                                                    'ended'
                                                                                     ? 'bg-slate-400'
                                                                                     : row.status ===
-                                                                                        'ongoing'
+                                                                                          'ongoing'
                                                                                       ? 'bg-emerald-500'
                                                                                       : 'bg-blue-500'
                                                                             }`}
                                                                         />
                                                                         <span className="capitalize">
-                                                                            {
-                                                                                row.status
-                                                                            }
+                                                                            {row.status ===
+                                                                            'completed' ||
+                                                                            row.status ===
+                                                                                'ended'
+                                                                                ? 'Ended'
+                                                                                : row.status}
                                                                         </span>
                                                                     </span>
                                                                 </td>

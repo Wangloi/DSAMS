@@ -11,7 +11,12 @@
         "format": "prettier --write resources/",
         "format:check": "prettier --check resources/",
         "lint": "eslint . --fix",
-        "types": "tsc --noEmit"
+        "types": "tsc --noEmit",
+        "deploy": "node scripts/deploy.mjs",
+        "deploy:quick": "node scripts/deploy.mjs --quick",
+        "deploy:watch": "node scripts/deploy.mjs --watch",
+        "deploy:dry-run": "node scripts/deploy.mjs --dry-run",
+        "deploy:artisan": "node scripts/deploy.mjs --artisan-only"
     },
     "devDependencies": {
         "@eslint/js": "^9.19.0",
@@ -19,6 +24,8 @@
         "@types/howler": "^2.2.13",
         "@types/node": "^22.13.5",
         "babel-plugin-react-compiler": "^1.0.0",
+        "chokidar": "^5.0.0",
+        "dotenv": "^17.4.2",
         "eslint": "^9.17.0",
         "eslint-config-prettier": "^10.0.1",
         "eslint-import-resolver-typescript": "^4.4.4",
@@ -28,6 +35,8 @@
         "prettier": "^3.4.2",
         "prettier-plugin-organize-imports": "^4.1.0",
         "prettier-plugin-tailwindcss": "^0.6.11",
+        "ssh2": "^1.17.0",
+        "ssh2-sftp-client": "^12.1.1",
         "typescript-eslint": "^8.23.0"
     },
     "dependencies": {

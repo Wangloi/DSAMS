@@ -405,12 +405,7 @@ export function ManageUsersTableCard({
                                                         size="icon"
                                                         className="h-8 w-8 border-slate-300 bg-white transition-colors hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700"
                                                         onClick={() => {
-                                                            if (
-                                                                isProgramHeadRow(
-                                                                    u,
-                                                                ) ||
-                                                                isAdminRow(u)
-                                                            ) {
+                                                            if (isAdminRow(u)) {
                                                                 return;
                                                             }
                                                             onViewUser(u);
@@ -425,12 +420,7 @@ export function ManageUsersTableCard({
                                                         size="icon"
                                                         className="h-8 w-8 border-slate-300 bg-white transition-colors hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700"
                                                         onClick={() => {
-                                                            if (
-                                                                isProgramHeadRow(
-                                                                    u,
-                                                                ) ||
-                                                                isAdminRow(u)
-                                                            ) {
+                                                            if (isAdminRow(u)) {
                                                                 return;
                                                             }
                                                             onEditUser(u);

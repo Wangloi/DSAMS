@@ -100,15 +100,13 @@ export default function LandingCta({ canRegister, stats }: Props) {
 
                     {/* Action Buttons */}
                     <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3 sm:gap-4 pt-2 sm:pt-4 w-full">
-                        {canRegister && (
-                            <Link
-                                href="/register"
-                                className="group inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#23509A] px-6 py-3.5 sm:px-8 sm:py-4 text-sm sm:text-base font-semibold text-white shadow-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-white hover:text-[#000D6A] hover:shadow-2xl active:translate-y-0"
-                            >
-                                Student Registration
-                                <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 transition-transform group-hover:translate-x-1" />
-                            </Link>
-                        )}
+                        <Link
+                            href="/login"
+                            className="group inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#23509A] px-6 py-3.5 sm:px-8 sm:py-4 text-sm sm:text-base font-semibold text-white shadow-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-white hover:text-[#000D6A] hover:shadow-2xl active:translate-y-0"
+                        >
+                            Student Portal
+                            <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 transition-transform group-hover:translate-x-1" />
+                        </Link>
 
                         <Link
                             href="/program-head-login"

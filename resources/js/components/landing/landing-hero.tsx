@@ -1,5 +1,5 @@
 import VideoBackground from '@/components/VideoBackground';
-import { login, register } from '@/routes';
+import { login } from '@/routes';
 import { Link } from '@inertiajs/react';
 import { ArrowRight, CheckCircle } from 'lucide-react';
 
@@ -15,11 +15,11 @@ export interface LastEventStats {
 }
 
 interface Props {
-    canRegister: boolean;
+    canRegister?: boolean;
     lastEventStats?: LastEventStats;
 }
 
-export default function LandingHero({ canRegister, lastEventStats }: Props) {
+export default function LandingHero({ lastEventStats }: Props) {
     const attendanceVal = lastEventStats?.attendancePercent ?? 98;
     const activeEventsVal = lastEventStats?.activeEvents ?? 24;
     const progressVal = lastEventStats?.progressPercent ?? 85;
@@ -51,7 +51,7 @@ export default function LandingHero({ canRegister, lastEventStats }: Props) {
                     {/* Content */}
                     <div className="order-1 space-y-6 text-white sm:space-y-8 lg:order-1 text-center sm:text-left">
                         <div className="space-y-4 sm:space-y-6">
-                            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-white/80 backdrop-blur-md sm:px-4 sm:py-2 sm:text-sm w-fit mx-auto sm:mx-0">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-xs font-medium text-white/90 backdrop-blur-md sm:px-4 sm:py-2 sm:text-sm w-fit mx-auto sm:mx-0">
                                 <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 <span className="hidden sm:inline">
                                     Modern Student Management System
@@ -79,20 +79,11 @@ export default function LandingHero({ canRegister, lastEventStats }: Props) {
                         <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:pt-4 w-full">
                             <Link
                                 href={login()}
-                                className="group inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#23509A] px-6 py-3.5 text-sm sm:text-base font-semibold text-white shadow-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-white hover:text-[#23509A] hover:shadow-2xl active:translate-y-0"
+                                className="group inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#23509A] px-7 py-3.5 text-sm sm:text-base font-semibold text-white shadow-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-white hover:text-[#23509A] hover:shadow-2xl active:translate-y-0"
                             >
                                 Get Started
                                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1 sm:h-5 sm:w-5" />
                             </Link>
-
-                            {canRegister && (
-                                <Link
-                                    href={register()}
-                                    className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border-2 border-white bg-transparent px-6 py-3.5 text-sm sm:text-base font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-white hover:text-[#000D6A] hover:shadow-xl active:translate-y-0"
-                                >
-                                    Sign Up
-                                </Link>
-                            )}
                         </div>
                     </div>
 
