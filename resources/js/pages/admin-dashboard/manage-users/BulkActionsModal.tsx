@@ -151,11 +151,8 @@ export default function BulkActionsModal({
     };
 
     const handleApplyAction = () => {
-        const targetElem = (document.getElementById('bulk-actions-modal-dialog') || document.body) as HTMLElement;
-
         if (selectedUserIds.length === 0) {
             Swal.fire({
-                target: targetElem,
                 icon: 'warning',
                 title: 'No Users Selected',
                 text: 'Please select at least one user to perform bulk action.',
@@ -196,7 +193,6 @@ export default function BulkActionsModal({
         }
 
         Swal.fire({
-            target: targetElem,
             title: 'Are you sure?',
             text: confirmText,
             icon: 'question',
@@ -205,9 +201,7 @@ export default function BulkActionsModal({
             cancelButtonColor: '#64748b',
             confirmButtonText: 'Yes, apply action',
             cancelButtonText: 'Cancel',
-            heightAuto: false,
             customClass: {
-                container: 'pointer-events-auto !z-[99999]',
                 popup: '!rounded-2xl !shadow-2xl',
             },
         }).then((result) => {
@@ -233,7 +227,6 @@ export default function BulkActionsModal({
                         setIsSubmitting(false);
                         console.error('Bulk action error:', err);
                         Swal.fire({
-                            target: targetElem,
                             icon: 'error',
                             title: 'Error',
                             text: 'Failed to apply bulk action. Please try again.',

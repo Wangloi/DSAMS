@@ -36,11 +36,8 @@ export function BulkYearLevelDialog({
     const [targetYearLevel, setTargetYearLevel] = useState<string>('3rd Year');
     const [isUpdatingYearLevel, setIsUpdatingYearLevel] = useState(false);
     const handleUpdate = () => {
-        const targetElem = (document.getElementById('bulk-year-level-modal-dialog') || document.body) as HTMLElement;
-
         if (selectedUserIds.length === 0) {
             Swal.fire({
-                target: targetElem,
                 icon: 'warning',
                 title: 'No Users Selected',
                 text: 'Please select at least one student.',
@@ -50,7 +47,6 @@ export function BulkYearLevelDialog({
         }
 
         Swal.fire({
-            target: targetElem,
             title: 'Are you sure?',
             text: `Are you sure you want to update ${selectedUserIds.length} student(s) to "${targetYearLevel}"?`,
             icon: 'question',
@@ -59,9 +55,7 @@ export function BulkYearLevelDialog({
             cancelButtonColor: '#64748b',
             confirmButtonText: 'Yes, update year level',
             cancelButtonText: 'Cancel',
-            heightAuto: false,
             customClass: {
-                container: 'pointer-events-auto !z-[99999]',
                 popup: '!rounded-2xl !shadow-2xl',
             },
         }).then((result) => {
@@ -90,7 +84,6 @@ export function BulkYearLevelDialog({
                         onError: (err) => {
                             setIsUpdatingYearLevel(false);
                             Swal.fire({
-                                target: targetElem,
                                 icon: 'error',
                                 title: 'Error',
                                 text: 'Failed to update year level. Please try again.',

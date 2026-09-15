@@ -249,9 +249,39 @@ html:not(.dark) [data-slot='sidebar-menu-button'] {
     background: #475569;
 }
 
-/* SweetAlert2 custom z-index & dark mode */
+/* SweetAlert2 custom z-index, pointer-events & dark mode */
 .swal2-container {
-    z-index: 10000 !important;
+    z-index: 999999 !important;
+    pointer-events: auto !important;
+}
+
+body.swal2-shown,
+html.swal2-shown {
+    pointer-events: auto !important;
+}
+
+.swal2-container,
+.swal2-container *,
+.swal2-popup,
+.swal2-actions,
+.swal2-confirm,
+.swal2-cancel,
+.swal2-deny,
+.swal2-close,
+.swal2-input,
+.swal2-textarea,
+.swal2-select,
+.swal2-radio,
+.swal2-checkbox,
+.swal2-html-container {
+    pointer-events: auto !important;
+}
+
+.swal2-confirm,
+.swal2-cancel,
+.swal2-deny,
+.swal2-close {
+    cursor: pointer !important;
 }
 
 .dark .swal2-popup {
