@@ -3,7 +3,27 @@ import { login, register } from '@/routes';
 import { Link } from '@inertiajs/react';
 import { ArrowRight, CheckCircle } from 'lucide-react';
 
-export default function LandingHero({ canRegister }: { canRegister: boolean }) {
+export interface LastEventStats {
+    id: number | null;
+    name: string | null;
+    date: string | null;
+    attendancePercent: number;
+    activeEvents: number;
+    progressPercent: number;
+    scannedCount: number;
+    targetAttendees: number;
+}
+
+interface Props {
+    canRegister: boolean;
+    lastEventStats?: LastEventStats;
+}
+
+export default function LandingHero({ canRegister, lastEventStats }: Props) {
+    const attendanceVal = lastEventStats?.attendancePercent ?? 98;
+    const activeEventsVal = lastEventStats?.activeEvents ?? 24;
+    const progressVal = lastEventStats?.progressPercent ?? 85;
+
     return (
         <section
             id="home"
@@ -84,7 +104,7 @@ export default function LandingHero({ canRegister }: { canRegister: boolean }) {
                                 <div className="space-y-4 sm:space-y-6">
                                     {/* Header */}
                                     <div className="flex items-center gap-3">
-                                        <div className="flex h-9 w-9 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-[#23509A] shrink-0">
+                                        <div className="flex h-9 w-9 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-[#23509A] shrink-0 shadow-md">
                                             <img
                                                 src="/images/DSA.png"
                                                 alt="DSA"
@@ -95,8 +115,17 @@ export default function LandingHero({ canRegister }: { canRegister: boolean }) {
                                             <h3 className="text-xs sm:text-base font-semibold text-[#000D6A] truncate">
                                                 OSAMS Dashboard
                                             </h3>
-                                            <p className="text-[10px] sm:text-xs text-[#000000]/60">
-                                                Real-time monitoring
+                                            <p
+                                                className="text-[10px] sm:text-xs text-[#000000]/60 truncate"
+                                                title={
+                                                    lastEventStats?.name
+                                                        ? `Last Event: ${lastEventStats.name}`
+                                                        : 'Real-time monitoring'
+                                                }
+                                            >
+                                                {lastEventStats?.name
+                                                    ? `Event: ${lastEventStats.name}`
+                                                    : 'Real-time monitoring'}
                                             </p>
                                         </div>
                                     </div>
@@ -105,17 +134,17 @@ export default function LandingHero({ canRegister }: { canRegister: boolean }) {
                                     <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
                                         <div className="rounded-lg sm:rounded-xl bg-[#23509A]/10 p-2.5 sm:p-4">
                                             <div className="text-lg font-bold text-[#23509A] sm:text-2xl">
-                                                98%
+                                                {attendanceVal}%
                                             </div>
-                                            <div className="text-[10px] sm:text-xs text-[#000000]/70 font-medium">
+                                            <div className="text-[10px] sm:text-xs text-[#000000]/70 font-medium truncate">
                                                 Attendance
                                             </div>
                                         </div>
                                         <div className="rounded-lg sm:rounded-xl bg-[#000D6A]/10 p-2.5 sm:p-4">
                                             <div className="text-lg font-bold text-[#000D6A] sm:text-2xl">
-                                                24
+                                                {activeEventsVal}
                                             </div>
-                                            <div className="text-[10px] sm:text-xs text-[#000000]/70 font-medium">
+                                            <div className="text-[10px] sm:text-xs text-[#000000]/70 font-medium truncate">
                                                 Active Events
                                             </div>
                                         </div>
@@ -124,15 +153,22 @@ export default function LandingHero({ canRegister }: { canRegister: boolean }) {
                                     {/* Progress Bar */}
                                     <div className="space-y-1.5 sm:space-y-2">
                                         <div className="flex justify-between text-[11px] sm:text-xs">
-                                            <span className="text-[#000000]/70">
-                                                Today's Progress
+                                            <span className="text-[#000000]/70 truncate max-w-[140px] sm:max-w-none">
+                                                {lastEventStats?.name
+                                                    ? "Event Progress"
+                                                    : "Today's Progress"}
                                             </span>
                                             <span className="font-semibold text-[#23509A]">
-                                                85%
+                                                {progressVal}%
                                             </span>
                                         </div>
-                                        <div className="h-2 rounded-full bg-[#23509A]/20">
-                                            <div className="h-full w-[85%] rounded-full bg-[#23509A]"></div>
+                                        <div className="h-2 rounded-full bg-[#23509A]/20 overflow-hidden">
+                                            <div
+                                                className="h-full rounded-full bg-[#23509A] transition-all duration-700"
+                                                style={{
+                                                    width: `${Math.min(100, Math.max(0, progressVal))}%`,
+                                                }}
+                                            />
                                         </div>
                                     </div>
                                 </div>

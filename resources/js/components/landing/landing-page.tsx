@@ -3,15 +3,17 @@ import LandingAbout from './landing-about';
 import LandingCta from './landing-cta';
 import LandingFeaturesCarousel from './landing-features-carousel';
 import LandingFooter from './landing-footer';
-import LandingHero from './landing-hero';
+import LandingHero, { type LastEventStats } from './landing-hero';
 import LandingNavbar from './landing-navbar';
 
 export default function LandingPage({
     canRegister,
     isAuthed,
+    lastEventStats,
 }: {
     canRegister: boolean;
     isAuthed: boolean;
+    lastEventStats?: LastEventStats;
 }) {
     return (
         <>
@@ -19,7 +21,10 @@ export default function LandingPage({
             <div className="min-h-screen w-full overflow-x-hidden bg-[#FBFBFB] text-[#000000]">
                 <LandingNavbar isAuthed={isAuthed} />
                 <div className="w-full overflow-x-hidden pt-16">
-                    <LandingHero canRegister={canRegister} />
+                    <LandingHero
+                        canRegister={canRegister}
+                        lastEventStats={lastEventStats}
+                    />
                     <LandingFeaturesCarousel />
                     <LandingAbout />
                     <LandingCta canRegister={canRegister} />

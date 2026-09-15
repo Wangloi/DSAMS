@@ -85,6 +85,10 @@ Route::get('/help', function () {
     return Inertia::render('help');
 })->name('landing.help');
 
+Route::get('/sitemap', function () {
+    return Inertia::render('sitemap');
+})->name('landing.sitemap');
+
 // Unified login route
 Route::post('/login', [UnifiedLoginController::class, 'login'])->middleware('throttle:login');
 
@@ -290,7 +294,7 @@ Route::get('/program-head/help', function () {
 
 Route::get('/program-head/notifications', [App\Http\Controllers\NotificationController::class, 'programHeadIndex'])->middleware(['auth:program_head', 'verified'])->name('program-head.notifications');
 
-Route::get('/admin/notifications', [App\Http\Controllers\NotificationController::class, 'index'])->middleware('auth:admin')->name('admin.notifications');
+Route::get('/admin/notifications', [App\Http\Controllers\NotificationController::class, 'adminIndex'])->middleware('auth:admin')->name('admin.notifications');
 
 Route::post('/admin/password-resets/{passwordResetRequest}/approve', [\App\Http\Controllers\AdminPasswordResetController::class, 'approve'])->middleware('auth:admin')->name('admin.password-resets.approve');
 Route::post('/admin/password-resets/{passwordResetRequest}/reject', [\App\Http\Controllers\AdminPasswordResetController::class, 'reject'])->middleware('auth:admin')->name('admin.password-resets.reject');
@@ -333,6 +337,10 @@ Route::put('/admin/program-heads/{programHead}', [AdminManageUsersController::cl
 Route::post('/admin/program-heads', [AdminManageUsersController::class, 'storeProgramHead'])
     ->middleware('auth:admin')
     ->name('admin.program-heads.store');
+
+Route::post('/admin/manage-users/admin', [AdminManageUsersController::class, 'storeAdmin'])
+    ->middleware('auth:admin')
+    ->name('admin.manage-users.store-admin');
 
 // Programs Routes
 Route::get('/admin/programs', [AdminProgramsController::class, 'index'])->middleware('auth:admin')->name('admin.programs');

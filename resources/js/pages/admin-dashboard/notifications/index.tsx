@@ -66,11 +66,14 @@ export default function AdminNotifications({ paginatedNotifications }: Props) {
     };
 
     const markAllAsRead = () => {
-        router.post(
-            '/notifications/mark-all-read',
-            {},
-            { preserveScroll: true },
-        );
+        const allIds = notifications.map((n) => n.id);
+        setLocallyRead(allIds);
+        axios
+            .post('/notifications/mark-all-read')
+            .then(() => {
+                router.reload({ only: ['paginatedNotifications'] });
+            })
+            .catch(console.error);
     };
 
     return (
@@ -237,7 +240,7 @@ export default function AdminNotifications({ paginatedNotifications }: Props) {
 
                 {/* Pagination */}
                 {paginatedNotifications.last_page > 1 && (
-                    <div className="flex items-center justify-between">
+                    <div className="mt-8 sm:mt-10 flex items-center justify-between pb-6">
                         <p className="text-sm text-slate-500">
                             Showing page{' '}
                             <span className="font-medium text-slate-900">

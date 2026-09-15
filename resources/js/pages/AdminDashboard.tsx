@@ -23,6 +23,7 @@ import {
     Briefcase,
     CalendarDays,
     ClipboardCheck,
+    Clock,
     FileText,
     RotateCcw,
     Ticket,
@@ -52,6 +53,10 @@ import { AdminLayout } from './admin-dashboard';
 type Props = {
     user?: {
         name: string;
+        email?: string;
+        handover_expires_at?: string | null;
+        handover_expires_at_formatted?: string | null;
+        is_handover_active?: boolean;
     };
     recentActivities?: {
         id: string;
@@ -263,11 +268,52 @@ export default function AdminDashboard({
           }))
         : seedLostFoundStatus;
 
+    const authUser = (page.props as any)?.auth?.user;
+    const currentUser = user || authUser;
+    const isHandoverActive = Boolean(currentUser?.is_handover_active || currentUser?.handover_expires_at);
+
     return (
         <AdminLayout breadcrumbs={breadcrumbs}>
             <Head title="Admin Dashboard" />
             <div className="min-h-[calc(100vh-4rem)] bg-slate-50 dark:bg-slate-900">
                 <div className="flex w-full flex-col gap-6 px-4 py-6 sm:px-6">
+                    {/* ── Handover Grace Period Countdown Banner ── */}
+                    {isHandoverActive && (
+                        <div className="relative overflow-hidden rounded-2xl border border-amber-300 bg-amber-50/90 p-4 shadow-md backdrop-blur-sm sm:p-5 dark:border-amber-700/60 dark:bg-amber-950/40">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex items-start gap-3.5">
+                                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-500 text-white shadow-md shadow-amber-500/20">
+                                        <Clock className="h-5 w-5" />
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <h2 className="text-sm font-black text-amber-900 dark:text-amber-200">
+                                                3-Day Administrator Handover Period Active
+                                            </h2>
+                                            <span className="inline-flex items-center rounded-full bg-amber-200/80 px-2 py-0.5 text-[10px] font-bold text-amber-900 dark:bg-amber-800 dark:text-amber-100">
+                                                Expiring Soon
+                                            </span>
+                                        </div>
+                                        <p className="mt-1 text-xs font-medium text-amber-800/90 dark:text-amber-300/90">
+                                            A new administrator account was created. This current administrator account is set to automatically expire and be deactivated on{' '}
+                                            <span className="font-bold text-amber-950 underline dark:text-amber-100">
+                                                {currentUser?.handover_expires_at_formatted || currentUser?.handover_expires_at}
+                                            </span>
+                                            . Please ensure all pending workflows and responsibilities have been transferred to the new admin.
+                                        </p>
+                                    </div>
+                                </div>
+                                <Link
+                                    href={adminManageUsers()}
+                                    className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-amber-700 dark:bg-amber-600 dark:hover:bg-amber-500"
+                                >
+                                    <UserRoundCog className="h-4 w-4" />
+                                    Manage Users
+                                </Link>
+                            </div>
+                        </div>
+                    )}
+
                     {/* ── Hero Header ── */}
                     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] p-6 shadow-xl shadow-blue-900/20">
                         <div className="pointer-events-none absolute -top-12 -right-12 h-56 w-56 rounded-full bg-white/5" />
@@ -281,7 +327,7 @@ export default function AdminDashboard({
                                 <div>
                                     <h1 className="text-2xl font-black tracking-tight text-white">
                                         Welcome Back,{' '}
-                                        {user?.name || 'Administrator'}!
+                                        {currentUser?.name || 'Administrator'}!
                                     </h1>
                                     <p className="mt-0.5 text-sm font-medium text-blue-200/80">
                                         System Command Center • Incoming Events

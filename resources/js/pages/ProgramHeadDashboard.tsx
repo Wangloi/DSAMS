@@ -207,22 +207,6 @@ export default function ProgramHeadDashboard({ user }: Props) {
     });
 
     React.useEffect(() => {
-        const status =
-            (page.props as any)?.status ||
-            (page.props as any)?.flash?.status ||
-            (page.props as any)?.flash?.success;
-        if (status) {
-            Swal.fire({
-                title: 'Success!',
-                text: status,
-                icon: 'success',
-                timer: 3000,
-                showConfirmButton: false,
-            });
-        }
-    }, [page.props]);
-
-    React.useEffect(() => {
         // Poll for real-time attendance updates every 10 seconds
         const interval = setInterval(() => {
             router.reload({

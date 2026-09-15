@@ -57,17 +57,28 @@ class AppNotification extends Model
     }
 
     /**
-     * Scope for specific user / recipient
+     * Scope for specific user / recipient with role isolation
      */
     public function scopeForRecipient($query, $userId, ?string $userType = null)
     {
-        $q = $query->where(function ($sub) use ($userId, $userType) {
-            $sub->where('user_id', $userId);
+        return $query->where(function ($q) use ($userId, $userType) {
+            $q->where(function ($sub) use ($userId, $userType) {
+                $sub->where('user_id', $userId);
+                if ($userType) {
+                    $sub->where('user_type', $userType);
+                }
+            });
             if ($userType) {
-                $sub->where('user_type', $userType);
+                $q->orWhere(function ($broadcast) use ($userType) {
+                    $broadcast->whereNull('user_id')
+                        ->where(function ($b) use ($userType) {
+                            $b->where('user_type', 'broadcast')
+                              ->orWhere('user_type', $userType);
+                        });
+                });
+            } else {
+                $q->orWhereNull('user_id');
             }
-        })->orWhereNull('user_id'); // Allow global / broadcast notifications
-
-        return $q;
+        });
     }
 }

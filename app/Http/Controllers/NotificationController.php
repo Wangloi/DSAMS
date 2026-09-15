@@ -18,42 +18,137 @@ class NotificationController extends Controller
     }
 
     /**
-     * Get user's notifications + unread count
+     * Get current authenticated user across guards
+     */
+    private function resolveAuthUser(?Request $request = null)
+    {
+        if ($request) {
+            $activeUser = \App\Support\ActiveAuth::user($request);
+            if ($activeUser) {
+                return $activeUser;
+            }
+        }
+
+        return Auth::guard('program_head')->user()
+            ?: Auth::guard('student')->user()
+            ?: Auth::guard('admin')->user()
+            ?: Auth::guard('web')->user()
+            ?: Auth::user();
+    }
+
+    /**
+     * Get user's notifications + unread count (API endpoint)
      */
     public function index(Request $request): JsonResponse
     {
-        $user = Auth::user();
-        $userId = $user?->id ?? $request->query('user_id');
+        $user = $this->resolveAuthUser($request);
 
-        if (!$userId) {
+        if (!$user) {
+            $userId = $request->query('user_id');
+            if (!$userId) {
+                return response()->json([
+                    'notifications' => [],
+                    'unread_count' => 0,
+                ]);
+            }
+        }
+
+        if ($user instanceof \App\Models\Student) {
+            $notifications = \App\Services\StudentNotificationPresenter::recentForStudent($user, 30);
+            $unreadCount = \App\Services\StudentNotificationPresenter::unreadCountForStudent($user);
+
             return response()->json([
-                'notifications' => [],
-                'unread_count' => 0,
+                'notifications' => $notifications,
+                'unread_count'  => $unreadCount,
             ]);
         }
 
-        $notifications = AppNotification::forRecipient($userId)
-            ->orderBy('created_at', 'desc')
-            ->limit(30)
-            ->get();
+        if ($user) {
+            $dbNotifications = $user->notifications()
+                ->orderByDesc('created_at')
+                ->limit(30)
+                ->get()
+                ->map(function ($n) {
+                    $data = is_string($n->data) ? json_decode($n->data, true) : (array) $n->data;
+                    return [
+                        'id' => (string) $n->id,
+                        'type' => (string) ($data['type'] ?? ''),
+                        'title' => (string) ($data['title'] ?? $data['message'] ?? 'Notification'),
+                        'subtitle' => (string) ($data['subtitle'] ?? ''),
+                        'message' => (string) ($data['message'] ?? ''),
+                        'timeAgo' => $n->created_at?->diffForHumans() ?? '',
+                        'created_at' => $n->created_at?->toISOString() ?? $n->created_at?->toDateTimeString(),
+                        'is_read' => $n->read_at !== null,
+                        'eventId' => $data['event_id'] ?? null,
+                        'evaluationId' => $data['evaluation_id'] ?? null,
+                    ];
+                });
 
-        $unreadCount = AppNotification::forRecipient($userId)
-            ->unread()
-            ->count();
+            $userClass = get_class($user);
+            $appNotifications = AppNotification::where('user_id', $user->id)
+                ->where('user_type', $userClass)
+                ->orderBy('created_at', 'desc')
+                ->limit(30)
+                ->get()
+                ->map(function ($n) {
+                    return [
+                        'id' => (string) $n->id,
+                        'type' => (string) $n->type,
+                        'title' => (string) $n->title,
+                        'subtitle' => (string) $n->message,
+                        'message' => (string) $n->message,
+                        'timeAgo' => $n->created_at?->diffForHumans() ?? '',
+                        'created_at' => $n->created_at?->toISOString() ?? $n->created_at?->toDateTimeString(),
+                        'is_read' => (bool) $n->is_read,
+                        'eventId' => $n->meta_data['event_id'] ?? null,
+                        'evaluationId' => $n->meta_data['evaluation_id'] ?? null,
+                    ];
+                });
+
+            $allNotifications = $dbNotifications->concat($appNotifications)
+                ->sortByDesc('created_at')
+                ->values()
+                ->all();
+
+            $unreadCount = $user->unreadNotifications()->count() +
+                AppNotification::where('user_id', $user->id)
+                    ->where('user_type', $userClass)
+                    ->unread()
+                    ->count();
+
+            return response()->json([
+                'notifications' => $allNotifications,
+                'unread_count'  => $unreadCount,
+            ]);
+        }
 
         return response()->json([
-            'notifications' => $notifications,
-            'unread_count'  => $unreadCount,
+            'notifications' => [],
+            'unread_count'  => 0,
         ]);
     }
 
     /**
      * Mark a single notification as read
      */
-    public function markAsRead(int $id): JsonResponse
+    public function markAsRead(string $id, Request $request): JsonResponse
     {
-        $user = Auth::user();
-        $notification = AppNotification::find($id);
+        $user = $this->resolveAuthUser($request);
+
+        // 1. First check Laravel's standard database notifications
+        if ($user) {
+            $dbNotification = $user->notifications()->where('id', $id)->first();
+            if ($dbNotification) {
+                $dbNotification->markAsRead();
+                return response()->json([
+                    'success' => true,
+                    'notification' => $dbNotification,
+                ]);
+            }
+        }
+
+        // 2. Otherwise check AppNotification model
+        $notification = is_numeric($id) ? AppNotification::find((int) $id) : null;
 
         if (!$notification) {
             return response()->json(['error' => 'Notification not found'], 404);
@@ -75,32 +170,55 @@ class NotificationController extends Controller
     /**
      * Mark all notifications for the current user as read
      */
-    public function markAllAsRead(Request $request): JsonResponse
+    public function markAllAsRead(Request $request)
     {
-        $user = Auth::user();
+        $user = $this->resolveAuthUser($request);
         $userId = $user?->id ?? $request->input('user_id');
 
-        if (!$userId) {
-            return response()->json(['error' => 'Unauthenticated'], 401);
+        if (!$user && !$userId) {
+            if ($request->wantsJson() || $request->isJson() || $request->header('X-Inertia') === null) {
+                return response()->json(['error' => 'Unauthenticated'], 401);
+            }
+            return back();
         }
 
-        AppNotification::forRecipient($userId)
-            ->unread()
-            ->update(['is_read' => true]);
+        if ($user && method_exists($user, 'unreadNotifications')) {
+            $user->unreadNotifications()->update(['read_at' => now()]);
+        }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'All notifications marked as read',
-        ]);
+        if ($userId) {
+            $userClass = $user ? get_class($user) : null;
+            AppNotification::forRecipient($userId, $userClass)
+                ->unread()
+                ->update(['is_read' => true]);
+        }
+
+        if ($request->wantsJson() || $request->isJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'All notifications marked as read',
+            ]);
+        }
+
+        return back();
     }
 
     /**
      * Delete a notification
      */
-    public function destroy(int $id): JsonResponse
+    public function destroy(string $id): JsonResponse
     {
-        $user = Auth::user();
-        $notification = AppNotification::find($id);
+        $user = $this->resolveAuthUser();
+
+        if ($user) {
+            $dbNotification = $user->notifications()->where('id', $id)->first();
+            if ($dbNotification) {
+                $dbNotification->delete();
+                return response()->json(['success' => true]);
+            }
+        }
+
+        $notification = is_numeric($id) ? AppNotification::find((int) $id) : null;
 
         if (!$notification) {
             return response()->json(['error' => 'Notification not found'], 404);
@@ -120,7 +238,7 @@ class NotificationController extends Controller
      */
     public function testNotification(Request $request): JsonResponse
     {
-        $user = Auth::user();
+        $user = $this->resolveAuthUser();
         $userId = $request->input('user_id', $user?->id ?? 1);
 
         $notification = $this->realtimeService->sendToUser($userId, [
@@ -169,6 +287,100 @@ class NotificationController extends Controller
         ];
 
         return \Inertia\Inertia::render('student/notifications/index', [
+            'paginatedNotifications' => $paginatedNotifications,
+        ]);
+    }
+
+    /**
+     * Render program head notifications page
+     */
+    public function programHeadIndex(Request $request)
+    {
+        /** @var \App\Models\ProgramHead|null $user */
+        $user = Auth::guard('program_head')->user() ?: Auth::user();
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        $paginated = $user->notifications()
+            ->orderByDesc('created_at')
+            ->paginate(15);
+
+        $formattedData = collect($paginated->items())
+            ->map(function ($n) {
+                $data = is_string($n->data) ? json_decode($n->data, true) : (array) $n->data;
+                return [
+                    'id' => (string) $n->id,
+                    'type' => (string) ($data['type'] ?? ''),
+                    'eventId' => $data['event_id'] ?? null,
+                    'evaluationId' => $data['evaluation_id'] ?? null,
+                    'title' => (string) ($data['title'] ?? $data['message'] ?? 'Notification'),
+                    'subtitle' => (string) ($data['subtitle'] ?? ''),
+                    'timeAgo' => $n->created_at?->diffForHumans() ?? '',
+                    'created_at' => $n->created_at?->toISOString() ?? $n->created_at?->toDateTimeString(),
+                    'is_read' => $n->read_at !== null,
+                ];
+            })
+            ->values()
+            ->all();
+
+        $paginatedNotifications = [
+            'data' => $formattedData,
+            'current_page' => $paginated->currentPage(),
+            'last_page' => $paginated->lastPage(),
+            'total' => $paginated->total(),
+            'prev_page_url' => $paginated->previousPageUrl(),
+            'next_page_url' => $paginated->nextPageUrl(),
+        ];
+
+        return \Inertia\Inertia::render('program-head/notifications/index', [
+            'paginatedNotifications' => $paginatedNotifications,
+        ]);
+    }
+
+    /**
+     * Render admin notifications page
+     */
+    public function adminIndex(Request $request)
+    {
+        /** @var \App\Models\User|null $user */
+        $user = Auth::guard('admin')->user() ?: Auth::user();
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        $paginated = $user->notifications()
+            ->orderByDesc('created_at')
+            ->paginate(15);
+
+        $formattedData = collect($paginated->items())
+            ->map(function ($n) {
+                $data = is_string($n->data) ? json_decode($n->data, true) : (array) $n->data;
+                return [
+                    'id' => (string) $n->id,
+                    'type' => (string) ($data['type'] ?? ''),
+                    'eventId' => $data['event_id'] ?? null,
+                    'evaluationId' => $data['evaluation_id'] ?? null,
+                    'title' => (string) ($data['title'] ?? $data['message'] ?? 'Notification'),
+                    'subtitle' => (string) ($data['subtitle'] ?? ''),
+                    'timeAgo' => $n->created_at?->diffForHumans() ?? '',
+                    'created_at' => $n->created_at?->toISOString() ?? $n->created_at?->toDateTimeString(),
+                    'is_read' => $n->read_at !== null,
+                ];
+            })
+            ->values()
+            ->all();
+
+        $paginatedNotifications = [
+            'data' => $formattedData,
+            'current_page' => $paginated->currentPage(),
+            'last_page' => $paginated->lastPage(),
+            'total' => $paginated->total(),
+            'prev_page_url' => $paginated->previousPageUrl(),
+            'next_page_url' => $paginated->nextPageUrl(),
+        ];
+
+        return \Inertia\Inertia::render('admin-dashboard/notifications/index', [
             'paginatedNotifications' => $paginatedNotifications,
         ]);
     }

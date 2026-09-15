@@ -65,11 +65,14 @@ export default function ProgramHeadNotifications({ paginatedNotifications }: Pro
     };
 
     const markAllAsRead = () => {
-        router.post(
-            '/notifications/mark-all-read',
-            {},
-            { preserveScroll: true },
-        );
+        const allIds = notifications.map((n) => n.id);
+        setLocallyRead(allIds);
+        axios
+            .post('/notifications/mark-all-read')
+            .then(() => {
+                router.reload({ only: ['paginatedNotifications'] });
+            })
+            .catch(console.error);
     };
 
     const getActionHref = (n: Notification) => {
@@ -247,7 +250,7 @@ export default function ProgramHeadNotifications({ paginatedNotifications }: Pro
 
                 {/* Pagination */}
                 {paginatedNotifications.last_page > 1 && (
-                    <div className="flex items-center justify-between">
+                    <div className="mt-8 sm:mt-10 flex items-center justify-between pb-6">
                         <p className="text-sm text-slate-500 dark:text-slate-400">
                             Showing page{' '}
                             <span className="font-medium text-slate-900 dark:text-white">

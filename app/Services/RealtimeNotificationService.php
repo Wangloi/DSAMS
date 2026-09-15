@@ -23,10 +23,12 @@ class RealtimeNotificationService
     public function sendToUser(int|string $userId, array $payload, ?string $userType = 'App\\Models\\User'): ?AppNotification
     {
         try {
+            $effectiveUserType = $userType ?? 'App\\Models\\User';
+
             // 1. Persist notification in MySQL database
             $notification = AppNotification::create([
                 'user_id'      => $userId,
-                'user_type'    => $userType ?? 'App\\Models\\User',
+                'user_type'    => $effectiveUserType,
                 'type'         => $payload['type'] ?? 'general',
                 'title'        => $payload['title'] ?? 'New Notification',
                 'message'      => $payload['message'] ?? '',
@@ -36,9 +38,19 @@ class RealtimeNotificationService
                 'is_read'      => false,
             ]);
 
-            // 2. Emit event to Node.js Socket.IO server (Room: user_{userId})
+            // Determine role prefix for room isolation
+            $rolePrefix = match ($effectiveUserType) {
+                'App\\Models\\ProgramHead', 'program_head' => 'program_head',
+                'App\\Models\\Student', 'student'          => 'student',
+                'App\\Models\\User', 'admin'              => 'admin',
+                default                                    => null,
+            };
+
+            $room = $rolePrefix ? "user_{$rolePrefix}_{$userId}" : "user_{$userId}";
+
+            // 2. Emit event to Node.js Socket.IO server
             $this->emitToSocket([
-                'room'  => 'user_' . $userId,
+                'room'  => $room,
                 'event' => 'notification',
                 'data'  => [
                     'id'           => $notification->id,

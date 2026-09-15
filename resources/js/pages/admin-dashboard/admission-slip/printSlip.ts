@@ -35,120 +35,105 @@ export default function printSlip(s: SlipRow, deanName?: string) {
       font-weight: bold;
       color: #000;
       background-color: #fff;
-      font-size: 11px;
-      line-height: 1.4;
+      font-size: 10px;
+      line-height: 1.35;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
     .container {
       width: 80mm;
-      padding: 5mm 6mm;
-    }
-    .logo-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 8px;
-    }
-    .logo {
-      width: 48px;
-      height: 48px;
-      object-fit: contain;
-      image-rendering: -webkit-optimize-contrast;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+      padding: 4mm 5mm;
     }
     .header-text {
       text-align: center;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
     .school {
       font-weight: 900;
-      font-size: 10.5px;
+      font-size: 10px;
       line-height: 1.25;
       color: #000;
       letter-spacing: 0.2px;
     }
     .sub {
-      font-size: 9px;
+      font-size: 8.5px;
       font-weight: bold;
       color: #000;
       margin-top: 2px;
     }
     .dept {
       font-weight: 900;
-      font-size: 10px;
+      font-size: 9px;
       color: #000;
-      margin-top: 3px;
+      margin-top: 2px;
       letter-spacing: 0.2px;
     }
     .divider {
-      border-top: 2px dashed #000;
-      margin: 10px 0;
+      border-top: 1.5px dashed #000;
+      margin: 8px 0;
     }
     .title {
       font-weight: 900;
-      font-size: 15px;
+      font-size: 12px;
       text-align: center;
-      margin: 8px 0 12px 0;
-      letter-spacing: 1px;
+      margin: 6px 0 10px 0;
+      letter-spacing: 0.5px;
       color: #000;
     }
     .info-item {
-      margin-bottom: 8px;
-      font-size: 11px;
+      margin-bottom: 6px;
+      font-size: 10px;
     }
     .info-label {
       font-weight: 900;
-      font-size: 9.5px;
+      font-size: 8.5px;
       color: #000;
       text-transform: uppercase;
       display: block;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.3px;
     }
     .info-value {
       font-weight: bold;
-      font-size: 11.5px;
+      font-size: 10px;
       color: #000;
-      margin-top: 2px;
+      margin-top: 1px;
       padding-left: 1px;
       word-break: break-word;
       line-height: 1.3;
     }
     .signature-section {
-      margin-top: 24px;
+      margin-top: 18px;
       text-align: center;
     }
     .sig-line {
-      border-bottom: 2px solid #000;
-      width: 80%;
+      border-bottom: 1.5px solid #000;
+      width: 75%;
       margin: 0 auto;
-      height: 20px;
+      height: 16px;
     }
     .sig-label {
-      font-size: 8.5px;
+      font-size: 8px;
       font-weight: 900;
       color: #000;
-      margin-top: 5px;
+      margin-top: 4px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.3px;
     }
     .dean-section {
-      margin-top: 26px;
+      margin-top: 18px;
       text-align: center;
-      font-size: 10px;
+      font-size: 9px;
     }
     .dean-name {
       font-weight: 900;
-      font-size: 11.5px;
+      font-size: 10px;
       color: #000;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.2px;
     }
     .dean-title {
       font-style: italic;
       font-weight: bold;
-      font-size: 9.5px;
+      font-size: 8.5px;
       color: #000;
       margin-top: 2px;
     }
@@ -180,7 +165,7 @@ export default function printSlip(s: SlipRow, deanName?: string) {
       }
       .container {
         width: 100%;
-        padding: 4mm 6mm;
+        padding: 2mm 4mm;
         box-shadow: none !important;
         border: none !important;
       }
@@ -189,11 +174,6 @@ export default function printSlip(s: SlipRow, deanName?: string) {
 </head>
 <body>
   <div class="container">
-    <div class="logo-container">
-      <img class="logo" src="/images/SRCB.png" alt="SRCB Logo" />
-      <img class="logo" src="/images/DSA.png" alt="DSA Logo" />
-    </div>
-    
     <div class="header-text">
       <div class="school">ST. RITA'S COLLEGE OF BALINGASAG, INC.</div>
       <div class="sub">Balingasag, Misamis Oriental</div>

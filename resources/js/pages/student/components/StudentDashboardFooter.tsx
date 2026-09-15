@@ -28,7 +28,7 @@ export function StudentDashboardFooter() {
 
                 <button
                     onClick={scrollToTop}
-                    className="group flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-900 shadow-2xl transition-all duration-300 hover:-translate-y-2 active:scale-95 sm:h-12 sm:w-12 sm:rounded-2xl"
+                    className="group hidden sm:flex h-10 w-10 items-center justify-center rounded-xl bg-white text-slate-900 shadow-2xl transition-all duration-300 hover:-translate-y-2 active:scale-95 sm:h-12 sm:w-12 sm:rounded-2xl"
                     aria-label="Scroll to top"
                 >
                     <ArrowUp className="h-4 w-4 group-hover:animate-bounce sm:h-5 sm:w-5" />

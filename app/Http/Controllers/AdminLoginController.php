@@ -16,6 +16,16 @@ class AdminLoginController extends Controller
         ]);
 
         if (Auth::guard('admin')->attempt($credentials, $request->boolean('remember'))) {
+            $admin = Auth::guard('admin')->user();
+            if ($admin->isHandoverExpired() || $admin->is_active === false) {
+                if ($admin->is_active !== false) {
+                    $admin->update(['is_active' => false]);
+                }
+                Auth::guard('admin')->logout();
+                throw ValidationException::withMessages([
+                    'email' => 'This administrator account has expired following the 3-day handover transition period. Please sign in using the new administrator account.',
+                ]);
+            }
             $request->session()->regenerate();
             $request->session()->flash('status', 'Login successful! Welcome back, Admin!');
 

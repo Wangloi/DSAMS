@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AdminUser;
 use App\Models\Attendance;
 use App\Models\Certificate;
 use App\Models\Evaluation;
@@ -27,6 +28,9 @@ class CertificateController extends Controller
             abort(403);
         }
 
+        $admin = AdminUser::query()->first();
+        $activeAdminName = $admin?->name ?? 'Rey John N. Bongcas';
+
         $certificates = Certificate::query()
             ->with(['event', 'student', 'evaluation'])
             ->where('student_id', $student->id)
@@ -41,8 +45,9 @@ class CertificateController extends Controller
                 'course' => (string) ($student->course ?? $student->program ?? ''),
                 'year_level' => (string) ($student->year_level ?? ''),
             ],
+            'activeAdminName' => $activeAdminName,
             'certificates' => $certificates
-                ->map(fn (Certificate $certificate) => $this->formatCertificate($certificate))
+                ->map(fn (Certificate $certificate) => $this->formatCertificate($certificate, $activeAdminName))
                 ->values()
                 ->all(),
             'availableCertificates' => $this->availableCertificatesForStudent($student),
@@ -100,6 +105,9 @@ class CertificateController extends Controller
             ]);
         }
 
+        $admin = AdminUser::query()->first();
+        $adminName = $admin?->name ?? 'Rey John N. Bongcas';
+
         // Create certificate record
         $certificate = Certificate::create([
             'student_id' => $student->id,
@@ -113,14 +121,14 @@ class CertificateController extends Controller
                 : 'This is to certify that the student has successfully participated in the event',
             'issue_date' => Carbon::now(),
             'issued_by' => 'Department of Student Affairs',
-            'signature_name' => 'DSA Director',
-            'signature_title' => 'Director, Student Affairs',
+            'signature_name' => $adminName,
+            'signature_title' => 'Dean of Student Affairs',
             'is_generated' => false,
         ]);
 
         return response()->json([
             'message' => 'Certificate record created successfully',
-            'certificate' => $this->formatCertificate($certificate->load(['student', 'event', 'evaluation'])),
+            'certificate' => $this->formatCertificate($certificate->load(['student', 'event', 'evaluation']), $adminName),
         ]);
     }
 
@@ -132,9 +140,7 @@ class CertificateController extends Controller
             abort(403);
         }
 
-        if (! $certificate->is_generated || ! $certificate->certificate_file_path) {
-            $certificate = $this->generateAndStorePdf($certificate);
-        }
+        $certificate = $this->generateAndStorePdf($certificate);
 
         // Mark as downloaded
         $certificate->update([
@@ -156,10 +162,21 @@ class CertificateController extends Controller
 
     private function generateCertificatePDF(Certificate $certificate)
     {
+        $admin = AdminUser::query()->first();
+        $adminName = $admin?->name ?? 'Rey John N. Bongcas';
+
+        if (empty($certificate->signature_name) || $certificate->signature_name === 'DSA Director') {
+            $certificate->signature_name = $adminName;
+        }
+        if (empty($certificate->signature_title) || $certificate->signature_title === 'Director, Student Affairs') {
+            $certificate->signature_title = 'Dean of Student Affairs';
+        }
+
         $data = [
             'certificate' => $certificate,
             'student' => $certificate->student,
             'event' => $certificate->event,
+            'adminName' => $adminName,
         ];
 
         $pdf = Pdf::loadView('certificates.template', $data);
@@ -252,8 +269,14 @@ class CertificateController extends Controller
         return $availableCertificates;
     }
 
-    private function formatCertificate(Certificate $certificate): array
+    private function formatCertificate(Certificate $certificate, ?string $activeAdminName = null): array
     {
+        $adminName = $activeAdminName ?? AdminUser::query()->first()?->name ?? 'Rey John N. Bongcas';
+        $signatureName = (string) ($certificate->signature_name ?? '');
+        if ($signatureName === '' || $signatureName === 'DSA Director') {
+            $signatureName = $adminName;
+        }
+
         return [
             'id' => (string) $certificate->id,
             'certificate_number' => (string) $certificate->certificate_number,
@@ -266,8 +289,8 @@ class CertificateController extends Controller
             'event_date' => optional($certificate->event?->event_date)->format('Y-m-d'),
             'issue_date' => optional($certificate->issue_date)->format('Y-m-d'),
             'issued_by' => (string) ($certificate->issued_by ?? ''),
-            'signature_name' => (string) ($certificate->signature_name ?? ''),
-            'signature_title' => (string) ($certificate->signature_title ?? ''),
+            'signature_name' => $signatureName,
+            'signature_title' => (string) ($certificate->signature_title ?: 'Dean of Student Affairs'),
             'is_generated' => (bool) $certificate->is_generated,
             'is_downloaded' => (bool) $certificate->is_downloaded,
             'generated_at' => optional($certificate->generated_at)->format('Y-m-d H:i:s'),

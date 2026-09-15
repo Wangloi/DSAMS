@@ -348,23 +348,35 @@ export function ManageUsersTableCard({
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span
-                                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold tracking-tight uppercase ${
-                                                        u.role
-                                                            ?.toLowerCase()
-                                                            .includes('admin')
-                                                            ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                                            : u.role
-                                                                    ?.toLowerCase()
-                                                                    .includes(
-                                                                        'program',
-                                                                    )
-                                                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                                                              : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                                                    }`}
-                                                >
-                                                    {u.role ?? 'Student'}
-                                                </span>
+                                                <div className="flex flex-col gap-1 items-start">
+                                                    <span
+                                                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold tracking-tight uppercase ${
+                                                            u.role
+                                                                ?.toLowerCase()
+                                                                .includes('admin')
+                                                                ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                                                : u.role
+                                                                        ?.toLowerCase()
+                                                                        .includes(
+                                                                            'program',
+                                                                        )
+                                                                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                                                  : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                                        }`}
+                                                    >
+                                                        {u.role ?? 'Student'}
+                                                    </span>
+                                                    {u.is_handover_active && (
+                                                        <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-800 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800">
+                                                            ⏳ Expires {u.handover_expires_at_formatted}
+                                                        </span>
+                                                    )}
+                                                    {u.is_handover_expired && (
+                                                        <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold text-slate-600 border border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700">
+                                                            Deactivated / Expired
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 {u.year_level ? (

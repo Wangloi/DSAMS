@@ -24,7 +24,7 @@ export default function Appearance() {
                                 Appearance
                             </CardTitle>
                             <CardDescription className="mt-1 text-sm">
-                                Choose how DSAMS looks on this device.
+                                Choose how OSAMS looks on this device.
                             </CardDescription>
                         </div>
                     </div>

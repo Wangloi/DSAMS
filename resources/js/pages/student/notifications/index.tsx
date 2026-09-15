@@ -104,17 +104,18 @@ export default function StudentNotifications({
                         </p>
                     </div>
 
-                    {unreadCount > 0 && (
+                    <div className="flex items-center gap-2">
                         <Button
                             variant="outline"
                             size="sm"
                             onClick={markAllAsRead}
-                            className="flex w-fit items-center gap-2 border-slate-200 bg-white font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                            disabled={unreadCount === 0}
+                            className="flex w-fit items-center gap-2 border-slate-200 bg-white font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
                         >
                             <Check className="h-4 w-4 text-emerald-600" />
                             Mark all as read
                         </Button>
-                    )}
+                    </div>
                 </div>
 
                 {/* Notifications List */}
@@ -271,7 +272,7 @@ export default function StudentNotifications({
 
                 {/* Pagination */}
                 {paginatedNotifications.last_page > 1 && (
-                    <div className="flex items-center justify-between pb-10">
+                    <div className="mt-8 sm:mt-10 flex items-center justify-between pb-10">
                         <p className="text-sm text-slate-500 dark:text-slate-400">
                             Showing page{' '}
                             <span className="font-medium text-slate-900 dark:text-white">

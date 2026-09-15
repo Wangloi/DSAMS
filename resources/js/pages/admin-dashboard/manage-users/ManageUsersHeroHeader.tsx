@@ -12,6 +12,7 @@ import {
     KeyRound,
     Layers,
     Plus,
+    Shield,
     UserCheck,
     UserPlus,
     Users,
@@ -25,6 +26,7 @@ interface ManageUsersHeroHeaderProps {
     pendingResetsCount: number;
     openCreateModal: () => void;
     openCreatePHModal: () => void;
+    openCreateAdminModal?: () => void;
     openBulkModal: () => void;
     openCreateProgramModal: () => void;
 }
@@ -37,6 +39,7 @@ export function ManageUsersHeroHeader({
     pendingResetsCount,
     openCreateModal,
     openCreatePHModal,
+    openCreateAdminModal,
     openBulkModal,
     openCreateProgramModal,
 }: ManageUsersHeroHeaderProps) {
@@ -174,6 +177,16 @@ export function ManageUsersHeroHeader({
                                     >
                                         <GraduationCap className="h-4.5 w-4.5 text-[#1e3a8a]" />
                                         Add Program Head
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={openCreateAdminModal}
+                                        className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 font-semibold text-slate-700 hover:bg-amber-50 hover:text-amber-950"
+                                    >
+                                        <Shield className="h-4.5 w-4.5 text-amber-600" />
+                                        <div className="flex flex-col text-left">
+                                            <span>Add Administrator</span>
+                                            <span className="text-[10px] text-amber-600 font-medium">3-Day Handover Flow</span>
+                                        </div>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         onClick={openBulkModal}

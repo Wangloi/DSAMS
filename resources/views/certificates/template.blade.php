@@ -1,367 +1,226 @@
 @php
     $schoolLogoPath = public_path('images/SRCB.png');
-    $dsaLogoPath = public_path('images/DSA.jpg');
+    $dsaLogoPath = public_path('images/DSA.png');
+    if (!file_exists($dsaLogoPath)) {
+        $dsaLogoPath = public_path('images/DSA.jpg');
+    }
     $schoolLogo = file_exists($schoolLogoPath) ? 'data:image/png;base64,'.base64_encode(file_get_contents($schoolLogoPath)) : '';
-    $dsaLogo = file_exists($dsaLogoPath) ? 'data:image/jpeg;base64,'.base64_encode(file_get_contents($dsaLogoPath)) : '';
+    $dsaLogo = file_exists($dsaLogoPath) ? 'data:image/png;base64,'.base64_encode(file_get_contents($dsaLogoPath)) : '';
     $certificateType = ucwords(str_replace('_', ' ', (string) ($certificate->certificate_type ?? 'evaluation_completion')));
-    $eventDate = $event?->event_date ? $event->event_date->format('F d, Y') : '';
+    $eventDate = $event?->event_date ? $event->event_date->format('F d, Y') : 'N/A';
+    $issueDateFormatted = $certificate->issue_date ? $certificate->issue_date->format('F d, Y') : now()->format('F d, Y');
 @endphp
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>{{ $certificate->title }}</title>
     <style>
         @page {
-            size: A4 landscape;
-            margin: 16px;
+            size: a4 landscape;
+            margin: 15pt;
         }
 
         * {
             box-sizing: border-box;
-        }
-
-        body {
             margin: 0;
-            background: #eef2f7;
-            color: #0f172a;
-            font-family: DejaVu Sans, Arial, sans-serif;
+            padding: 0;
         }
 
-        .sheet {
+        html, body {
+            margin: 0;
+            padding: 0;
+            font-family: DejaVu Sans, Arial, Helvetica, sans-serif;
+            background: #ffffff;
+            color: #0c2340;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .cert-frame {
             width: 100%;
-            min-height: 100vh;
-            padding: 18px;
-            background: #ffffff;
+            border: 8pt solid #0c2340;
+            border-collapse: collapse;
         }
 
-        .certificate {
-            position: relative;
-            min-height: 670px;
-            overflow: hidden;
-            border: 14px solid #173f74;
-            background: #ffffff;
-            padding: 8px;
+        .cert-frame-inner {
+            padding: 4pt;
         }
 
-        .inner {
-            position: relative;
-            min-height: 640px;
-            border: 3px solid #c8a349;
-            padding: 34px 48px 26px;
+        .cert-body-table {
+            width: 100%;
+            border: 2pt solid #c5a059;
+            border-collapse: collapse;
             text-align: center;
         }
 
         .watermark {
             position: absolute;
-            top: 150px;
-            left: 50%;
-            width: 360px;
-            height: 360px;
-            margin-left: -180px;
-            opacity: 0.045;
+            top: 130pt;
+            left: 270pt;
+            width: 260pt;
+            height: 260pt;
+            opacity: 0.04;
             z-index: 0;
-        }
-
-        .content {
-            position: relative;
-            z-index: 1;
-        }
-
-        .header {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .logo-cell {
-            width: 110px;
-            text-align: center;
-            vertical-align: middle;
-        }
-
-        .logo {
-            width: 86px;
-            height: 86px;
-            object-fit: contain;
-        }
-
-        .dsa-logo {
-            border-radius: 999px;
-            border: 1px solid #d6dde8;
-        }
-
-        .school-name {
-            color: #173f74;
-            font-size: 15px;
-            font-weight: 700;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-        }
-
-        .department {
-            margin-top: 7px;
-            color: #64748b;
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 2.5px;
-            text-transform: uppercase;
-        }
-
-        .divider-row {
-            margin: 34px auto 0;
-            width: 520px;
-            color: #173f74;
-            font-size: 11px;
-            font-weight: 800;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-        }
-
-        .divider-row:before,
-        .divider-row:after {
-            content: "";
-            display: inline-block;
-            width: 110px;
-            height: 1px;
-            margin: 0 16px 3px;
-            background: #c8a349;
-        }
-
-        .certificate-word {
-            margin-top: 20px;
-            color: #173f74;
-            font-family: Georgia, "Times New Roman", serif;
-            font-size: 58px;
-            font-weight: 700;
-            line-height: 1;
-            letter-spacing: 1px;
-        }
-
-        .subtitle {
-            margin-top: 8px;
-            color: #9a7a22;
-            font-family: Georgia, "Times New Roman", serif;
-            font-size: 26px;
-            font-style: italic;
-        }
-
-        .presented {
-            margin-top: 38px;
-            color: #64748b;
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-        }
-
-        .student-name {
-            display: inline-block;
-            min-width: 560px;
-            margin-top: 16px;
-            padding-bottom: 8px;
-            border-bottom: 3px solid #c8a349;
-            color: #020617;
-            font-family: Georgia, "Times New Roman", serif;
-            font-size: 42px;
-            font-weight: 700;
-            line-height: 1.1;
-        }
-
-        .body-copy {
-            width: 760px;
-            margin: 26px auto 0;
-            color: #334155;
-            font-size: 17px;
-            line-height: 1.75;
-        }
-
-        .event-name {
-            color: #0f172a;
-            font-weight: 800;
-        }
-
-        .details {
-            width: 780px;
-            margin: 28px auto 0;
-            border: 1px solid #d7dde7;
-            border-collapse: collapse;
-            background: #f8fafc;
-            text-align: left;
-        }
-
-        .details td {
-            width: 33.333%;
-            padding: 11px 14px;
-            border: 1px solid #d7dde7;
-            vertical-align: top;
-        }
-
-        .label {
-            color: #64748b;
-            font-size: 9px;
-            font-weight: 800;
-            letter-spacing: 1.4px;
-            text-transform: uppercase;
-        }
-
-        .value {
-            margin-top: 5px;
-            color: #0f172a;
-            font-size: 12px;
-            font-weight: 700;
-            line-height: 1.35;
-        }
-
-        .signatures {
-            width: 760px;
-            margin: 46px auto 0;
-            border-collapse: collapse;
-        }
-
-        .signatures td {
-            width: 50%;
-            text-align: center;
-            vertical-align: top;
-        }
-
-        .signature-line {
-            width: 250px;
-            height: 38px;
-            margin: 0 auto 9px;
-            border-bottom: 1px solid #0f172a;
-        }
-
-        .signature-name {
-            color: #0f172a;
-            font-size: 13px;
-            font-weight: 800;
-        }
-
-        .signature-title {
-            margin-top: 4px;
-            color: #64748b;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-
-        .footer {
-            position: absolute;
-            right: 42px;
-            bottom: 24px;
-            left: 42px;
-            color: #64748b;
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: 1.8px;
-            text-transform: uppercase;
-        }
-
-        .footer-left {
-            float: left;
-        }
-
-        .footer-right {
-            float: right;
         }
     </style>
 </head>
 <body>
-    <div class="sheet">
-        <div class="certificate">
-            <div class="inner">
-                @if ($schoolLogo)
-                    <img class="watermark" src="{{ $schoolLogo }}" alt="">
-                @endif
+    <table class="cert-frame" cellpadding="0" cellspacing="0">
+        <tr>
+            <td class="cert-frame-inner">
+                <table class="cert-body-table" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td style="padding: 16pt 24pt 12pt; position: relative;">
+                            @if ($schoolLogo)
+                                <img class="watermark" src="{{ $schoolLogo }}" alt="">
+                            @endif
 
-                <div class="content">
-                    <table class="header">
-                        <tr>
-                            <td class="logo-cell">
-                                @if ($schoolLogo)
-                                    <img class="logo" src="{{ $schoolLogo }}" alt="School logo">
-                                @endif
-                            </td>
-                            <td>
-                                <div class="school-name">St. Rita's College of Balingasag</div>
-                                <div class="department">Department of Student Affairs</div>
-                            </td>
-                            <td class="logo-cell">
-                                @if ($dsaLogo)
-                                    <img class="logo dsa-logo" src="{{ $dsaLogo }}" alt="DSA logo">
-                                @endif
-                            </td>
-                        </tr>
-                    </table>
+                            <!-- Header Row -->
+                            <table style="width: 100%; border-collapse: collapse; position: relative; z-index: 1;">
+                                <tr>
+                                    <td style="width: 60pt; text-align: left; vertical-align: middle;">
+                                        @if ($schoolLogo)
+                                            <img src="{{ $schoolLogo }}" style="width: 48pt; height: 48pt; object-fit: contain;" alt="SRCB">
+                                        @endif
+                                    </td>
+                                    <td style="text-align: left; vertical-align: middle; padding-left: 8pt;">
+                                        <div style="color: #0c2340; font-size: 12pt; font-weight: bold; letter-spacing: 1.5pt; text-transform: uppercase;">
+                                            St. Rita's College of Balingasag
+                                        </div>
+                                        <div style="color: #64748b; font-size: 8pt; font-weight: bold; letter-spacing: 1pt; text-transform: uppercase; margin-top: 2pt;">
+                                            Department of Student Affairs
+                                        </div>
+                                    </td>
+                                    <td style="width: 60pt; text-align: right; vertical-align: middle;">
+                                        @if ($dsaLogo)
+                                            <img src="{{ $dsaLogo }}" style="width: 48pt; height: 48pt; border-radius: 50%; object-fit: cover;" alt="DSA">
+                                        @endif
+                                    </td>
+                                </tr>
+                            </table>
 
-                    <div class="divider-row">{{ $certificateType }}</div>
+                            <!-- Evaluation Completion Divider Badge -->
+                            <table style="width: 100%; margin: 10pt 0 6pt; border-collapse: collapse; position: relative; z-index: 1;">
+                                <tr>
+                                    <td style="text-align: right; width: 36%; vertical-align: middle;">
+                                        <div style="height: 1pt; background: #c5a059; width: 80pt; float: right; margin-right: 10pt;"></div>
+                                    </td>
+                                    <td style="text-align: center; width: 28%; vertical-align: middle; white-space: nowrap;">
+                                        <span style="font-size: 8pt; font-weight: 800; letter-spacing: 2pt; color: #0c2340; text-transform: uppercase;">
+                                            EVALUATION COMPLETION
+                                        </span>
+                                    </td>
+                                    <td style="text-align: left; width: 36%; vertical-align: middle;">
+                                        <div style="height: 1pt; background: #c5a059; width: 80pt; float: left; margin-left: 10pt;"></div>
+                                    </td>
+                                </tr>
+                            </table>
 
-                    <div class="certificate-word">Certificate</div>
-                    <div class="subtitle">of Evaluation Completion</div>
+                            <!-- Main Certificate Presentation Titles -->
+                            <div style="text-align: center; margin: 4pt 0; position: relative; z-index: 1;">
+                                <div style="font-family: Georgia, 'Times New Roman', serif; font-size: 30pt; font-weight: bold; color: #0c2340; letter-spacing: 2pt; line-height: 1; text-transform: uppercase;">
+                                    CERTIFICATE
+                                </div>
+                                <div style="font-family: Georgia, 'Times New Roman', serif; font-size: 13pt; font-style: italic; color: #b38f43; margin-top: 3pt;">
+                                    of Evaluation Completion
+                                </div>
+                            </div>
 
-                    <div class="presented">This certificate is proudly presented to</div>
-                    <div class="student-name">{{ $student->name }}</div>
+                            <!-- Recipient Presentation Block -->
+                            <div style="text-align: center; margin: 10pt auto 6pt; position: relative; z-index: 1;">
+                                <div style="font-size: 7.5pt; font-weight: bold; letter-spacing: 1.5pt; color: #94a3b8; text-transform: uppercase;">
+                                    THIS CERTIFICATE IS PROUDLY PRESENTED TO
+                                </div>
+                                <div style="display: inline-block; min-width: 380pt; border-bottom: 2pt solid #c5a059; padding-bottom: 3pt; margin-top: 4pt;">
+                                    <span style="font-family: Georgia, 'Times New Roman', serif; font-size: 22pt; font-weight: bold; color: #0c2340;">
+                                        {{ $certificate->student?->name ?? $student->name }}
+                                    </span>
+                                </div>
+                                <div style="font-size: 10pt; line-height: 1.4; color: #475569; width: 560pt; margin: 8pt auto 0;">
+                                    for successfully completing the event evaluation for
+                                    <strong style="color: #0f172a;">{{ $certificate->event?->event_name ?? $event->event_name }}</strong>.
+                                    This certificate serves as official proof of evaluation completion.
+                                </div>
+                            </div>
 
-                    <div class="body-copy">
-                        for successfully completing the event evaluation for
-                        <span class="event-name">{{ $event->event_name }}</span>.
-                        This certificate serves as official proof of evaluation completion.
-                    </div>
+                            <!-- 6-Column Metrics Table (Exact match to Preview) -->
+                            <table style="width: 100%; border-collapse: collapse; background-color: #f8fafc; border: 1pt solid #cbd5e1; margin-top: 14pt; position: relative; z-index: 1;">
+                                <tr>
+                                    <td style="width: 16.66%; text-align: center; padding: 6pt 2pt; border-right: 1pt solid #cbd5e1; vertical-align: middle;">
+                                        <div style="font-size: 6.5pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5pt;">Certificate Number</div>
+                                        <div style="font-size: 8pt; font-weight: bold; color: #0f172a; margin-top: 2pt;">{{ $certificate->certificate_number }}</div>
+                                    </td>
+                                    <td style="width: 16.66%; text-align: center; padding: 6pt 2pt; border-right: 1pt solid #cbd5e1; vertical-align: middle;">
+                                        <div style="font-size: 6.5pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5pt;">Student ID</div>
+                                        <div style="font-size: 8pt; font-weight: bold; color: #0f172a; margin-top: 2pt;">{{ $certificate->student?->student_id ?? $student->student_id }}</div>
+                                    </td>
+                                    <td style="width: 16.66%; text-align: center; padding: 6pt 2pt; border-right: 1pt solid #cbd5e1; vertical-align: middle;">
+                                        <div style="font-size: 6.5pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5pt;">Event Date</div>
+                                        <div style="font-size: 8pt; font-weight: bold; color: #0f172a; margin-top: 2pt;">{{ $eventDate }}</div>
+                                    </td>
+                                    <td style="width: 16.66%; text-align: center; padding: 6pt 2pt; border-right: 1pt solid #cbd5e1; vertical-align: middle;">
+                                        <div style="font-size: 6.5pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5pt;">Issue Date</div>
+                                        <div style="font-size: 8pt; font-weight: bold; color: #0f172a; margin-top: 2pt;">{{ $issueDateFormatted }}</div>
+                                    </td>
+                                    <td style="width: 16.66%; text-align: center; padding: 6pt 2pt; border-right: 1pt solid #cbd5e1; vertical-align: middle;">
+                                        <div style="font-size: 6.5pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5pt;">Issued By</div>
+                                        <div style="font-size: 7.5pt; font-weight: bold; color: #0f172a; margin-top: 2pt;">{{ $certificate->issued_by ?: 'Department of Student Affairs' }}</div>
+                                    </td>
+                                    <td style="width: 16.66%; text-align: center; padding: 6pt 2pt; vertical-align: middle;">
+                                        <div style="font-size: 6.5pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5pt;">Certificate Type</div>
+                                        <div style="font-size: 7.5pt; font-weight: bold; color: #0f172a; margin-top: 2pt;">{{ $certificateType }}</div>
+                                    </td>
+                                </tr>
+                            </table>
 
-                    <table class="details">
-                        <tr>
-                            <td>
-                                <div class="label">Certificate Number</div>
-                                <div class="value">{{ $certificate->certificate_number }}</div>
-                            </td>
-                            <td>
-                                <div class="label">Student ID</div>
-                                <div class="value">{{ $student->student_id }}</div>
-                            </td>
-                            <td>
-                                <div class="label">Issue Date</div>
-                                <div class="value">{{ $certificate->issue_date->format('F d, Y') }}</div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="label">Event Date</div>
-                                <div class="value">{{ $eventDate ?: 'N/A' }}</div>
-                            </td>
-                            <td>
-                                <div class="label">Issued By</div>
-                                <div class="value">{{ $certificate->issued_by }}</div>
-                            </td>
-                            <td>
-                                <div class="label">Certificate Type</div>
-                                <div class="value">{{ $certificateType }}</div>
-                            </td>
-                        </tr>
-                    </table>
+                            <!-- Signatures & Decorative Seal Base Row Layout -->
+                            <table style="width: 100%; border-collapse: collapse; margin-top: 18pt; position: relative; z-index: 1;">
+                                <tr>
+                                    <!-- 1. Left: Gold Ribbon Medal Badge -->
+                                    <td style="width: 25%; text-align: left; vertical-align: middle; padding-left: 12pt;">
+                                        <table cellpadding="0" cellspacing="0" style="margin: 0;">
+                                            <tr>
+                                                <td style="text-align: center;">
+                                                    <div style="width: 36pt; height: 36pt; background-color: #c5a059; border: 2pt solid #ffffff; border-radius: 50%; text-align: center; line-height: 32pt; color: #ffffff; font-size: 18pt;">
+                                                        &#9733;
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
 
-                    <table class="signatures">
-                        <tr>
-                            <td>
-                                <div class="signature-line"></div>
-                                <div class="signature-name">{{ $certificate->signature_name }}</div>
-                                <div class="signature-title">{{ $certificate->signature_title }}</div>
-                            </td>
-                            <td>
-                                <div class="signature-line"></div>
-                                <div class="signature-name">Official Registrar</div>
-                                <div class="signature-title">Records Verification</div>
-                            </td>
-                        </tr>
-                    </table>
-                </div>
+                                    <!-- 2. Center: Dean of Student Affairs Signature -->
+                                    <td style="width: 50%; text-align: center; vertical-align: top;">
+                                        <div style="width: 200pt; margin: 0 auto; border-bottom: 1.5pt solid #334155; padding-bottom: 2pt; font-size: 11pt; font-weight: bold; color: #0c2340;">
+                                            {{ $certificate->signature_name }}
+                                        </div>
+                                        <div style="font-size: 7.5pt; font-weight: bold; color: #334155; margin-top: 3pt; text-transform: capitalize;">
+                                            {{ $certificate->signature_title ?: 'Dean of Student Affairs' }}
+                                        </div>
+                                    </td>
 
-                <div class="footer">
-                    <span class="footer-left">Verified through DSAMS</span>
-                    <span class="footer-right">{{ $certificate->certificate_number }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
+                                    <!-- 3. Right: Symmetrical Balance Spacer -->
+                                    <td style="width: 25%;"></td>
+                                </tr>
+                            </table>
+
+                            <!-- Bottom Verification Footer Tag -->
+                            <table style="width: 100%; border-collapse: collapse; margin-top: 14pt; border-top: 1pt solid #e2e8f0; padding-top: 4pt; position: relative; z-index: 1;">
+                                <tr>
+                                    <td style="text-align: left; font-size: 6.5pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 1pt;">
+                                        Verified through DSAMS
+                                    </td>
+                                    <td style="text-align: right; font-size: 6.5pt; font-weight: bold; color: #94a3b8; text-transform: uppercase; letter-spacing: 1pt;">
+                                        {{ $certificate->certificate_number }}
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>

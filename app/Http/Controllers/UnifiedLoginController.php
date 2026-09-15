@@ -47,7 +47,7 @@ class UnifiedLoginController extends Controller
             $request->session()->regenerate();
             $request->session()->flash('status', $successMessages['student']);
             $request->session()->flash('success', $successMessages['student']);
-            return redirect()->intended($dashboardRoutes['student']);
+            return redirect($dashboardRoutes['student']);
         }
         if (Auth::guard('student')->attempt(['email' => $identifier, 'password' => $password], $remember)) {
             $user = Auth::guard('student')->user();
@@ -63,15 +63,25 @@ class UnifiedLoginController extends Controller
             $request->session()->regenerate();
             $request->session()->flash('status', $successMessages['student']);
             $request->session()->flash('success', $successMessages['student']);
-            return redirect()->intended($dashboardRoutes['student']);
+            return redirect($dashboardRoutes['student']);
         }
 
         // Try admin guard with email
         if (Auth::guard('admin')->attempt(['email' => $identifier, 'password' => $password], $remember)) {
+            $admin = Auth::guard('admin')->user();
+            if ($admin->isHandoverExpired() || $admin->is_active === false) {
+                if ($admin->is_active !== false) {
+                    $admin->update(['is_active' => false]);
+                }
+                Auth::guard('admin')->logout();
+                throw ValidationException::withMessages([
+                    'identifier' => 'This administrator account has expired following the 3-day handover transition period. Please sign in using the new administrator account.',
+                ]);
+            }
             $request->session()->regenerate();
             $request->session()->flash('status', $successMessages['admin']);
             $request->session()->flash('success', $successMessages['admin']);
-            return redirect()->intended($dashboardRoutes['admin']);
+            return redirect($dashboardRoutes['admin']);
         }
 
         // Try program_head guard with email
@@ -89,7 +99,7 @@ class UnifiedLoginController extends Controller
             $request->session()->regenerate();
             $request->session()->flash('status', $successMessages['program_head']);
             $request->session()->flash('success', $successMessages['program_head']);
-            return redirect()->intended($dashboardRoutes['program_head']);
+            return redirect($dashboardRoutes['program_head']);
         }
 
         // If none of the guards worked, throw validation exception

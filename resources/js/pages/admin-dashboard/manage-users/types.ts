@@ -40,8 +40,12 @@ export type UserRow = {
     is_archived?: boolean;
     created_at?: string | null;
     updated_at?: string | null;
-    userType?: 'student' | 'program_head' | string;
+    userType?: 'student' | 'program_head' | 'admin' | string;
     officer_features?: string[] | null;
+    handover_expires_at?: string | null;
+    handover_expires_at_formatted?: string | null;
+    is_handover_active?: boolean;
+    is_handover_expired?: boolean;
 };
 
 export type ProgramRow = {

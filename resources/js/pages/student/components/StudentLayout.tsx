@@ -1,6 +1,7 @@
 import { AppShell } from '@/components/app-shell';
 import PendingEvaluationsGateModal from '@/components/PendingEvaluationsGateModal';
 import type { AppLayoutProps } from '@/types';
+import { StudentBottomNavBar } from './StudentBottomNavBar';
 import { StudentHeader } from './StudentHeader';
 
 export default function StudentLayout({
@@ -11,7 +12,7 @@ export default function StudentLayout({
         <AppShell variant="header">
             <StudentHeader />
             <PendingEvaluationsGateModal />
-            <div className="relative min-h-screen overflow-x-hidden bg-slate-50 transition-colors duration-500 dark:bg-[#020617]">
+            <div className="relative min-h-screen overflow-x-hidden bg-slate-50 pb-24 transition-colors duration-500 lg:pb-8 dark:bg-[#020617]">
                 {/* Visual Depth Layers - Mesh Gradients */}
                 <div className="pointer-events-none fixed inset-0 overflow-hidden">
                     <div className="absolute top-[-10%] left-[-10%] h-[50%] w-[50%] animate-pulse rounded-full bg-blue-600/10 mix-blend-multiply blur-[120px] dark:bg-blue-600/5 dark:mix-blend-soft-light" />
@@ -23,6 +24,7 @@ export default function StudentLayout({
                     {children}
                 </div>
             </div>
+            <StudentBottomNavBar />
         </AppShell>
     );
 }

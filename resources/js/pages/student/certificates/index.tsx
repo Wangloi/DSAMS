@@ -67,6 +67,7 @@ type PageProps = {
         course: string;
         year_level: string;
     };
+    activeAdminName?: string;
     certificates: Certificate[];
     availableCertificates: AvailableCertificate[];
     highlightCertificateId?: string | number | null;
@@ -670,14 +671,14 @@ export default function CertificatesPage() {
             </StudentLayout>
 
             <Dialog open={showDetails} onOpenChange={setShowDetails}>
-                <DialogContent className="fixed top-[50%] left-[50%] z-50 w-[95vw] translate-x-[-50%] translate-y-[-50%] overflow-hidden border bg-white p-6 shadow-2xl duration-200 sm:max-w-[825px] sm:rounded-xl">
+                <DialogContent className="fixed top-[50%] left-[50%] z-50 w-[95vw] sm:max-w-[640px] md:max-w-[680px] lg:max-w-[700px] translate-x-[-50%] translate-y-[-50%] max-h-[95vh] overflow-y-auto border bg-white p-3 sm:p-4 shadow-2xl duration-200 rounded-xl sm:rounded-2xl dark:bg-slate-900 dark:border-slate-800">
                     {/* Header Controls */}
-                    <div className="mb-4 flex items-center justify-between border-b border-gray-100 pb-3 print:hidden">
+                    <div className="mb-1.5 flex items-center justify-between border-b border-gray-100 pb-1.5 print:hidden dark:border-slate-800">
                         <div>
-                            <h3 className="text-lg font-bold text-slate-900">
+                            <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
                                 Certificate Details
                             </h3>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">
                                 View, print, or download your evaluation
                                 completion certificate.
                             </p>
@@ -685,34 +686,34 @@ export default function CertificatesPage() {
                     </div>
 
                     {selectedCertificate && (
-                        <div className="certificate-print-area flex w-full items-center justify-center rounded-lg bg-[#0d1e36] p-4 print:rounded-none print:bg-white print:p-0">
+                        <div className="certificate-print-area flex w-full items-center justify-center rounded-lg bg-[#0d1e36] p-1.5 sm:p-2 print:rounded-none print:bg-white print:p-0">
                             {/* Outer Frame Box Container */}
-                            <div className="relative aspect-[1.414/1] w-full max-w-[880px] rounded-none border-[14px] border-[#0c2340] bg-white p-5 shadow-xl print:border-[12px] print:shadow-none">
+                            <div className="relative aspect-auto sm:aspect-[1.414/1] w-full max-w-[660px] rounded-none border-[4px] sm:border-[6px] md:border-[8px] border-[#0c2340] bg-white p-2 sm:p-2.5 shadow-lg print:border-[12px] print:shadow-none print:aspect-auto">
                                 {/* Inner Accent Border Line */}
-                                <div className="relative flex h-full w-full flex-col justify-between border-[2px] border-[#c5a059] p-5">
+                                <div className="relative flex h-full w-full flex-col justify-between border-[1px] sm:border-[1.5px] border-[#c5a059] p-1.5 sm:p-2 md:p-2.5 gap-1">
                                     {/* Watermark Logo Background Layer */}
                                     <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.03]">
                                         <img
                                             src="/images/SRCB.png"
                                             alt=""
-                                            className="h-64 w-64 object-contain"
+                                            className="h-24 w-24 sm:h-36 sm:w-36 md:h-44 md:w-44 object-contain"
                                         />
                                     </div>
 
                                     {/* Top Institutional Heading Frame */}
-                                    <div className="relative z-10 flex items-center justify-between">
-                                        <div className="flex items-center space-x-3.5">
+                                    <div className="relative z-10 flex items-center justify-between gap-2">
+                                        <div className="flex items-center space-x-2">
                                             <img
                                                 src="/images/SRCB.png"
                                                 alt="School logo"
-                                                className="h-12 w-12 object-contain"
+                                                className="h-5 w-5 sm:h-7 sm:w-7 md:h-8 md:w-8 object-contain shrink-0"
                                             />
                                             <div>
-                                                <h4 className="text-[10px] font-bold tracking-[0.18em] text-[#0c2340] uppercase">
+                                                <h4 className="text-[6.5px] sm:text-[7.5px] md:text-[8.5px] font-bold tracking-wider text-[#0c2340] uppercase">
                                                     St. Rita's College of
                                                     Balingasag
                                                 </h4>
-                                                <p className="mt-0.5 text-[8px] font-semibold tracking-[0.12em] text-slate-500 uppercase">
+                                                <p className="mt-0.5 text-[5px] sm:text-[6px] md:text-[7px] font-semibold text-slate-500 uppercase">
                                                     Department of Student
                                                     Affairs
                                                 </p>
@@ -721,40 +722,40 @@ export default function CertificatesPage() {
                                         <img
                                             src="/images/DSA.png"
                                             alt="DSA logo"
-                                            className="h-12 w-12 rounded-full object-cover shadow-sm ring-2 ring-slate-100"
+                                            className="h-5 w-5 sm:h-7 sm:w-7 md:h-8 md:w-8 rounded-full object-cover shadow-sm ring-1 ring-slate-100 shrink-0"
                                         />
                                     </div>
 
                                     {/* Badge Certificate Context Type Row */}
-                                    <div className="relative z-10 my-0.5 flex items-center justify-center gap-3 text-center">
-                                        <div className="h-[1px] w-12 bg-[#c5a059]/60" />
-                                        <span className="text-[8px] font-extrabold tracking-[0.25em] text-[#0c2340] uppercase">
+                                    <div className="relative z-10 my-0.5 flex items-center justify-center gap-2 text-center">
+                                        <div className="h-[1px] w-5 sm:w-7 md:w-9 bg-[#c5a059]/60" />
+                                        <span className="text-[5.5px] sm:text-[6.5px] md:text-[7px] font-extrabold tracking-widest text-[#0c2340] uppercase">
                                             EVALUATION COMPLETION
                                         </span>
-                                        <div className="h-[1px] w-12 bg-[#c5a059]/60" />
+                                        <div className="h-[1px] w-5 sm:w-7 md:w-9 bg-[#c5a059]/60" />
                                     </div>
 
                                     {/* Main Component Presentation Titles */}
                                     <div className="relative z-10 my-0.5 text-center">
-                                        <h2 className="font-serif text-[34px] leading-none font-bold tracking-wide text-[#0c2340]">
+                                        <h2 className="font-serif text-sm sm:text-lg md:text-xl leading-none font-bold tracking-wide text-[#0c2340]">
                                             CERTIFICATE
                                         </h2>
-                                        <p className="mt-0.5 font-serif text-[16px] text-[#b38f43] italic">
+                                        <p className="mt-0.5 font-serif text-[8px] sm:text-[9.5px] md:text-[11px] text-[#b38f43] italic">
                                             of Evaluation Completion
                                         </p>
                                     </div>
 
                                     {/* Nominated Recipient Context Text Layout block */}
-                                    <div className="relative z-10 mx-auto my-1 max-w-[85%] text-center">
-                                        <p className="mb-0.5 text-[8px] font-medium tracking-[0.16em] text-slate-400 uppercase">
+                                    <div className="relative z-10 mx-auto my-0.5 max-w-[95%] sm:max-w-[85%] text-center">
+                                        <p className="mb-0.5 text-[5px] sm:text-[6px] md:text-[7px] font-medium tracking-wider text-slate-400 uppercase">
                                             THIS CERTIFICATE IS PROUDLY
                                             PRESENTED TO
                                         </p>
-                                        <h1 className="inline-block min-w-[70%] border-b border-[#c5a059] px-4 pb-1 font-serif text-[24px] font-bold text-[#0c2340]">
+                                        <h1 className="inline-block min-w-[60%] border-b border-[#c5a059] px-2 sm:px-4 pb-0.5 font-serif text-xs sm:text-sm md:text-base font-bold text-[#0c2340]">
                                             {selectedCertificate.student_name ||
                                                 props.student.name}
                                         </h1>
-                                        <p className="mt-2 text-[10px] leading-relaxed font-normal text-slate-600">
+                                        <p className="mt-0.5 sm:mt-1 text-[6.5px] sm:text-[7.5px] md:text-[8px] leading-tight font-normal text-slate-600">
                                             for successfully completing the
                                             event evaluation for{' '}
                                             <span className="font-bold text-slate-900">
@@ -767,68 +768,68 @@ export default function CertificatesPage() {
                                     </div>
 
                                     {/* Detailed Badge Metrics Meta Grid */}
-                                    <div className="relative z-10 my-2">
-                                        <div className="grid grid-cols-6 rounded-xl border border-slate-200/80 bg-slate-50/50 p-2 text-center shadow-sm">
+                                    <div className="relative z-10 my-0.5">
+                                        <div className="grid grid-cols-2 sm:grid-cols-6 gap-y-0.5 sm:gap-y-0 rounded-md border border-slate-200/80 bg-slate-50/60 p-1 text-center shadow-xs">
                                             <div className="flex flex-col items-center justify-center px-1">
-                                                <Fingerprint className="mb-0.5 h-3.5 w-3.5 text-[#b38f43]" />
-                                                <div className="text-[6.5px] font-bold tracking-wider text-slate-400 uppercase">
+                                                <Fingerprint className="mb-0.5 h-2 w-2 sm:h-2.5 sm:w-2.5 text-[#b38f43]" />
+                                                <div className="text-[4.5px] sm:text-[5.5px] md:text-[6px] font-bold tracking-wider text-slate-400 uppercase">
                                                     Certificate Number
                                                 </div>
-                                                <div className="mt-0.5 text-[8px] font-bold tracking-tight text-slate-800">
+                                                <div className="mt-0.5 text-[5.5px] sm:text-[6.5px] md:text-[7px] font-bold tracking-tight text-slate-800 break-all sm:break-normal">
                                                     {
                                                         selectedCertificate.certificate_number
                                                     }
                                                 </div>
                                             </div>
                                             <div className="flex flex-col items-center justify-center border-l border-slate-200 px-1">
-                                                <UserSquare2 className="mb-0.5 h-3.5 w-3.5 text-[#b38f43]" />
-                                                <div className="text-[6.5px] font-bold tracking-wider text-slate-400 uppercase">
+                                                <UserSquare2 className="mb-0.5 h-2 w-2 sm:h-2.5 sm:w-2.5 text-[#b38f43]" />
+                                                <div className="text-[4.5px] sm:text-[5.5px] md:text-[6px] font-bold tracking-wider text-slate-400 uppercase">
                                                     Student ID
                                                 </div>
-                                                <div className="mt-0.5 text-[8px] font-bold text-slate-800">
+                                                <div className="mt-0.5 text-[5.5px] sm:text-[6.5px] md:text-[7px] font-bold text-slate-800">
                                                     {selectedCertificate.student_id ||
                                                         props.student
                                                             .student_id}
                                                 </div>
                                             </div>
-                                            <div className="flex flex-col items-center justify-center border-l border-slate-200 px-1">
-                                                <CalendarDays className="mb-0.5 h-3.5 w-3.5 text-[#b38f43]" />
-                                                <div className="text-[6.5px] font-bold tracking-wider text-slate-400 uppercase">
+                                            <div className="flex flex-col items-center justify-center border-t sm:border-t-0 sm:border-l border-slate-200 pt-0.5 sm:pt-0 px-1">
+                                                <CalendarDays className="mb-0.5 h-2 w-2 sm:h-2.5 sm:w-2.5 text-[#b38f43]" />
+                                                <div className="text-[4.5px] sm:text-[5.5px] md:text-[6px] font-bold tracking-wider text-slate-400 uppercase">
                                                     Event Date
                                                 </div>
-                                                <div className="mt-0.5 text-[8px] font-bold text-slate-800">
+                                                <div className="mt-0.5 text-[5.5px] sm:text-[6.5px] md:text-[7px] font-bold text-slate-800">
                                                     {selectedCertificate.event_date ||
                                                         'N/A'}
                                                 </div>
                                             </div>
-                                            <div className="flex flex-col items-center justify-center border-l border-slate-200 px-1">
-                                                <CalendarCheck2 className="mb-0.5 h-3.5 w-3.5 text-[#b38f43]" />
-                                                <div className="text-[6.5px] font-bold tracking-wider text-slate-400 uppercase">
+                                            <div className="flex flex-col items-center justify-center border-t sm:border-t-0 border-l sm:border-l-0 md:border-l border-slate-200 pt-0.5 sm:pt-0 px-1">
+                                                <CalendarCheck2 className="mb-0.5 h-2 w-2 sm:h-2.5 sm:w-2.5 text-[#b38f43]" />
+                                                <div className="text-[4.5px] sm:text-[5.5px] md:text-[6px] font-bold tracking-wider text-slate-400 uppercase">
                                                     Issue Date
                                                 </div>
-                                                <div className="mt-0.5 text-[8px] font-bold text-slate-800">
+                                                <div className="mt-0.5 text-[5.5px] sm:text-[6.5px] md:text-[7px] font-bold text-slate-800">
                                                     {
                                                         selectedCertificate.issue_date
                                                     }
                                                 </div>
                                             </div>
-                                            <div className="flex flex-col items-center justify-center border-l border-slate-200 px-1">
-                                                <ShieldCheck className="mb-0.5 h-3.5 w-3.5 text-[#b38f43]" />
-                                                <div className="text-[6.5px] font-bold tracking-wider text-slate-400 uppercase">
+                                            <div className="flex flex-col items-center justify-center border-t sm:border-t-0 sm:border-l border-slate-200 pt-0.5 sm:pt-0 px-1">
+                                                <ShieldCheck className="mb-0.5 h-2 w-2 sm:h-2.5 sm:w-2.5 text-[#b38f43]" />
+                                                <div className="text-[4.5px] sm:text-[5.5px] md:text-[6px] font-bold tracking-wider text-slate-400 uppercase">
                                                     Issued By
                                                 </div>
-                                                <div className="mt-0.5 max-w-[90%] text-[7.5px] leading-tight font-bold text-slate-800">
+                                                <div className="mt-0.5 max-w-[90%] text-[5.5px] sm:text-[6.5px] md:text-[7px] leading-tight font-bold text-slate-800">
                                                     {
                                                         selectedCertificate.issued_by
                                                     }
                                                 </div>
                                             </div>
-                                            <div className="flex flex-col items-center justify-center border-l border-slate-200 px-1">
-                                                <FileSpreadsheet className="mb-0.5 h-3.5 w-3.5 text-[#b38f43]" />
-                                                <div className="text-[6.5px] font-bold tracking-wider text-slate-400 uppercase">
+                                            <div className="flex flex-col items-center justify-center border-t sm:border-t-0 border-l border-slate-200 pt-0.5 sm:pt-0 px-1">
+                                                <FileSpreadsheet className="mb-0.5 h-2 w-2 sm:h-2.5 sm:w-2.5 text-[#b38f43]" />
+                                                <div className="text-[4.5px] sm:text-[5.5px] md:text-[6px] font-bold tracking-wider text-slate-400 uppercase">
                                                     Certificate Type
                                                 </div>
-                                                <div className="mt-0.5 text-[7.5px] leading-tight font-bold text-slate-800">
+                                                <div className="mt-0.5 text-[5.5px] sm:text-[6.5px] md:text-[7px] leading-tight font-bold text-slate-800">
                                                     {selectedCertificate.certificate_type.replace(
                                                         '_',
                                                         ' ',
@@ -839,42 +840,45 @@ export default function CertificatesPage() {
                                     </div>
 
                                     {/* Signatures & Decorative Medal Base Row Layout */}
-                                    <div className="relative z-10 mt-2 flex items-center justify-between px-6">
+                                    <div className="relative z-10 mt-0.5 flex items-center justify-between px-2">
                                         {/* 1. Left Column: Ribbon Wrapper */}
-                                        <div className="relative flex w-[180px] items-center justify-start">
-                                            <div className="relative -mt-4 flex flex-col items-center justify-center">
-                                                <div className="z-20 flex h-11 w-11 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-[#dfba6b] via-[#c5a059] to-[#ac843b] shadow-md ring-1 ring-[#c5a059]">
-                                                    <Award className="h-5.5 w-5.5 text-white" />
+                                        <div className="relative flex w-auto sm:w-[90px] md:w-[120px] items-center justify-start shrink-0">
+                                            <div className="relative -mt-1 sm:-mt-2 flex flex-col items-center justify-center">
+                                                <div className="z-20 flex h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-[#dfba6b] via-[#c5a059] to-[#ac843b] shadow-md ring-1 ring-[#c5a059]">
+                                                    <Award className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-3.5 md:w-3.5 text-white" />
                                                 </div>
                                                 {/* Ribbon Tails */}
-                                                <div className="absolute top-7 z-10 flex space-x-1.5">
-                                                    <div className="clip-ribbon h-8 w-2.5 origin-top -rotate-12 transform bg-[#ac843b]" />
-                                                    <div className="clip-ribbon h-8 w-2.5 origin-top rotate-12 transform bg-[#8c6621]" />
+                                                <div className="absolute top-3.5 sm:top-4 z-10 flex space-x-0.5">
+                                                    <div className="clip-ribbon h-3 sm:h-3.5 w-1 origin-top -rotate-12 transform bg-[#ac843b]" />
+                                                    <div className="clip-ribbon h-3 sm:h-3.5 w-1 origin-top rotate-12 transform bg-[#8c6621]" />
                                                 </div>
                                             </div>
                                         </div>
 
                                         {/* 2. Center Column: Signature Wrapper */}
-                                        <div className="flex flex-1 flex-col items-center justify-center text-center">
-                                            <div className="inline-block min-w-[200px] border-b border-slate-400/80 px-4 pb-1 text-[10px] font-bold text-slate-900">
-                                                {
-                                                    selectedCertificate.signature_name
-                                                }
+                                        <div className="flex flex-1 flex-col items-center justify-center text-center px-2">
+                                            <div className="inline-block min-w-[90px] sm:min-w-[120px] md:min-w-[150px] border-b border-slate-400/80 px-2 pb-0.5 text-[7px] sm:text-[8px] md:text-[9px] font-bold text-slate-900">
+                                                {selectedCertificate.signature_name &&
+                                                selectedCertificate.signature_name !==
+                                                    'DSA Director'
+                                                    ? selectedCertificate.signature_name
+                                                    : props.activeAdminName ||
+                                                      'Rey John N. Bongcas'}
                                             </div>
-                                            <div className="mt-1 text-[7.5px] font-bold text-slate-800">
+                                            <div className="mt-0.5 text-[5px] sm:text-[6px] md:text-[6.5px] font-bold text-slate-800">
                                                 Dean of Student Affairs
                                             </div>
                                         </div>
 
                                         {/* 3. Right Column: Balance Spacer */}
                                         <div
-                                            className="w-[180px] shrink-0"
+                                            className="hidden sm:block w-[90px] md:w-[120px] shrink-0"
                                             aria-hidden="true"
                                         ></div>
                                     </div>
 
                                     {/* Bottom Verification Footer Tag */}
-                                    <div className="mt-2 flex items-center justify-between border-t border-slate-100 pt-1 text-[6.5px] font-semibold tracking-[0.15em] text-slate-400 uppercase">
+                                    <div className="mt-0.5 flex items-center justify-between border-t border-slate-100 pt-0.5 text-[4.5px] sm:text-[5.5px] font-semibold tracking-wider text-slate-400 uppercase">
                                         <span>Verified through DSAMS</span>
                                         <span>
                                             {
@@ -889,29 +893,31 @@ export default function CertificatesPage() {
 
                     {/* Modal Controls Actions Bar */}
                     {selectedCertificate && (
-                        <div className="mt-4 flex justify-end gap-2.5 border-t border-gray-100 pt-3 print:hidden">
+                        <div className="mt-2 flex flex-col-reverse sm:flex-row justify-end gap-2 border-t border-gray-100 pt-2 print:hidden dark:border-slate-800">
                             <Button
                                 variant="outline"
+                                size="sm"
                                 onClick={printCertificate}
-                                className="gap-2 border-slate-200 text-slate-700 hover:text-slate-900"
+                                className="h-8 w-full sm:w-auto gap-1.5 border-slate-200 text-xs text-slate-700 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:text-white"
                             >
-                                <Printer className="h-4 w-4" />
+                                <Printer className="h-3.5 w-3.5" />
                                 Print
                             </Button>
 
                             <Button
+                                size="sm"
                                 onClick={() =>
                                     downloadCertificate(selectedCertificate.id)
                                 }
                                 disabled={
                                     downloading === selectedCertificate.id
                                 }
-                                className="gap-2 bg-[#0c2340] text-white hover:bg-[#14325c]"
+                                className="h-8 w-full sm:w-auto gap-1.5 bg-[#0c2340] text-xs text-white hover:bg-[#14325c] dark:bg-blue-600 dark:hover:bg-blue-700"
                             >
                                 {downloading === selectedCertificate.id ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                 ) : (
-                                    <Download className="h-4 w-4" />
+                                    <Download className="h-3.5 w-3.5" />
                                 )}
                                 Download
                             </Button>

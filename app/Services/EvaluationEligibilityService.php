@@ -239,6 +239,9 @@ class EvaluationEligibilityService
             return $existingCertificate;
         }
 
+        $admin = \App\Models\AdminUser::query()->first();
+        $adminName = $admin?->name ?? 'Rey John N. Bongcas';
+
         return Certificate::create([
             'student_id' => $student->id,
             'event_id' => $event->id,
@@ -249,8 +252,8 @@ class EvaluationEligibilityService
             'description' => 'This certifies that the student has completed the evaluation for '.$event->event_name,
             'issue_date' => now(),
             'issued_by' => 'Department of Student Affairs',
-            'signature_name' => 'DSA Director',
-            'signature_title' => 'Director, Student Affairs',
+            'signature_name' => $adminName,
+            'signature_title' => 'Dean of Student Affairs',
             'is_generated' => false,
         ]);
     }

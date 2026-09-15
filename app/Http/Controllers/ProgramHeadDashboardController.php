@@ -39,9 +39,6 @@ class ProgramHeadDashboardController extends Controller
         $violationsByYearLevel = $violationsData['by_year_level'];
         $totalViolationsCount = $violationsData['total'];
 
-        // Recent notifications for the bell icon (latest announcements for program heads)
-        $recentNotifications = $this->getRecentNotifications();
-
         return Inertia::render('ProgramHeadDashboard', [
             'user'                  => $programHead,
             'program'               => $program,
@@ -52,7 +49,6 @@ class ProgramHeadDashboardController extends Controller
             'attendanceRows'        => $attendanceRows,
             'violationsByYearLevel' => $violationsByYearLevel,
             'totalViolationsCount'  =>  $totalViolationsCount,
-            'recentNotifications'   => $recentNotifications,
         ]);
     }
 
@@ -135,13 +131,10 @@ class ProgramHeadDashboardController extends Controller
                 ->all();
         }
 
-        $recentNotifications = $this->getRecentNotifications();
-
         return Inertia::render('program-head/StudentsList', [
             'user' => $programHead,
             'program' => $program,
             'students' => $students,
-            'recentNotifications' => $recentNotifications,
         ]);
     }
 
@@ -543,34 +536,6 @@ class ProgramHeadDashboardController extends Controller
                     'title' => $title,
                     'subtitle' => $subtitle,
                     'time' => $log->created_at?->diffForHumans() ?? '',
-                ];
-            })
-            ->values()
-            ->all();
-    }
-
-    private function getRecentNotifications(): array
-    {
-        if (!Schema::hasTable('announcements')) {
-            return [];
-        }
-
-        return Announcement::query()
-            ->where('is_archived', false)
-            ->where(function ($q) {
-                $q->where('target_audience', 'all')
-                  ->orWhere('target_audience', 'head');
-            })
-            ->orderByDesc('created_at')
-            ->limit(10)
-            ->get()
-            ->map(function ($a) {
-                return [
-                    'id'       => (string) $a->id,
-                    'type'     => 'announcement',
-                    'title'    => (string) $a->title,
-                    'subtitle' => (string) ($a->content ?? ''),
-                    'timeAgo'  => $a->created_at?->diffForHumans() ?? '',
                 ];
             })
             ->values()

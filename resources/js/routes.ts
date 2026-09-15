@@ -2,6 +2,8 @@ export const landing = () => '/';
 export const home = () => '/';
 export const features = () => '/features';
 export const about = () => '/about';
+export const help = () => '/help';
+export const sitemap = () => '/sitemap';
 export const getStarted = () => '/get-started';
 export const dashboard = () => '/dashboard';
 export const studentDashboard = () => '/student-dashboard';

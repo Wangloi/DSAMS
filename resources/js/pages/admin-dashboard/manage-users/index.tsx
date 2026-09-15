@@ -5,6 +5,7 @@ import type { BreadcrumbItem } from '@/types';
 import Swal from 'sweetalert2';
 
 import AdminLayout from '../admin-layout';
+import AddAdminDialog from './AddAdminDialog';
 import AddEditUserDialog from './AddEditUserDialog';
 import AddProgramHeadDialog from './AddProgramHeadDialog';
 import BulkActionsModal from './BulkActionsModal';
@@ -152,6 +153,7 @@ export default function AdminManageUsersPage() {
     const [viewOpen, setViewOpen] = useState(false);
     const [viewStudent, setViewStudent] = useState<UserRow | null>(null);
     const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
+    const [adminOpen, setAdminOpen] = useState(false);
     const [bulkAddOpen, setBulkAddOpen] = useState(false);
     const [bulkModalOpen, setBulkModalOpen] = useState(false);
     const [bulkYearLevelOpen, setBulkYearLevelOpen] = useState(false);
@@ -333,6 +335,7 @@ export default function AdminManageUsersPage() {
                         pendingResetsCount={pendingResetsCount}
                         openCreateModal={openCreateModal}
                         openCreatePHModal={openCreatePHModal}
+                        openCreateAdminModal={() => setAdminOpen(true)}
                         openBulkModal={() => setBulkModalOpen(true)}
                         openCreateProgramModal={() =>
                             setIsCreateProgramModalOpen(true)
@@ -428,6 +431,11 @@ export default function AdminManageUsersPage() {
                 setForm={setForm}
                 onClose={closeModal}
                 onSubmit={submitProgramHead}
+            />
+
+            <AddAdminDialog
+                open={adminOpen}
+                onOpenChange={setAdminOpen}
             />
 
             <BulkAddUsersDialog

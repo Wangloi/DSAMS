@@ -21,6 +21,7 @@ export default function LandingNavbar({ isAuthed }: { isAuthed: boolean }) {
     const isLinkActive = (targetUrl: string) => {
         // If targetUrl is an exact path like '/help'
         if (targetUrl === '/help' && url.startsWith('/help')) return true;
+        if (targetUrl === '/sitemap' && url.startsWith('/sitemap')) return true;
         if (targetUrl === '/about' && url.startsWith('/about')) return true;
         if (targetUrl === '/features' && url.startsWith('/features'))
             return true;

@@ -128,8 +128,13 @@ io.on('connection', (socket: Socket) => {
 
   console.log(`[Socket.IO] Client connected: ${socket.id} (User: ${userId || 'guest'}, Role: ${role || 'none'})`);
 
-  // Join user-specific room
+  // Join user-specific room (both scoped and fallback)
   if (userId) {
+    if (role) {
+      const scopedUserRoom = `user_${role}_${userId}`;
+      socket.join(scopedUserRoom);
+      console.log(`[Socket.IO] Socket ${socket.id} joined scoped room: ${scopedUserRoom}`);
+    }
     const userRoom = `user_${userId}`;
     socket.join(userRoom);
     console.log(`[Socket.IO] Socket ${socket.id} joined room: ${userRoom}`);
@@ -145,6 +150,10 @@ io.on('connection', (socket: Socket) => {
   // Handle client requesting to join a custom room explicitly
   socket.on('join_user_room', (customUserId: string | number) => {
     if (customUserId) {
+      if (socket.data.role) {
+        const scopedRoom = `user_${socket.data.role}_${customUserId}`;
+        socket.join(scopedRoom);
+      }
       const room = `user_${customUserId}`;
       socket.join(room);
       console.log(`[Socket.IO] Socket ${socket.id} manually joined ${room}`);

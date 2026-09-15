@@ -8,6 +8,7 @@ use App\Models\Program;
 use App\Models\AdminUser;
 use App\Models\ProgramHead;
 use App\Models\Student;
+use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -169,8 +170,11 @@ class AdminManageUsersController extends Controller
 
         return AdminUser::query()
             ->orderByDesc('id')
-            ->get(['id', 'name', 'email', 'created_at', 'updated_at'])
+            ->get(['id', 'name', 'email', 'handover_expires_at', 'is_active', 'created_by_admin_id', 'created_at', 'updated_at'])
             ->map(function (AdminUser $admin) {
+                $isUnderHandover = $admin->isUnderHandover();
+                $isExpired = $admin->isHandoverExpired() || $admin->is_active === false;
+
                 return [
                     'id' => 2000000000 + (int) $admin->id,
                     'admin_user_id' => (int) $admin->id,
@@ -183,8 +187,12 @@ class AdminManageUsersController extends Controller
                     'course' => 'System Administration',
                     'year_level' => '',
                     'role' => 'Administrator',
-                    'is_active' => true,
-                    'status' => 'approved',
+                    'is_active' => !$isExpired,
+                    'status' => $isExpired ? 'expired' : ($isUnderHandover ? 'handover' : 'approved'),
+                    'handover_expires_at' => optional($admin->handover_expires_at)->toISOString(),
+                    'handover_expires_at_formatted' => $admin->handover_expires_at_formatted,
+                    'is_handover_active' => $isUnderHandover,
+                    'is_handover_expired' => $isExpired,
                     'qr_code_path' => null,
                     'entry_status' => null,
                     'program' => 'System Administration',
@@ -1000,6 +1008,56 @@ class AdminManageUsersController extends Controller
         }
 
         return redirect()->route('admin.manage-users')->with('success', 'Program Head account created successfully.')->setStatusCode(303);
+    }
+
+    public function storeAdmin(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:admin_users,email', 'unique:students,email', 'unique:program_heads,email'],
+            'password' => ['required', 'string', 'min:8'],
+        ]);
+
+        $currentAdmin = auth()->guard('admin')->user();
+
+        // 1. Create the new Administrator account
+        $newAdmin = AdminUser::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'is_active' => true,
+            'created_by_admin_id' => $currentAdmin ? $currentAdmin->id : null,
+        ]);
+
+        // 2. Set 3-day (72 hours) expiration on the current admin
+        $expirationTime = Carbon::now()->addDays(3);
+        if ($currentAdmin) {
+            $currentAdmin->update([
+                'handover_expires_at' => $expirationTime,
+            ]);
+        }
+
+        // 3. Log activity
+        if (Schema::hasTable('activity_logs')) {
+            ActivityLog::logForUser(
+                $currentAdmin,
+                'User Management',
+                'Admin Handover',
+                "Initiated Admin Handover. Created new Administrator: {$newAdmin->name} ({$newAdmin->email}). Current admin account scheduled to expire on " . $expirationTime->format('M d, Y g:i A') . " (3 days transition period).",
+                $request,
+                null,
+                [
+                    'new_admin_id' => $newAdmin->id,
+                    'new_admin_email' => $newAdmin->email,
+                    'expires_at' => $expirationTime->toIso8601String(),
+                ]
+            );
+        }
+
+        return redirect()->route('admin.manage-users')->with(
+            'success',
+            "New Administrator account for {$newAdmin->name} ({$newAdmin->email}) created successfully! Your current admin account is now in a 3-day handover period and will automatically expire on " . $expirationTime->format('M d, Y g:i A') . "."
+        )->setStatusCode(303);
     }
 
     public function downloadBulkTemplate(Request $request)
