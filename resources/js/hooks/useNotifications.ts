@@ -8,12 +8,18 @@ export interface UseNotificationsOptions {
     userId?: number | string | null;
     role?: string | null;
     autoConnect?: boolean;
+    /** Polling / pull interval in milliseconds (defaults to 10,000ms / 10s) */
+    pollingInterval?: number;
+    /** Enable automatic background pulling / polling */
+    enablePolling?: boolean;
 }
 
 export function useNotifications({
     userId,
     role,
     autoConnect = true,
+    pollingInterval = 10000,
+    enablePolling = true,
 }: UseNotificationsOptions = {}) {
     const [notifications, setNotifications] = useState<AppNotificationItem[]>([]);
     const [unreadCount, setUnreadCount] = useState<number>(0);
@@ -21,36 +27,69 @@ export function useNotifications({
     const [popupNotification, setPopupNotification] = useState<AppNotificationItem | null>(null);
 
     const isMounted = useRef<boolean>(true);
+    const initialLoadDone = useRef<boolean>(false);
+    const knownIds = useRef<Set<number>>(new Set());
 
-    // Fetch existing notifications from Laravel backend
-    const fetchNotifications = useCallback(async () => {
-        if (!userId) return;
+    // Fetch notifications from Laravel backend with new-alert detection
+    const fetchNotifications = useCallback(
+        async (isBackgroundPull: boolean = false) => {
+            if (!userId) return;
 
-        setLoading(true);
-        try {
-            const response = await axios.get<NotificationResponse>('/notifications', {
-                params: { user_id: userId },
-            });
-
-            if (isMounted.current && response.data) {
-                setNotifications(response.data.notifications || []);
-                setUnreadCount(response.data.unread_count || 0);
+            if (!isBackgroundPull) {
+                setLoading(true);
             }
-        } catch (error) {
-            console.error('[useNotifications] Failed to load notifications:', error);
-        } finally {
-            if (isMounted.current) {
-                setLoading(false);
-            }
-        }
-    }, [userId]);
 
-    // Handle incoming real-time notification
+            try {
+                const response = await axios.get<NotificationResponse>('/notifications', {
+                    params: { user_id: userId },
+                });
+
+                if (isMounted.current && response.data) {
+                    const fetchedList = response.data.notifications || [];
+                    const fetchedUnread = response.data.unread_count || 0;
+
+                    // If this is a background pull and initial load already finished,
+                    // detect any new unread notification to trigger sound & popup toast
+                    if (isBackgroundPull && initialLoadDone.current) {
+                        const newItems = fetchedList.filter(
+                            (n) => !knownIds.current.has(n.id) && !n.is_read
+                        );
+
+                        if (newItems.length > 0) {
+                            // Play chime sound
+                            playNotificationSound();
+                            // Trigger toast with the newest notification
+                            setPopupNotification(newItems[0]);
+                        }
+                    }
+
+                    // Update tracked known notification IDs
+                    fetchedList.forEach((n) => knownIds.current.add(n.id));
+                    initialLoadDone.current = true;
+
+                    setNotifications(fetchedList);
+                    setUnreadCount(fetchedUnread);
+                }
+            } catch (error) {
+                if (!isBackgroundPull) {
+                    console.error('[useNotifications] Failed to load notifications:', error);
+                }
+            } finally {
+                if (isMounted.current && !isBackgroundPull) {
+                    setLoading(false);
+                }
+            }
+        },
+        [userId]
+    );
+
+    // Handle incoming real-time socket notification
     const handleIncomingNotification = useCallback((incoming: AppNotificationItem) => {
         console.log('[useNotifications] Real-time notification received:', incoming);
 
+        knownIds.current.add(incoming.id);
+
         setNotifications((prev) => {
-            // Prevent duplicate notifications
             if (prev.some((n) => n.id === incoming.id)) {
                 return prev;
             }
@@ -68,13 +107,15 @@ export function useNotifications({
         setPopupNotification(incoming);
     }, []);
 
-    // Setup Socket.IO listener
+    // Setup Socket.IO listener & Initial Fetch
     useEffect(() => {
         isMounted.current = true;
 
-        if (autoConnect && userId) {
-            fetchNotifications();
+        if (userId) {
+            void fetchNotifications(false);
+        }
 
+        if (autoConnect && userId) {
             const socket = connectSocket(userId, role);
 
             // Listen for notification events
@@ -94,36 +135,52 @@ export function useNotifications({
         };
     }, [userId, role, autoConnect, fetchNotifications, handleIncomingNotification]);
 
-    // Mark a single notification as read
-    const markAsRead = useCallback(async (id: number) => {
-        // Optimistic UI update
-        setNotifications((prev) =>
-            prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
-        );
-        setUnreadCount((prev) => Math.max(0, prev - 1));
+    // Setup periodic polling / pulling timer
+    useEffect(() => {
+        if (!enablePolling || !userId || pollingInterval <= 0) return;
 
-        try {
-            await axios.post(`/notifications/${id}/mark-read`);
-        } catch (error) {
-            console.error('[useNotifications] Failed to mark as read:', error);
-            // Re-fetch in case of failure
-            fetchNotifications();
-        }
-    }, [fetchNotifications]);
+        const timer = setInterval(() => {
+            // Only pull if document is visible or always active
+            if (typeof document === 'undefined' || !document.hidden) {
+                void fetchNotifications(true);
+            }
+        }, pollingInterval);
+
+        return () => {
+            clearInterval(timer);
+        };
+    }, [enablePolling, userId, pollingInterval, fetchNotifications]);
+
+    // Mark a single notification as read
+    const markAsRead = useCallback(
+        async (id: number) => {
+            // Optimistic UI update
+            setNotifications((prev) =>
+                prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+            );
+            setUnreadCount((prev) => Math.max(0, prev - 1));
+
+            try {
+                await axios.post(`/notifications/${id}/mark-read`);
+            } catch (error) {
+                console.error('[useNotifications] Failed to mark as read:', error);
+                void fetchNotifications(false);
+            }
+        },
+        [fetchNotifications]
+    );
 
     // Mark all notifications as read
     const markAllAsRead = useCallback(async () => {
         // Optimistic UI update
-        setNotifications((prev) =>
-            prev.map((n) => ({ ...n, is_read: true }))
-        );
+        setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
         setUnreadCount(0);
 
         try {
             await axios.post('/notifications/mark-all-read', { user_id: userId });
         } catch (error) {
             console.error('[useNotifications] Failed to mark all as read:', error);
-            fetchNotifications();
+            void fetchNotifications(false);
         }
     }, [userId, fetchNotifications]);
 
@@ -140,6 +197,7 @@ export function useNotifications({
         markAsRead,
         markAllAsRead,
         clearPopup,
-        refreshNotifications: fetchNotifications,
+        refreshNotifications: () => fetchNotifications(false),
     };
 }
+

@@ -179,7 +179,7 @@ export default function NotificationBell({
                 {/* Dropdown Footer */}
                 <div className="border-t border-slate-100 bg-slate-50/50 p-2 text-center dark:border-slate-800 dark:bg-slate-900/30">
                     <span className="text-[10px] font-bold text-slate-400">
-                        ⚡ Real-Time Powered by Node.js + Socket.IO
+                        ⚡ Real-Time Notifications • Auto-Pull Active
                     </span>
                 </div>
             </DropdownMenuContent>
