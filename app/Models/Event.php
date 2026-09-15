@@ -39,11 +39,76 @@ class Event extends Model
 
     protected $appends = [
         'activity_plan_url',
+        'scanner_students',
     ];
 
     public function getActivityPlanUrlAttribute(): ?string
     {
         return $this->activity_plan_path ? \Illuminate\Support\Facades\Storage::url($this->activity_plan_path) : null;
+    }
+
+    public function getScannerStudentsAttribute(): array
+    {
+        $allowed = $this->scanner_student_ids;
+        if (! is_array($allowed)) {
+            $allowed = [];
+        }
+        $legacy = trim((string) ($this->scanner_student_id ?? ''));
+        if ($legacy !== '' && ! in_array($legacy, $allowed, true)) {
+            $allowed[] = $legacy;
+        }
+
+        if (empty($allowed)) {
+            return [];
+        }
+
+        try {
+            $students = Student::where(function ($q) use ($allowed) {
+                $q->whereIn('student_id', $allowed)
+                  ->orWhereIn('id', $allowed);
+            })->get(['id', 'student_id', 'first_name', 'last_name', 'name', 'course', 'year_level']);
+
+            $resolved = [];
+            foreach ($allowed as $identifier) {
+                $str = trim((string) $identifier);
+                if ($str === '') continue;
+                $match = $students->first(function ($s) use ($str) {
+                    return (string) $s->student_id === $str || (string) $s->id === $str;
+                });
+                if ($match) {
+                    $fullName = trim($match->first_name . ' ' . $match->last_name);
+                    if ($fullName === '') {
+                        $fullName = $match->name ?: $str;
+                    }
+                    $resolved[] = [
+                        'id' => $match->id,
+                        'student_id' => $match->student_id ?: $str,
+                        'name' => $fullName,
+                        'course' => $match->course,
+                        'year_level' => $match->year_level,
+                    ];
+                } else {
+                    $resolved[] = [
+                        'id' => $str,
+                        'student_id' => $str,
+                        'name' => $str,
+                        'course' => null,
+                        'year_level' => null,
+                    ];
+                }
+            }
+            return $resolved;
+        } catch (\Throwable) {
+            return array_map(function ($id) {
+                return [
+                    'id' => $id,
+                    'student_id' => (string) $id,
+                    'name' => (string) $id,
+                    'course' => null,
+                    'year_level' => null,
+                ];
+            }, $allowed);
+        }
     }
 
     protected $casts = [

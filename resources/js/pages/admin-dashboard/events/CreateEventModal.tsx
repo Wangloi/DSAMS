@@ -150,11 +150,11 @@ export default function CreateEventModal({
         courses: [],
         yearLevels: [],
         scannerStudentIds: [],
-        geofenceEnabled: true,
-        geofenceLatitude: '8.743070',
-        geofenceLongitude: '124.774500',
-        geofenceRadiusM: '300',
-        attendanceType: 'dynamic_qr',
+        geofenceEnabled: false,
+        geofenceLatitude: '',
+        geofenceLongitude: '',
+        geofenceRadiusM: '50',
+        attendanceType: 'qr_scanner',
     });
 
     const [currentStep, setCurrentStep] = useState(1);
@@ -187,7 +187,10 @@ export default function CreateEventModal({
                     courses: initialEvent.courses ?? [],
                     yearLevels: initialEvent.year_levels ?? [],
                     scannerStudentIds: [],
-                    geofenceEnabled: true,
+                    geofenceEnabled:
+                        initialEvent.attendance_type === 'dynamic_qr'
+                            ? (initialEvent.geofence_enabled ?? false)
+                            : false,
                     geofenceLatitude: String(
                         initialEvent.geofence_latitude ?? '',
                     ),
@@ -232,7 +235,7 @@ export default function CreateEventModal({
                     courses: [],
                     yearLevels: [],
                     scannerStudentIds: [],
-                    geofenceEnabled: true,
+                    geofenceEnabled: false,
                     geofenceLatitude: '',
                     geofenceLongitude: '',
                     geofenceRadiusM: '50',

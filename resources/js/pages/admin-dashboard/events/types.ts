@@ -38,6 +38,14 @@ export interface Event {
     geofence_radius_m?: number | null;
     eligible_students_count?: number;
     expected_attendees?: number | null;
+    scanner_student_ids?: (string | number)[] | null;
+    scanner_students?: Array<{
+        id: string | number;
+        student_id: string;
+        name: string;
+        course?: string | null;
+        year_level?: string | null;
+    }>;
 }
 
 export interface PageProps extends Record<string, any> {

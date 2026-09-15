@@ -1,14 +1,48 @@
+import { SchoolMapSelector } from '@/components/SchoolMapSelector';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
     DialogDescription,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
 import { usePage } from '@inertiajs/react';
-import { Calendar, Check, Edit, Info, Users } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import {
+    AlertCircle,
+    Building2,
+    Calendar,
+    CheckCircle2,
+    Clock,
+    Edit,
+    Globe,
+    GraduationCap,
+    Layers,
+    MapPin,
+    QrCode,
+    Radio,
+    ShieldCheck,
+    Sparkles,
+    UserCheck,
+    Users,
+    X,
+} from 'lucide-react';
+import React, { useMemo } from 'react';
+import {
+    deriveEventLifecycleStatus,
+    lifecycleStatusBadgeClass,
+} from './deriveEventLifecycleStatus';
+import { uniqueCourseStringsForDisplay } from './mergeCourseYearOptions';
+
+export type ScannerStudent = {
+    id: string | number;
+    student_id?: string;
+    name: string;
+    course?: string | null;
+    year_level?: string | null;
+};
 
 export type EventViewRecord = {
     id: number;
@@ -22,13 +56,15 @@ export type EventViewRecord = {
     registration_end_time: string | null;
     organizer: string;
     status: 'upcoming' | 'ongoing' | 'completed';
-    geofence_enabled: boolean;
-    geofence_latitude?: number | null;
-    geofence_longitude?: number | null;
+    attendance_type?: string | null;
+    geofence_enabled?: boolean | number | string | null;
+    geofence_latitude?: number | string | null;
+    geofence_longitude?: number | string | null;
     scanner_portal_active: boolean;
     scanner_student_ids?: (string | number)[] | null;
+    scanner_students?: ScannerStudent[] | null;
     archived_at: string | null;
-    attendances: Array<{
+    attendances?: Array<{
         id: number;
         student_id?: number;
         student: {
@@ -45,28 +81,8 @@ type Props = {
     onEdit?: (event: EventViewRecord) => void;
 };
 
-function getStatusColor(status: string) {
-    switch (status) {
-        case 'upcoming':
-            return 'bg-blue-100 text-blue-800';
-        case 'ongoing':
-            return 'bg-green-100 text-green-800';
-        case 'completed':
-            return 'bg-gray-100 text-gray-800';
-        default:
-            return 'bg-gray-100 text-gray-800';
-    }
-}
-
-import { SchoolMapSelector } from '@/components/SchoolMapSelector';
-import { DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { uniqueCourseStringsForDisplay } from './mergeCourseYearOptions';
-
 function formatRegEnd(regEnd: string | null) {
-    if (!regEnd) return 'No end time set';
+    if (!regEnd) return 'No cutoff time set';
     return String(regEnd).includes('T')
         ? new Date(regEnd).toLocaleString()
         : regEnd;
@@ -79,7 +95,6 @@ export default function EventViewModal({
     onEdit,
 }: Props) {
     const page = usePage();
-    console.log('EventViewModal event data:', event);
     const geofenceConfig = (page.props as Record<string, any>).geofence as
         | { campus?: { latitude?: number; longitude?: number } }
         | undefined;
@@ -92,592 +107,423 @@ export default function EventViewModal({
         [geofenceConfig],
     );
 
-    const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
-
-    useEffect(() => {
-        if (open) setCurrentStep(1);
-    }, [open]);
-
     const coursesForDisplay = useMemo(
         () => (event ? uniqueCourseStringsForDisplay(event.courses) : []),
         [event],
     );
 
-    const mapPoint = useMemo(() => {
-        if (!event) return null;
-        if (event.geofence_latitude == null || event.geofence_longitude == null)
-            return null;
-        const lat = Number(event.geofence_latitude);
-        const lng = Number(event.geofence_longitude);
-        if (isNaN(lat) || isNaN(lng)) return null;
+    const computedStatus = useMemo(() => {
+        if (!event) return 'upcoming';
+        return deriveEventLifecycleStatus(
+            event.event_date,
+            event.event_time,
+            event.registration_end_time,
+        );
+    }, [event]);
 
-        const y = 50 - (lat - campusCenter.lat) / 0.0001;
-        const x = 50 + (lng - campusCenter.lng) / 0.0001;
-        return {
-            x: Math.max(0, Math.min(100, x)),
-            y: Math.max(0, Math.min(100, y)),
-        };
-    }, [event, campusCenter]);
+    const scannerStudents = useMemo<ScannerStudent[]>(() => {
+        if (!event) return [];
+        if (event.scanner_students && event.scanner_students.length > 0) {
+            return event.scanner_students;
+        }
+        if (event.scanner_student_ids && event.scanner_student_ids.length > 0) {
+            return event.scanner_student_ids.map((id) => ({
+                id,
+                student_id: String(id),
+                name: String(id),
+            }));
+        }
+        return [];
+    }, [event]);
 
-    if (!event) return null;
+    const regEnd = formatRegEnd(event?.registration_end_time ?? null);
+    const isDynamicQrAttendance = event?.attendance_type === 'dynamic_qr';
+    const isGeofenceFlagEnabled =
+        Boolean(event?.geofence_enabled) &&
+        (event?.geofence_enabled as any) !== '0' &&
+        (event?.geofence_enabled as any) !== 0 &&
+        (event?.geofence_enabled as any) !== 'false' &&
+        (event?.geofence_enabled as any) !== false;
 
-    const regEnd = formatRegEnd(event.registration_end_time);
+    // The Event Geotagging & Campus Map is only shown if the admin is actively using Geotagging / Dynamic GPS Check-In
+    const hasGeofencing =
+        isDynamicQrAttendance &&
+        isGeofenceFlagEnabled &&
+        event?.geofence_latitude != null &&
+        event?.geofence_longitude != null;
+
+    if (!open || !event) return null;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[90vh] w-full max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden rounded-xl border border-slate-200 p-0 sm:max-w-4xl dark:border-slate-700 dark:bg-slate-900">
-                <DialogHeader className="shrink-0 border-b border-transparent bg-gradient-to-r from-[#0b2d66] to-[#1e40af] px-6 py-5 text-white dark:border-slate-700">
-                    <DialogTitle className="flex items-center gap-2 text-xl font-bold text-white">
-                        <Calendar className="h-5 w-5 text-blue-200" />
-                        View Event
-                    </DialogTitle>
-                    <DialogDescription className="text-white/80">
-                        Read-only step-by-step summary. Use Edit to make
-                        changes.
-                    </DialogDescription>
+            <DialogContent className="flex max-h-[92vh] w-full max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden rounded-3xl border-0 bg-slate-50 p-0 shadow-2xl sm:max-w-4xl dark:bg-slate-950 [&>button]:hidden">
+                {/* Modern Hero Header */}
+                <div className="relative overflow-hidden bg-gradient-to-r from-[#000D6A] via-[#102A83] to-[#23509A] px-6 py-6 text-white shadow-md sm:px-8">
+                    <div className="pointer-events-none absolute -top-12 -right-12 h-44 w-44 rounded-full bg-cyan-400/20 blur-3xl" />
+                    <div className="pointer-events-none absolute -bottom-10 left-1/3 h-32 w-32 rounded-full bg-blue-500/20 blur-2xl" />
 
-                    <div className="mx-auto mt-6 flex max-w-xl items-center justify-between px-4">
-                        <div className="relative flex flex-1 flex-col items-center">
-                            <div
-                                className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-all duration-300 ${
-                                    currentStep === 1
-                                        ? 'scale-110 bg-white text-blue-900 shadow-md ring-4 ring-white/20'
-                                        : 'bg-emerald-500 text-white'
-                                }`}
-                            >
-                                {currentStep > 1 ? (
-                                    <Check className="h-5 w-5" />
-                                ) : (
-                                    '1'
-                                )}
+                    <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="flex items-start gap-4">
+                            <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-[#8CE4FF] shadow-inner ring-1 ring-white/30 backdrop-blur-md">
+                                <Calendar className="h-7 w-7" />
+                                <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-[#102A83]">
+                                    <Sparkles className="h-3 w-3 text-white" />
+                                </span>
                             </div>
-                            <span
-                                className={`mt-2 text-[11px] font-medium tracking-wide transition-colors ${currentStep === 1 ? 'text-white' : 'text-blue-200'}`}
-                            >
-                                Basic Info
-                            </span>
+
+                            <DialogHeader className="p-0 text-left">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <DialogTitle className="text-xl font-black tracking-tight text-white sm:text-2xl">
+                                        {event.event_name}
+                                    </DialogTitle>
+                                    <Badge
+                                        className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider capitalize ${lifecycleStatusBadgeClass(
+                                            computedStatus,
+                                        )}`}
+                                    >
+                                        {computedStatus === 'completed'
+                                            ? 'Ended'
+                                            : computedStatus}
+                                    </Badge>
+                                </div>
+                                <DialogDescription className="mt-1 text-xs font-medium text-blue-100/90 sm:text-sm">
+                                    Organized by <strong className="text-white">{event.organizer || 'OSA / CSG'}</strong> • Complete Event Profile & Attendance Assignment
+                                </DialogDescription>
+                            </DialogHeader>
                         </div>
 
-                        <div className="relative mx-2 h-0.5 flex-1 bg-blue-800">
-                            <div
-                                className="absolute inset-0 bg-white transition-all duration-300"
-                                style={{
-                                    width: currentStep > 1 ? '100%' : '0%',
-                                }}
-                            />
-                        </div>
-
-                        <div className="relative flex flex-1 flex-col items-center">
-                            <div
-                                className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-all duration-300 ${
-                                    currentStep === 2
-                                        ? 'scale-110 bg-white text-blue-900 shadow-md ring-4 ring-white/20'
-                                        : currentStep > 2
-                                          ? 'bg-emerald-500 text-white'
-                                          : 'bg-blue-800 text-blue-200'
-                                }`}
+                        {/* Top Actions */}
+                        <div className="flex items-center gap-2 self-end sm:self-auto">
+                            {onEdit && (
+                                <Button
+                                    type="button"
+                                    onClick={() => onEdit(event)}
+                                    className="h-9 gap-1.5 rounded-xl bg-white/15 px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-white/25 active:scale-98"
+                                >
+                                    <Edit className="h-3.5 w-3.5 text-[#8CE4FF]" />
+                                    Edit Event
+                                </Button>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => onOpenChange(false)}
+                                className="rounded-full bg-white/10 p-2 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
                             >
-                                {currentStep > 2 ? (
-                                    <Check className="h-5 w-5" />
-                                ) : (
-                                    '2'
-                                )}
-                            </div>
-                            <span
-                                className={`mt-2 text-[11px] font-medium tracking-wide transition-colors ${currentStep === 2 ? 'text-white' : 'text-blue-200'}`}
-                            >
-                                Location
-                            </span>
-                        </div>
-
-                        <div className="relative mx-2 h-0.5 flex-1 bg-blue-800">
-                            <div
-                                className="absolute inset-0 bg-white transition-all duration-300"
-                                style={{
-                                    width: currentStep > 2 ? '100%' : '0%',
-                                }}
-                            />
-                        </div>
-
-                        <div className="relative flex flex-1 flex-col items-center">
-                            <div
-                                className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-all duration-300 ${
-                                    currentStep === 3
-                                        ? 'scale-110 bg-white text-blue-900 shadow-md ring-4 ring-white/20'
-                                        : 'bg-blue-800 text-blue-200'
-                                }`}
-                            >
-                                3
-                            </div>
-                            <span
-                                className={`mt-2 text-[11px] font-medium tracking-wide transition-colors ${currentStep === 3 ? 'text-white' : 'text-blue-200'}`}
-                            >
-                                Audience
-                            </span>
+                                <X className="h-5 w-5" />
+                            </button>
                         </div>
                     </div>
-                </DialogHeader>
-
-                <div className="flex-1 space-y-4 overflow-x-hidden overflow-y-auto bg-slate-50/50 px-6 py-6 dark:bg-slate-900/40">
-                    <form
-                        onSubmit={(e) => e.preventDefault()}
-                        noValidate
-                        className="min-h-0"
-                    >
-                        {currentStep === 1 && (
-                            <div className="grid animate-in grid-cols-1 gap-6 transition-all duration-200 duration-300 ease-in-out fade-in">
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    <div className="grid gap-2 sm:col-span-2">
-                                        <Label
-                                            htmlFor="eventName"
-                                            className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                                        >
-                                            Event Name
-                                        </Label>
-                                        <Input
-                                            id="eventName"
-                                            value={event.event_name}
-                                            readOnly
-                                            className="h-9 bg-slate-50/50 dark:border-slate-600 dark:bg-slate-800"
-                                        />
-                                    </div>
-
-                                    <div className="grid gap-2">
-                                        <Label
-                                            htmlFor="organizer"
-                                            className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                                        >
-                                            Organizer
-                                        </Label>
-                                        <Input
-                                            id="organizer"
-                                            value={event.organizer}
-                                            readOnly
-                                            className="h-9 bg-slate-50/50 dark:border-slate-600 dark:bg-slate-800"
-                                        />
-                                    </div>
-
-                                    <div className="grid gap-2">
-                                        <Label
-                                            htmlFor="eventDate"
-                                            className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                                        >
-                                            Date
-                                        </Label>
-                                        <Input
-                                            id="eventDate"
-                                            value={
-                                                typeof event.event_date ===
-                                                'string'
-                                                    ? event.event_date.split(
-                                                          'T',
-                                                      )[0]
-                                                    : ''
-                                            }
-                                            readOnly
-                                            className="h-9 bg-slate-50/50 dark:border-slate-600 dark:bg-slate-800"
-                                        />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label
-                                            htmlFor="eventTime"
-                                            className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                                        >
-                                            Time-In
-                                        </Label>
-                                        <Input
-                                            id="eventTime"
-                                            value={event.event_time}
-                                            readOnly
-                                            className="h-9 bg-slate-50/50 dark:border-slate-600 dark:bg-slate-800"
-                                        />
-                                        {event.event_time && (
-                                            <span className="mt-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                                Time-In Ends:{' '}
-                                                {(() => {
-                                                    const [hours, minutes] =
-                                                        event.event_time
-                                                            .split(':')
-                                                            .map(Number);
-                                                    const date = new Date();
-                                                    date.setHours(hours);
-                                                    date.setMinutes(
-                                                        minutes + 90,
-                                                    );
-
-                                                    let h = date.getHours();
-                                                    const m = String(
-                                                        date.getMinutes(),
-                                                    ).padStart(2, '0');
-                                                    const ampm =
-                                                        h >= 12 ? 'pm' : 'am';
-                                                    h = h % 12;
-                                                    h = h ? h : 12;
-                                                    return `${h}:${m} ${ampm}`;
-                                                })()}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label
-                                            htmlFor="registrationEndTime"
-                                            className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                                        >
-                                            Time-End
-                                        </Label>
-                                        <Input
-                                            id="registrationEndTime"
-                                            value={regEnd}
-                                            readOnly
-                                            className="h-9 bg-slate-50/50 dark:border-slate-600 dark:bg-slate-800"
-                                        />
-                                        {event.registration_end_time && (
-                                            <span className="mt-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                                Time-End Ends:{' '}
-                                                {(() => {
-                                                    const [hours, minutes] =
-                                                        event.registration_end_time
-                                                            .split(':')
-                                                            .map(Number);
-                                                    const date = new Date();
-                                                    date.setHours(hours);
-                                                    date.setMinutes(
-                                                        minutes + 90,
-                                                    );
-
-                                                    let h = date.getHours();
-                                                    const m = String(
-                                                        date.getMinutes(),
-                                                    ).padStart(2, '0');
-                                                    const ampm =
-                                                        h >= 12 ? 'pm' : 'am';
-                                                    h = h % 12;
-                                                    h = h ? h : 12;
-                                                    return `${h}:${m} ${ampm}`;
-                                                })()}
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    <div className="grid gap-2 sm:col-span-2">
-                                        <Label
-                                            htmlFor="description"
-                                            className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                                        >
-                                            Description
-                                        </Label>
-                                        <Textarea
-                                            id="description"
-                                            value={
-                                                event.description?.trim()
-                                                    ? event.description
-                                                    : ''
-                                            }
-                                            readOnly
-                                            className="min-h-[80px] bg-slate-50/50"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {currentStep === 2 && (
-                            <div className="grid animate-in grid-cols-1 gap-6 transition-all duration-200 duration-300 ease-in-out fade-in">
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    <div className="grid gap-2 sm:col-span-2">
-                                        <Label
-                                            htmlFor="location"
-                                            className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                                        >
-                                            Location
-                                        </Label>
-                                        <Input
-                                            id="location"
-                                            value={event.location}
-                                            readOnly
-                                            className="h-9 bg-slate-50/50 dark:border-slate-600 dark:bg-slate-800"
-                                        />
-                                    </div>
-
-                                    <div className="grid gap-2 border-t border-slate-100 pt-4 sm:col-span-2 dark:border-slate-800">
-                                        <Label className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                                            Geotagging & Validation Settings
-                                        </Label>
-                                        <div className="flex items-center gap-3 rounded-lg border border-slate-200/60 bg-white p-3 dark:border-slate-800 dark:bg-slate-800/40">
-                                            <input
-                                                type="checkbox"
-                                                id="geofenceEnabled"
-                                                checked={event.geofence_enabled}
-                                                readOnly
-                                                className="h-4 w-4 rounded border-slate-300 accent-blue-600 dark:border-slate-600 dark:bg-slate-800"
-                                            />
-                                            <Label
-                                                htmlFor="geofenceEnabled"
-                                                className="cursor-pointer text-sm font-medium text-slate-700 select-none dark:text-slate-300"
-                                            >
-                                                Enable geofence location
-                                                validation
-                                            </Label>
-                                        </div>
-                                        <p className="pl-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                                            {event.geofence_enabled
-                                                ? 'Students must be physically within the designated campus area.'
-                                                : 'Geofence validation is disabled for this event.'}
-                                        </p>
-                                    </div>
-
-                                    {event.geofence_latitude != null &&
-                                        event.geofence_longitude != null && (
-                                            <>
-                                                <div className="grid gap-2 sm:col-span-2">
-                                                    <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                                        Campus Map (read-only)
-                                                    </Label>
-                                                    <div className="grid gap-2 rounded-lg border border-slate-200 bg-white p-2 sm:col-span-2 dark:border-slate-800 dark:bg-slate-950/40">
-                                                        <SchoolMapSelector
-                                                            onLocationSelect={() => {}}
-                                                            initialLocation={
-                                                                event.geofence_latitude !=
-                                                                    null &&
-                                                                event.geofence_longitude !=
-                                                                    null
-                                                                    ? {
-                                                                          latitude:
-                                                                              Number(
-                                                                                  event.geofence_latitude,
-                                                                              ),
-                                                                          longitude:
-                                                                              Number(
-                                                                                  event.geofence_longitude,
-                                                                              ),
-                                                                          name: 'Selected facility',
-                                                                      }
-                                                                    : undefined
-                                                            }
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid gap-2">
-                                                    <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                                        Latitude
-                                                    </Label>
-                                                    <Input
-                                                        value={
-                                                            event.geofence_latitude !=
-                                                            null
-                                                                ? Number(
-                                                                      event.geofence_latitude,
-                                                                  ).toFixed(6)
-                                                                : ''
-                                                        }
-                                                        readOnly
-                                                        className="h-9 bg-slate-50/50 dark:border-slate-600 dark:bg-slate-800"
-                                                    />
-                                                </div>
-
-                                                <div className="grid gap-2">
-                                                    <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                                        Longitude
-                                                    </Label>
-                                                    <Input
-                                                        value={
-                                                            event.geofence_longitude !=
-                                                            null
-                                                                ? Number(
-                                                                      event.geofence_longitude,
-                                                                  ).toFixed(6)
-                                                                : ''
-                                                        }
-                                                        readOnly
-                                                        className="h-9 bg-slate-50/50 dark:border-slate-600 dark:bg-slate-800"
-                                                    />
-                                                </div>
-
-                                                <div className="grid gap-2 sm:col-span-2">
-                                                    <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                                        Geofence Radius (meters)
-                                                    </Label>
-                                                    <Input
-                                                        value={'—'}
-                                                        readOnly
-                                                        className="h-9 bg-slate-50/50 dark:border-slate-600 dark:bg-slate-800"
-                                                    />
-                                                </div>
-
-                                                {mapPoint && (
-                                                    <div className="hidden">
-                                                        {mapPoint.x},
-                                                        {mapPoint.y}
-                                                    </div>
-                                                )}
-                                            </>
-                                        )}
-                                </div>
-                            </div>
-                        )}
-
-                        {currentStep === 3 && (
-                            <div className="grid animate-in grid-cols-1 gap-6 transition-all duration-200 duration-300 ease-in-out fade-in">
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    <div className="grid gap-4 sm:col-span-2">
-                                        <div className="grid gap-2 sm:col-span-2">
-                                            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                                Target Courses
-                                            </Label>
-                                            <div className="flex flex-wrap gap-2">
-                                                {coursesForDisplay.length ===
-                                                0 ? (
-                                                    <span className="text-sm text-slate-500">
-                                                        None
-                                                    </span>
-                                                ) : (
-                                                    coursesForDisplay.map(
-                                                        (course) => (
-                                                            <span
-                                                                key={course}
-                                                                className="inline-flex items-center gap-1.5 rounded-full border border-blue-200/60 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-[#1e40af]"
-                                                            >
-                                                                {course}
-                                                            </span>
-                                                        ),
-                                                    )
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="mt-2 grid gap-2 sm:col-span-2">
-                                            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                                Target Year Levels
-                                            </Label>
-                                            <div className="flex flex-wrap gap-2">
-                                                {event.year_levels.length ===
-                                                0 ? (
-                                                    <span className="text-sm text-slate-500">
-                                                        None
-                                                    </span>
-                                                ) : (
-                                                    event.year_levels.map(
-                                                        (y) => (
-                                                            <span
-                                                                key={y}
-                                                                className="inline-flex items-center gap-1.5 rounded-full border border-blue-200/60 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-[#1e40af]"
-                                                            >
-                                                                {y}
-                                                            </span>
-                                                        ),
-                                                    )
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid gap-2 sm:col-span-2">
-                                        <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                            Expected Attendees
-                                        </Label>
-                                        <div className="relative">
-                                            <Input
-                                                value={'—'}
-                                                readOnly
-                                                className="h-9 bg-slate-50/50 pl-9 font-semibold text-[#1e40af]"
-                                            />
-                                            <Users className="absolute top-2.5 left-3 h-4 w-4 text-slate-400" />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid gap-2 border-t border-slate-100 pt-4 sm:col-span-2 dark:border-slate-800">
-                                        <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                            Assigned Attendance Scanner
-                                            In-Charge
-                                        </Label>
-                                        <div className="flex flex-wrap gap-2">
-                                            {!event.scanner_student_ids ||
-                                            event.scanner_student_ids.length ===
-                                                0 ? (
-                                                <span className="text-xs text-slate-500 italic">
-                                                    No individual scanner
-                                                    in-charge assigned.
-                                                </span>
-                                            ) : (
-                                                event.scanner_student_ids.map(
-                                                    (id: string | number) => (
-                                                        <span
-                                                            key={id}
-                                                            className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:border-indigo-800/50 dark:bg-indigo-950/40 dark:text-indigo-300"
-                                                        >
-                                                            Student ID: {id}
-                                                        </span>
-                                                    ),
-                                                )
-                                            )}
-                                        </div>
-
-                                        <div className="mt-2 rounded-lg border border-blue-200/50 bg-blue-50/50 p-3.5 dark:border-blue-900/30 dark:bg-blue-950/20">
-                                            <div className="flex gap-2.5">
-                                                <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
-                                                <div>
-                                                    <h4 className="text-xs font-semibold text-blue-950 dark:text-blue-200">
-                                                        Scanner Portal Access
-                                                    </h4>
-                                                    <p className="mt-1 text-xs leading-relaxed text-blue-800/80 dark:text-blue-300/80">
-                                                        {event.scanner_portal_active
-                                                            ? 'Active: assigned students can scan from their portal.'
-                                                            : 'Inactive: scanner portal is disabled.'}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </form>
                 </div>
 
-                <DialogFooter className="flex shrink-0 justify-between gap-2 rounded-b-xl border-t border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-700 dark:bg-slate-800/80">
-                    <div className="flex items-center gap-2">
+                {/* Unified Single-View Content (No Step-by-Step) */}
+                <div className="scrollbar-thin flex-1 space-y-6 overflow-y-auto p-6 sm:p-8">
+                    {/* Schedule & Timing Quick Strip */}
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        <div className="rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase flex items-center gap-1">
+                                <Calendar className="h-3 w-3 text-[#23509A] dark:text-[#8CE4FF]" />
+                                Event Date
+                            </span>
+                            <div className="mt-1 text-sm font-black text-slate-900 dark:text-white">
+                                {typeof event.event_date === 'string'
+                                    ? event.event_date.split('T')[0]
+                                    : 'N/A'}
+                            </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase flex items-center gap-1">
+                                <Clock className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                                Time-In Start
+                            </span>
+                            <div className="mt-1 text-sm font-black text-slate-900 dark:text-white">
+                                {event.event_time || '—'}
+                            </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase flex items-center gap-1">
+                                <Clock className="h-3 w-3 text-rose-500" />
+                                Cutoff / End Time
+                            </span>
+                            <div className="mt-1 text-sm font-black text-slate-900 dark:text-white truncate" title={regEnd}>
+                                {regEnd}
+                            </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase flex items-center gap-1">
+                                <MapPin className="h-3 w-3 text-[#23509A] dark:text-[#8CE4FF]" />
+                                Venue
+                            </span>
+                            <div className="mt-1 text-sm font-black text-slate-900 dark:text-white truncate" title={event.location}>
+                                {event.location || 'Campus Grounds'}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Section 1: Assigned Student(s) in Charge of Attendance (PROMINENT HIGHLIGHT) */}
+                    <div className="rounded-3xl border border-indigo-200/80 bg-gradient-to-br from-indigo-50/70 via-blue-50/40 to-white p-5 shadow-xs dark:border-indigo-900/50 dark:from-indigo-950/40 dark:via-blue-950/20 dark:bg-slate-900 sm:p-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-indigo-100 pb-4 dark:border-indigo-900/50">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#000D6A] to-[#23509A] text-white shadow-sm">
+                                    <QrCode className="h-5 w-5 text-[#8CE4FF]" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                        <span>Assigned Student Attendance Officers</span>
+                                        <Badge className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 rounded-full px-2 py-0 text-[10px] font-bold">
+                                            {scannerStudents.length} Assigned
+                                        </Badge>
+                                    </h3>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                        Students authorized to scan Dynamic QR attendance barcodes for this event
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                                    Scanner Portal:
+                                </span>
+                                <Badge
+                                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                                        event.scanner_portal_active
+                                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                                            : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                                    }`}
+                                >
+                                    {event.scanner_portal_active
+                                        ? 'Active & Scanning Ready'
+                                        : 'Scanner Portal Disabled'}
+                                </Badge>
+                            </div>
+                        </div>
+
+                        {/* List of Assigned Students */}
+                        <div className="mt-4">
+                            {scannerStudents.length === 0 ? (
+                                <div className="flex items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-white/60 p-4 text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900/40">
+                                    <AlertCircle className="h-5 w-5 text-amber-500 shrink-0" />
+                                    <span>
+                                        No individual student scanner assigned yet. System administrators and CSG leads can conduct attendance scanning by default.
+                                    </span>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                    {scannerStudents.map((scanner, idx) => {
+                                        const displayName =
+                                            scanner.name && scanner.name.trim() !== ''
+                                                ? scanner.name
+                                                : scanner.student_id || String(scanner.id);
+                                        const idLabel = scanner.student_id
+                                            ? `Student ID: ${scanner.student_id}`
+                                            : scanner.id
+                                            ? `Student ID: ${scanner.id}`
+                                            : '';
+                                        const subDetails = [
+                                            idLabel,
+                                            scanner.course,
+                                            scanner.year_level,
+                                        ]
+                                            .filter(Boolean)
+                                            .join(' • ');
+
+                                        return (
+                                            <div
+                                                key={scanner.id || scanner.student_id || idx}
+                                                className="flex items-center gap-3 rounded-2xl border border-indigo-100 bg-white p-3.5 shadow-xs transition-all hover:border-indigo-300 hover:shadow-sm dark:border-indigo-900/40 dark:bg-slate-900/80"
+                                            >
+                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-50 to-blue-100 text-indigo-700 ring-1 ring-indigo-200/50 dark:from-indigo-950/80 dark:to-blue-900/40 dark:text-indigo-300 dark:ring-indigo-800/40">
+                                                    <UserCheck className="h-5 w-5" />
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <div
+                                                        className="text-xs font-bold text-slate-900 dark:text-white truncate"
+                                                        title={displayName}
+                                                    >
+                                                        {displayName}
+                                                    </div>
+                                                    <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                                                        {subDetails || 'Authorized Officer'}
+                                                    </div>
+                                                    <div className="mt-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                                        <CheckCircle2 className="h-3 w-3" />
+                                                        Authorized Scanner
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Section 2: Target Audience & Eligible Programs */}
+                    <div className="grid gap-6 sm:grid-cols-2">
+                        {/* Target Academic Programs */}
+                        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3 dark:border-slate-800">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-[#23509A] dark:bg-blue-950/50 dark:text-[#8CE4FF]">
+                                    <Building2 className="h-4 w-4" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xs font-bold tracking-wider text-slate-700 uppercase dark:text-slate-300">
+                                        Target Academic Courses
+                                    </h3>
+                                    <p className="text-[11px] text-slate-400">Programs required to attend</p>
+                                </div>
+                            </div>
+
+                            <div className="mt-3.5 flex flex-wrap gap-2">
+                                {coursesForDisplay.length === 0 ? (
+                                    <span className="text-xs text-slate-500 italic">
+                                        All Courses / Campus-wide
+                                    </span>
+                                ) : (
+                                    coursesForDisplay.map((course) => (
+                                        <span
+                                            key={course}
+                                            className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200/70 bg-blue-50 px-3 py-1.5 text-xs font-bold text-[#1e40af] dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300"
+                                        >
+                                            <GraduationCap className="h-3.5 w-3.5" />
+                                            {course}
+                                        </span>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Target Year Levels */}
+                        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3 dark:border-slate-800">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300">
+                                    <Layers className="h-4 w-4" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xs font-bold tracking-wider text-slate-700 uppercase dark:text-slate-300">
+                                        Target Year Levels
+                                    </h3>
+                                    <p className="text-[11px] text-slate-400">Eligible grade/year cohorts</p>
+                                </div>
+                            </div>
+
+                            <div className="mt-3.5 flex flex-wrap gap-2">
+                                {event.year_levels.length === 0 ? (
+                                    <span className="text-xs text-slate-500 italic">
+                                        All Year Levels (1st to 4th Year)
+                                    </span>
+                                ) : (
+                                    event.year_levels.map((y) => (
+                                        <span
+                                            key={y}
+                                            className="inline-flex items-center gap-1.5 rounded-xl border border-purple-200/70 bg-purple-50 px-3 py-1.5 text-xs font-bold text-purple-700 dark:border-purple-900/50 dark:bg-purple-950/40 dark:text-purple-300"
+                                        >
+                                            {y}
+                                        </span>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Section 3: Event Description */}
+                    {event.description && event.description.trim() && (
+                        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <h3 className="text-xs font-bold tracking-wider text-slate-700 uppercase dark:text-slate-300 mb-2">
+                                Event Description & Guidelines
+                            </h3>
+                            <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300 whitespace-pre-line">
+                                {event.description}
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Section 4: Geofencing & Campus Map (Only displayed when admin has enabled Geotagging with valid coordinates) */}
+                    {hasGeofencing && (
+                        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+                                        <MapPin className="h-4 w-4" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xs font-bold tracking-wider text-slate-700 uppercase dark:text-slate-300">
+                                            Event Geotagging & Campus Map
+                                        </h3>
+                                        <p className="text-[11px] text-slate-400">
+                                            {event.location || 'Designated Campus Grounds'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <Badge className="rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 px-2.5 py-0.5 text-[10px] font-bold">
+                                    Geofence Active
+                                </Badge>
+                            </div>
+
+                            {event.geofence_latitude != null &&
+                                event.geofence_longitude != null && (
+                                    <div className="mt-4 space-y-3">
+                                        <div className="rounded-2xl border border-slate-200 overflow-hidden bg-slate-50 p-2 dark:border-slate-800 dark:bg-slate-950/50">
+                                            <SchoolMapSelector
+                                                onLocationSelect={() => {}}
+                                                initialLocation={{
+                                                    latitude: Number(
+                                                        event.geofence_latitude,
+                                                    ),
+                                                    longitude: Number(
+                                                        event.geofence_longitude,
+                                                    ),
+                                                    name: event.location || 'Selected venue',
+                                                }}
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3 text-xs">
+                                            <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-2.5 dark:border-slate-800 dark:bg-slate-900">
+                                                <span className="text-slate-400 text-[10px] font-bold uppercase">Latitude</span>
+                                                <div className="font-mono font-semibold text-slate-700 dark:text-slate-300">
+                                                    {Number(event.geofence_latitude).toFixed(6)}
+                                                </div>
+                                            </div>
+                                            <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-2.5 dark:border-slate-800 dark:bg-slate-900">
+                                                <span className="text-slate-400 text-[10px] font-bold uppercase">Longitude</span>
+                                                <div className="font-mono font-semibold text-slate-700 dark:text-slate-300">
+                                                    {Number(event.geofence_longitude).toFixed(6)}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                        </div>
+                    )}
+                </div>
+
+                {/* Footer Actions */}
+                <DialogFooter className="flex shrink-0 items-center justify-between border-t border-slate-200/90 bg-white px-6 py-4 dark:border-slate-800 dark:bg-slate-900 sm:px-8">
+                    <div className="text-[11px] font-medium text-slate-400">
+                        Event ID: #{event.id}
+                    </div>
+
+                    <div className="flex items-center gap-3">
                         <Button
-                            variant="secondary"
+                            variant="outline"
                             type="button"
                             onClick={() => onOpenChange(false)}
-                            className="px-4"
+                            className="rounded-xl border-slate-200 px-5 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
                         >
                             Close
                         </Button>
                         {onEdit && (
                             <Button
                                 type="button"
-                                className="gap-2 bg-[#121F78] px-5 text-white hover:bg-[#0f1a66]"
                                 onClick={() => onEdit(event)}
+                                className="gap-1.5 rounded-xl bg-gradient-to-r from-[#000D6A] via-[#102A83] to-[#23509A] px-6 text-xs font-bold text-white shadow-md hover:brightness-110 active:scale-98"
                             >
-                                <Edit className="h-4 w-4" />
-                                Edit
-                            </Button>
-                        )}
-                    </div>
-
-                    <div className="flex gap-2">
-                        {currentStep > 1 && (
-                            <Button
-                                variant="secondary"
-                                type="button"
-                                onClick={() =>
-                                    setCurrentStep((s) => (s === 2 ? 1 : 1))
-                                }
-                            >
-                                Back
-                            </Button>
-                        )}
-                        {currentStep < 3 && (
-                            <Button
-                                type="button"
-                                className="bg-[#121F78] text-white hover:bg-[#0f1a66]"
-                                onClick={() =>
-                                    setCurrentStep((s) => (s + 1) as any)
-                                }
-                            >
-                                Next
+                                <Edit className="h-3.5 w-3.5" />
+                                Edit Event
                             </Button>
                         )}
                     </div>
