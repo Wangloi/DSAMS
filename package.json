@@ -11,12 +11,7 @@
         "format": "prettier --write resources/",
         "format:check": "prettier --check resources/",
         "lint": "eslint . --fix",
-        "types": "tsc --noEmit",
-        "deploy": "node scripts/deploy.mjs",
-        "deploy:quick": "node scripts/deploy.mjs --quick",
-        "deploy:watch": "node scripts/deploy.mjs --watch",
-        "deploy:dry-run": "node scripts/deploy.mjs --dry-run",
-        "deploy:artisan": "node scripts/deploy.mjs --artisan-only"
+        "types": "tsc --noEmit"
     },
     "devDependencies": {
         "@eslint/js": "^9.19.0",
