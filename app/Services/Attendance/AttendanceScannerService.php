@@ -174,7 +174,9 @@ class AttendanceScannerService
         // Start time verification
         if (! empty($event->event_date) && ! empty($event->event_time)) {
             try {
-                $eventDateStr = Carbon::parse($event->event_date)->format('Y-m-d');
+                $eventDateStr = $event->event_date instanceof \DateTimeInterface 
+                    ? $event->event_date->format('Y-m-d') 
+                    : Carbon::parse((string) $event->event_date)->format('Y-m-d');
                 $startDateTime = Carbon::parse($eventDateStr . ' ' . $event->event_time);
 
                 if ($now->lessThan($startDateTime)) {
@@ -197,8 +199,10 @@ class AttendanceScannerService
 
         // Registration End & Gap Window checks
         if (! empty($event->registration_end_time)) {
-            $eventDate = Carbon::parse($event->event_date);
-            $cutoff = Carbon::parse($eventDate->format('Y-m-d').' '.$event->registration_end_time);
+            $eventDateStr = $event->event_date instanceof \DateTimeInterface 
+                ? $event->event_date->format('Y-m-d') 
+                : Carbon::parse((string) $event->event_date)->format('Y-m-d');
+            $cutoff = Carbon::parse($eventDateStr . ' ' . $event->registration_end_time);
             $timeInClose = $cutoff->copy()->addMinutes(60);
 
             if ($now->greaterThanOrEqualTo($timeInClose) && $now->lessThan($cutoff->copy()->addHours(2))) {
