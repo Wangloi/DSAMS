@@ -63,29 +63,37 @@ class Event extends Model
         }
 
         try {
-            $students = Student::where(function ($q) use ($allowed) {
-                $q->whereIn('student_id', $allowed)
-                  ->orWhereIn('id', $allowed);
-            })->get(['id', 'student_id', 'first_name', 'last_name', 'name', 'course', 'year_level']);
+            if (! \Illuminate\Support\Facades\Schema::hasTable('students')) {
+                return $this->formatFallbackScannerStudents($allowed);
+            }
+
+            $students = \Illuminate\Support\Facades\DB::table('students')
+                ->where(function ($q) use ($allowed) {
+                    $q->whereIn('student_id', $allowed)
+                      ->orWhereIn('id', $allowed);
+                })
+                ->get();
 
             $resolved = [];
             foreach ($allowed as $identifier) {
                 $str = trim((string) $identifier);
                 if ($str === '') continue;
                 $match = $students->first(function ($s) use ($str) {
-                    return (string) $s->student_id === $str || (string) $s->id === $str;
+                    return (string) ($s->student_id ?? '') === $str || (string) ($s->id ?? '') === $str;
                 });
                 if ($match) {
-                    $fullName = trim($match->first_name . ' ' . $match->last_name);
+                    $firstName = $match->first_name ?? '';
+                    $lastName = $match->last_name ?? '';
+                    $fullName = trim($firstName . ' ' . $lastName);
                     if ($fullName === '') {
-                        $fullName = $match->name ?: $str;
+                        $fullName = (string) ($match->name ?? $str);
                     }
                     $resolved[] = [
-                        'id' => $match->id,
-                        'student_id' => $match->student_id ?: $str,
+                        'id' => $match->id ?? $str,
+                        'student_id' => (string) ($match->student_id ?? $str),
                         'name' => $fullName,
-                        'course' => $match->course,
-                        'year_level' => $match->year_level,
+                        'course' => $match->course ?? null,
+                        'year_level' => $match->year_level ?? null,
                     ];
                 } else {
                     $resolved[] = [
@@ -99,16 +107,21 @@ class Event extends Model
             }
             return $resolved;
         } catch (\Throwable) {
-            return array_map(function ($id) {
-                return [
-                    'id' => $id,
-                    'student_id' => (string) $id,
-                    'name' => (string) $id,
-                    'course' => null,
-                    'year_level' => null,
-                ];
-            }, $allowed);
+            return $this->formatFallbackScannerStudents($allowed);
         }
+    }
+
+    private function formatFallbackScannerStudents(array $allowed): array
+    {
+        return array_values(array_map(function ($id) {
+            return [
+                'id' => $id,
+                'student_id' => (string) $id,
+                'name' => (string) $id,
+                'course' => null,
+                'year_level' => null,
+            ];
+        }, $allowed));
     }
 
     protected $casts = [
