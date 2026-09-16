@@ -481,14 +481,6 @@ export default function StudentAttendanceScannerPortalPage({
 
     // Camera Start helper
     const startScanner = useCallback(async () => {
-        if (event.scannerPortalActive === false) {
-            setScanState({
-                status: 'error',
-                message: 'Scanner portal is currently deactivated by the administrator.',
-            });
-            return;
-        }
-
         if (scanBlocked) {
             setScanState({
                 status: 'error',
