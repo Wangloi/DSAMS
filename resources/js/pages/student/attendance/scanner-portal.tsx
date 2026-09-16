@@ -3,6 +3,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import {
     studentAttendanceLogs,
@@ -179,6 +187,8 @@ export default function StudentAttendanceScannerPortalPage({
     } | null>(null);
     const [manualIdInput, setManualIdInput] = useState('');
     const [isSubmittingManual, setIsSubmittingManual] = useState(false);
+    const [soundEnabled, setSoundEnabled] = useState(true);
+    const [showManualModal, setShowManualModal] = useState(false);
 
     // Security & Block status
     const [securityAlerts, setSecurityAlerts] = useState<SecurityAlert[]>(initialSecurityAlerts);
@@ -394,7 +404,14 @@ export default function StudentAttendanceScannerPortalPage({
             const payload = await res.json().catch(() => ({}) as any);
 
             if (!res.ok) {
-                playScanErrorSound();
+                if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+                    try {
+                        navigator.vibrate([100, 50, 100]);
+                    } catch {}
+                }
+                if (soundEnabled) {
+                    playScanErrorSound();
+                }
                 const errMsg = String(payload?.message ?? 'Attendance scan rejected.');
                 setLastScanned({
                     status: 'invalid',
@@ -412,10 +429,17 @@ export default function StudentAttendanceScannerPortalPage({
             }
 
             const isLate = payload?.status === 'late' || (payload?.message && payload.message.toLowerCase().includes('late'));
-            if (isLate) {
-                playScanLateSound();
-            } else {
-                playScanSuccessSound();
+            if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+                try {
+                    navigator.vibrate(80);
+                } catch {}
+            }
+            if (soundEnabled) {
+                if (isLate) {
+                    playScanLateSound();
+                } else {
+                    playScanSuccessSound();
+                }
             }
 
             const studentName = String(payload?.student?.name ?? value);
@@ -433,7 +457,14 @@ export default function StudentAttendanceScannerPortalPage({
             void refreshLogs();
             setTimeout(() => setLastScanned(null), 5000);
         } catch (err: any) {
-            playScanErrorSound();
+            if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+                try {
+                    navigator.vibrate([100, 50, 100]);
+                } catch {}
+            }
+            if (soundEnabled) {
+                playScanErrorSound();
+            }
             setLastScanned({
                 status: 'invalid',
                 message: err?.message || 'Network connection failed.',
@@ -503,10 +534,31 @@ export default function StudentAttendanceScannerPortalPage({
                 return;
             }
 
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: { ideal: cameraFacing } },
-                audio: false,
-            });
+            // Multi-tier getUserMedia fallback for broad mobile/desktop compatibility
+            let stream: MediaStream;
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: { ideal: cameraFacing },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                    },
+                    audio: false,
+                });
+            } catch {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: cameraFacing },
+                        audio: false,
+                    });
+                } catch {
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: true,
+                        audio: false,
+                    });
+                }
+            }
+
             streamRef.current = stream;
             video.srcObject = stream;
 
@@ -514,7 +566,7 @@ export default function StudentAttendanceScannerPortalPage({
                 await video.play();
             } catch (playErr: any) {
                 if (playErr?.name !== 'AbortError') {
-                    throw playErr;
+                    console.warn('[StudentScannerPortal] Video play warning:', playErr);
                 }
             }
 
@@ -538,11 +590,11 @@ export default function StudentAttendanceScannerPortalPage({
                     } catch {
                         // ignore frame parse errors
                     }
-                }, 220);
+                }, 200);
             } else {
                 const reader = new BrowserQRCodeReader();
-                const controls = await reader.decodeFromVideoDevice(
-                    undefined,
+                const controls = await reader.decodeFromStream(
+                    stream,
                     video,
                     (result) => {
                         const value = result?.getText?.() ?? '';
@@ -566,9 +618,15 @@ export default function StudentAttendanceScannerPortalPage({
         } catch (err: any) {
             console.error('[StudentScannerPortal] Camera error:', err);
             stopScanner();
+            const errorMsg =
+                err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError'
+                    ? 'Camera permission denied. Please allow camera access in your browser settings.'
+                    : err?.name === 'NotFoundError' || err?.name === 'DevicesNotFoundError'
+                      ? 'No camera device found on this device.'
+                      : err?.message || 'Unable to activate camera device.';
             setScanState({
                 status: 'error',
-                message: err?.message ?? 'Unable to activate camera device.',
+                message: errorMsg,
             });
         }
     }, [event.scannerPortalActive, scanBlocked, cameraFacing, barcodeDetectorSupported, stopScanner]);
@@ -637,12 +695,111 @@ export default function StudentAttendanceScannerPortalPage({
                     <div className="absolute top-[30%] right-[15%] h-[30%] w-[30%] rounded-full bg-emerald-600/5 blur-[100px]" />
                 </div>
 
-                <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pt-6 sm:px-6 lg:px-8">
+                <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-6 px-3 pt-3 sm:px-6 sm:pt-6 lg:px-8 pb-24 sm:pb-12">
                     
                     {/* ══════════════════════════════════════════════════════════════
-                        HERO HEADER: DSAMS NAVY SIGNATURE GRADIENT BANNER
+                        MOBILE COMPACT HEADER (Visible on small screens < sm)
                     ══════════════════════════════════════════════════════════════ */}
-                    <div className="relative overflow-hidden rounded-3xl border border-blue-900/30 bg-gradient-to-r from-[#0b2d66] via-[#103875] to-[#1e40af] p-6 text-white shadow-xl sm:p-8">
+                    <div className="sm:hidden flex flex-col gap-3 rounded-2xl border border-blue-900/30 bg-gradient-to-r from-[#0b2d66] via-[#103875] to-[#1e40af] p-4 text-white shadow-lg">
+                        <div className="flex items-center justify-between">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 gap-1.5 rounded-xl border border-white/20 bg-white/10 px-2.5 text-xs font-bold text-white backdrop-blur-md hover:bg-white/20 hover:text-white active:scale-95"
+                                asChild
+                            >
+                                <Link href={studentDashboard()}>
+                                    <ArrowLeft className="h-3.5 w-3.5" />
+                                    Back
+                                </Link>
+                            </Button>
+
+                            <div className="flex items-center gap-1.5">
+                                {event.scannerPortalActive === false ? (
+                                    <Badge variant="outline" className="border-rose-400/40 bg-rose-500/20 px-2 py-0.5 text-[9px] font-black tracking-wider text-rose-100 uppercase">
+                                        Paused
+                                    </Badge>
+                                ) : (
+                                    <Badge variant="outline" className="border-emerald-400/40 bg-emerald-500/20 px-2 py-0.5 text-[9px] font-black tracking-wider text-emerald-100 uppercase flex items-center gap-1">
+                                        <span className="relative flex h-1.5 w-1.5">
+                                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                                        </span>
+                                        Live
+                                    </Badge>
+                                )}
+
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 rounded-xl border border-white/20 bg-white/10 text-white"
+                                    onClick={() => setSoundEnabled((prev) => !prev)}
+                                    title={soundEnabled ? 'Mute audio' : 'Unmute audio'}
+                                >
+                                    {soundEnabled ? <Volume2 className="h-3.5 w-3.5 text-emerald-300" /> : <VolumeX className="h-3.5 w-3.5 text-rose-300" />}
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 rounded-xl border border-white/20 bg-white/10 text-white"
+                                    onClick={toggleCameraFacing}
+                                    title="Flip Camera"
+                                >
+                                    <SwitchCamera className="h-3.5 w-3.5" />
+                                </Button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h1 className="text-lg font-black tracking-tight text-white truncate">
+                                {event.name}
+                            </h1>
+                            <div className="flex items-center gap-2 text-[11px] text-blue-100/90 font-medium mt-0.5">
+                                <span>{event.date || 'Today'}</span>
+                                {event.timeIn && <span>• In: {formatTime12h(event.timeIn)}</span>}
+                                {event.location && <span>• {event.location}</span>}
+                            </div>
+                        </div>
+
+                        {/* Mobile Full-Width Segmented Mode Switch */}
+                        <div className="grid grid-cols-2 gap-1 rounded-xl border border-white/20 bg-black/30 p-1 backdrop-blur-xl">
+                            <button
+                                type="button"
+                                onClick={() => setAttendanceMode('entry')}
+                                className={cn(
+                                    'flex h-8 items-center justify-center gap-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all',
+                                    attendanceMode === 'entry'
+                                        ? 'bg-emerald-500 text-white shadow-md ring-1 ring-emerald-300'
+                                        : 'text-white/80 hover:bg-white/10',
+                                )}
+                            >
+                                <LogIn className="h-3.5 w-3.5" />
+                                Time-In
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setAttendanceMode('exit')}
+                                className={cn(
+                                    'flex h-8 items-center justify-center gap-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all',
+                                    attendanceMode === 'exit'
+                                        ? 'bg-rose-500 text-white shadow-md ring-1 ring-rose-300'
+                                        : 'text-white/80 hover:bg-white/10',
+                                )}
+                            >
+                                <LogOut className="h-3.5 w-3.5" />
+                                Time-Out
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* ══════════════════════════════════════════════════════════════
+                        HERO HEADER: DSAMS NAVY SIGNATURE GRADIENT BANNER (Desktop)
+                    ══════════════════════════════════════════════════════════════ */}
+                    <div className="hidden sm:block relative overflow-hidden rounded-3xl border border-blue-900/30 bg-gradient-to-r from-[#0b2d66] via-[#103875] to-[#1e40af] p-6 text-white shadow-xl sm:p-8">
                         {/* Glow ambient highlights */}
                         <div className="pointer-events-none absolute -top-24 -right-24 h-80 w-80 rounded-full bg-white/10 blur-3xl" />
                         <div className="pointer-events-none absolute -bottom-24 -left-24 h-80 w-80 rounded-full bg-cyan-400/15 blur-3xl" />
@@ -813,9 +970,27 @@ export default function StudentAttendanceScannerPortalPage({
                     </div>
 
                     {/* ══════════════════════════════════════════════════════════════
-                        KPI SUMMARY CARDS (CLEAN LIGHT/DARK RESPONSIVE)
+                        MOBILE KPI CHIPS STRIP (Visible on < sm)
                     ══════════════════════════════════════════════════════════════ */}
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <div className="sm:hidden grid grid-cols-3 gap-2">
+                        <div className="rounded-2xl border border-blue-200/80 bg-white p-2.5 text-center shadow-xs dark:border-slate-800 dark:bg-[#0B192C]">
+                            <p className="text-[10px] font-extrabold text-slate-500 uppercase dark:text-slate-400">Total</p>
+                            <p className="text-lg font-black text-blue-600 dark:text-blue-400">{liveCounts.total}</p>
+                        </div>
+                        <div className="rounded-2xl border border-emerald-200/80 bg-white p-2.5 text-center shadow-xs dark:border-slate-800 dark:bg-[#0B192C]">
+                            <p className="text-[10px] font-extrabold text-emerald-600 uppercase dark:text-emerald-400">On Time</p>
+                            <p className="text-lg font-black text-emerald-700 dark:text-emerald-300">{liveCounts.present}</p>
+                        </div>
+                        <div className="rounded-2xl border border-rose-200/80 bg-white p-2.5 text-center shadow-xs dark:border-slate-800 dark:bg-[#0B192C]">
+                            <p className="text-[10px] font-extrabold text-rose-600 uppercase dark:text-rose-400">Late</p>
+                            <p className="text-lg font-black text-rose-700 dark:text-rose-300">{liveCounts.late}</p>
+                        </div>
+                    </div>
+
+                    {/* ══════════════════════════════════════════════════════════════
+                        KPI SUMMARY CARDS (Desktop/Tablet >= sm)
+                    ══════════════════════════════════════════════════════════════ */}
+                    <div className="hidden sm:grid grid-cols-3 gap-4">
                         {/* Stat 1: Total Checked In */}
                         <div className="group relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all duration-300 hover:border-blue-300 hover:shadow-md dark:border-slate-800 dark:bg-[#0B192C]/70">
                             <div className="flex items-center gap-4">
@@ -897,9 +1072,9 @@ export default function StudentAttendanceScannerPortalPage({
                     </div>
 
                     {/* ══════════════════════════════════════════════════════════════
-                        TAB NAVIGATION BAR
+                        TAB NAVIGATION BAR (Desktop & Tablet)
                     ══════════════════════════════════════════════════════════════ */}
-                    <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="hidden sm:flex flex-wrap items-center justify-between gap-3">
                         <div className="inline-flex rounded-2xl border border-slate-200/80 bg-white p-1.5 shadow-sm backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/90">
                             <button
                                 type="button"
@@ -956,10 +1131,10 @@ export default function StudentAttendanceScannerPortalPage({
                     {(activeTab === 'scanner' || activeTab === 'split') && (
                         <div className={cn('grid grid-cols-1 gap-6', activeTab === 'split' ? 'lg:grid-cols-12' : '')}>
                             {/* Camera Viewport Container */}
-                            <div className={cn('flex flex-col gap-6', activeTab === 'split' ? 'lg:col-span-6' : 'max-w-4xl mx-auto w-full')}>
+                            <div className={cn('flex flex-col gap-4 sm:gap-6', activeTab === 'split' ? 'lg:col-span-6' : 'max-w-4xl mx-auto w-full')}>
                                 <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm transition-all dark:border-slate-800 dark:bg-[#0B192C]/70">
-                                    {/* Viewport Header */}
-                                    <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/70 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+                                    {/* Viewport Header (Desktop) */}
+                                    <div className="hidden sm:flex items-center justify-between border-b border-slate-100 bg-slate-50/70 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/60">
                                         <div className="flex items-center gap-3">
                                             <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400">
                                                 <Camera className="h-4 w-4" />
@@ -979,12 +1154,33 @@ export default function StudentAttendanceScannerPortalPage({
                                                 type="button"
                                                 variant="outline"
                                                 size="sm"
+                                                onClick={() => setSoundEnabled((prev) => !prev)}
+                                                className="h-8 gap-1.5 rounded-xl border-slate-200 text-xs text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                                                title={soundEnabled ? 'Mute audio feedback' : 'Enable audio feedback'}
+                                            >
+                                                {soundEnabled ? (
+                                                    <>
+                                                        <Volume2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                                                        <span>Sound On</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <VolumeX className="h-3.5 w-3.5 text-rose-500" />
+                                                        <span>Sound Off</span>
+                                                    </>
+                                                )}
+                                            </Button>
+
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
                                                 onClick={toggleCameraFacing}
                                                 className="h-8 gap-1.5 rounded-xl border-slate-200 text-xs text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                                                 title="Switch Camera (Front/Rear)"
                                             >
                                                 <SwitchCamera className="h-3.5 w-3.5" />
-                                                <span className="hidden sm:inline">{cameraFacing === 'environment' ? 'Rear Camera' : 'Front Camera'}</span>
+                                                <span>{cameraFacing === 'environment' ? 'Rear Camera' : 'Front Camera'}</span>
                                             </Button>
 
                                             {scanState.status === 'running' ? (
@@ -1004,26 +1200,95 @@ export default function StudentAttendanceScannerPortalPage({
                                     </div>
 
                                     {/* Camera Video Reticle Viewport */}
-                                    <div className="p-6 space-y-4">
-                                        <div className="relative aspect-[16/10] w-full overflow-hidden rounded-3xl border border-slate-800 bg-black shadow-2xl">
+                                    <div className="p-3 sm:p-6 space-y-3 sm:space-y-4">
+                                        <div className="relative aspect-[3/4] sm:aspect-[16/10] w-full overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-800 bg-black shadow-2xl">
                                             <video
                                                 ref={videoRef}
                                                 className="absolute inset-0 h-full w-full object-cover"
                                                 playsInline
+                                                autoPlay
                                                 muted
                                             />
 
+                                            {/* Camera Loading State Overlay */}
+                                            {scanState.status === 'starting' && (
+                                                <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/85 p-6 text-center text-white backdrop-blur-md">
+                                                    <RefreshCw className="h-10 w-10 animate-spin text-cyan-400 mb-3" />
+                                                    <p className="text-base font-black">Activating Camera...</p>
+                                                    <p className="text-xs text-slate-300 mt-1">Requesting camera device access</p>
+                                                </div>
+                                            )}
+
+                                            {/* Camera Error / Inactive State Overlay with Action Button */}
+                                            {(scanState.status === 'error' || scanState.status === 'idle') && (
+                                                <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/85 p-6 text-center text-white backdrop-blur-md">
+                                                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-500/20 text-rose-400 ring-1 ring-rose-500/30 mb-3">
+                                                        <Camera className="h-7 w-7" />
+                                                    </div>
+                                                    <p className="text-base font-black text-white">
+                                                        {scanState.status === 'error' ? 'Camera Access Issue' : 'Camera is Idle'}
+                                                    </p>
+                                                    <p className="max-w-xs text-xs text-slate-300 mt-1 mb-4 leading-relaxed">
+                                                        {scanState.status === 'error'
+                                                            ? scanState.message
+                                                            : 'Tap below to activate your camera and start scanning attendee QR badges.'}
+                                                    </p>
+                                                    <Button
+                                                        type="button"
+                                                        onClick={() => void startScanner()}
+                                                        disabled={event.scannerPortalActive === false || scanBlocked}
+                                                        className="h-10 gap-2 rounded-xl bg-cyan-500 font-black text-slate-950 hover:bg-cyan-400 active:scale-95 shadow-lg shadow-cyan-500/20"
+                                                    >
+                                                        <Camera className="h-4 w-4" />
+                                                        {scanState.status === 'error' ? 'Retry Camera' : 'Start Camera'}
+                                                    </Button>
+                                                </div>
+                                            )}
+
+                                            {/* Floating Mobile Controls overlay inside camera viewfinder */}
+                                            <div className="sm:hidden absolute top-3 inset-x-3 z-20 flex items-center justify-between pointer-events-auto">
+                                                <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 text-[10px] font-black tracking-wider text-white">
+                                                    {scanState.status === 'running' ? (
+                                                        <>
+                                                            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+                                                            <span>READY TO SCAN</span>
+                                                        </>
+                                                    ) : (
+                                                        <span>INITIALIZING...</span>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex items-center gap-1.5">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSoundEnabled((prev) => !prev)}
+                                                        className="h-8 w-8 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-white active:scale-95"
+                                                        title="Toggle Sound"
+                                                    >
+                                                        {soundEnabled ? <Volume2 className="h-4 w-4 text-emerald-300" /> : <VolumeX className="h-4 w-4 text-rose-300" />}
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={toggleCameraFacing}
+                                                        className="h-8 w-8 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-white active:scale-95"
+                                                        title="Flip Camera"
+                                                    >
+                                                        <SwitchCamera className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
+
                                             {/* High-Tech Futuristic Reticle Frame */}
                                             <div className="pointer-events-none absolute inset-0">
-                                                <div className="absolute inset-0 bg-black/40" />
+                                                <div className="absolute inset-0 bg-black/35" />
                                                 
                                                 {/* Focus Box */}
-                                                <div className="absolute top-1/2 left-1/2 h-56 w-56 -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-blue-400/30 shadow-[0_0_0_1000px_rgba(0,0,0,0.45)] sm:h-64 sm:w-64">
+                                                <div className="absolute top-1/2 left-1/2 h-60 w-60 -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-blue-400/30 shadow-[0_0_0_1000px_rgba(0,0,0,0.45)] sm:h-64 sm:w-64">
                                                     {/* Corner Neon Reticles */}
-                                                    <div className="absolute -top-1.5 -left-1.5 h-8 w-8 rounded-tl-2xl border-t-4 border-l-4 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
-                                                    <div className="absolute -top-1.5 -right-1.5 h-8 w-8 rounded-tr-2xl border-t-4 border-r-4 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
-                                                    <div className="absolute -bottom-1.5 -left-1.5 h-8 w-8 rounded-bl-2xl border-b-4 border-l-4 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
-                                                    <div className="absolute -bottom-1.5 -right-1.5 h-8 w-8 rounded-br-2xl border-r-4 border-b-4 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
+                                                    <div className="absolute -top-1.5 -left-1.5 h-7 w-7 rounded-tl-2xl border-t-4 border-l-4 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
+                                                    <div className="absolute -top-1.5 -right-1.5 h-7 w-7 rounded-tr-2xl border-t-4 border-r-4 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
+                                                    <div className="absolute -bottom-1.5 -left-1.5 h-7 w-7 rounded-bl-2xl border-b-4 border-l-4 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
+                                                    <div className="absolute -bottom-1.5 -right-1.5 h-7 w-7 rounded-br-2xl border-r-4 border-b-4 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
 
                                                     {/* Crosshair Center */}
                                                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-4 w-4">
@@ -1042,7 +1307,7 @@ export default function StudentAttendanceScannerPortalPage({
                                             {lastScanned ? (
                                                 <div
                                                     className={cn(
-                                                        'absolute inset-x-0 bottom-0 p-5 text-center font-bold text-white backdrop-blur-xl transition-all duration-300 animate-in fade-in slide-in-from-bottom-4',
+                                                        'absolute inset-x-0 bottom-0 p-4 sm:p-5 text-center font-bold text-white backdrop-blur-xl transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 z-20',
                                                         lastScanned.status === 'valid'
                                                             ? 'bg-emerald-600/95 border-t border-emerald-400/40 shadow-[0_-10px_30px_rgba(16,185,129,0.3)]'
                                                             : lastScanned.status === 'late'
@@ -1050,15 +1315,15 @@ export default function StudentAttendanceScannerPortalPage({
                                                               : 'bg-rose-600/95 border-t border-rose-400/40 shadow-[0_-10px_30px_rgba(225,29,72,0.3)]',
                                                     )}
                                                 >
-                                                    <div className="flex items-center justify-center gap-2 mb-1">
+                                                    <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-1">
                                                         {lastScanned.status === 'valid' ? (
-                                                            <CheckCircle2 className="h-5 w-5" />
+                                                            <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" />
                                                         ) : lastScanned.status === 'late' ? (
-                                                            <Clock className="h-5 w-5" />
+                                                            <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
                                                         ) : (
-                                                            <AlertCircle className="h-5 w-5" />
+                                                            <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5" />
                                                         )}
-                                                        <span className="text-base font-black uppercase tracking-wider">
+                                                        <span className="text-xs sm:text-base font-black uppercase tracking-wider">
                                                             {lastScanned.status === 'valid'
                                                                 ? 'Attendance Recorded (On-Time)'
                                                                 : lastScanned.status === 'late'
@@ -1066,23 +1331,23 @@ export default function StudentAttendanceScannerPortalPage({
                                                                   : 'Scan Rejected'}
                                                         </span>
                                                     </div>
-                                                    <p className="text-sm font-extrabold text-white">
+                                                    <p className="text-xs sm:text-sm font-extrabold text-white truncate">
                                                         {lastScanned.studentName}
                                                         {lastScanned.studentId ? ` (${lastScanned.studentId})` : ''}
                                                     </p>
-                                                    <p className="text-xs font-medium text-white/90 mt-0.5">
+                                                    <p className="text-[11px] sm:text-xs font-medium text-white/90 mt-0.5 truncate">
                                                         {lastScanned.message} • {lastScanned.timestamp}
                                                     </p>
                                                 </div>
                                             ) : (
-                                                <div className="absolute inset-x-0 bottom-0 bg-black/75 px-6 py-3 text-center text-xs font-semibold text-slate-300 backdrop-blur-md">
-                                                    Position student QR code inside the cyan reticle
+                                                <div className="absolute inset-x-0 bottom-0 bg-black/75 px-4 py-2 sm:px-6 sm:py-3 text-center text-[11px] sm:text-xs font-semibold text-slate-300 backdrop-blur-md">
+                                                    Center student QR badge inside the blue target reticle
                                                 </div>
                                             )}
                                         </div>
 
-                                        {/* Camera Action Buttons */}
-                                        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                                        {/* Camera Action Buttons (Desktop) */}
+                                        <div className="hidden sm:flex flex-wrap items-center justify-between gap-3 pt-2">
                                             <div className="flex items-center gap-2">
                                                 <Button
                                                     type="button"
@@ -1115,18 +1380,18 @@ export default function StudentAttendanceScannerPortalPage({
 
                                             <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
                                                 <Volume2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                                                <span>Audio cues enabled</span>
+                                                <span>Audio cues {soundEnabled ? 'enabled' : 'muted'}</span>
                                             </div>
                                         </div>
 
-                                        {/* Manual Barcode / Student ID Input Bar */}
-                                        <div className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+                                        {/* Manual Barcode / Student ID Input Bar (Desktop) */}
+                                        <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3 sm:p-4 dark:border-slate-800 dark:bg-slate-900/60">
                                             <form onSubmit={handleManualSubmit} className="flex flex-col sm:flex-row gap-2">
                                                 <div className="relative flex-1">
                                                     <QrCode className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                                                     <Input
                                                         type="text"
-                                                        placeholder="Enter or scan Student ID manually..."
+                                                        placeholder="Enter Student ID manually (e.g. ID-C230238)..."
                                                         value={manualIdInput}
                                                         onChange={(e) => setManualIdInput(e.target.value)}
                                                         className="h-10 rounded-xl border-slate-200 bg-white pl-9 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:border-blue-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
@@ -1247,7 +1512,7 @@ export default function StudentAttendanceScannerPortalPage({
                             {/* Left Column: Live Activity Table (8/12) */}
                             <div className="flex flex-col gap-6 lg:col-span-8">
                                 <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-[#0B192C]/70">
-                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 bg-slate-50/70 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/60">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 bg-slate-50/70 px-4 py-3 sm:px-6 sm:py-4 dark:border-slate-800 dark:bg-slate-900/60">
                                         <div className="flex items-center gap-3">
                                             <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400">
                                                 <Activity className="h-4 w-4" />
@@ -1279,7 +1544,69 @@ export default function StudentAttendanceScannerPortalPage({
                                         </div>
                                     </div>
 
-                                    <div className="overflow-x-auto">
+                                    {/* Mobile Cards View (< md) */}
+                                    <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+                                        {paginatedRows.length === 0 ? (
+                                            <div className="p-8 text-center text-slate-400">
+                                                <Users className="mx-auto h-8 w-8 stroke-1 text-slate-400 dark:text-slate-600 mb-2" />
+                                                <p className="text-sm font-bold text-slate-600 dark:text-slate-400">No attendance records found</p>
+                                                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                                                    {searchQuery ? 'No student matched search.' : 'Scanned students will appear here.'}
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            paginatedRows.map((row, idx) => {
+                                                const isLate = row.status === 'late';
+                                                const isInvalid = row.status === 'invalid';
+                                                const initials = row.name
+                                                    ? row.name
+                                                          .split(' ')
+                                                          .map((n) => n[0])
+                                                          .join('')
+                                                          .substring(0, 2)
+                                                          .toUpperCase()
+                                                    : 'ST';
+                                                return (
+                                                    <div key={row.id || idx} className="p-4 flex items-center justify-between gap-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                                                        <div className="flex items-center gap-3 min-w-0">
+                                                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-[11px] font-black text-white shadow-sm">
+                                                                {initials}
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <p className="truncate font-black text-sm text-slate-900 dark:text-white">
+                                                                    {row.name}
+                                                                </p>
+                                                                <p className="truncate text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                                                    {row.student_id || row.id} • <span className="text-blue-600 dark:text-blue-400">{row.program}</span>
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right shrink-0 space-y-1">
+                                                            {isInvalid ? (
+                                                                <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-black text-rose-700 uppercase dark:border-rose-500/30 dark:bg-rose-500/15 dark:text-rose-300">
+                                                                    Invalid
+                                                                </span>
+                                                            ) : isLate ? (
+                                                                <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-black text-amber-700 uppercase dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-300">
+                                                                    Late
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-black text-emerald-700 uppercase dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300">
+                                                                    Present
+                                                                </span>
+                                                            )}
+                                                            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                                                                {row.time || formatTime12h(row.checked_in_at)}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+
+                                    {/* Desktop Table View (>= md) */}
+                                    <div className="hidden md:block overflow-x-auto">
                                         <table className="w-full text-left text-xs">
                                             <thead>
                                                 <tr className="border-b border-slate-100 bg-slate-50/50 text-[10px] font-black tracking-wider text-slate-500 uppercase dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-400">
@@ -1373,7 +1700,7 @@ export default function StudentAttendanceScannerPortalPage({
 
                                     {/* Pagination Controls */}
                                     {filteredRows.length > itemsPerPage && (
-                                        <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/60 px-6 py-3 text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
+                                        <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/60 px-4 py-3 sm:px-6 text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
                                             <div>
                                                 Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
                                                 {Math.min(currentPage * itemsPerPage, filteredRows.length)} of{' '}
@@ -1545,6 +1872,115 @@ export default function StudentAttendanceScannerPortalPage({
                     )}
 
                 </div>
+
+                {/* ══════════════════════════════════════════════════════════════
+                    MOBILE STICKY BOTTOM NAVIGATION DOCK (Phones only < sm)
+                ══════════════════════════════════════════════════════════════ */}
+                <div className="sm:hidden fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/80 bg-white/95 px-4 py-2 backdrop-blur-xl shadow-2xl dark:border-slate-800 dark:bg-[#0B192C]/95">
+                    <div className="grid grid-cols-3 gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('scanner')}
+                            className={cn(
+                                'flex flex-col items-center justify-center gap-1 rounded-xl py-1.5 transition-all',
+                                activeTab === 'scanner'
+                                    ? 'bg-[#0b2d66] text-white font-black shadow-md shadow-blue-900/30 dark:bg-blue-600'
+                                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold',
+                            )}
+                        >
+                            <Camera className="h-4 w-4" />
+                            <span className="text-[10px] tracking-wider uppercase">Scanner</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('dashboard')}
+                            className={cn(
+                                'flex flex-col items-center justify-center gap-1 rounded-xl py-1.5 transition-all relative',
+                                activeTab === 'dashboard'
+                                    ? 'bg-[#0b2d66] text-white font-black shadow-md shadow-blue-900/30 dark:bg-blue-600'
+                                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold',
+                            )}
+                        >
+                            <BarChart3 className="h-4 w-4" />
+                            <span className="text-[10px] tracking-wider uppercase">Logs ({liveCounts.total})</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setShowManualModal(true)}
+                            className="flex flex-col items-center justify-center gap-1 rounded-xl py-1.5 font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-all"
+                        >
+                            <QrCode className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            <span className="text-[10px] tracking-wider uppercase">Manual</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* ══════════════════════════════════════════════════════════════
+                    MANUAL ID ENTRY MODAL (Quick mobile or desktop entry)
+                ══════════════════════════════════════════════════════════════ */}
+                <Dialog open={showManualModal} onOpenChange={setShowManualModal}>
+                    <DialogContent className="sm:max-w-md rounded-3xl border-slate-200 dark:border-slate-800 dark:bg-[#0B192C]">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2 text-lg font-black text-slate-900 dark:text-white">
+                                <QrCode className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                Manual Student Check-In
+                            </DialogTitle>
+                            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+                                Enter the student's ID number or scanned barcode value to log attendance.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <form
+                            onSubmit={async (e) => {
+                                e.preventDefault();
+                                if (!manualIdInput.trim() || isSubmittingManual) return;
+                                setIsSubmittingManual(true);
+                                try {
+                                    await handleScanSubmission(manualIdInput.trim());
+                                    setManualIdInput('');
+                                    setShowManualModal(false);
+                                } finally {
+                                    setIsSubmittingManual(false);
+                                }
+                            }}
+                            className="space-y-4 pt-2"
+                        >
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                    Student ID / Barcode:
+                                </label>
+                                <Input
+                                    type="text"
+                                    placeholder="e.g. ID-C230238 or 2023-00123"
+                                    value={manualIdInput}
+                                    onChange={(e) => setManualIdInput(e.target.value)}
+                                    autoFocus
+                                    className="h-11 rounded-xl text-sm font-semibold border-slate-200 dark:border-slate-800 dark:bg-slate-950"
+                                />
+                            </div>
+
+                            <DialogFooter className="flex flex-row gap-2 justify-end sm:justify-end">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setShowManualModal(false)}
+                                    className="h-10 rounded-xl font-bold"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={!manualIdInput.trim() || isSubmittingManual}
+                                    className="h-10 rounded-xl bg-[#0b2d66] font-bold text-white hover:bg-[#103875] dark:bg-blue-600"
+                                >
+                                    {isSubmittingManual ? 'Processing...' : 'Submit Attendance'}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
             </div>
         </AppShell>
     );
