@@ -300,7 +300,7 @@ class StudentDashboardController extends Controller
                 'status'                => $isDone ? 'completed' : $event->status,
                 'is_done'               => $isDone,
                 'is_scanner_assigned'   => $isScannerAssigned,
-                'scanner_portal_active' => $isScannerAssigned && (bool) ($event->scanner_portal_active ?? false) && !$isDone,
+                'scanner_portal_active' => $isScannerAssigned && !$isDone,
                 'attendance_type'       => (string) ($event->attendance_type ?? 'qr_scanner'),
                 'geofence_enabled'      => (bool) ($event->geofence_enabled ?? false),
                 'geofence_latitude'     => $event->geofence_latitude ? (float) $event->geofence_latitude : null,

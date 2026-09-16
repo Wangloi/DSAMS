@@ -349,21 +349,16 @@ class StudentAttendanceController extends Controller
                 ->setStatusCode(303);
         }
 
-        // Auto-activate scanner portal for assigned student scanner if event is not completed
-        if (Schema::hasColumn('events', 'scanner_portal_active') && (string) $event->status !== 'completed') {
-            if (! (bool) $event->scanner_portal_active) {
-                $event->update(['scanner_portal_active' => true]);
-            }
-        }
         $isScannerPortalActive = true;
-
-        if (Schema::hasColumn('events', 'scanner_portal_active') && ! empty($event->registration_end_time)) {
-            $eventDate = Carbon::parse($event->event_date);
-            $cutoff = Carbon::parse($eventDate->format('Y-m-d').' '.$event->registration_end_time);
-            $blockAt = $cutoff->copy()->addMinutes(30);
-            if (Carbon::now()->greaterThanOrEqualTo($blockAt)) {
-                $isScannerPortalActive = false;
-            }
+        if (! empty($event->registration_end_time) && $event->event_date) {
+            try {
+                $eventDate = Carbon::parse($event->event_date);
+                $cutoff = Carbon::parse($eventDate->format('Y-m-d').' '.$event->registration_end_time);
+                $blockAt = $cutoff->copy()->addMinutes(30);
+                if (Carbon::now()->greaterThanOrEqualTo($blockAt)) {
+                    $isScannerPortalActive = false;
+                }
+            } catch (\Throwable) {}
         }
 
         $initialLogRows = $this->getScannerInitialLogRows($event);

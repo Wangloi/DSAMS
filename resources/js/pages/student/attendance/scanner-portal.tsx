@@ -708,9 +708,9 @@ export default function StudentAttendanceScannerPortalPage({
                             </Button>
 
                             <div className="flex items-center gap-1.5">
-                                {event.scannerPortalActive === false ? (
+                                {scanBlocked ? (
                                     <Badge variant="outline" className="border-rose-400/40 bg-rose-500/20 px-2 py-0.5 text-[9px] font-black tracking-wider text-rose-100 uppercase">
-                                        Paused
+                                        Closed
                                     </Badge>
                                 ) : (
                                     <Badge variant="outline" className="border-emerald-400/40 bg-emerald-500/20 px-2 py-0.5 text-[9px] font-black tracking-wider text-emerald-100 uppercase flex items-center gap-1">
@@ -820,9 +820,9 @@ export default function StudentAttendanceScannerPortalPage({
                                         <span>Assigned Scanner Portal</span>
                                     </div>
 
-                                    {event.scannerPortalActive === false ? (
+                                    {scanBlocked ? (
                                         <Badge variant="outline" className="border-rose-400/40 bg-rose-500/20 px-2.5 py-0.5 text-[10px] font-black tracking-widest text-rose-100 uppercase">
-                                            Portal Paused
+                                            Scanning Closed
                                         </Badge>
                                     ) : (
                                         <Badge variant="outline" className="border-emerald-400/40 bg-emerald-500/20 px-2.5 py-0.5 text-[10px] font-black tracking-widest text-emerald-100 uppercase">
@@ -1228,7 +1228,7 @@ export default function StudentAttendanceScannerPortalPage({
                                                     <Button
                                                         type="button"
                                                         onClick={() => void startScanner()}
-                                                        disabled={event.scannerPortalActive === false || scanBlocked}
+                                                        disabled={scanBlocked}
                                                         className="h-10 gap-2 rounded-xl bg-cyan-500 font-black text-slate-950 hover:bg-cyan-400 active:scale-95 shadow-lg shadow-cyan-500/20"
                                                     >
                                                         <Camera className="h-4 w-4" />
@@ -1347,7 +1347,6 @@ export default function StudentAttendanceScannerPortalPage({
                                                     className="h-10 gap-2 rounded-xl bg-emerald-600 font-bold text-white hover:bg-emerald-500 active:scale-95 shadow-md shadow-emerald-600/20"
                                                     onClick={() => void startScanner()}
                                                     disabled={
-                                                        event.scannerPortalActive === false ||
                                                         scanBlocked ||
                                                         isScannerBlocked ||
                                                         scanState.status === 'starting' ||

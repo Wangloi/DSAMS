@@ -215,23 +215,21 @@ export function StudentTimelineEvents({
                                                             </Button>
                                                         ))}
 
-                                                    {event.is_scanner_assigned &&
-                                                        event.scanner_portal_active &&
-                                                        !isDone && (
-                                                            <Button
-                                                                className="h-9 w-full sm:w-auto justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 text-[10px] font-black tracking-widest text-white uppercase shadow-md shadow-blue-500/25 transition-all active:scale-95"
-                                                                onClick={() =>
-                                                                    router.visit(
-                                                                        studentAttendanceScannerPortal(
-                                                                            event.id,
-                                                                        ),
-                                                                    )
-                                                                }
-                                                            >
-                                                                Open Scanner
-                                                                <Camera className="ml-1.5 h-3.5 w-3.5" />
-                                                            </Button>
-                                                        )}
+                                                    {event.is_scanner_assigned && !isDone && (
+                                                        <Button
+                                                            className="h-9 w-full sm:w-auto justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 text-[10px] font-black tracking-widest text-white uppercase shadow-md shadow-blue-500/25 transition-all active:scale-95"
+                                                            onClick={() =>
+                                                                router.visit(
+                                                                    studentAttendanceScannerPortal(
+                                                                        event.id,
+                                                                    ),
+                                                                )
+                                                            }
+                                                        >
+                                                            Open Scanner
+                                                            <Camera className="ml-1.5 h-3.5 w-3.5" />
+                                                        </Button>
+                                                    )}
                                                 </>
                                             )}
                                         </div>
