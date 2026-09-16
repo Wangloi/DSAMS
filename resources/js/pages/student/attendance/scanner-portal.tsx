@@ -148,11 +148,38 @@ export default function StudentAttendanceScannerPortalPage({
     const page = usePage<SharedData>();
     const eventId = String(event.id);
 
+    // Determine initial mode (Auto: 'entry' during registration window, 'exit' after registration end time)
+    const initialMode = useMemo<'entry' | 'exit'>(() => {
+        const date = String(event.date ?? '').trim();
+        const timeEnd = String(event.timeEnd ?? '').trim();
+        if (!date || !timeEnd) return 'entry';
+
+        const match = timeEnd.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+        if (!match) return 'entry';
+
+        const hours = Number.parseInt(match[1], 10);
+        const minutes = Number.parseInt(match[2], 10);
+        if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return 'entry';
+
+        const cutoff = new Date(`${date}T00:00:00`);
+        if (Number.isNaN(cutoff.getTime())) return 'entry';
+        cutoff.setHours(hours, minutes, 0, 0);
+
+        return new Date() >= cutoff ? 'exit' : 'entry';
+    }, [event.date, event.timeEnd]);
+
     // Active View Tab: 'scanner' | 'dashboard' | 'split'
     const [activeTab, setActiveTab] = useState<'scanner' | 'dashboard' | 'split'>('scanner');
-    const [attendanceMode, setAttendanceMode] = useState<'entry' | 'exit'>('entry');
+    const [attendanceMode, setAttendanceMode] = useState<'entry' | 'exit'>(initialMode);
+    const [isAutoMode, setIsAutoMode] = useState(true);
     const [monitoringEnabled, setMonitoringEnabled] = useState(true);
     const [cameraFacing, setCameraFacing] = useState<'environment' | 'user'>('environment');
+
+    // Automatically update mode based on clock if in Auto Mode
+    useEffect(() => {
+        if (!isAutoMode) return;
+        setAttendanceMode(initialMode);
+    }, [initialMode, isAutoMode]);
 
     // Live Feed State
     const [liveRows, setLiveRows] = useState<AttendanceLogRow[]>(initialLogRows);
@@ -226,26 +253,15 @@ export default function StudentAttendanceScannerPortalPage({
         return typeof window !== 'undefined' && 'BarcodeDetector' in window;
     }, []);
 
-    // Check if scan is blocked past 30m after registration end time
+    // Check if scan is blocked past 24 hours
     const scanBlocked = useMemo(() => {
         const date = String(event.date ?? '').trim();
-        const timeEnd = String(event.timeEnd ?? '').trim();
-        if (!date || !timeEnd) return false;
+        if (!date) return false;
 
-        const match = timeEnd.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
-        if (!match) return false;
-
-        const hours = Number.parseInt(match[1], 10);
-        const minutes = Number.parseInt(match[2], 10);
-        if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return false;
-
-        const cutoff = new Date(`${date}T00:00:00`);
-        if (Number.isNaN(cutoff.getTime())) return false;
-
-        cutoff.setHours(hours, minutes, 0, 0);
-        const blockAt = new Date(cutoff.getTime() + 30 * 60 * 1000);
-        return new Date() >= blockAt;
-    }, [event.date, event.timeEnd]);
+        const eventDay = new Date(`${date}T23:59:59`);
+        if (Number.isNaN(eventDay.getTime())) return false;
+        return new Date() > new Date(eventDay.getTime() + 12 * 60 * 60 * 1000);
+    }, [event.date]);
 
     // Check scanner block status
     useEffect(() => {
@@ -757,9 +773,10 @@ export default function StudentAttendanceScannerPortalPage({
                             <h1 className="text-lg font-black tracking-tight text-white truncate">
                                 {event.name}
                             </h1>
-                            <div className="flex items-center gap-2 text-[11px] text-blue-100/90 font-medium mt-0.5">
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-blue-100/90 font-medium mt-0.5">
                                 <span>{event.date || 'Today'}</span>
                                 {event.timeIn && <span>• In: {formatTime12h(event.timeIn)}</span>}
+                                {event.timeEnd && <span>• Out: {formatTime12h(event.timeEnd)}</span>}
                                 {event.location && <span>• {event.location}</span>}
                             </div>
                         </div>
@@ -768,7 +785,10 @@ export default function StudentAttendanceScannerPortalPage({
                         <div className="grid grid-cols-2 gap-1 rounded-xl border border-white/20 bg-black/30 p-1 backdrop-blur-xl">
                             <button
                                 type="button"
-                                onClick={() => setAttendanceMode('entry')}
+                                onClick={() => {
+                                    setIsAutoMode(false);
+                                    setAttendanceMode('entry');
+                                }}
                                 className={cn(
                                     'flex h-8 items-center justify-center gap-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all',
                                     attendanceMode === 'entry'
@@ -777,11 +797,14 @@ export default function StudentAttendanceScannerPortalPage({
                                 )}
                             >
                                 <LogIn className="h-3.5 w-3.5" />
-                                Time-In
+                                Time-In {isAutoMode && initialMode === 'entry' ? '(Auto)' : ''}
                             </button>
                             <button
                                 type="button"
-                                onClick={() => setAttendanceMode('exit')}
+                                onClick={() => {
+                                    setIsAutoMode(false);
+                                    setAttendanceMode('exit');
+                                }}
                                 className={cn(
                                     'flex h-8 items-center justify-center gap-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all',
                                     attendanceMode === 'exit'
@@ -790,7 +813,7 @@ export default function StudentAttendanceScannerPortalPage({
                                 )}
                             >
                                 <LogOut className="h-3.5 w-3.5" />
-                                Time-Out
+                                Time-Out {isAutoMode && initialMode === 'exit' ? '(Auto)' : ''}
                             </button>
                         </div>
                     </div>
@@ -886,7 +909,10 @@ export default function StudentAttendanceScannerPortalPage({
                                 <div className="inline-flex gap-1 rounded-2xl border border-white/20 bg-black/30 p-1.5 shadow-inner backdrop-blur-xl">
                                     <button
                                         type="button"
-                                        onClick={() => setAttendanceMode('entry')}
+                                        onClick={() => {
+                                            setIsAutoMode(false);
+                                            setAttendanceMode('entry');
+                                        }}
                                         className={cn(
                                             'flex h-9 items-center gap-2 rounded-xl px-4 text-xs font-black tracking-wider uppercase transition-all duration-300',
                                             attendanceMode === 'entry'
@@ -895,11 +921,14 @@ export default function StudentAttendanceScannerPortalPage({
                                         )}
                                     >
                                         <LogIn className="h-4 w-4" />
-                                        Time-In Mode
+                                        Time-In {isAutoMode && initialMode === 'entry' ? '(Auto)' : ''}
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => setAttendanceMode('exit')}
+                                        onClick={() => {
+                                            setIsAutoMode(false);
+                                            setAttendanceMode('exit');
+                                        }}
                                         className={cn(
                                             'flex h-9 items-center gap-2 rounded-xl px-4 text-xs font-black tracking-wider uppercase transition-all duration-300',
                                             attendanceMode === 'exit'
