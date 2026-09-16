@@ -279,12 +279,27 @@ class StudentAttendanceController extends Controller
             ->values();
     }
 
-    private function getStudentsByProgram(): \Illuminate\Support\Collection
+    private function getStudentsByProgram(Event $event): \Illuminate\Support\Collection
     {
-        return Student::query()
-            ->selectRaw("COALESCE(NULLIF(TRIM(course), ''), NULLIF(TRIM(program), ''), '—') as program")
-            ->selectRaw('COUNT(*) as total')
-            ->groupByRaw("COALESCE(NULLIF(TRIM(course), ''), NULLIF(TRIM(program), ''), '—')")
+        $courses = is_array($event->courses) ? $event->courses : [];
+        $yearLevels = is_array($event->year_levels) ? $event->year_levels : [];
+
+        $query = Student::query();
+
+        if (! empty($courses)) {
+            $query->where(function ($q) use ($courses) {
+                $q->whereIn('course', $courses)
+                  ->orWhereIn('program', $courses);
+            });
+        }
+
+        if (! empty($yearLevels)) {
+            $query->whereIn('year_level', $yearLevels);
+        }
+
+        return $query
+            ->selectRaw("COALESCE(NULLIF(TRIM(course), ''), NULLIF(TRIM(program), ''), '—') as program, COUNT(*) as total")
+            ->groupBy('program')
             ->pluck('total', 'program');
     }
 
@@ -362,7 +377,7 @@ class StudentAttendanceController extends Controller
         }
 
         $initialLogRows = $this->getScannerInitialLogRows($event);
-        $studentsByProgram = $this->getStudentsByProgram();
+        $studentsByProgram = $this->getStudentsByProgram($event);
         $alerts = $this->getSecurityAlerts($request);
 
         return Inertia::render('student/attendance/scanner-portal', [
@@ -504,6 +519,24 @@ class StudentAttendanceController extends Controller
         $now = Carbon::now();
         $status = 'present';
 
+        if (! empty($event->event_date) && ! empty($event->event_time)) {
+            try {
+                $eventDateStr = Carbon::parse($event->event_date)->format('Y-m-d');
+                $startDateTime = Carbon::parse($eventDateStr . ' ' . $event->event_time);
+
+                if ($now->lessThan($startDateTime)) {
+                    if (Schema::hasTable('activity_logs')) {
+                        ActivityLog::logForUser($scanner, 'Attendance', 'Denied', 'Scanning attempted before start time for event #' . $event->id . ' (starts at: ' . $startDateTime->toDateTimeString() . ')', $request);
+                    }
+                    return response()->json([
+                        'message' => 'Attendance scanning has not started yet. Event start time is at ' . $startDateTime->format('h:i A') . '.',
+                    ], 403);
+                }
+            } catch (\Exception $e) {
+                \Log::warning('[ScannerPortal] Could not parse event start time', ['error' => $e->getMessage()]);
+            }
+        }
+
         if (! empty($event->registration_end_time)) {
             $eventDate = Carbon::parse($event->event_date);
             $cutoff = Carbon::parse($eventDate->format('Y-m-d').' '.$event->registration_end_time);
@@ -539,7 +572,6 @@ class StudentAttendanceController extends Controller
                     'message' => 'Scanning is disabled 30 minutes after the registration end time.',
                 ], 403);
             }
-
 
             if ($now->greaterThan($cutoff)) {
                 $status = 'late';
@@ -581,7 +613,7 @@ class StudentAttendanceController extends Controller
                 'already_checked_out',
             );
 
-            return response()->json(['message' => 'You have already checked out for this event.'], 409);
+            return response()->json(['message' => 'Student has already timed out (checked out) for this event.'], 409);
         } else {
             $attendance->update([
                 'scanned_at' => $now,
@@ -593,20 +625,24 @@ class StudentAttendanceController extends Controller
             ]);
         }
 
+        $isTimeOut = ! empty($attendance->checked_out_at);
         $this->handleEvaluationNotification($student, $event);
 
         $event->updateAttendanceCounts();
         app(StudentNotificationDispatcher::class)->attendanceRecorded($event, $attendance);
 
         if (Schema::hasTable('activity_logs')) {
-            ActivityLog::logForUser($scanner, 'Attendance', $attendance->checked_out_at ? 'Checked Out' : 'Checked In', "Recorded attendance for event #{$event->id} (status: {$status})", $request);
+            ActivityLog::logForUser($scanner, 'Attendance', $isTimeOut ? 'Checked Out' : 'Checked In', "Recorded attendance for event #{$event->id} (status: {$status}, action: " . ($isTimeOut ? 'Time Out' : 'Time In') . ")", $request);
         }
 
         return response()->json([
             'attendance_id' => $attendance->id,
             'status' => $status,
             'scanned_at' => $now->toDateTimeString(),
-            'action' => $attendance->checked_out_at ? 'check_out' : 'check_in',
+            'action' => $isTimeOut ? 'check_out' : 'check_in',
+            'message' => $isTimeOut ? 'Time-out (Check-out) recorded successfully.' : 'Time-in (Check-in) recorded successfully.',
+            'time_in' => optional($attendance->checked_in_at)->format('h:i A'),
+            'time_out' => $attendance->checked_out_at ? optional($attendance->checked_out_at)->format('h:i A') : null,
             'student' => [
                 'id' => $student->id,
                 'student_id' => $student->student_id,
@@ -760,8 +796,8 @@ class StudentAttendanceController extends Controller
             'has_existing' => ($existing !== null)
         ]);
 
-        if ($existing) {
-            return response()->json(['message' => 'You have already checked in for this event.'], 409);
+        if ($existing && $existing->checked_out_at) {
+            return response()->json(['message' => 'You have already checked out for this event.'], 409);
         }
 
         // ── Pending evaluation gate ────────────────────────────────────────────
@@ -801,6 +837,24 @@ class StudentAttendanceController extends Controller
         $now    = Carbon::now();
         $status = 'present';
 
+        if (! empty($event->event_date) && ! empty($event->event_time)) {
+            try {
+                $eventDateStr = Carbon::parse($event->event_date)->format('Y-m-d');
+                $startDateTime = Carbon::parse($eventDateStr . ' ' . $event->event_time);
+
+                if ($now->lessThan($startDateTime)) {
+                    if (Schema::hasTable('activity_logs')) {
+                        ActivityLog::logForUser($student, 'Attendance', 'Denied', 'Dynamic QR check-in attempted before start time for event #' . $event->id . ' (starts at: ' . $startDateTime->toDateTimeString() . ')', $request);
+                    }
+                    return response()->json([
+                        'message' => 'Attendance scanning has not started yet. Event start time is at ' . $startDateTime->format('h:i A') . '.',
+                    ], 403);
+                }
+            } catch (\Exception $e) {
+                \Log::warning('[DynamicQR] Could not parse event start time', ['error' => $e->getMessage()]);
+            }
+        }
+
         if (! empty($event->registration_end_time)) {
             $eventDate = Carbon::parse($event->event_date);
             $cutoff  = Carbon::parse($eventDate->format('Y-m-d') . ' ' . $event->registration_end_time);
@@ -823,32 +877,51 @@ class StudentAttendanceController extends Controller
             $distanceRounded = (int) round($this->haversineDistanceMeters((float) $lat, (float) $lng, (float) $eventLat, (float) $eventLng));
         }
 
-        // ── Create attendance record ───────────────────────────────────────────
-        $attendance = Attendance::create([
-            'event_id'           => $event->id,
-            'student_id'         => $student->id,
-            'scanned_at'         => $now,
-            'status'             => $status,
-            'checked_in_at'      => $now,
-            'check_in_latitude'  => $lat,
-            'check_in_longitude' => $lng,
-            'check_in_accuracy_m'  => $accuracyM !== null ? (int) round((float) $accuracyM) : null,
-            'check_in_distance_m'  => $distanceRounded,
-            'check_in_token_id'    => $rawToken,
-            'check_in_user_agent'  => $request->userAgent(),
-        ]);
+        // ── Create or update attendance record ──────────────────────────────────
+        if (! $existing) {
+            $attendance = Attendance::create([
+                'event_id'           => $event->id,
+                'student_id'         => $student->id,
+                'scanned_at'         => $now,
+                'status'             => $status,
+                'checked_in_at'      => $now,
+                'check_in_latitude'  => $lat,
+                'check_in_longitude' => $lng,
+                'check_in_accuracy_m'  => $accuracyM !== null ? (int) round((float) $accuracyM) : null,
+                'check_in_distance_m'  => $distanceRounded,
+                'check_in_token_id'    => $rawToken,
+                'check_in_user_agent'  => $request->userAgent(),
+            ]);
+            $isTimeOut = false;
+        } else {
+            $existing->update([
+                'scanned_at'            => $now,
+                'checked_out_at'        => $now,
+                'check_out_latitude'    => $lat,
+                'check_out_longitude'   => $lng,
+                'check_out_accuracy_m'  => $accuracyM !== null ? (int) round((float) $accuracyM) : null,
+                'check_out_distance_m'  => $distanceRounded,
+                'check_out_token_id'    => $rawToken,
+                'check_out_user_agent'  => $request->userAgent(),
+            ]);
+            $attendance = $existing;
+            $isTimeOut = true;
+        }
 
         $event->updateAttendanceCounts();
         app(StudentNotificationDispatcher::class)->attendanceRecorded($event, $attendance);
 
         if (Schema::hasTable('activity_logs')) {
-            ActivityLog::logForUser($student, 'Attendance', 'Checked In', "Dynamic QR check-in for event #{$event->id} (status: {$status})", $request);
+            ActivityLog::logForUser($student, 'Attendance', $isTimeOut ? 'Checked Out' : 'Checked In', "Dynamic QR " . ($isTimeOut ? 'check-out' : 'check-in') . " for event #{$event->id} (status: {$status})", $request);
         }
 
         return response()->json([
-            'attendance_id' => $attendance->id,
-            'status'        => $status,
-            'checked_in_at' => $now->toDateTimeString(),
+            'attendance_id'  => $attendance->id,
+            'status'         => $attendance->status,
+            'action'         => $isTimeOut ? 'check_out' : 'check_in',
+            'message'        => $isTimeOut ? 'Time-out (Check-out) recorded successfully.' : 'Time-in (Check-in) recorded successfully.',
+            'checked_in_at'  => optional($attendance->checked_in_at)->toDateTimeString(),
+            'checked_out_at' => $attendance->checked_out_at ? optional($attendance->checked_out_at)->toDateTimeString() : null,
             'student' => [
                 'id'         => $student->id,
                 'student_id' => $student->student_id,
@@ -1086,6 +1159,9 @@ class StudentAttendanceController extends Controller
         $late = Attendance::query()->where('event_id', $event->id)->where('status', 'late')->count();
 
         // Course breakdown
+        $eventCourses = is_array($event->courses) ? $event->courses : [];
+        $eventYearLevels = is_array($event->year_levels) ? $event->year_levels : [];
+
         $byCourse = Attendance::query()
             ->join('students', 'attendances.student_id', '=', 'students.id')
             ->where('attendances.event_id', $event->id)
@@ -1093,11 +1169,17 @@ class StudentAttendanceController extends Controller
             ->selectRaw('COUNT(*) as scanned')
             ->groupBy('program')
             ->get()
-            ->map(function ($item) {
-                $expected = Student::where(function ($q) use ($item) {
+            ->map(function ($item) use ($eventCourses, $eventYearLevels) {
+                $expectedQuery = Student::where(function ($q) use ($item) {
                     $q->where('course', $item->program)
                       ->orWhere('program', $item->program);
-                })->count();
+                });
+
+                if (! empty($eventYearLevels)) {
+                    $expectedQuery->whereIn('year_level', $eventYearLevels);
+                }
+
+                $expected = $expectedQuery->count();
 
                 return [
                     'program' => $item->program,
@@ -1115,6 +1197,7 @@ class StudentAttendanceController extends Controller
                 'late' => $late,
             ],
             'byCourse' => $byCourse,
+            'studentsByProgram' => $this->getStudentsByProgram($event),
             'server_time' => now()->format('M d, Y h:i:s A'),
             'scanner_portal_active' => Schema::hasColumn('events', 'scanner_portal_active') ? (bool) $event->scanner_portal_active : true,
         ]);

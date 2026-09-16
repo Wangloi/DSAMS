@@ -157,6 +157,7 @@ export default function StudentAttendanceScannerPortalPage({
     // Live Feed State
     const [liveRows, setLiveRows] = useState<AttendanceLogRow[]>(initialLogRows);
     const [byCourse, setByCourse] = useState<ByCourseRow[]>([]);
+    const [liveStudentsByProgram, setLiveStudentsByProgram] = useState<Record<string, number>>(studentsByProgram);
     const [liveCounts, setLiveCounts] = useState({
         total: initialLogRows.length,
         present: initialLogRows.filter((r) => r.status === 'valid' || r.status === 'present').length,
@@ -180,6 +181,7 @@ export default function StudentAttendanceScannerPortalPage({
     const [scanState, setScanState] = useState<ScanState>({ status: 'idle' });
     const [lastScanned, setLastScanned] = useState<{
         status: 'valid' | 'late' | 'invalid';
+        action?: 'check_in' | 'check_out';
         message: string;
         studentName?: string;
         studentId?: string;
@@ -196,12 +198,12 @@ export default function StudentAttendanceScannerPortalPage({
 
     // Attendance Rate calculations
     const totalExpectedStudents = useMemo(() => {
-        const fromPrograms = Object.values(studentsByProgram).reduce((a, b) => a + Number(b || 0), 0);
+        const fromPrograms = Object.values(liveStudentsByProgram).reduce((a, b) => a + Number(b || 0), 0);
         if (fromPrograms > 0) return fromPrograms;
         const fromByCourse = byCourse.reduce((acc, c) => acc + Number(c.expected || 0), 0);
         if (fromByCourse > 0) return fromByCourse;
         return liveCounts.total;
-    }, [studentsByProgram, byCourse, liveCounts.total]);
+    }, [liveStudentsByProgram, byCourse, liveCounts.total]);
 
     const attendanceRate = useMemo(() => {
         if (totalExpectedStudents <= 0) return liveCounts.total > 0 ? 100 : 0;
@@ -314,6 +316,9 @@ export default function StudentAttendanceScannerPortalPage({
             });
             if (Array.isArray(data.byCourse)) {
                 setByCourse(data.byCourse);
+            }
+            if (data.studentsByProgram && typeof data.studentsByProgram === 'object') {
+                setLiveStudentsByProgram(data.studentsByProgram);
             }
             setLastUpdatedAt(data.server_time ?? new Date().toLocaleTimeString());
         } catch (err) {
@@ -445,10 +450,12 @@ export default function StudentAttendanceScannerPortalPage({
             const studentName = String(payload?.student?.name ?? value);
             const studentIdNumber = String(payload?.student?.student_id ?? '');
             const statusType = isLate ? 'late' : 'valid';
+            const actionType: 'check_in' | 'check_out' = payload?.action === 'check_out' ? 'check_out' : 'check_in';
 
             setLastScanned({
                 status: statusType,
-                message: payload?.message || `Attendance verified (${isLate ? 'Late' : 'On-Time'})`,
+                action: actionType,
+                message: payload?.message || (actionType === 'check_out' ? 'Time-Out (Check-out) recorded' : `Time-In recorded (${isLate ? 'Late' : 'On-Time'})`),
                 studentName,
                 studentId: studentIdNumber,
                 timestamp: new Date().toLocaleTimeString(),
@@ -1316,11 +1323,13 @@ export default function StudentAttendanceScannerPortalPage({
                                                             <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5" />
                                                         )}
                                                         <span className="text-xs sm:text-base font-black uppercase tracking-wider">
-                                                            {lastScanned.status === 'valid'
-                                                                ? 'Attendance Recorded (On-Time)'
-                                                                : lastScanned.status === 'late'
-                                                                  ? 'Attendance Recorded (Late)'
-                                                                  : 'Scan Rejected'}
+                                                            {lastScanned.status === 'invalid'
+                                                                ? 'Scan Rejected'
+                                                                : lastScanned.action === 'check_out'
+                                                                  ? 'Time-Out Recorded (Check-Out)'
+                                                                  : lastScanned.status === 'late'
+                                                                    ? 'Time-In Recorded (Late)'
+                                                                    : 'Time-In Recorded (On-Time)'}
                                                         </span>
                                                     </div>
                                                     <p className="text-xs sm:text-sm font-extrabold text-white truncate">

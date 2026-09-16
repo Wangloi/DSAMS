@@ -14,18 +14,11 @@ use Laravel\Fortify\Features;
 
 class LandingController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        if (auth()->check()) {
-            $role = auth()->user()->role;
-            switch ($role) {
-                case 'student':
-                    return redirect('/student-dashboard');
-                case 'program_head':
-                    return redirect('/program-head-dashboard');
-                case 'admin':
-                    return redirect('/admin-dashboard');
-            }
+        $activeGuard = \App\Support\ActiveAuth::resolve($request);
+        if ($activeGuard) {
+            return redirect(\App\Support\ActiveAuth::backUrl($activeGuard));
         }
 
         $stats = [
@@ -132,7 +125,7 @@ class LandingController extends Controller
         }
 
         return Inertia::render('landing-page', [
-            'isAuthed' => auth()->check(),
+            'isAuthed' => (bool) $activeGuard,
             'canRegister' => Features::enabled(Features::registration()),
             'stats' => $stats,
             'lastEventStats' => $lastEventStats,

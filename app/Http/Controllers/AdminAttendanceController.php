@@ -317,9 +317,8 @@ class AdminAttendanceController extends Controller
         }
 
         $expectedByCourse = $expectedStudentsQuery
-            ->selectRaw("COALESCE(NULLIF(TRIM(course), ''), '—') as program")
-            ->selectRaw('COUNT(*) as total')
-            ->groupByRaw("COALESCE(NULLIF(TRIM(course), ''), '—')")
+            ->selectRaw("COALESCE(NULLIF(TRIM(course), ''), '—') as program, COUNT(*) as total")
+            ->groupBy('program')
             ->pluck('total', 'program');
 
         $scannedByCourse = Attendance::query()
@@ -456,19 +455,34 @@ class AdminAttendanceController extends Controller
             ->where('student_id', $student->id)
             ->first();
 
-        if ($existingAttendance) {
+        if ($existingAttendance && $existingAttendance->checked_out_at) {
             app(StudentNotificationDispatcher::class)->attendanceIssue(
                 $event,
                 $student,
-                'A scanner attempted to record your attendance again for '.(string) $event->event_name.'.',
-                'duplicate_scan',
+                'A scanner attempted another attendance scan after you had already checked out.',
+                'already_checked_out',
             );
 
-            return response()->json(['message' => 'Student has already been scanned for this event.'], 409);
+            return response()->json(['message' => 'Student has already timed out (checked out) for this event.'], 409);
         }
 
         $now = Carbon::now();
         $status = 'present';
+
+        if (! empty($event->event_date) && ! empty($event->event_time)) {
+            try {
+                $eventDateStr = Carbon::parse($event->event_date)->format('Y-m-d');
+                $startDateTime = Carbon::parse($eventDateStr . ' ' . $event->event_time);
+
+                if ($now->lessThan($startDateTime)) {
+                    return response()->json([
+                        'message' => 'Attendance scanning has not started yet. Event start time is at ' . $startDateTime->format('h:i A') . '.',
+                    ], 403);
+                }
+            } catch (\Exception $e) {
+                \Log::warning('[AdminAttendance] Could not parse event start time', ['error' => $e->getMessage()]);
+            }
+        }
 
         if (! empty($event->registration_end_time)) {
             $cutoff = Carbon::parse(Carbon::parse($event->event_date)->format('Y-m-d').' '.$event->registration_end_time);
@@ -495,27 +509,40 @@ class AdminAttendanceController extends Controller
             }
         }
 
-        $attendance = Attendance::query()->updateOrCreate(
-            ['event_id' => $event->id, 'student_id' => $student->id],
-            [
-                'scanned_at' => $now,
+        if (! $existingAttendance) {
+            $attendance = Attendance::create([
+                'event_id'      => $event->id,
+                'student_id'    => $student->id,
+                'scanned_at'    => $now,
                 'checked_in_at' => $now,
-                'status' => $status,
-            ]
-        );
+                'status'        => $status,
+            ]);
+            $isTimeOut = false;
+        } else {
+            $existingAttendance->update([
+                'scanned_at'     => $now,
+                'checked_out_at' => $now,
+            ]);
+            $attendance = $existingAttendance;
+            $isTimeOut = true;
+        }
 
         $event->updateAttendanceCounts();
         app(StudentNotificationDispatcher::class)->attendanceRecorded($event, $attendance);
 
         return response()->json([
-            'attendance_id' => $attendance->id,
-            'status' => $status,
-            'scanned_at' => $now->toDateTimeString(),
+            'attendance_id'  => $attendance->id,
+            'status'         => $attendance->status,
+            'action'         => $isTimeOut ? 'check_out' : 'check_in',
+            'message'        => $isTimeOut ? 'Time-out (Check-out) recorded successfully.' : 'Time-in (Check-in) recorded successfully.',
+            'scanned_at'     => $now->toDateTimeString(),
+            'checked_in_at'  => optional($attendance->checked_in_at)->toDateTimeString(),
+            'checked_out_at' => $attendance->checked_out_at ? optional($attendance->checked_out_at)->toDateTimeString() : null,
             'student' => [
-                'id' => $student->id,
+                'id'         => $student->id,
                 'student_id' => $student->student_id,
-                'name' => $student->name,
-                'program' => (string) ($student->course ?? $student->program ?? ''),
+                'name'       => $student->name,
+                'program'    => (string) ($student->course ?? $student->program ?? ''),
             ],
         ]);
     }
