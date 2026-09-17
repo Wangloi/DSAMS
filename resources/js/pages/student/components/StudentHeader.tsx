@@ -23,7 +23,6 @@ import {
 } from '@/components/ui/sheet';
 import { UserMenuContent } from '@/components/user-menu-content';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { DetailedHelpCenterModal } from '@/components/DetailedHelpCenterModal';
 import { StudentMobileNavigation } from './StudentMobileNavigation';
 import { useAppearance } from '@/hooks/use-appearance';
 import { useInitials } from '@/hooks/use-initials';
@@ -64,7 +63,6 @@ export function StudentHeader() {
     const { resolvedAppearance, updateAppearance } = useAppearance();
     const [locallyRead, setLocallyRead] = useState<string[]>([]);
     const [bellClicked, setBellClicked] = useState(false);
-    const [helpOpen, setHelpOpen] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     // Real-time notification hook powered by Node.js + Socket.IO
@@ -306,23 +304,14 @@ export function StudentHeader() {
                     {/* Dark/Light Theme Quick Toggle */}
                     <ThemeToggle variant="header" />
 
-                    {/* Detailed Help Center Modal - Desktop only to avoid redundancy with mobile bottom nav */}
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setHelpOpen(true)}
-                        className="relative hidden h-10 w-10 rounded-xl text-white transition-colors hover:bg-white/10 lg:inline-flex"
+                    {/* Detailed Help Center Link - Desktop only to avoid redundancy with mobile bottom nav */}
+                    <Link
+                        href={studentHelp()}
+                        className="relative hidden h-10 w-10 items-center justify-center rounded-xl text-white transition-colors hover:bg-white/10 lg:inline-flex"
                         title="Student Help & Guidelines Center"
                     >
                         <HelpCircle className="h-5 w-5" />
-                    </Button>
-
-                    <DetailedHelpCenterModal
-                        open={helpOpen}
-                        onOpenChange={setHelpOpen}
-                        role="student"
-                    />
+                    </Link>
 
                     {/* Notification Bell Dropdown - Desktop only to avoid redundancy with mobile bottom nav */}
                     <div className="hidden lg:block">
