@@ -486,7 +486,7 @@ export default function IncidentReportDialog(props: Props) {
                             <div className="grid gap-2">
                                 <Label
                                     htmlFor="description"
-                                    className="text-slate-850 text-xs font-semibold tracking-wider uppercase dark:text-slate-200"
+                                    className="text-xs font-semibold tracking-wider text-slate-900 uppercase dark:text-slate-200"
                                 >
                                     Narrative of the Incident{' '}
                                     <span className="text-red-500">*</span>
@@ -511,7 +511,7 @@ export default function IncidentReportDialog(props: Props) {
                             <div className="grid gap-2">
                                 <Label
                                     htmlFor="immediateAction"
-                                    className="text-slate-850 text-xs font-semibold tracking-wider uppercase dark:text-slate-200"
+                                    className="text-xs font-semibold tracking-wider text-slate-900 uppercase dark:text-slate-200"
                                 >
                                     Immediate Action Taken (Optional)
                                 </Label>
@@ -532,7 +532,7 @@ export default function IncidentReportDialog(props: Props) {
                             </div>
 
                             <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
-                                <div className="dark:border-slate-850 flex flex-col items-center gap-1 border-t border-slate-200 pt-6">
+                                <div className="flex flex-col items-center gap-1 border-t border-slate-200 pt-6 dark:border-slate-800">
                                     <span className="text-sm font-medium text-slate-900 dark:text-white">
                                         {form.reportedBy ||
                                             '[Name of Reporter]'}
@@ -541,7 +541,7 @@ export default function IncidentReportDialog(props: Props) {
                                         Reported by
                                     </span>
                                 </div>
-                                <div className="dark:border-slate-850 flex flex-col items-center gap-1 border-t border-slate-200 pt-6">
+                                <div className="flex flex-col items-center gap-1 border-t border-slate-200 pt-6 dark:border-slate-800">
                                     <Input
                                         value={form.receivedBy}
                                         onChange={(e) =>
@@ -552,7 +552,7 @@ export default function IncidentReportDialog(props: Props) {
                                         }
                                         disabled={isViewMode}
                                         placeholder="[OSA Personnel]"
-                                        className="dark:bg-slate-850 h-9 w-full max-w-[200px] rounded-none border-b-2 border-none border-slate-200 bg-white text-center text-slate-900 shadow-none focus-visible:ring-0 dark:border-slate-700 dark:text-white"
+                                        className="h-9 w-full max-w-[200px] rounded-none border-b-2 border-none border-slate-200 bg-white text-center text-slate-900 shadow-none focus-visible:ring-0 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                                     />
                                     <span className="mt-1 text-xs font-semibold tracking-wider text-slate-500 uppercase">
                                         Received by — OSA
@@ -563,7 +563,7 @@ export default function IncidentReportDialog(props: Props) {
                     )}
                 </div>
 
-                <div className="dark:border-slate-850 flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-6 py-4 dark:bg-slate-900/40">
+                <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/40">
                     <div className="flex items-center gap-2">
                         {currentStep > 1 && (
                             <Button

@@ -253,7 +253,7 @@ export default function StudentsList({ user, program, students }: Props) {
                                             onChange={(e) =>
                                                 setSearchQuery(e.target.value)
                                             }
-                                            className="h-9 rounded-xl border border-slate-200 bg-white pr-3 pl-9 text-slate-900 placeholder-slate-400 transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none sm:text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                            className="h-9 rounded-xl border border-slate-200 bg-white pr-3 pl-9 text-slate-900 placeholder-slate-400 transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none sm:text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500"
                                         />
                                     </div>
                                     <div className="flex w-full items-center gap-2 sm:w-auto">
@@ -288,10 +288,10 @@ export default function StudentsList({ user, program, students }: Props) {
                                             <Button
                                                 variant="outline"
                                                 size="sm"
-                                                className="ml-auto bg-white dark:bg-slate-800"
+                                                className="ml-auto bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                                             >
                                                 Bulk Actions{' '}
-                                                <ChevronDown className="ml-2 h-4 w-4 text-slate-500" />
+                                                <ChevronDown className="ml-2 h-4 w-4 text-slate-500 dark:text-slate-400" />
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent
@@ -647,7 +647,7 @@ export default function StudentsList({ user, program, students }: Props) {
                                                                     variant="outline"
                                                                     size="sm"
                                                                     onClick={() => handleViewRecord(student)}
-                                                                    className="h-8 gap-1.5 rounded-lg border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-[#0B192C] dark:text-slate-300 dark:hover:bg-slate-800/80"
+                                                                    className="h-8 gap-1.5 rounded-lg border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                                                                 >
                                                                     <Eye className="h-3.5 w-3.5" />
                                                                     View Record

@@ -124,7 +124,7 @@ export default function AdmissionSlipTableCard({
                                     <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
                                         Student Name
                                     </span>
-                                    <div className="text-slate-850 flex h-12 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-200">
+                                    <div className="flex h-12 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-900 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-200">
                                         {viewingSlip.studentName}
                                     </div>
                                 </div>
@@ -132,7 +132,7 @@ export default function AdmissionSlipTableCard({
                                     <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
                                         Program / Year
                                     </span>
-                                    <div className="text-slate-850 flex h-12 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-200">
+                                    <div className="flex h-12 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-900 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-200">
                                         {viewingSlip.programYear}
                                     </div>
                                 </div>
@@ -140,7 +140,7 @@ export default function AdmissionSlipTableCard({
                                     <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
                                         Date Issued
                                     </span>
-                                    <div className="text-slate-850 flex h-12 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-200">
+                                    <div className="flex h-12 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-900 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-200">
                                         {viewingSlip.dateIssued}
                                     </div>
                                 </div>
@@ -148,7 +148,7 @@ export default function AdmissionSlipTableCard({
                                     <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
                                         Valid Until
                                     </span>
-                                    <div className="text-slate-850 flex h-12 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-200">
+                                    <div className="flex h-12 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-900 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-200">
                                         {viewingSlip.validUntil}
                                     </div>
                                 </div>
@@ -157,7 +157,7 @@ export default function AdmissionSlipTableCard({
                                         <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
                                             Case / Reason
                                         </span>
-                                        <div className="text-slate-850 flex min-h-[48px] items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-200">
+                                        <div className="flex min-h-[48px] items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-200">
                                             {viewingSlip.caseText}
                                         </div>
                                     </div>
@@ -167,7 +167,7 @@ export default function AdmissionSlipTableCard({
                                         <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
                                             Details
                                         </span>
-                                        <div className="text-slate-850 flex min-h-[48px] items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-200">
+                                        <div className="flex min-h-[48px] items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-200">
                                             {viewingSlip.reasonText}
                                         </div>
                                     </div>
@@ -303,7 +303,7 @@ export default function AdmissionSlipTableCard({
             <CardContent className="p-0">
                 <div className="overflow-x-auto">
                     <table className="w-full min-w-max border-collapse text-left text-sm">
-                        <thead className="dark:border-slate-850 border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-400 uppercase dark:bg-slate-900/30 dark:text-slate-500">
+                        <thead className="border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-400 uppercase dark:border-slate-800 dark:bg-slate-900/30 dark:text-slate-400">
                             <tr>
                                 <th className="w-12 px-6 py-3.5 font-bold">
                                     #

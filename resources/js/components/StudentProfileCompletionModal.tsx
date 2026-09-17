@@ -746,7 +746,7 @@ export default function StudentProfileCompletionModal({
                                                     e.target.value,
                                                 )
                                             }
-                                            className="dark:bg-slate-850 h-10 rounded-xl border-slate-200 bg-white text-sm font-medium text-slate-900 dark:border-slate-700 dark:text-white"
+                                            className="h-10 rounded-xl border-slate-200 bg-white text-sm font-medium text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                                             placeholder="Mother's Full Name"
                                         />
                                         <InputError
@@ -770,7 +770,7 @@ export default function StudentProfileCompletionModal({
                                                     e.target.value,
                                                 )
                                             }
-                                            className="dark:bg-slate-850 h-10 rounded-xl border-slate-200 bg-white text-sm font-medium text-slate-900 dark:border-slate-700 dark:text-white"
+                                            className="h-10 rounded-xl border-slate-200 bg-white text-sm font-medium text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                                             placeholder="Contact Number"
                                         />
                                         <InputError
@@ -803,7 +803,7 @@ export default function StudentProfileCompletionModal({
                                                     e.target.value,
                                                 )
                                             }
-                                            className="dark:bg-slate-850 h-10 rounded-xl border-slate-200 bg-white text-sm font-medium text-slate-900 dark:border-slate-700 dark:text-white"
+                                            className="h-10 rounded-xl border-slate-200 bg-white text-sm font-medium text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                                             placeholder="Father's Full Name"
                                         />
                                         <InputError
@@ -827,7 +827,7 @@ export default function StudentProfileCompletionModal({
                                                     e.target.value,
                                                 )
                                             }
-                                            className="dark:bg-slate-850 h-10 rounded-xl border-slate-200 bg-white text-sm font-medium text-slate-900 dark:border-slate-700 dark:text-white"
+                                            className="h-10 rounded-xl border-slate-200 bg-white text-sm font-medium text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                                             placeholder="Contact Number"
                                         />
                                         <InputError
@@ -865,7 +865,7 @@ export default function StudentProfileCompletionModal({
                                         onChange={(e) =>
                                             set('guardian_name', e.target.value)
                                         }
-                                        className="dark:bg-slate-850 h-10 rounded-xl border-slate-200 bg-white text-sm font-medium text-slate-900 dark:border-slate-700 dark:text-white"
+                                        className="h-10 rounded-xl border-slate-200 bg-white text-sm font-medium text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                                         placeholder="Full name of parent, guardian, or spouse"
                                     />
                                     <InputError
@@ -894,7 +894,7 @@ export default function StudentProfileCompletionModal({
                                                     e.target.value,
                                                 )
                                             }
-                                            className="dark:bg-slate-850 h-10 rounded-xl border-slate-200 bg-white text-sm font-medium text-slate-900 dark:border-slate-700 dark:text-white"
+                                            className="h-10 rounded-xl border-slate-200 bg-white text-sm font-medium text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                                             placeholder="e.g., Mother, Father, Uncle"
                                         />
                                         <InputError
@@ -926,7 +926,7 @@ export default function StudentProfileCompletionModal({
                                                         e.target.value,
                                                     )
                                                 }
-                                                className="dark:bg-slate-850 h-10 rounded-xl border-slate-200 bg-white pl-10 text-sm font-medium text-slate-900 dark:border-slate-700 dark:text-white"
+                                                className="h-10 rounded-xl border-slate-200 bg-white pl-10 text-sm font-medium text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                                                 placeholder="e.g., 09123456789"
                                             />
                                         </div>

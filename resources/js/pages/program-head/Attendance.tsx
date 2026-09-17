@@ -454,7 +454,7 @@ export default function Attendance({
                                                                         {row.name ||
                                                                             '-'}
                                                                     </p>
-                                                                    <p className="text-xs text-slate-500">
+                                                                    <p className="text-xs text-slate-500 dark:text-slate-400">
                                                                         {row.student_id ||
                                                                             '-'}
                                                                     </p>
@@ -479,7 +479,7 @@ export default function Attendance({
                                                         <tr>
                                                             <td
                                                                 colSpan={4}
-                                                                className="px-5 py-12 text-center text-sm text-slate-500"
+                                                                className="px-5 py-12 text-center text-sm text-slate-500 dark:text-slate-400"
                                                             >
                                                                 No check-ins
                                                                 have been
@@ -652,7 +652,7 @@ export default function Attendance({
                             <div className="border-slate-150 overflow-hidden rounded-xl border bg-white dark:border-slate-800 dark:bg-transparent">
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left text-sm">
-                                        <thead className="border-b border-slate-100 bg-slate-50 text-[10px] font-bold tracking-wider text-slate-400 uppercase dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-500">
+                                        <thead className="border-b border-slate-100 bg-slate-50 text-[10px] font-bold tracking-wider text-slate-500 uppercase dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-400">
                                             <tr>
                                                 <th className="px-5 py-3">
                                                     Student
@@ -678,7 +678,7 @@ export default function Attendance({
                                                         <p className="text-xs font-bold text-slate-900 dark:text-white">
                                                             {row.name}
                                                         </p>
-                                                        <p className="text-[10px] font-semibold text-slate-400">
+                                                        <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
                                                             {row.student_id}
                                                         </p>
                                                     </td>

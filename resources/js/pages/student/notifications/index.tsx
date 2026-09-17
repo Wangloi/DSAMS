@@ -194,7 +194,7 @@ export default function StudentNotifications({
                                                 )}
 
                                                 <div className="mt-1 flex items-center gap-4">
-                                                    <p className="text-xs font-medium text-slate-400 dark:text-slate-500">
+                                                    <p className="text-xs font-medium text-slate-400 dark:text-slate-400">
                                                         {n.created_at
                                                             ? new Date(
                                                                   n.created_at,

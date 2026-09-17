@@ -1749,7 +1749,7 @@ export default function CreateEventModal({
                 </div>
 
                 {/* Live Event Summary Preview Strip */}
-                <div className="dark:bg-slate-850 flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-slate-200/80 bg-slate-100/90 px-6 py-2.5 text-xs text-slate-600 dark:border-slate-800 dark:text-slate-400">
+                <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-slate-200/80 bg-slate-100/90 px-6 py-2.5 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
                     <div className="flex items-center gap-4 truncate">
                         <span className="truncate font-semibold text-slate-800 dark:text-slate-200">
                             {formData.eventName || 'Untitled Event'}

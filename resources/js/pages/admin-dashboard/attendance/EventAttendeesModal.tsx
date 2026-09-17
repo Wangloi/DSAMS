@@ -199,7 +199,7 @@ export default function EventAttendeesModal({
                             </p>
                         </div>
                     ) : Object.keys(groupedAttendees).length > 0 ? (
-                        <div className="dark:divide-slate-850 divide-y divide-slate-100">
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800">
                             {Object.keys(groupedAttendees)
                                 .sort()
                                 .map((prog) => {
@@ -249,7 +249,7 @@ export default function EventAttendeesModal({
                                                                     key={
                                                                         attendee.id
                                                                     }
-                                                                    className="dark:hover:bg-slate-850/40 transition-colors hover:bg-slate-50/60"
+                                                                    className="transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-800/50"
                                                                 >
                                                                     <td className="px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
                                                                         {

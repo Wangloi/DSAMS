@@ -675,11 +675,11 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                         {recentEvents.slice(0, 4).map((ev: any) => (
                                             <div
                                                 key={ev.id}
-                                                className="group relative rounded-xl border border-slate-100 bg-slate-50/30 p-3 transition-all duration-200 hover:border-blue-100 hover:bg-blue-50/10 dark:border-slate-700/60 dark:bg-slate-750/70 dark:hover:border-slate-600 dark:hover:bg-slate-700/50"
+                                                className="group relative rounded-xl border border-slate-100 bg-slate-50/30 p-3 transition-all duration-200 hover:border-blue-100 hover:bg-blue-50/10 dark:border-slate-700/60 dark:bg-slate-800/80 dark:hover:border-slate-600 dark:hover:bg-slate-700/50"
                                             >
                                                 <div className="flex items-start justify-between gap-4">
                                                     <div className="space-y-0.5">
-                                                        <span className="block text-xs font-black text-slate-850 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                                        <span className="block text-xs font-black text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                                                             {ev.event_name}
                                                         </span>
                                                         <span className="block text-[9px] font-bold text-slate-400 uppercase">
@@ -735,7 +735,7 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                         <select
                                             value={monitorEventId}
                                             onChange={(e) => setMonitorEventId(e.target.value)}
-                                            className="h-9 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-850 shadow-sm focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-750 dark:text-white"
+                                            className="h-9 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                                         >
                                             {allSelectableEvents.map((ev) => (
                                                 <option key={ev.id} value={ev.id}>
@@ -750,7 +750,7 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                                 variant="outline"
                                                 size="icon"
                                                 onClick={() => setMonitoringEnabled((prev) => !prev)}
-                                                className="h-9 w-9 rounded-xl border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-750 dark:hover:bg-slate-700"
+                                                className="h-9 w-9 rounded-xl border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
                                                 title={monitoringEnabled ? 'Pause Live Polling' : 'Resume Live Polling'}
                                             >
                                                 {monitoringEnabled ? (
@@ -766,7 +766,7 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                                 size="icon"
                                                 disabled={loadingLive || !monitorEventId}
                                                 onClick={fetchLiveLogs}
-                                                className={`h-9 w-9 rounded-xl border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-750 dark:hover:bg-slate-700 ${
+                                                className={`h-9 w-9 rounded-xl border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 ${
                                                     loadingLive ? 'animate-spin' : ''
                                                 }`}
                                                 title="Manual Sync"
@@ -778,11 +778,11 @@ export default function ProgramHeadDashboard({ user }: Props) {
 
                                     {/* Stats Row */}
                                     <div className="grid grid-cols-3 gap-2">
-                                        <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-2.5 text-center dark:border-slate-700/60 dark:bg-slate-750/70">
+                                        <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-2.5 text-center dark:border-slate-700/60 dark:bg-slate-800/80">
                                             <span className="block text-[8px] font-black uppercase text-slate-400 tracking-wider">
                                                 Total Scans
                                             </span>
-                                            <span className="mt-0.5 block text-base font-black text-slate-850 dark:text-white">
+                                            <span className="mt-0.5 block text-base font-black text-slate-900 dark:text-white">
                                                 {liveCounts.total}
                                             </span>
                                         </div>
@@ -830,10 +830,10 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                                 liveRows.slice(0, 3).map((row) => (
                                                     <div
                                                         key={row.id}
-                                                        className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-2 shadow-sm dark:border-slate-700/60 dark:bg-slate-750/90 transition-all hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                                                        className="flex items-center justify-between rounded-xl border border-slate-100 bg-white p-2 shadow-sm dark:border-slate-700/60 dark:bg-slate-800/90 transition-all hover:bg-slate-50 dark:hover:bg-slate-700/50"
                                                     >
                                                         <div className="min-w-0">
-                                                            <p className="truncate text-xs font-bold text-slate-850 dark:text-slate-100">
+                                                            <p className="truncate text-xs font-bold text-slate-900 dark:text-slate-100">
                                                                 {row.name}
                                                             </p>
                                                             <p className="text-[9px] font-semibold text-slate-400">
@@ -915,7 +915,7 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                                 key={item.label}
                                                 className="group flex flex-1 flex-col items-center gap-3"
                                             >
-                                                <div className="relative h-32 w-full overflow-hidden rounded-xl border border-slate-100 bg-slate-50 dark:border-slate-700/60 dark:bg-slate-750/70">
+                                                <div className="relative h-32 w-full overflow-hidden rounded-xl border border-slate-100 bg-slate-50 dark:border-slate-700/60 dark:bg-slate-800/80">
                                                     <div
                                                         className="absolute right-0 bottom-0 left-0 rounded-t-lg bg-gradient-to-t from-blue-600 to-indigo-500 transition-all duration-1000 group-hover:brightness-110"
                                                         style={{
@@ -986,7 +986,7 @@ export default function ProgramHeadDashboard({ user }: Props) {
 
                         <CardContent className="space-y-4 p-6">
                             {/* Attendance Report */}
-                            <div className="flex items-center gap-5 rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition-all duration-300 hover:bg-white hover:shadow-md dark:border-slate-700/60 dark:bg-slate-750/70 dark:hover:bg-slate-700/60">
+                            <div className="flex items-center gap-5 rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition-all duration-300 hover:bg-white hover:shadow-md dark:border-slate-700/60 dark:bg-slate-800/80 dark:hover:bg-slate-700/60">
                                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400">
                                     <FileText className="h-6 w-6" />
                                 </div>

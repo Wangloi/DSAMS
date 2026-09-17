@@ -226,7 +226,7 @@ export function ManageProgramsTab({
                             <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
                             <Input
                                 placeholder="Search program, code, department..."
-                                className="h-9 border border-slate-200 bg-white pl-9 text-xs dark:border-slate-600 dark:bg-slate-800"
+                                className="h-9 border border-slate-200 bg-white pl-9 text-xs text-slate-900 placeholder:text-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
                                 value={progSearch}
                                 onChange={(e) => {
                                     setProgSearch(e.target.value);
@@ -243,7 +243,7 @@ export function ManageProgramsTab({
                                     setProgPageIndex(1);
                                 }}
                             >
-                                <SelectTrigger className="h-9 w-[130px] border border-slate-200 bg-white text-xs dark:border-slate-600 dark:bg-slate-800">
+                                <SelectTrigger className="h-9 w-[130px] border border-slate-200 bg-white text-xs text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
                                     <SelectValue placeholder="All Status" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -266,7 +266,7 @@ export function ManageProgramsTab({
                                     setProgPageIndex(1);
                                 }}
                             >
-                                <SelectTrigger className="h-9 w-[160px] border border-slate-200 bg-white text-xs dark:border-slate-600 dark:bg-slate-800">
+                                <SelectTrigger className="h-9 w-[160px] border border-slate-200 bg-white text-xs text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
                                     <SelectValue placeholder="All Departments" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -557,7 +557,7 @@ export function ManageProgramsTab({
                                         onChange={(e) =>
                                             setProgData('name', e.target.value)
                                         }
-                                        className="bg-white dark:bg-slate-700 dark:text-slate-300"
+                                        className="border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500"
                                         placeholder="e.g., Bachelor of Science in Computer Science"
                                         required
                                     />
@@ -581,7 +581,7 @@ export function ManageProgramsTab({
                                         onChange={(e) =>
                                             setProgData('code', e.target.value)
                                         }
-                                        className="bg-white font-mono dark:bg-slate-700 dark:text-slate-300"
+                                        className="border-slate-200 bg-white font-mono text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500"
                                         placeholder="e.g., BSCS"
                                         required
                                     />
@@ -608,7 +608,7 @@ export function ManageProgramsTab({
                                                 e.target.value,
                                             )
                                         }
-                                        className="bg-white dark:bg-slate-700 dark:text-slate-300"
+                                        className="border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500"
                                         placeholder="e.g., College of Engineering"
                                     />
                                     {progErrors.department && (
@@ -634,7 +634,7 @@ export function ManageProgramsTab({
                                                 e.target.value,
                                             )
                                         }
-                                        className="bg-white dark:bg-slate-700 dark:text-slate-300"
+                                        className="border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500"
                                         placeholder="e.g., 4 years"
                                     />
                                     {progErrors.duration && (
@@ -660,7 +660,7 @@ export function ManageProgramsTab({
                                             e.target.value,
                                         )
                                     }
-                                    className="min-h-[100px] bg-white dark:bg-slate-700 dark:text-slate-300"
+                                    className="min-h-[100px] border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-700 dark:text-white dark:placeholder:text-slate-500"
                                     placeholder="Enter a detailed description of the program..."
                                     rows={4}
                                 />

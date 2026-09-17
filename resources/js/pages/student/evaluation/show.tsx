@@ -271,7 +271,7 @@ export default function StudentEvaluationShow() {
 
                                                         {/* Standard 1 Rating Legend */}
                                                         {q.type === 'rating' && (
-                                                            <div className="mt-4 grid grid-cols-5 gap-1.5 rounded-xl border border-blue-200/60 bg-white/90 p-2.5 text-center dark:border-slate-700 dark:bg-slate-750">
+                                                            <div className="mt-4 grid grid-cols-5 gap-1.5 rounded-xl border border-blue-200/60 bg-white/90 p-2.5 text-center dark:border-slate-700 dark:bg-slate-800">
                                                                 <div className="rounded-lg bg-blue-50/80 p-1.5 dark:bg-slate-800">
                                                                     <span className="block text-xs font-black text-[#0b2d66] dark:text-blue-300">1</span>
                                                                     <span className="text-[10px] font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400">Poor</span>
@@ -484,7 +484,7 @@ export default function StudentEvaluationShow() {
                                                                     }))
                                                                 }
                                                                 placeholder="Type your answer here..."
-                                                                className="h-11 rounded-xl border-slate-200 bg-slate-50 px-4 text-sm focus:border-blue-500 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800/30"
+                                                                className="h-11 rounded-xl border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800/60 dark:text-white dark:placeholder:text-slate-500"
                                                             />
                                                         )}
 
@@ -504,7 +504,7 @@ export default function StudentEvaluationShow() {
                                                                 }
                                                                 placeholder="Share your detailed feedback..."
                                                                 rows={3}
-                                                                className="resize-y rounded-xl border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed focus:border-blue-500 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800/30"
+                                                                className="resize-y rounded-xl border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800/60 dark:text-white dark:placeholder:text-slate-500"
                                                             />
                                                         )}
                                                     </div>
@@ -533,7 +533,7 @@ export default function StudentEvaluationShow() {
                                                     'h-12 w-full rounded-2xl px-8 text-xs font-black tracking-widest uppercase transition-all duration-300 sm:w-auto shadow-md',
                                                     canSubmit
                                                         ? 'bg-[#0b2d66] text-white hover:bg-[#1e40af] hover:shadow-lg hover:shadow-blue-900/25 active:scale-95'
-                                                        : 'bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-600',
+                                                        : 'bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-400',
                                                 )}
                                             >
                                                 {submitting ? 'Submitting...' : 'Confirm & Submit'}
@@ -569,7 +569,7 @@ export default function StudentEvaluationShow() {
                                     'h-11 rounded-xl px-5 text-xs font-black tracking-widest uppercase transition-all duration-300 sm:h-12 sm:px-8',
                                     canSubmit
                                         ? 'bg-[#0b2d66] text-white hover:bg-[#1e40af] shadow-md shadow-blue-900/20 active:scale-95'
-                                        : 'bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-600',
+                                        : 'bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-400',
                                 )}
                             >
                                 {submitting ? 'Submitting...' : 'Confirm & Submit'}

@@ -301,11 +301,11 @@ export default function BulkActionsModal({
                                     placeholder="Search name, ID, course..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="h-8 pl-8 text-xs bg-slate-50 border-slate-200 dark:border-slate-700 dark:bg-slate-800/80 font-medium"
+                                    className="h-8 pl-8 text-xs bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white dark:placeholder:text-slate-500 font-medium"
                                 />
                             </div>
                             <Select value={yearFilter} onValueChange={setYearFilter}>
-                                <SelectTrigger className="h-8 text-xs bg-slate-50 border-slate-200 dark:border-slate-700 dark:bg-slate-800/80 font-medium">
+                                <SelectTrigger className="h-8 text-xs bg-slate-50 border-slate-200 text-slate-900 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200 font-medium">
                                     <SelectValue placeholder="All Students" />
                                 </SelectTrigger>
                                 <SelectContent>

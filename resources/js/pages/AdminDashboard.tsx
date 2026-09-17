@@ -729,7 +729,7 @@ export default function AdminDashboard({
                             <CardContent className="flex flex-col gap-1.5 p-2">
                                 <Link
                                     href={adminEvents()}
-                                    className="group flex items-center gap-2 rounded-lg border border-slate-100 bg-gradient-to-r from-sky-50/70 to-blue-50/30 px-2.5 py-2 transition-all duration-200 hover:border-sky-300 hover:shadow-sm dark:border-slate-700/80 dark:bg-slate-750/70 dark:hover:border-sky-500/60 dark:hover:bg-slate-700"
+                                    className="group flex items-center gap-2 rounded-lg border border-slate-100 bg-gradient-to-r from-sky-50/70 to-blue-50/30 px-2.5 py-2 transition-all duration-200 hover:border-sky-300 hover:shadow-sm dark:border-slate-700/80 dark:bg-slate-800/80 dark:hover:border-sky-500/60 dark:hover:bg-slate-700"
                                 >
                                     <div className="shrink-0 rounded-md bg-sky-500/10 p-1 text-sky-600 dark:bg-sky-500/20 dark:text-sky-400">
                                         <CalendarDays className="h-3.5 w-3.5" />
@@ -743,7 +743,7 @@ export default function AdminDashboard({
                                     href={
                                         adminAdmissionSlip() + '?open_add=true'
                                     }
-                                    className="group flex items-center gap-2 rounded-lg border border-slate-100 bg-gradient-to-r from-emerald-50/70 to-teal-50/30 px-2.5 py-2 transition-all duration-200 hover:border-emerald-300 hover:shadow-sm dark:border-slate-700/80 dark:bg-slate-750/70 dark:hover:border-emerald-500/60 dark:hover:bg-slate-700"
+                                    className="group flex items-center gap-2 rounded-lg border border-slate-100 bg-gradient-to-r from-emerald-50/70 to-teal-50/30 px-2.5 py-2 transition-all duration-200 hover:border-emerald-300 hover:shadow-sm dark:border-slate-700/80 dark:bg-slate-800/80 dark:hover:border-emerald-500/60 dark:hover:bg-slate-700"
                                 >
                                     <div className="shrink-0 rounded-md bg-emerald-500/10 p-1 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
                                         <Ticket className="h-3.5 w-3.5" />
@@ -755,7 +755,7 @@ export default function AdminDashboard({
 
                                 <Link
                                     href={adminIncidentsViolations()}
-                                    className="group flex items-center gap-2 rounded-lg border border-slate-100 bg-gradient-to-r from-rose-50/70 to-red-50/30 px-2.5 py-2 transition-all duration-200 hover:border-rose-300 hover:shadow-sm dark:border-slate-700/80 dark:bg-slate-750/70 dark:hover:border-rose-500/60 dark:hover:bg-slate-700"
+                                    className="group flex items-center gap-2 rounded-lg border border-slate-100 bg-gradient-to-r from-rose-50/70 to-red-50/30 px-2.5 py-2 transition-all duration-200 hover:border-rose-300 hover:shadow-sm dark:border-slate-700/80 dark:bg-slate-800/80 dark:hover:border-rose-500/60 dark:hover:bg-slate-700"
                                 >
                                     <div className="shrink-0 rounded-md bg-rose-500/10 p-1 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400">
                                         <Briefcase className="h-3.5 w-3.5" />
@@ -767,7 +767,7 @@ export default function AdminDashboard({
 
                                 <Link
                                     href={adminManageUsers()}
-                                    className="group flex items-center gap-2 rounded-lg border border-slate-100 bg-gradient-to-r from-amber-50/70 to-yellow-50/30 px-2.5 py-2 transition-all duration-200 hover:border-amber-300 hover:shadow-sm dark:border-slate-700/80 dark:bg-slate-750/70 dark:hover:border-amber-500/60 dark:hover:bg-slate-700"
+                                    className="group flex items-center gap-2 rounded-lg border border-slate-100 bg-gradient-to-r from-amber-50/70 to-yellow-50/30 px-2.5 py-2 transition-all duration-200 hover:border-amber-300 hover:shadow-sm dark:border-slate-700/80 dark:bg-slate-800/80 dark:hover:border-amber-500/60 dark:hover:bg-slate-700"
                                 >
                                     <div className="shrink-0 rounded-md bg-amber-500/10 p-1 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
                                         <UserRoundCog className="h-3.5 w-3.5" />
@@ -779,7 +779,7 @@ export default function AdminDashboard({
 
                                 <Link
                                     href={adminReports()}
-                                    className="group flex items-center gap-2 rounded-lg border border-slate-100 bg-gradient-to-r from-violet-50/70 to-purple-50/30 px-2.5 py-2 transition-all duration-200 hover:border-violet-300 hover:shadow-sm dark:border-slate-700/80 dark:bg-slate-750/70 dark:hover:border-violet-500/60 dark:hover:bg-slate-700"
+                                    className="group flex items-center gap-2 rounded-lg border border-slate-100 bg-gradient-to-r from-violet-50/70 to-purple-50/30 px-2.5 py-2 transition-all duration-200 hover:border-violet-300 hover:shadow-sm dark:border-slate-700/80 dark:bg-slate-800/80 dark:hover:border-violet-500/60 dark:hover:bg-slate-700"
                                 >
                                     <div className="shrink-0 rounded-md bg-violet-500/10 p-1 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400">
                                         <FileText className="h-3.5 w-3.5" />

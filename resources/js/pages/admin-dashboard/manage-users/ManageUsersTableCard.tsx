@@ -110,7 +110,7 @@ export function ManageUsersTableCard({
                             />
                             <Input
                                 placeholder="Search user..."
-                                className="h-8.5 border border-slate-200 bg-white pl-8 text-xs dark:border-slate-600 dark:bg-slate-800"
+                                className="h-8.5 border border-slate-200 bg-white pl-8 text-xs text-slate-900 placeholder:text-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
                                 name="manage_users_search"
                                 type="search"
                                 autoComplete="new-password"
@@ -128,7 +128,7 @@ export function ManageUsersTableCard({
                                 setPageIndex(1);
                             }}
                         >
-                            <SelectTrigger className="h-8.5 w-[140px] border border-slate-200 bg-white text-xs dark:border-slate-600 dark:bg-slate-800">
+                            <SelectTrigger className="h-8.5 w-[140px] border border-slate-200 bg-white text-xs text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
                                 <SelectValue placeholder="All Users" />
                             </SelectTrigger>
                             <SelectContent>
@@ -152,7 +152,7 @@ export function ManageUsersTableCard({
                                 setPageIndex(1);
                             }}
                         >
-                            <SelectTrigger className="h-8.5 w-[130px] border border-slate-200 bg-white text-xs dark:border-slate-600 dark:bg-slate-800">
+                            <SelectTrigger className="h-8.5 w-[130px] border border-slate-200 bg-white text-xs text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
                                 <SelectValue placeholder="All Courses" />
                             </SelectTrigger>
                             <SelectContent>

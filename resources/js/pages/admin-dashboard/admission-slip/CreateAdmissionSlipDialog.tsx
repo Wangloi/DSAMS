@@ -255,7 +255,7 @@ export default function CreateAdmissionSlipDialog({
                                 }}
                                 placeholder="Enter student ID"
                                 autoComplete="off"
-                                className="h-11 rounded-xl border-slate-200 bg-slate-50 px-4 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50"
+                                className="h-11 rounded-xl border-slate-200 bg-slate-50 px-4 text-slate-900 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50 dark:text-white"
                             />
 
                             {isDropdownOpen && searchResults.length > 0 && (
@@ -264,7 +264,7 @@ export default function CreateAdmissionSlipDialog({
                                         <button
                                             key={student.id}
                                             type="button"
-                                            className="flex w-full flex-col px-4 py-2 text-left text-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
+                                            className="flex w-full flex-col px-4 py-2 text-left text-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/60"
                                             onClick={() => {
                                                 setForm((p) => ({
                                                     ...p,
@@ -308,7 +308,7 @@ export default function CreateAdmissionSlipDialog({
                                 value={form.studentName}
                                 readOnly
                                 placeholder="Student name will appear here"
-                                className="text-slate-750 h-11 cursor-not-allowed rounded-xl border-slate-200 bg-slate-100 px-4 dark:border-slate-800 dark:bg-slate-800/80"
+                                className="h-11 cursor-not-allowed rounded-xl border-slate-200 bg-slate-100 px-4 text-slate-700 dark:border-slate-800 dark:bg-slate-800/80 dark:text-slate-300"
                             />
                             <InputError message={errors.student_name} />
                         </div>
@@ -325,7 +325,7 @@ export default function CreateAdmissionSlipDialog({
                                 value={form.programYear}
                                 readOnly
                                 placeholder="Program and year level will appear here"
-                                className="text-slate-750 h-11 cursor-not-allowed rounded-xl border-slate-200 bg-slate-100 px-4 dark:border-slate-800 dark:bg-slate-800/80"
+                                className="h-11 cursor-not-allowed rounded-xl border-slate-200 bg-slate-100 px-4 text-slate-700 dark:border-slate-800 dark:bg-slate-800/80 dark:text-slate-300"
                             />
                             <InputError message={errors.program_year_level} />
                         </div>
@@ -349,7 +349,7 @@ export default function CreateAdmissionSlipDialog({
                                         validUntil: v ? addDaysIso(v, 7) : '',
                                     }));
                                 }}
-                                className="h-11 rounded-xl border-slate-200 bg-slate-50 px-4 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50"
+                                className="h-11 rounded-xl border-slate-200 bg-slate-50 px-4 text-slate-900 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50 dark:text-white"
                             />
                             <InputError message={errors.date_issued} />
                         </div>
@@ -366,7 +366,7 @@ export default function CreateAdmissionSlipDialog({
                                 type="date"
                                 value={form.validUntil}
                                 readOnly
-                                className="text-slate-750 h-11 cursor-not-allowed rounded-xl border-slate-200 bg-slate-100 px-4 dark:border-slate-800 dark:bg-slate-800/80"
+                                className="h-11 cursor-not-allowed rounded-xl border-slate-200 bg-slate-100 px-4 text-slate-700 dark:border-slate-800 dark:bg-slate-800/80 dark:text-slate-300"
                             />
                             <InputError message={errors.valid_until} />
                         </div>
@@ -389,7 +389,7 @@ export default function CreateAdmissionSlipDialog({
                                 }))
                             }
                             placeholder="Enter case"
-                            className="h-11 rounded-xl border-slate-200 bg-slate-50 px-4 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50"
+                            className="h-11 rounded-xl border-slate-200 bg-slate-50 px-4 text-slate-900 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50 dark:text-white"
                         />
                         <InputError message={errors.case_text} />
                     </div>
@@ -497,7 +497,7 @@ export default function CreateAdmissionSlipDialog({
                                         }
                                         placeholder="Specify other reason details..."
                                         rows={2}
-                                        className="dark:border-slate-850 min-h-16 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 shadow-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:outline-none dark:bg-slate-800/50 dark:text-white"
+                                        className="min-h-16 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 shadow-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:outline-none dark:border-slate-700 dark:bg-slate-800/50 dark:text-white"
                                     />
                                 </div>
                             )}

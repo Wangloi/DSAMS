@@ -1,5 +1,4 @@
-import { Link } from '@inertiajs/react';
-import { ArrowRight, Award, CheckCircle, Shield, Users } from 'lucide-react';
+import { Award, CheckCircle, Shield, Users } from 'lucide-react';
 
 interface Props {
     canRegister: boolean;
@@ -98,32 +97,7 @@ export default function LandingCta({ canRegister, stats }: Props) {
                         </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3 sm:gap-4 pt-2 sm:pt-4 w-full">
-                        <Link
-                            href="/login"
-                            className="group inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#23509A] px-6 py-3.5 sm:px-8 sm:py-4 text-sm sm:text-base font-semibold text-white shadow-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-white hover:text-[#000D6A] hover:shadow-2xl active:translate-y-0"
-                        >
-                            Student Portal
-                            <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 transition-transform group-hover:translate-x-1" />
-                        </Link>
 
-                        <Link
-                            href="/program-head-login"
-                            className="group inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#FBFBFB] px-6 py-3.5 sm:px-8 sm:py-4 text-sm sm:text-base font-semibold text-[#000D6A] shadow-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#23509A] hover:text-white hover:shadow-2xl active:translate-y-0"
-                        >
-                            Program Head Portal
-                            <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 transition-transform group-hover:translate-x-1" />
-                        </Link>
-
-                        <Link
-                            href="/admin-login"
-                            className="group inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#FBFBFB] px-6 py-3.5 sm:px-8 sm:py-4 text-sm sm:text-base font-semibold text-[#000D6A] shadow-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#23509A] hover:text-white hover:shadow-2xl active:translate-y-0"
-                        >
-                            Admin Portal
-                            <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 transition-transform group-hover:translate-x-1" />
-                        </Link>
-                    </div>
 
                     {/* Real Dynamic System Stats */}
                     <div className="mx-auto grid max-w-4xl grid-cols-2 gap-4 sm:gap-8 border-t border-white/20 pt-6 sm:pt-8 md:grid-cols-4">

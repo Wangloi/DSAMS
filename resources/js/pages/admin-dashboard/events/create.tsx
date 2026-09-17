@@ -1159,7 +1159,7 @@ export default function CreateEventPage() {
                                                                         .length ===
                                                                     0
                                                                         ? 'border-transparent bg-[#1e40af] text-white shadow-sm'
-                                                                        : 'dark:hover:bg-slate-750 border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                                                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
                                                                 }`}
                                                                 onClick={() =>
                                                                     setFormData(
@@ -1198,7 +1198,7 @@ export default function CreateEventPage() {
                                                                             className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
                                                                                 isSelected
                                                                                     ? 'border-blue-200 bg-blue-50 text-[#1e40af] hover:bg-blue-100 dark:border-blue-500/30 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/30'
-                                                                                    : 'dark:hover:bg-slate-750 border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                                                                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
                                                                             }`}
                                                                             onClick={() => {
                                                                                 setFormData(
@@ -1261,7 +1261,7 @@ export default function CreateEventPage() {
                                                                     .length ===
                                                                 0
                                                                     ? 'border-transparent bg-[#1e40af] text-white shadow-sm'
-                                                                    : 'dark:hover:bg-slate-750 border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                                                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
                                                             }`}
                                                             onClick={() =>
                                                                 setFormData(
@@ -1296,7 +1296,7 @@ export default function CreateEventPage() {
                                                                         className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
                                                                             isSelected
                                                                                 ? 'border-blue-200 bg-blue-50 text-[#1e40af] hover:bg-blue-100 dark:border-blue-500/30 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/30'
-                                                                                : 'dark:hover:bg-slate-750 border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                                                                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
                                                                         }`}
                                                                         onClick={() => {
                                                                             setFormData(
@@ -1357,7 +1357,7 @@ export default function CreateEventPage() {
                                                             }
                                                             readOnly
                                                             placeholder="Number of expected attendees"
-                                                            className="dark:bg-slate-850 h-9 bg-slate-50/50 pl-9 font-semibold text-[#1e40af] dark:text-blue-400"
+                                                            className="h-9 bg-slate-50/50 pl-9 font-semibold text-[#1e40af] dark:bg-slate-800 dark:text-blue-400"
                                                             min="1"
                                                         />
                                                     </div>

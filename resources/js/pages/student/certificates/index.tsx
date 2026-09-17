@@ -318,10 +318,10 @@ export default function CertificatesPage() {
                             </div>
 
                             <div className="flex items-center gap-3">
-                                <div className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 shadow-sm dark:border-white/5 dark:bg-slate-900/40">
-                                    <Award className="h-5 w-5 text-blue-600" />
+                                <div className="flex h-12 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/90">
+                                    <Award className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                                     <div className="flex flex-col">
-                                        <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
+                                        <span className="text-[10px] font-black tracking-widest text-slate-400 dark:text-slate-400 uppercase">
                                             Total Earned
                                         </span>
                                         <span className="text-sm font-black text-slate-900 dark:text-white">
@@ -530,7 +530,7 @@ export default function CertificatesPage() {
                                     onChange={(e) =>
                                         setSearchTerm(e.target.value)
                                     }
-                                    className="h-12 w-full rounded-2xl border-slate-200 bg-white pl-11 text-sm shadow-sm focus:ring-blue-500/20 dark:border-white/5 dark:bg-slate-900/40"
+                                    className="h-12 w-full rounded-2xl border-slate-200 bg-white pl-11 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
                                 />
                             </div>
                         </div>
@@ -638,7 +638,7 @@ export default function CertificatesPage() {
                                                                 certificate,
                                                             )
                                                         }
-                                                        className="h-9 flex-1 rounded-lg border-slate-200 text-[9px] font-black tracking-widest uppercase transition-all hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/5"
+                                                        className="h-9 flex-1 rounded-lg border-slate-200 text-[9px] font-black tracking-widest uppercase transition-all hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                                                     >
                                                         <Eye className="mr-1.5 h-3.5 w-3.5" />
                                                         Preview

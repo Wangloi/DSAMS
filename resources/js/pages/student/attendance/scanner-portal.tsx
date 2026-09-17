@@ -2010,7 +2010,7 @@ export default function StudentAttendanceScannerPortalPage({
                                     value={manualIdInput}
                                     onChange={(e) => setManualIdInput(e.target.value)}
                                     autoFocus
-                                    className="h-11 rounded-xl text-sm font-semibold border-slate-200 dark:border-slate-800 dark:bg-slate-950"
+                                    className="h-11 rounded-xl text-sm font-semibold text-slate-900 placeholder:text-slate-400 border-slate-200 dark:border-slate-800 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500"
                                 />
                             </div>
 
@@ -2019,7 +2019,7 @@ export default function StudentAttendanceScannerPortalPage({
                                     type="button"
                                     variant="outline"
                                     onClick={() => setShowManualModal(false)}
-                                    className="h-10 rounded-xl font-bold"
+                                    className="h-10 rounded-xl font-bold dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                                 >
                                     Cancel
                                 </Button>

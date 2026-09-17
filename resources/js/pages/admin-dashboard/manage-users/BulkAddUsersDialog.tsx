@@ -392,19 +392,19 @@ export default function BulkAddUsersDialog({ open, onOpenChange }: Props) {
                                                             <td className="px-3 py-1 font-mono font-semibold text-blue-600 dark:text-blue-400">
                                                                 {r.student_id}
                                                             </td>
-                                                            <td className="px-3 py-1">
+                                                            <td className="px-3 py-1 text-slate-700 dark:text-slate-300">
                                                                 {r.first_name}
                                                             </td>
-                                                            <td className="px-3 py-1">
+                                                            <td className="px-3 py-1 text-slate-700 dark:text-slate-300">
                                                                 {r.last_name}
                                                             </td>
-                                                            <td className="px-3 py-1">
+                                                            <td className="px-3 py-1 text-slate-700 dark:text-slate-300">
                                                                 {r.year_level}
                                                             </td>
-                                                            <td className="px-3 py-1">
+                                                            <td className="px-3 py-1 text-slate-700 dark:text-slate-300">
                                                                 {r.course}
                                                             </td>
-                                                            <td className="px-3 py-1">
+                                                            <td className="px-3 py-1 text-slate-700 dark:text-slate-300">
                                                                 {r.program}
                                                             </td>
                                                         </tr>

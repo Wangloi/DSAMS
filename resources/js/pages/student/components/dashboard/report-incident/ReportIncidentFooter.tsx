@@ -19,7 +19,7 @@ export function ReportIncidentFooter({
     onSubmit,
 }: ReportIncidentFooterProps) {
     return (
-        <div className="dark:border-slate-850 flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-6 py-4 dark:bg-slate-900/40">
+        <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/40">
             <div className="flex items-center gap-2">
                 {reportStep > 1 && (
                     <Button

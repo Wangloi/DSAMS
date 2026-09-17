@@ -349,7 +349,7 @@ export default function Violations() {
                                                 setPageIndex(1);
                                             }}
                                             placeholder="Search cases"
-                                            className="h-9 w-[220px] border-slate-200 bg-white pl-9 dark:border-slate-700 dark:bg-slate-800"
+                                            className="h-9 w-[220px] border-slate-200 bg-white pl-9 text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
                                         />
                                     </div>
 
@@ -360,7 +360,7 @@ export default function Violations() {
                                             setPageIndex(1);
                                         }}
                                     >
-                                        <SelectTrigger className="h-9 w-[140px] border-slate-200 bg-white text-xs font-bold dark:border-slate-700 dark:bg-slate-800">
+                                        <SelectTrigger className="h-9 w-[140px] border-slate-200 bg-white text-xs font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
                                             <SelectValue placeholder="Classification" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -391,7 +391,7 @@ export default function Violations() {
                                             setPageIndex(1);
                                         }}
                                     >
-                                        <SelectTrigger className="h-9 w-[140px] border-slate-200 bg-white text-xs font-bold dark:border-slate-700 dark:bg-slate-800">
+                                        <SelectTrigger className="h-9 w-[140px] border-slate-200 bg-white text-xs font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
                                             <SelectValue placeholder="Status" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -462,7 +462,7 @@ export default function Violations() {
                                                         <div className="font-semibold text-slate-900 dark:text-white">
                                                             {row.student}
                                                         </div>
-                                                        <div className="text-xs text-slate-500">
+                                                        <div className="text-xs text-slate-500 dark:text-slate-400">
                                                             {row.studentId}
                                                         </div>
                                                     </td>
