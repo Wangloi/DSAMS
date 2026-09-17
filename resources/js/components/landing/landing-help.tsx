@@ -466,54 +466,54 @@ export default function LandingHelp() {
     return (
         <div className="w-full bg-[#FAFAFA] text-slate-900 selection:bg-blue-600 selection:text-white">
             {/* ─── Hero Header Section ────────────────────────────────────────── */}
-            <section className="relative overflow-hidden bg-gradient-to-b from-[#000D6A] via-[#0B2D66] to-[#12397B] pt-24 pb-20 sm:pt-28 sm:pb-24 lg:pt-32 lg:pb-28 text-white">
+            <section className="relative overflow-hidden bg-gradient-to-b from-[#000D6A] via-[#0B2D66] to-[#12397B] pt-20 pb-12 sm:pt-24 sm:pb-14 lg:pt-28 lg:pb-16 text-white">
                 {/* Background ambient lighting and grid */}
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
-                <div className="absolute top-0 right-1/4 h-96 w-96 rounded-full bg-blue-500/20 blur-[120px] pointer-events-none" />
-                <div className="absolute bottom-0 left-1/4 h-80 w-80 rounded-full bg-indigo-500/20 blur-[100px] pointer-events-none" />
+                <div className="absolute top-0 right-1/4 h-80 w-80 rounded-full bg-blue-500/15 blur-[100px] pointer-events-none" />
+                <div className="absolute bottom-0 left-1/4 h-64 w-64 rounded-full bg-indigo-500/15 blur-[80px] pointer-events-none" />
 
-                <div className="relative z-10 mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-center">
+                <div className="relative z-10 mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
                     {/* Badge */}
-                    <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-white/10 px-4 py-1.5 text-xs font-semibold tracking-wider text-blue-200 uppercase backdrop-blur-md shadow-sm mb-6">
+                    <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-400/30 bg-white/10 px-3 py-1 text-xs font-semibold tracking-wider text-blue-200 uppercase backdrop-blur-md shadow-sm mb-4">
                         <LifeBuoy className="h-3.5 w-3.5 text-blue-300 animate-pulse" />
                         Official Knowledge Base & Support
                     </div>
 
                     {/* Title */}
-                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight text-white mb-6">
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-white mb-3 sm:mb-4">
                         How can we help you today?
                     </h1>
 
-                    <p className="mx-auto max-w-2xl text-sm sm:text-base md:text-lg text-blue-100/90 leading-relaxed font-normal mb-8 sm:mb-10">
-                        Explore comprehensive guides for student clearances, QR event check-in, GPS geofencing, discipline policies, certificates, and technical help.
+                    <p className="mx-auto max-w-xl text-xs sm:text-sm md:text-base text-blue-100/90 leading-relaxed font-normal mb-6">
+                        Explore guides for student clearances, QR event check-in, GPS geofencing, discipline policies, and certificates.
                     </p>
 
                     {/* Search Bar */}
-                    <div className="mx-auto max-w-2xl">
-                        <div className="relative flex items-center rounded-2xl bg-white/95 p-2 shadow-2xl ring-1 ring-black/10 backdrop-blur-md focus-within:ring-2 focus-within:ring-blue-400 transition-all">
-                            <div className="flex h-11 w-11 shrink-0 items-center justify-center text-slate-400 pl-1">
-                                <Search className="h-5 w-5" />
+                    <div className="mx-auto max-w-xl">
+                        <div className="relative flex items-center rounded-2xl bg-white/95 p-1.5 shadow-xl ring-1 ring-black/10 backdrop-blur-md focus-within:ring-2 focus-within:ring-blue-400 transition-all">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center text-slate-400 pl-1">
+                                <Search className="h-4 w-4" />
                             </div>
                             <input
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search guides, policies, or questions (e.g., admission slip, QR scan, GPS, certificate)..."
-                                className="w-full bg-transparent px-3 py-2 text-sm sm:text-base text-slate-800 placeholder-slate-400 focus:outline-none"
+                                placeholder="Search guides, policies, or questions..."
+                                className="w-full bg-transparent px-2.5 py-1.5 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none"
                             />
                             {searchQuery && (
                                 <button
                                     onClick={() => setSearchQuery('')}
-                                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors mr-1"
+                                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors mr-1"
                                 >
-                                    <X className="h-4 w-4" />
+                                    <X className="h-3.5 w-3.5" />
                                 </button>
                             )}
                         </div>
 
                         {/* Search feedback */}
                         {searchQuery && (
-                            <div className="mt-3 flex items-center justify-center gap-2 text-xs text-blue-200 font-medium">
+                            <div className="mt-2.5 flex items-center justify-center gap-2 text-xs text-blue-200 font-medium">
                                 <span>
                                     Found <strong>{filteredGuides.length}</strong> guide(s) and <strong>{filteredFaqs.length}</strong> FAQ(s) matching "{searchQuery}"
                                 </span>

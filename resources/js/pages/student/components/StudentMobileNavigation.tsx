@@ -24,7 +24,6 @@ import {
 
 interface StudentMobileNavigationProps {
     onItemClick?: () => void;
-    onOpenHelp?: () => void;
     unreadNotificationsCount?: number;
 }
 
@@ -54,7 +53,6 @@ const mainNavItems: (NavItem & { badgeKey?: string })[] = [
 
 export function StudentMobileNavigation({
     onItemClick,
-    onOpenHelp,
     unreadNotificationsCount = 0,
 }: StudentMobileNavigationProps) {
     const { url } = usePage();
@@ -216,19 +214,17 @@ export function StudentMobileNavigation({
                         <div className="mb-2 px-3 text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
                             Help & Support
                         </div>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                onItemClick?.();
-                                onOpenHelp?.();
-                            }}
+                        <Link
+                            href={studentHelp()}
+                            prefetch
+                            onClick={onItemClick}
                             className={`${baseButtonClassName} w-full text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800/60`}
                         >
                             <div className="flex items-center gap-3">
                                 <HelpCircle className="h-5 w-5 text-slate-500 transition-transform duration-200 group-hover:scale-110 dark:text-slate-400" />
                                 <span>Help & Guidelines</span>
                             </div>
-                        </button>
+                        </Link>
                     </div>
                 </div>
             </div>

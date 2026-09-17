@@ -248,10 +248,6 @@ export function StudentHeader() {
                                 </div>
                                 <StudentMobileNavigation
                                     onItemClick={() => setMobileMenuOpen(false)}
-                                    onOpenHelp={() => {
-                                        setMobileMenuOpen(false);
-                                        setHelpOpen(true);
-                                    }}
                                     unreadNotificationsCount={unreadNotifications}
                                 />
                             </SheetContent>

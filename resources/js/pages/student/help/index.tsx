@@ -441,52 +441,52 @@ export default function StudentHelpPage() {
         <StudentLayout breadcrumbs={breadcrumbs}>
             <Head title="Student Help & Documentation Center" />
 
-            <div className="pb-16 text-slate-900 dark:text-white">
-                <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-4 sm:px-6 lg:px-8">
+            <div className="pb-12 text-slate-900 dark:text-white">
+                <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-3 sm:px-6 lg:px-8">
                     {/* ── Header Banner with Search ─────────────────────────────── */}
-                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#000D6A] via-[#0B2D66] to-[#12397B] p-6 sm:p-8 md:p-10 text-white shadow-xl">
-                        <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full bg-blue-400/10 blur-2xl pointer-events-none" />
-                        <div className="absolute right-1/4 bottom-0 h-64 w-64 rounded-full bg-indigo-400/10 blur-3xl pointer-events-none" />
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#000D6A] via-[#0B2D66] to-[#12397B] p-5 sm:p-6 text-white shadow-lg">
+                        <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-blue-400/10 blur-xl pointer-events-none" />
+                        <div className="absolute right-1/3 bottom-0 h-40 w-40 rounded-full bg-indigo-400/10 blur-2xl pointer-events-none" />
 
-                        <div className="relative z-10 max-w-3xl space-y-4">
-                            <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-white/10 px-3.5 py-1 text-xs font-semibold tracking-wider text-blue-200 uppercase backdrop-blur-md">
-                                <LifeBuoy className="h-3.5 w-3.5 text-blue-300 animate-pulse" />
-                                Student Knowledge Base & Help Hub
+                        <div className="relative z-10 max-w-2xl space-y-2.5">
+                            <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-400/30 bg-white/10 px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-blue-200 uppercase backdrop-blur-md">
+                                <LifeBuoy className="h-3 w-3 text-blue-300 animate-pulse" />
+                                Student Help & Documentation
                             </div>
 
-                            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white">
-                                Student Help & Documentation Center
+                            <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-white">
+                                Student Help Center
                             </h1>
 
-                            <p className="text-xs sm:text-sm md:text-base text-blue-100/90 leading-relaxed max-w-2xl font-normal">
-                                Master your student portal: step-by-step guides for QR check-in, GPS geofencing, admission clearance slips, disciplinary records, and certificates.
+                            <p className="text-xs text-blue-100/90 leading-relaxed font-normal">
+                                Guides for QR check-in, GPS geofencing, admission clearance slips, and certificates.
                             </p>
 
                             {/* Search Input */}
-                            <div className="pt-2">
-                                <div className="relative flex items-center rounded-2xl bg-white/95 dark:bg-slate-900/95 p-2 shadow-2xl ring-1 ring-black/10 dark:ring-white/10 backdrop-blur-md focus-within:ring-2 focus-within:ring-blue-400 transition-all">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center text-slate-400 pl-1">
-                                        <Search className="h-5 w-5" />
+                            <div className="pt-1">
+                                <div className="relative flex items-center rounded-xl bg-white/95 dark:bg-slate-900/95 p-1 shadow-md ring-1 ring-black/10 dark:ring-white/10 backdrop-blur-md focus-within:ring-2 focus-within:ring-blue-400 transition-all">
+                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center text-slate-400 pl-1">
+                                        <Search className="h-4 w-4" />
                                     </div>
                                     <input
                                         type="text"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder="Search guides, policies, or questions (e.g., admission slip, QR scan, GPS, certificate)..."
-                                        className="w-full bg-transparent px-3 py-2 text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none"
+                                        placeholder="Search guides, policies, or questions..."
+                                        className="w-full bg-transparent px-2 py-1.5 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none"
                                     />
                                     {searchQuery && (
                                         <button
                                             onClick={() => setSearchQuery('')}
-                                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 transition-colors mr-1"
+                                            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 transition-colors mr-1"
                                         >
-                                            <X className="h-4 w-4" />
+                                            <X className="h-3.5 w-3.5" />
                                         </button>
                                     )}
                                 </div>
 
                                 {searchQuery && (
-                                    <div className="mt-2.5 text-xs text-blue-200 font-medium">
+                                    <div className="mt-2 text-[11px] text-blue-200 font-medium">
                                         Found <strong>{filteredGuides.length}</strong> guide(s) and <strong>{filteredFaqs.length}</strong> FAQ(s) matching "{searchQuery}"
                                     </div>
                                 )}
