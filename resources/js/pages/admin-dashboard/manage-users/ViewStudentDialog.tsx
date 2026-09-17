@@ -74,7 +74,7 @@ export default function ViewStudentDialog({
         student?.userType === 'program_head' ||
         String(student?.role ?? '').toLowerCase().includes('program');
 
-    const [activeTab, setActiveTab] = useState<'info' | 'attendance'>('info');
+    const [activeTab, setActiveTab] = useState<'attendance' | 'info'>('attendance');
     const [attendances, setAttendances] = useState<StudentAttendanceRecord[]>([]);
     const [summary, setSummary] = useState<AttendanceSummary>({
         total_attended: 0,
@@ -88,12 +88,13 @@ export default function ViewStudentDialog({
     const [attendanceSearch, setAttendanceSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'present' | 'late' | 'excused' | 'override'>('all');
 
-    // Fetch student's attendance records when dialog opens
+    // Fetch student's attendance records and reset to attendance tab when dialog opens
     useEffect(() => {
         if (!open || !student || isProgramHead) {
             return;
         }
 
+        setActiveTab('attendance');
         let isMounted = true;
         setIsLoadingAttendance(true);
 
@@ -973,18 +974,6 @@ export default function ViewStudentDialog({
                             <div className="flex items-center gap-2 px-6 pt-2 sm:px-8 bg-slate-50/70 dark:bg-slate-900/60">
                                 <button
                                     type="button"
-                                    onClick={() => setActiveTab('info')}
-                                    className={`relative flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-all ${
-                                        activeTab === 'info'
-                                            ? 'border-[#000D6A] text-[#000D6A] dark:border-[#8CE4FF] dark:text-[#8CE4FF]'
-                                            : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-                                    }`}
-                                >
-                                    <FileText className="h-4 w-4" />
-                                    Student Information Sheet
-                                </button>
-                                <button
-                                    type="button"
                                     onClick={() => setActiveTab('attendance')}
                                     className={`relative flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-all ${
                                         activeTab === 'attendance'
@@ -1003,6 +992,18 @@ export default function ViewStudentDialog({
                                     >
                                         {attendances.length}
                                     </span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('info')}
+                                    className={`relative flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-all ${
+                                        activeTab === 'info'
+                                            ? 'border-[#000D6A] text-[#000D6A] dark:border-[#8CE4FF] dark:text-[#8CE4FF]'
+                                            : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                                    }`}
+                                >
+                                    <FileText className="h-4 w-4" />
+                                    Student Information Sheet
                                 </button>
                             </div>
                         </div>
