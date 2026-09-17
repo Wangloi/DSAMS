@@ -85,6 +85,20 @@ Route::get('/help', function () {
     return Inertia::render('help');
 })->name('landing.help');
 
+Route::get('/privacy', function () {
+    return Inertia::render('privacy');
+})->name('landing.privacy');
+Route::get('/privacy-policy', function () {
+    return redirect()->route('landing.privacy');
+});
+
+Route::get('/terms', function () {
+    return Inertia::render('terms');
+})->name('landing.terms');
+Route::get('/terms-of-service', function () {
+    return redirect()->route('landing.terms');
+});
+
 Route::get('/sitemap', function () {
     return Inertia::render('sitemap');
 })->name('landing.sitemap');

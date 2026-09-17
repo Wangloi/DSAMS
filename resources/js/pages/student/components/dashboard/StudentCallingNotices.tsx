@@ -96,7 +96,7 @@ export function StudentCallingNotices({
                                     >
                                         Case #{inc.caseId}
                                     </Badge>
-                                    <span className="text-xs font-bold text-slate-500">
+                                    <span className="text-xs font-bold text-slate-500 dark:text-slate-300">
                                         Step {inc.calling_phase || 1} of 5:{' '}
                                         {inc.statusLabel}
                                     </span>
@@ -110,12 +110,12 @@ export function StudentCallingNotices({
 
                                 <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-slate-300">
                                     <span className="flex items-center gap-1">
-                                        <Building2 className="h-3.5 w-3.5 text-slate-400" />
+                                        <Building2 className="h-3.5 w-3.5 text-slate-400 dark:text-slate-400" />
                                         {inc.location ||
                                             'Office of the Dean of Student Affairs'}
                                     </span>
                                     <span className="flex items-center gap-1">
-                                        <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                                        <Calendar className="h-3.5 w-3.5 text-slate-400 dark:text-slate-400" />
                                         {inc.date}{' '}
                                         {inc.time && `• ${inc.time}`}
                                     </span>

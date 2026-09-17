@@ -83,7 +83,7 @@ export function StudentQuickActions({
                         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-50 text-violet-600 shadow-inner transition-transform duration-500 group-hover:scale-108 dark:bg-violet-500/10 dark:text-violet-400">
                             <ScanLine className="h-6 w-6" />
                         </div>
-                        <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase">
+                        <span className="text-[8px] font-black tracking-widest text-slate-400 dark:text-slate-300 uppercase">
                             Self Check-in
                         </span>
                     </div>
@@ -92,7 +92,7 @@ export function StudentQuickActions({
                         <h3 className="text-sm font-black tracking-tight text-slate-900 uppercase dark:text-white">
                             Check In Now
                         </h3>
-                        <p className="text-[11px] leading-relaxed font-semibold text-slate-500 dark:text-slate-400">
+                        <p className="text-[11px] leading-relaxed font-semibold text-slate-500 dark:text-slate-300">
                             Check in via GPS location or camera QR code.
                         </p>
                     </div>
@@ -122,7 +122,7 @@ export function StudentQuickActions({
                         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-50 text-rose-600 shadow-inner transition-transform duration-500 group-hover:scale-105 dark:bg-rose-500/10 dark:text-rose-400">
                             <AlertTriangle className="h-6 w-6" />
                         </div>
-                        <span className="font-mono text-[8px] font-black tracking-widest text-slate-400 uppercase">
+                        <span className="font-mono text-[8px] font-black tracking-widest text-slate-400 dark:text-slate-300 uppercase">
                             Anonymous
                         </span>
                     </div>
@@ -131,7 +131,7 @@ export function StudentQuickActions({
                         <h3 className="text-sm font-black tracking-tight text-slate-900 uppercase dark:text-white">
                             Report Incident
                         </h3>
-                        <p className="text-[11px] leading-relaxed font-semibold text-slate-500 dark:text-slate-400">
+                        <p className="text-[11px] leading-relaxed font-semibold text-slate-500 dark:text-slate-300">
                             Submit safety or security incidents to student
                             affairs.
                         </p>
@@ -158,7 +158,7 @@ export function StudentQuickActions({
                         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600 shadow-inner transition-transform duration-500 group-hover:scale-108 dark:bg-blue-500/10 dark:text-blue-400">
                             <ClipboardList className="h-6 w-6" />
                         </div>
-                        <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase">
+                        <span className="text-[8px] font-black tracking-widest text-slate-400 dark:text-slate-300 uppercase">
                             Requests
                         </span>
                     </div>
@@ -167,7 +167,7 @@ export function StudentQuickActions({
                         <h3 className="text-sm font-black tracking-tight text-slate-900 uppercase dark:text-white">
                             Admission Slip
                         </h3>
-                        <p className="text-[11px] leading-relaxed font-semibold text-slate-500 dark:text-slate-400">
+                        <p className="text-[11px] leading-relaxed font-semibold text-slate-500 dark:text-slate-300">
                             Request an official admission slip for class entry.
                         </p>
                     </div>
@@ -190,7 +190,7 @@ export function StudentQuickActions({
                         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 shadow-inner transition-transform duration-500 group-hover:scale-108 dark:bg-emerald-500/10 dark:text-emerald-400">
                             <Award className="h-6 w-6" />
                         </div>
-                        <span className="text-[8px] font-black tracking-widest text-slate-400 uppercase">
+                        <span className="text-[8px] font-black tracking-widest text-slate-400 dark:text-slate-300 uppercase">
                             Certificates
                         </span>
                     </div>
@@ -199,7 +199,7 @@ export function StudentQuickActions({
                         <h3 className="text-sm font-black tracking-tight text-slate-900 uppercase dark:text-white">
                             E-Certificates
                         </h3>
-                        <p className="text-[11px] leading-relaxed font-semibold text-slate-500 dark:text-slate-400">
+                        <p className="text-[11px] leading-relaxed font-semibold text-slate-500 dark:text-slate-300">
                             View and download official event participation
                             awards.
                         </p>

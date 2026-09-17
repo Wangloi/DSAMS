@@ -467,7 +467,7 @@ export default function LandingHelp() {
     return (
         <div className="w-full bg-[#FAFAFA] text-slate-900 selection:bg-blue-600 selection:text-white">
             {/* ─── Hero Header Section ────────────────────────────────────────── */}
-            <section className="relative overflow-hidden bg-gradient-to-b from-[#000D6A] via-[#0B2D66] to-[#12397B] pt-8 pb-8 sm:pt-10 sm:pb-9 md:pt-12 md:pb-10 text-white">
+            <section className="relative overflow-hidden bg-gradient-to-b from-[#000D6A] via-[#0B2D66] to-[#12397B] pt-24 pb-8 sm:pt-28 sm:pb-10 md:pt-32 md:pb-12 text-white">
                 {/* Background ambient lighting and grid */}
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
                 <div className="absolute top-0 right-1/4 h-64 w-64 rounded-full bg-blue-500/15 blur-[80px] pointer-events-none" />

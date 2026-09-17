@@ -30,6 +30,8 @@ export const LANDING_COMPONENTS = new Set([
     'landing/features',
     'landing/get-started',
     'help',
+    'privacy',
+    'terms',
     'sitemap',
     'welcome',
 ]);
@@ -46,6 +48,10 @@ export function isLandingPage(componentName?: string): boolean {
             path === '/features' ||
             path === '/get-started' ||
             path === '/help' ||
+            path === '/privacy' ||
+            path === '/privacy-policy' ||
+            path === '/terms' ||
+            path === '/terms-of-service' ||
             path === '/sitemap'
         ) {
             return true;

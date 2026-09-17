@@ -419,7 +419,7 @@ export default function SitemapPage() {
                     title: 'Data Privacy Policy (RA 10173)',
                     description:
                         'Detailed notice on how student personal data, attendance logs, and medical excuse files are protected and processed.',
-                    href: '/help#privacy',
+                    href: '/privacy',
                     icon: Shield,
                     badge: 'Policy',
                     badgeColor:
@@ -429,7 +429,7 @@ export default function SitemapPage() {
                     title: 'Terms of Service & Code of Conduct',
                     description:
                         'Rules governing authorized access, password confidentiality, integrity of digital clearance submissions, and penalties for forgery.',
-                    href: '/help#terms',
+                    href: '/terms',
                     icon: FileText,
                     badge: 'Policy',
                     badgeColor:

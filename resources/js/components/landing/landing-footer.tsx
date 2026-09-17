@@ -17,9 +17,6 @@ import {
 
 export default function LandingFooter() {
     const [isVisible, setIsVisible] = useState(false);
-    const [policyModal, setPolicyModal] = useState<'privacy' | 'terms' | null>(
-        null,
-    );
 
     useEffect(() => {
         const toggleVisibility = () => {
@@ -244,22 +241,18 @@ export default function LandingFooter() {
                                 </div>
 
                                 <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-white/70">
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            setPolicyModal('privacy')
-                                        }
+                                    <Link
+                                        href="/privacy"
                                         className="transition-colors duration-200 hover:text-[#8CE4FF] underline-offset-4 hover:underline"
                                     >
                                         Privacy Policy
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setPolicyModal('terms')}
+                                    </Link>
+                                    <Link
+                                        href="/terms"
                                         className="transition-colors duration-200 hover:text-[#8CE4FF] underline-offset-4 hover:underline"
                                     >
                                         Terms of Service
-                                    </button>
+                                    </Link>
                                     <Link
                                         href="/sitemap"
                                         className="flex items-center gap-1 transition-colors duration-200 hover:text-[#8CE4FF] underline-offset-4 hover:underline"
@@ -286,179 +279,6 @@ export default function LandingFooter() {
                     <ArrowUp className="h-4 w-4 sm:h-5 sm:w-5" />
                 </button>
             </footer>
-
-            {/* Privacy Policy & Terms Modal */}
-            {policyModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-                    <div className="relative max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 sm:p-8 text-slate-900 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
-                        <button
-                            onClick={() => setPolicyModal(null)}
-                            className="absolute right-5 top-5 rounded-full bg-slate-100 p-2 text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors"
-                        >
-                            <X className="h-5 w-5" />
-                        </button>
-
-                        {policyModal === 'privacy' ? (
-                            <div>
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-[#23509A]">
-                                        <ShieldCheck className="h-5 w-5" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-xl font-bold text-slate-900">
-                                            Data Privacy Policy
-                                        </h3>
-                                        <p className="text-xs text-slate-500">
-                                            Republic Act No. 10173 (Data Privacy
-                                            Act of 2012)
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4 text-xs sm:text-sm text-slate-600 leading-relaxed max-h-[55vh] overflow-y-auto pr-2">
-                                    <p>
-                                        The Office of Student Affairs and
-                                        Services (OSAMS) at St. Rita's College
-                                        of Balingasag commits to protecting and
-                                        respecting the privacy of all students,
-                                        faculty, staff, and institutional
-                                        stakeholders.
-                                    </p>
-                                    <h4 className="font-bold text-slate-900 pt-2">
-                                        1. Collection of Information
-                                    </h4>
-                                    <p>
-                                        We collect student profile credentials,
-                                        institutional student numbers, contact
-                                        information, event attendance timestamps,
-                                        dynamic QR check-in records, and medical
-                                        clearance documents strictly for
-                                        academic management, attendance
-                                        monitoring, and student service
-                                        fulfillment.
-                                    </p>
-                                    <h4 className="font-bold text-slate-900 pt-2">
-                                        2. Use and Processing
-                                    </h4>
-                                    <p>
-                                        Collected personal information is
-                                        processed exclusively to facilitate
-                                        re-admission clearance approvals,
-                                        validate event participation for
-                                        certificates, monitor handbook
-                                        compliance, and generate certified
-                                        departmental reports.
-                                    </p>
-                                    <h4 className="font-bold text-slate-900 pt-2">
-                                        3. Confidentiality and Retention
-                                    </h4>
-                                    <p>
-                                        Student records are stored in secure
-                                        encrypted databases with strict
-                                        role-based access controls. Data is
-                                        retained in accordance with Commission
-                                        on Higher Education (CHED) standards
-                                        and school archival schedules.
-                                    </p>
-                                </div>
-
-                                <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-                                    <Link
-                                        href="/sitemap"
-                                        onClick={() => setPolicyModal(null)}
-                                        className="text-xs font-semibold text-[#23509A] hover:underline"
-                                    >
-                                        View in System Sitemap &rarr;
-                                    </Link>
-                                    <button
-                                        onClick={() => setPolicyModal(null)}
-                                        className="rounded-xl bg-[#23509A] px-5 py-2 text-xs font-bold text-white shadow hover:bg-[#000D6A] transition-all"
-                                    >
-                                        I Understand
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div>
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
-                                        <FileText className="h-5 w-5" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-xl font-bold text-slate-900">
-                                            Terms of Service
-                                        </h3>
-                                        <p className="text-xs text-slate-500">
-                                            OSAMS System Terms & Student Code of
-                                            Conduct
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4 text-xs sm:text-sm text-slate-600 leading-relaxed max-h-[55vh] overflow-y-auto pr-2">
-                                    <p>
-                                        By accessing or using the OSAMS digital
-                                        platform, you agree to comply with the
-                                        policies, academic guidelines, and
-                                        student handbook of St. Rita's College
-                                        of Balingasag.
-                                    </p>
-                                    <h4 className="font-bold text-slate-900 pt-2">
-                                        1. Authorized Account Access
-                                    </h4>
-                                    <p>
-                                        Each user is responsible for maintaining
-                                        the confidentiality of their portal
-                                        credentials. Sharing account access,
-                                        impersonating other students, or
-                                        circumventing dynamic QR attendance
-                                        geofences constitutes a grave disciplinary
-                                        infraction.
-                                    </p>
-                                    <h4 className="font-bold text-slate-900 pt-2">
-                                        2. Authenticity of Clearance Documents
-                                    </h4>
-                                    <p>
-                                        All submitted excuse letters, medical
-                                        certificates, and justification notices
-                                        for Admission Slip issuance must be
-                                        truthful. Uploading forged or falsified
-                                        documents will trigger immediate student
-                                        disciplinary action.
-                                    </p>
-                                    <h4 className="font-bold text-slate-900 pt-2">
-                                        3. System Integrity & Misuse
-                                    </h4>
-                                    <p>
-                                        Attempting unauthorized access to
-                                        administrative consoles, tampering with
-                                        database records, or disrupting
-                                        attendance scanner portals will result
-                                        in account termination and formal legal
-                                        or academic sanctions.
-                                    </p>
-                                </div>
-
-                                <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-                                    <Link
-                                        href="/sitemap"
-                                        onClick={() => setPolicyModal(null)}
-                                        className="text-xs font-semibold text-[#23509A] hover:underline"
-                                    >
-                                        View in System Sitemap &rarr;
-                                    </Link>
-                                    <button
-                                        onClick={() => setPolicyModal(null)}
-                                        className="rounded-xl bg-[#23509A] px-5 py-2 text-xs font-bold text-white shadow hover:bg-[#000D6A] transition-all"
-                                    >
-                                        I Agree
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
         </>
     );
 }

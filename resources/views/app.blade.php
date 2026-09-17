@@ -6,6 +6,8 @@
         'landing/features',
         'landing/get-started',
         'help',
+        'privacy',
+        'terms',
         'sitemap',
         'welcome',
     ]);

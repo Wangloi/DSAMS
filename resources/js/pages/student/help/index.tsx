@@ -516,11 +516,11 @@ export default function StudentHelpPage() {
                                     onClick={() => setSelectedCategory(category.id)}
                                     className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all duration-200 ${
                                         isActive
-                                            ? 'bg-[#000D6A] text-white shadow-md shadow-blue-900/15 ring-1 ring-blue-900/20 dark:bg-blue-600'
-                                            : 'bg-slate-100/80 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:bg-slate-700'
+                                            ? 'bg-[#000D6A] text-white shadow-md shadow-blue-900/15 ring-1 ring-blue-900/20 dark:bg-blue-600 dark:text-white'
+                                            : 'bg-slate-100/80 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900 dark:bg-slate-800/80 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white'
                                     }`}
                                 >
-                                    <Icon className={`h-4 w-4 ${isActive ? 'text-blue-300' : 'text-slate-500 dark:text-slate-400'}`} />
+                                    <Icon className={`h-4 w-4 ${isActive ? 'text-blue-300' : 'text-slate-500 dark:text-slate-300'}`} />
                                     {category.label}
                                 </button>
                             );
@@ -530,41 +530,41 @@ export default function StudentHelpPage() {
                     {/* ── Quick Feature Cards ───────────────────────────────────── */}
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <div className="group rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+                            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-300">
                                 <QrCode className="h-5 w-5" />
                             </div>
                             <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1">Dynamic QR & GPS</h3>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                                 Self-scan rotating projector codes and geofence check-ins for instant attendance logs.
                             </p>
                         </div>
 
                         <div className="group rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
+                            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300">
                                 <ClipboardCheck className="h-5 w-5" />
                             </div>
                             <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1">Admission Slips</h3>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                                 Request class re-entry clearances, attach medical proof, and track DSA officer approval.
                             </p>
                         </div>
 
                         <div className="group rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
+                            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-300">
                                 <ShieldAlert className="h-5 w-5" />
                             </div>
                             <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1">Discipline & Sanctions</h3>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                                 Check calling slip summons, log community service hours, and obtain final clearance.
                             </p>
                         </div>
 
                         <div className="group rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
+                            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-300">
                                 <Award className="h-5 w-5" />
                             </div>
                             <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1">Evaluations & Certificates</h3>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                                 Submit seminar evaluation surveys to unlock downloadable high-res PDF participation certificates.
                             </p>
                         </div>
@@ -581,7 +581,7 @@ export default function StudentHelpPage() {
                                     Step-by-Step Student Guides ({filteredGuides.length})
                                 </h2>
                             </div>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                            <p className="text-xs text-slate-600 dark:text-slate-300">
                                 Click any guide to expand the complete walkthrough and pro tips.
                             </p>
                         </div>
@@ -590,7 +590,7 @@ export default function StudentHelpPage() {
                             <div className="rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-10 text-center">
                                 <Search className="mx-auto h-10 w-10 text-slate-400 mb-3" />
                                 <h3 className="text-base font-bold text-slate-800 dark:text-slate-200 mb-1">No guides match your search</h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                                <p className="text-xs text-slate-600 dark:text-slate-300 mb-4">
                                     Try searching with different keywords or reset category filters.
                                 </p>
                                 <button
@@ -619,32 +619,32 @@ export default function StudentHelpPage() {
                                                 className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 sm:p-6 cursor-pointer select-none hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors"
                                             >
                                                 <div className="flex items-start sm:items-center gap-4">
-                                                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#000D6A] dark:bg-blue-950/50 dark:text-blue-400 ring-1 ring-blue-100 dark:ring-blue-900/40">
+                                                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#000D6A] dark:bg-blue-950/60 dark:text-blue-300 ring-1 ring-blue-100 dark:ring-blue-900/40">
                                                         <Icon className="h-5 w-5" />
                                                     </div>
                                                     <div>
                                                         <div className="flex flex-wrap items-center gap-2 mb-1">
-                                                            <span className="inline-block rounded-md bg-blue-100/70 dark:bg-blue-950/60 px-2.5 py-0.5 text-[10px] font-bold text-[#23509A] dark:text-blue-300 uppercase tracking-wider">
+                                                            <span className="inline-block rounded-md bg-blue-100/70 dark:bg-blue-950/80 px-2.5 py-0.5 text-[10px] font-bold text-[#23509A] dark:text-blue-200 uppercase tracking-wider">
                                                                 {guide.categoryLabel}
                                                             </span>
-                                                            <span className="inline-block rounded-md bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+                                                            <span className="inline-block rounded-md bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 text-[10px] font-semibold text-slate-700 dark:text-slate-200">
                                                                 {guide.badge}
                                                             </span>
                                                         </div>
                                                         <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                                                             {guide.title}
                                                         </h3>
-                                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+                                                        <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">
                                                             {guide.summary}
                                                         </p>
                                                     </div>
                                                 </div>
 
                                                 <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                                                    <span className="text-xs font-bold text-[#23509A] dark:text-blue-400 hidden sm:inline">
+                                                    <span className="text-xs font-bold text-[#23509A] dark:text-blue-300 hidden sm:inline">
                                                         {isExpanded ? 'Hide Steps' : 'View Steps'}
                                                     </span>
-                                                    <div className={`flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition-transform duration-200 ${isExpanded ? 'rotate-180 bg-blue-50 text-[#000D6A] dark:bg-blue-950 dark:text-blue-400' : ''}`}>
+                                                    <div className={`flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-200 transition-transform duration-200 ${isExpanded ? 'rotate-180 bg-blue-50 text-[#000D6A] dark:bg-blue-950 dark:text-blue-300' : ''}`}>
                                                         <ChevronDown className="h-4 w-4" />
                                                     </div>
                                                 </div>
@@ -653,7 +653,7 @@ export default function StudentHelpPage() {
                                             {/* Expanded Content */}
                                             {isExpanded && (
                                                 <div className="border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 p-5 sm:p-7 space-y-5">
-                                                    <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                                    <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-300">
                                                         Step-by-step instructions
                                                     </h4>
 
@@ -670,7 +670,7 @@ export default function StudentHelpPage() {
                                                                     <h5 className="text-sm font-bold text-slate-900 dark:text-white">
                                                                         {step.title}
                                                                     </h5>
-                                                                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                                                                    <p className="text-xs text-slate-600 dark:text-slate-200 leading-relaxed">
                                                                         {step.desc}
                                                                     </p>
                                                                 </div>
@@ -680,10 +680,10 @@ export default function StudentHelpPage() {
 
                                                     {/* Pro Tip Box */}
                                                     {guide.proTip && (
-                                                        <div className="flex items-start gap-3 rounded-xl border border-blue-200/70 dark:border-blue-900/50 bg-blue-50/70 dark:bg-blue-950/40 p-4 text-slate-700 dark:text-slate-200">
-                                                            <Sparkles className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400 mt-0.5" />
+                                                        <div className="flex items-start gap-3 rounded-xl border border-blue-200/70 dark:border-blue-900/60 bg-blue-50/80 dark:bg-blue-950/50 p-4 text-slate-700 dark:text-slate-100">
+                                                            <Sparkles className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300 mt-0.5" />
                                                             <div className="text-xs leading-relaxed">
-                                                                <strong className="font-bold text-[#000D6A] dark:text-blue-300">Pro Tip: </strong>
+                                                                <strong className="font-bold text-[#000D6A] dark:text-blue-200">Pro Tip: </strong>
                                                                 {guide.proTip}
                                                             </div>
                                                         </div>
@@ -721,7 +721,7 @@ export default function StudentHelpPage() {
                                     Frequently Asked Questions ({filteredFaqs.length})
                                 </h2>
                             </div>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                            <p className="text-xs text-slate-600 dark:text-slate-300">
                                 Click any question to expand the answer.
                             </p>
                         </div>
@@ -740,7 +740,7 @@ export default function StudentHelpPage() {
                                             className="flex w-full items-center justify-between gap-4 p-4 sm:p-5 text-left hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors"
                                         >
                                             <div className="flex items-center gap-3.5">
-                                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#000D6A] dark:bg-blue-950/50 dark:text-blue-400">
+                                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#000D6A] dark:bg-blue-950/60 dark:text-blue-300">
                                                     <Icon className="h-4 w-4" />
                                                 </div>
                                                 <div>
@@ -753,14 +753,14 @@ export default function StudentHelpPage() {
                                                 </div>
                                             </div>
                                             <ChevronDown
-                                                className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ${
+                                                className={`h-4 w-4 shrink-0 text-slate-400 dark:text-slate-300 transition-transform duration-200 ${
                                                     isOpen ? 'rotate-180 text-blue-600 dark:text-blue-400' : ''
                                                 }`}
                                             />
                                         </button>
 
                                         {isOpen && (
-                                            <div className="border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 px-5 pt-2 pb-5 sm:pl-16 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                                            <div className="border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 px-5 pt-2 pb-5 sm:pl-16 text-xs leading-relaxed text-slate-700 dark:text-slate-200">
                                                 <p>{faq.answer}</p>
                                             </div>
                                         )}
@@ -786,31 +786,31 @@ export default function StudentHelpPage() {
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
                             <div className="rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900/80 p-4 shadow-2xs space-y-1.5">
-                                <div className="flex items-center gap-2 text-[#000D6A] dark:text-blue-400 font-bold text-xs">
+                                <div className="flex items-center gap-2 text-[#000D6A] dark:text-blue-300 font-bold text-xs">
                                     <Clock className="h-4 w-4" />
                                     <span>Absence & Tardiness</span>
                                 </div>
-                                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                                     More than 3 unexcused absences require an approved Admission Slip from DSA. Tardy entries beyond 15 minutes of class start require clearance.
                                 </p>
                             </div>
 
                             <div className="rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900/80 p-4 shadow-2xs space-y-1.5">
-                                <div className="flex items-center gap-2 text-[#000D6A] dark:text-blue-400 font-bold text-xs">
+                                <div className="flex items-center gap-2 text-[#000D6A] dark:text-blue-300 font-bold text-xs">
                                     <ShieldCheck className="h-4 w-4" />
                                     <span>ID & Uniform Compliance</span>
                                 </div>
-                                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                                     Validated School ID cards must be worn on campus at all times. Lost ID passes are logged electronically by campus security.
                                 </p>
                             </div>
 
                             <div className="rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-900/80 p-4 shadow-2xs space-y-1.5">
-                                <div className="flex items-center gap-2 text-[#000D6A] dark:text-blue-400 font-bold text-xs">
+                                <div className="flex items-center gap-2 text-[#000D6A] dark:text-blue-300 font-bold text-xs">
                                     <FileCheck className="h-4 w-4" />
                                     <span>Clearance Deadlines</span>
                                 </div>
-                                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                                     Admission slip applications must be submitted within 48 hours of returning to classes to obtain excused status.
                                 </p>
                             </div>
