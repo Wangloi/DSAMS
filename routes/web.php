@@ -439,6 +439,105 @@ Route::get('/admin/students/lookup', function (Request $request) {
     ]);
 })->middleware('auth:admin,web')->name('admin.students.lookup');
 
+Route::get('/students/{student}/attendance-history', function (Request $request, $studentId) {
+    $user = Auth::guard('admin')->user()
+        ?: Auth::guard('program_head')->user()
+        ?: Auth::guard('student')->user()
+        ?: Auth::guard('web')->user();
+
+    if (!$user) {
+        abort(403, 'Unauthorized');
+    }
+
+    $student = Student::query()
+        ->where('id', $studentId)
+        ->orWhere('student_id', $studentId)
+        ->first();
+
+    if (!$student) {
+        return response()->json([
+            'message' => 'Student not found',
+            'attendances' => [],
+            'summary' => [
+                'total_attended' => 0,
+                'present_count' => 0,
+                'late_count' => 0,
+                'excused_count' => 0,
+                'override_count' => 0,
+                'attendance_rate' => 0,
+            ],
+        ], 404);
+    }
+
+    $attendances = Attendance::with(['event'])
+        ->where(function ($q) use ($student) {
+            $q->where('student_id', $student->id);
+            if (!empty($student->student_id)) {
+                $q->orWhere('student_id', $student->student_id);
+            }
+        })
+        ->orderByDesc('checked_in_at')
+        ->orderByDesc('scanned_at')
+        ->orderByDesc('created_at')
+        ->get();
+
+    $attendanceRecords = $attendances->map(function (Attendance $att) {
+        $event = $att->event;
+        $checkIn = $att->checked_in_at ?: $att->scanned_at ?: $att->created_at;
+        $checkOut = $att->checked_out_at;
+
+        $method = 'QR Code Scanner';
+        if ($att->is_manual_override) {
+            $method = 'Manual Override';
+        } elseif ($att->check_in_latitude && $att->check_in_longitude) {
+            $method = 'GPS Geofence Check-in';
+        }
+
+        return [
+            'id' => $att->id,
+            'event_id' => $att->event_id,
+            'event_name' => $event ? ($event->event_name ?? ('Event #' . $att->event_id)) : 'General / Removed Event',
+            'event_date' => $event && $event->event_date ? Carbon::parse($event->event_date)->format('M d, Y') : null,
+            'event_time' => $event ? (string)($event->event_time ?? '') : null,
+            'event_location' => $event ? ($event->location ?? 'Campus') : 'Campus',
+            'event_status' => $event ? ($event->status ?? 'completed') : 'completed',
+            'status' => strtolower($att->status ?? 'present'),
+            'checked_in_at' => $checkIn ? Carbon::parse($checkIn)->format('M d, Y • h:i A') : null,
+            'checked_in_raw' => $checkIn ? Carbon::parse($checkIn)->toIso8601String() : null,
+            'checked_out_at' => $checkOut ? Carbon::parse($checkOut)->format('M d, Y • h:i A') : null,
+            'is_manual_override' => (bool) $att->is_manual_override,
+            'manual_override_reason' => $att->manual_override_reason,
+            'manual_override_notes' => $att->manual_override_notes,
+            'check_in_method' => $method,
+        ];
+    });
+
+    $totalAttended = $attendanceRecords->count();
+    $presentCount = $attendanceRecords->where('status', 'present')->count();
+    $lateCount = $attendanceRecords->where('status', 'late')->count();
+    $excusedCount = $attendanceRecords->where('status', 'excused')->count();
+    $overrideCount = $attendanceRecords->where('is_manual_override', true)->count();
+
+    return response()->json([
+        'student' => [
+            'id' => $student->id,
+            'student_id' => $student->student_id,
+            'name' => $student->name,
+            'course' => $student->course,
+            'year_level' => $student->year_level,
+        ],
+        'summary' => [
+            'total_attended' => $totalAttended,
+            'present_count' => $presentCount,
+            'late_count' => $lateCount,
+            'excused_count' => $excusedCount,
+            'override_count' => $overrideCount,
+            'attendance_rate' => $totalAttended > 0 ? (int) round(($presentCount / $totalAttended) * 100) : 0,
+        ],
+        'attendances' => $attendanceRecords->values(),
+    ]);
+})->middleware(['web'])->name('students.attendance-history');
+
 Route::get('/admin/students/search', function (Request $request) {
     // Authenticate admin or web (dsa) user
     $user = Auth::guard('admin')->user() ?: Auth::guard('web')->user();
