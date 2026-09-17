@@ -54,13 +54,13 @@ export default function LandingAbout({ stats: propStats }: Props) {
 
                     {/* Stats */}
                     <div className="grid grid-cols-1 xs:grid-cols-2 gap-3.5 sm:gap-6">
-                        <div className="group rounded-2xl border border-slate-150 bg-white/70 p-4 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.02)] backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-[#23509A]/20 hover:bg-white hover:shadow-[0_20px_40px_rgba(35,80,154,0.08)] dark:border-slate-800 dark:bg-slate-900/50">
+                        <div className="group rounded-2xl border border-slate-150 bg-white/70 p-4 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.02)] backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-[#23509A]/20 hover:bg-white hover:shadow-[0_20px_40px_rgba(35,80,154,0.08)]">
                             <div className="flex items-center gap-3.5 sm:gap-4">
-                                <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50/80 text-[#23509A] transition-colors group-hover:bg-[#23509A] group-hover:text-white dark:bg-blue-950/50">
+                                <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50/80 text-[#23509A] transition-colors group-hover:bg-[#23509A] group-hover:text-white">
                                     <Users className="h-5 w-5 sm:h-6 sm:w-6" />
                                 </div>
                                 <div className="min-w-0">
-                                    <div className="text-xl sm:text-2xl font-black tracking-tight text-[#000D6A] dark:text-white truncate">
+                                    <div className="text-xl sm:text-2xl font-black tracking-tight text-[#000D6A] truncate">
                                         {studentsCount}
                                     </div>
                                     <div className="text-[10px] sm:text-[11px] font-bold tracking-wider text-slate-400 uppercase">
@@ -70,13 +70,13 @@ export default function LandingAbout({ stats: propStats }: Props) {
                             </div>
                         </div>
 
-                        <div className="group rounded-2xl border border-slate-150 bg-white/70 p-4 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.02)] backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-[#000D6A]/20 hover:bg-white hover:shadow-[0_20px_40px_rgba(0,13,106,0.08)] dark:border-slate-800 dark:bg-slate-900/50">
+                        <div className="group rounded-2xl border border-slate-150 bg-white/70 p-4 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.02)] backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-[#000D6A]/20 hover:bg-white hover:shadow-[0_20px_40px_rgba(0,13,106,0.08)]">
                             <div className="flex items-center gap-3.5 sm:gap-4">
-                                <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50/80 text-[#000D6A] transition-colors group-hover:bg-[#000D6A] group-hover:text-white dark:bg-blue-950/50">
+                                <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50/80 text-[#000D6A] transition-colors group-hover:bg-[#000D6A] group-hover:text-white">
                                     <Award className="h-5 w-5 sm:h-6 sm:w-6" />
                                 </div>
                                 <div className="min-w-0">
-                                    <div className="text-xl sm:text-2xl font-black tracking-tight text-[#000D6A] dark:text-white truncate">
+                                    <div className="text-xl sm:text-2xl font-black tracking-tight text-[#000D6A] truncate">
                                         {eventsCount}
                                     </div>
                                     <div className="text-[10px] sm:text-[11px] font-bold tracking-wider text-slate-400 uppercase">
@@ -108,12 +108,12 @@ export default function LandingAbout({ stats: propStats }: Props) {
                         <div className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-tr from-[#23509A]/20 to-[#000D6A]/20 opacity-30 blur-2xl" />
 
                         {/* Main Image Card */}
-                        <div className="relative rounded-2xl sm:rounded-3xl border border-slate-100 bg-white/90 p-5 sm:p-8 shadow-[0_30px_70px_rgba(35,80,154,0.08)] backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/90">
+                        <div className="relative rounded-2xl sm:rounded-3xl border border-slate-100 bg-white/90 p-5 sm:p-8 shadow-[0_30px_70px_rgba(35,80,154,0.08)] backdrop-blur-md">
                             <div className="space-y-5 sm:space-y-6">
                                 <div className="flex items-center justify-center">
                                     <div className="relative">
                                         <div className="absolute -inset-1.5 animate-pulse rounded-full bg-gradient-to-br from-[#23509A]/50 to-[#000D6A]/50 opacity-40 blur-xs" />
-                                        <div className="relative rounded-full bg-gradient-to-br from-[#23509A] to-[#000D6A] p-4 sm:p-6 shadow-inner ring-4 ring-white dark:ring-slate-900">
+                                        <div className="relative rounded-full bg-gradient-to-br from-[#23509A] to-[#000D6A] p-4 sm:p-6 shadow-inner ring-4 ring-white">
                                             <img
                                                 src="/images/DSA.png"
                                                 alt="DSA Logo"
@@ -124,7 +124,7 @@ export default function LandingAbout({ stats: propStats }: Props) {
                                 </div>
 
                                 <div className="space-y-1.5 sm:space-y-2 text-center">
-                                    <h3 className="text-lg sm:text-xl font-bold tracking-tight text-[#000D6A] dark:text-white">
+                                    <h3 className="text-lg sm:text-xl font-bold tracking-tight text-[#000D6A]">
                                         OSA Office
                                     </h3>
                                     <p className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -133,34 +133,34 @@ export default function LandingAbout({ stats: propStats }: Props) {
                                 </div>
 
                                 {/* Mission Points */}
-                                <div className="rounded-xl sm:rounded-2xl bg-slate-50/50 p-3 sm:p-4 space-y-2.5 sm:space-y-3 dark:bg-slate-800/30">
+                                <div className="rounded-xl sm:rounded-2xl bg-slate-50/50 p-3 sm:p-4 space-y-2.5 sm:space-y-3">
                                     <div className="flex items-center gap-2.5 sm:gap-3">
-                                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
+                                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
                                             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                             </svg>
                                         </div>
-                                        <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                        <span className="text-xs sm:text-sm font-semibold text-slate-700">
                                             Student Welfare
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-2.5 sm:gap-3">
-                                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
+                                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
                                             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                             </svg>
                                         </div>
-                                        <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                        <span className="text-xs sm:text-sm font-semibold text-slate-700">
                                             Discipline Management
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-2.5 sm:gap-3">
-                                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
+                                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
                                             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                             </svg>
                                         </div>
-                                        <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                        <span className="text-xs sm:text-sm font-semibold text-slate-700">
                                             Event Coordination
                                         </span>
                                     </div>

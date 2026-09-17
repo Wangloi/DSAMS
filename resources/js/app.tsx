@@ -6,7 +6,7 @@ import { createRoot } from 'react-dom/client';
 import '../css/app.css';
 import Swal from 'sweetalert2';
 import { AuthLoadingOverlay } from './components/AuthLoadingOverlay';
-import { initializeTheme } from './hooks/use-appearance';
+import { applyTheme, getStoredAppearance, initializeTheme } from './hooks/use-appearance';
 import { registerServiceWorker } from './lib/pwa';
 
 // Configure axios with CSRF token for all requests
@@ -144,6 +144,13 @@ createInertiaApp({
 // This will set light / dark mode on load...
 initializeTheme();
 
+// Listen to page navigation to dynamically adjust theme (e.g. exempting landing pages)
+router.on('navigate', (event) => {
+    const component = event.detail.page?.component;
+    applyTheme(getStoredAppearance(), component);
+});
+
 // Register PWA Service Worker for app installability and caching
 registerServiceWorker();
+
 

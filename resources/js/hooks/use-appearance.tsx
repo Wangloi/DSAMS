@@ -24,7 +24,37 @@ const setCookie = (name: string, value: string, days = 365): void => {
     document.cookie = `${name}=${value};path=/;max-age=${maxAge};SameSite=Lax`;
 };
 
-const getStoredAppearance = (): Appearance => {
+export const LANDING_COMPONENTS = new Set([
+    'landing-page',
+    'landing/about',
+    'landing/features',
+    'landing/get-started',
+    'help',
+    'sitemap',
+    'welcome',
+]);
+
+export function isLandingPage(componentName?: string): boolean {
+    if (componentName) {
+        return LANDING_COMPONENTS.has(componentName);
+    }
+    if (typeof window !== 'undefined') {
+        const path = window.location.pathname;
+        if (
+            path === '/' ||
+            path === '/about' ||
+            path === '/features' ||
+            path === '/get-started' ||
+            path === '/help' ||
+            path === '/sitemap'
+        ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+export const getStoredAppearance = (): Appearance => {
     if (typeof window === 'undefined') return 'system';
 
     return (localStorage.getItem('appearance') as Appearance) || 'system';
@@ -34,8 +64,16 @@ const isDarkMode = (appearance: Appearance): boolean => {
     return appearance === 'dark' || (appearance === 'system' && prefersDark());
 };
 
-const applyTheme = (appearance: Appearance): void => {
+export const applyTheme = (appearance: Appearance, componentName?: string): void => {
     if (typeof document === 'undefined') return;
+
+    if (isLandingPage(componentName)) {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.style.colorScheme = 'light';
+        document.documentElement.setAttribute('data-appearance', 'light');
+        document.documentElement.setAttribute('data-theme', 'light');
+        return;
+    }
 
     const isDark = isDarkMode(appearance);
 

@@ -1,5 +1,17 @@
+@php
+    $componentName = $page['component'] ?? '';
+    $isLandingPage = in_array($componentName, [
+        'landing-page',
+        'landing/about',
+        'landing/features',
+        'landing/get-started',
+        'help',
+        'sitemap',
+        'welcome',
+    ]);
+@endphp
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'system') == 'dark'])>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => !$isLandingPage && ($appearance ?? 'system') == 'dark'])>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -14,9 +26,16 @@
         <meta name="theme-color" content="#0b1c5c" media="(prefers-color-scheme: light)">
         <meta name="theme-color" content="#0B192C" media="(prefers-color-scheme: dark)">
 
-        {{-- Inline script to detect system dark mode preference and apply it immediately --}}
+        {{-- Inline script to detect system dark mode preference and apply it immediately (disabled on landing pages) --}}
         <script>
             (function() {
+                const isLandingPage = {{ $isLandingPage ? 'true' : 'false' }};
+                if (isLandingPage) {
+                    document.documentElement.classList.remove('dark');
+                    document.documentElement.style.colorScheme = 'light';
+                    return;
+                }
+
                 const appearance = '{{ $appearance ?? "system" }}';
 
                 if (appearance === 'system') {
