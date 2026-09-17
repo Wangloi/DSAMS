@@ -336,7 +336,16 @@ export default function StudentAttendanceScannerPortalPage({
             if (data.studentsByProgram && typeof data.studentsByProgram === 'object') {
                 setLiveStudentsByProgram(data.studentsByProgram);
             }
-            setLastUpdatedAt(data.server_time ?? new Date().toLocaleTimeString());
+            setLastUpdatedAt(
+                data.server_time
+                    ? formatTime12h(data.server_time)
+                    : new Date().toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          second: '2-digit',
+                          hour12: true,
+                      }),
+            );
         } catch (err) {
             console.error('Error refreshing student attendance logs:', err);
         }
@@ -437,7 +446,12 @@ export default function StudentAttendanceScannerPortalPage({
                 setLastScanned({
                     status: 'invalid',
                     message: errMsg,
-                    timestamp: new Date().toLocaleTimeString(),
+                    timestamp: new Date().toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: true,
+                    }),
                 });
 
                 Swal.fire({
@@ -474,7 +488,12 @@ export default function StudentAttendanceScannerPortalPage({
                 message: payload?.message || (actionType === 'check_out' ? 'Time-Out (Check-out) recorded' : `Time-In recorded (${isLate ? 'Late' : 'On-Time'})`),
                 studentName,
                 studentId: studentIdNumber,
-                timestamp: new Date().toLocaleTimeString(),
+                timestamp: new Date().toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true,
+                }),
             });
 
             void refreshLogs();
@@ -491,7 +510,12 @@ export default function StudentAttendanceScannerPortalPage({
             setLastScanned({
                 status: 'invalid',
                 message: err?.message || 'Network connection failed.',
-                timestamp: new Date().toLocaleTimeString(),
+                timestamp: new Date().toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true,
+                }),
             });
             Swal.fire({
                 icon: 'error',
@@ -1503,7 +1527,7 @@ export default function StudentAttendanceScannerPortalPage({
                                                                         </p>
                                                                     </td>
                                                                     <td className="px-3 py-3 font-semibold text-slate-700 dark:text-slate-300">
-                                                                        {row.time || formatTime12h(row.checked_in_at)}
+                                                                        {formatTime12h(row.time) || formatTime12h(row.checked_in_at)}
                                                                     </td>
                                                                     <td className="px-5 py-3 text-right">
                                                                         {isInvalid ? (
@@ -1625,7 +1649,7 @@ export default function StudentAttendanceScannerPortalPage({
                                                                 </span>
                                                             )}
                                                             <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                                                                {row.time || formatTime12h(row.checked_in_at)}
+                                                                {formatTime12h(row.time) || formatTime12h(row.checked_in_at)}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -1698,7 +1722,7 @@ export default function StudentAttendanceScannerPortalPage({
                                                                 <td className="px-4 py-3.5 text-slate-700 dark:text-slate-300">
                                                                     <div className="flex items-center gap-1.5 font-semibold">
                                                                         <Clock className="h-3.5 w-3.5 text-slate-400" />
-                                                                        {row.time || formatTime12h(row.checked_in_at)}
+                                                                        {formatTime12h(row.time) || formatTime12h(row.checked_in_at)}
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-6 py-3.5 text-right">

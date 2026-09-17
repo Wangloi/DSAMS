@@ -26,7 +26,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+import { cn, formatDate, formatTime } from '@/lib/utils';
 import ProgramHeadLayout from '@/pages/program-head/components/ProgramHeadLayout';
 
 type EventStatus =
@@ -361,12 +361,7 @@ function formatToIsoStart(dateStr: string, timeStr: string): string {
         [events],
     );
 
-    const today = new Date().toLocaleDateString('en-US', {
-        weekday: 'short',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
+    const today = formatDate(new Date());
 
     const kpiData = [
         {

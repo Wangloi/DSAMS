@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatDate, formatTime } from '@/lib/utils';
 import {
     Archive,
     ArchiveRestore,
@@ -140,27 +141,7 @@ export default function EventsTable({
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
-                                            {(() => {
-                                                const dateStr =
-                                                    event.event_date;
-                                                if (
-                                                    dateStr &&
-                                                    dateStr.includes('-')
-                                                ) {
-                                                    const parts = dateStr
-                                                        .split('T')[0]
-                                                        .split('-');
-                                                    return new Date(
-                                                        Number(parts[0]),
-                                                        Number(parts[1]) - 1,
-                                                        Number(parts[2]),
-                                                    ).toLocaleDateString();
-                                                }
-                                                return new Date(
-                                                    dateStr,
-                                                ).toLocaleDateString();
-                                            })()}{' '}
-                                            at {event.event_time}
+                                            {formatDate(event.event_date)} at {formatTime(event.event_time)}
                                         </td>
                                         <td className="px-6 py-4">
                                             <Badge

@@ -7,6 +7,7 @@ import '../css/app.css';
 import Swal from 'sweetalert2';
 import { AuthLoadingOverlay } from './components/AuthLoadingOverlay';
 import { initializeTheme } from './hooks/use-appearance';
+import { registerServiceWorker } from './lib/pwa';
 
 // Configure axios with CSRF token for all requests
 // Laravel sets an XSRF-TOKEN cookie; axios reads it automatically as X-XSRF-TOKEN
@@ -142,4 +143,7 @@ createInertiaApp({
 
 // This will set light / dark mode on load...
 initializeTheme();
+
+// Register PWA Service Worker for app installability and caching
+registerServiceWorker();
 

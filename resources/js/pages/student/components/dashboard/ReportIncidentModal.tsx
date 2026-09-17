@@ -1,5 +1,11 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { studentIncidentsStore } from '@/routes';
 import { router } from '@inertiajs/react';
 import { placeOptions, type StudentInvolved, type ViolationOption } from './types';
@@ -288,6 +294,12 @@ export function ReportIncidentModal({
     return (
         <Dialog open={open} onOpenChange={handleDialogChange}>
             <DialogContent className="overflow-hidden rounded-2xl border-0 bg-white p-0 shadow-2xl sm:max-w-3xl dark:bg-[#0B192C] [&>button]:hidden">
+                <DialogHeader className="sr-only">
+                    <DialogTitle>Report Incident Form</DialogTitle>
+                    <DialogDescription>
+                        Step {reportStep} of 3: Provide incident details, involved parties, and narrative evidence.
+                    </DialogDescription>
+                </DialogHeader>
                 <ReportIncidentHeader reportStep={reportStep} />
 
                 <div className="max-h-[60vh] min-h-[300px] space-y-5 overflow-y-auto px-6 py-6">

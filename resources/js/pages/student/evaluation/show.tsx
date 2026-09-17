@@ -144,10 +144,10 @@ export default function StudentEvaluationShow() {
     };
 
     return (
-        <StudentLayout>
+        <StudentLayout hideBottomNav={true}>
             <Head title={`Evaluation: ${evaluation?.name || 'Form'}`} />
 
-            <div className="mx-auto max-w-3xl px-4 pt-6 pb-28 sm:px-6">
+            <div className="mx-auto max-w-3xl px-4 pt-6 pb-32 sm:px-6">
                     {alreadySubmitted ? (
                         <div className="mx-auto mt-12 w-full max-w-md rounded-3xl border border-slate-100 bg-white p-8 text-center shadow-xl dark:border-slate-800 dark:bg-slate-900">
                             <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
@@ -512,33 +512,67 @@ export default function StudentEvaluationShow() {
                                             </div>
                                         );
                                     })}
+                                    {/* Inline Confirm & Submit Form Card */}
+                                    <div className="mt-8 rounded-3xl border border-blue-500/20 bg-gradient-to-br from-white via-blue-50/30 to-slate-50 p-6 shadow-xl backdrop-blur-xl sm:p-8 dark:border-blue-500/30 dark:from-slate-900 dark:via-blue-950/20 dark:to-slate-900">
+                                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                            <div>
+                                                <h3 className="text-base font-black text-slate-900 dark:text-white">
+                                                    Ready to submit your evaluation?
+                                                </h3>
+                                                <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                                    {canSubmit
+                                                        ? 'All required questions answered. Click Confirm & Submit to record your feedback.'
+                                                        : `Please answer all required questions (${answeredCount} of ${questions.length} completed).`}
+                                                </p>
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                onClick={submit}
+                                                disabled={!canSubmit || submitting}
+                                                className={cn(
+                                                    'h-12 w-full rounded-2xl px-8 text-xs font-black tracking-widest uppercase transition-all duration-300 sm:w-auto shadow-md',
+                                                    canSubmit
+                                                        ? 'bg-[#0b2d66] text-white hover:bg-[#1e40af] hover:shadow-lg hover:shadow-blue-900/25 active:scale-95'
+                                                        : 'bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-600',
+                                                )}
+                                            >
+                                                {submitting ? 'Submitting...' : 'Confirm & Submit'}
+                                                {!submitting && <Send className="ml-2 h-4 w-4" />}
+                                            </Button>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                         </>
                     )}
                 </div>
 
-                {/* Fixed Bottom Submit Bar */}
+                {/* Fixed Bottom Floating Submit Bar */}
                 {!alreadySubmitted && questions.length > 0 && (
-                    <div className="fixed right-0 bottom-0 left-0 z-40 border-t border-slate-100 bg-white/90 p-4 shadow-[0_-10px_30px_rgba(0,0,0,0.03)] backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/90">
-                        <div className="mx-auto flex max-w-3xl items-center justify-between">
-                            <div className="hidden text-xs font-black tracking-widest text-slate-400 uppercase sm:block">
-                                {progressPercentage === 100
-                                    ? "All questions answered. Ready to submit!"
-                                    : 'Fill in all required fields to submit.'}
+                    <div className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/80 bg-white/95 p-3.5 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] backdrop-blur-xl sm:p-4 dark:border-slate-800 dark:bg-[#0B192C]/95">
+                        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
+                            <div className="flex flex-col">
+                                <span className="text-xs font-black tracking-wider text-slate-900 uppercase dark:text-white">
+                                    {answeredCount} of {questions.length} Answered
+                                </span>
+                                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                                    {canSubmit
+                                        ? 'Ready to submit!'
+                                        : `${questions.filter((q) => q.required && !answers[q.id]).length} required question(s) left`}
+                                </span>
                             </div>
                             <Button
                                 type="button"
                                 onClick={submit}
                                 disabled={!canSubmit || submitting}
                                 className={cn(
-                                    'ml-auto h-12 w-full rounded-xl px-8 text-xs font-black tracking-widest uppercase transition-all duration-300 sm:w-auto',
+                                    'h-11 rounded-xl px-5 text-xs font-black tracking-widest uppercase transition-all duration-300 sm:h-12 sm:px-8',
                                     canSubmit
-                                        ? 'bg-[#0b2d66] text-white hover:-translate-y-0.5 hover:bg-[#1e40af] hover:shadow-lg hover:shadow-blue-900/20 active:scale-95'
-                                        : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600',
+                                        ? 'bg-[#0b2d66] text-white hover:bg-[#1e40af] shadow-md shadow-blue-900/20 active:scale-95'
+                                        : 'bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-600',
                                 )}
                             >
-                                {submitting ? 'Submitting...' : 'Submit Evaluation'}
+                                {submitting ? 'Submitting...' : 'Confirm & Submit'}
                                 {!submitting && <Send className="ml-2 h-3.5 w-3.5" />}
                             </Button>
                         </div>

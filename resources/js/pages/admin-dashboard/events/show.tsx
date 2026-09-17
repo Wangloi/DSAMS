@@ -14,6 +14,7 @@ const stepperClass = (step: number) =>
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatDate, formatTime } from '@/lib/utils';
 import {
     Archive,
     ArchiveRestore,
@@ -344,38 +345,7 @@ export default function ShowEventPage() {
                                             <div className="mt-1 flex items-center gap-2">
                                                 <Calendar className="h-4 w-4 text-slate-400" />
                                                 <span className="text-sm text-slate-900 dark:text-white">
-                                                    {(() => {
-                                                        const dateStr =
-                                                            event.event_date;
-                                                        if (
-                                                            dateStr &&
-                                                            dateStr.includes(
-                                                                '-',
-                                                            )
-                                                        ) {
-                                                            const parts =
-                                                                dateStr
-                                                                    .split(
-                                                                        'T',
-                                                                    )[0]
-                                                                    .split('-');
-                                                            return new Date(
-                                                                Number(
-                                                                    parts[0],
-                                                                ),
-                                                                Number(
-                                                                    parts[1],
-                                                                ) - 1,
-                                                                Number(
-                                                                    parts[2],
-                                                                ),
-                                                            ).toLocaleDateString();
-                                                        }
-                                                        return new Date(
-                                                            dateStr,
-                                                        ).toLocaleDateString();
-                                                    })()}{' '}
-                                                    at {event.event_time}
+                                                    {formatDate(event.event_date)} at {formatTime(event.event_time)}
                                                 </span>
                                             </div>
                                         </div>

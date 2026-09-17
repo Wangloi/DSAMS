@@ -10,6 +10,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { formatDate } from '@/lib/utils';
 import { Head, Link, router } from '@inertiajs/react';
 import {
     CalendarDays,
@@ -227,12 +228,7 @@ export default function StudentsList({ user, program, students }: Props) {
                             <div className="hidden items-center gap-3 self-center rounded-xl border border-white/10 bg-white/10 px-4 py-2.5 text-white ring-1 ring-white/20 backdrop-blur-md md:flex">
                                 <CalendarDays className="h-4 w-4 text-blue-200" />
                                 <div className="text-xs font-semibold tracking-wide text-white/90 uppercase">
-                                    {new Date().toLocaleDateString('en-US', {
-                                        weekday: 'short',
-                                        month: 'short',
-                                        day: 'numeric',
-                                        year: 'numeric',
-                                    })}
+                                    {formatDate(new Date())}
                                 </div>
                             </div>
                         </div>

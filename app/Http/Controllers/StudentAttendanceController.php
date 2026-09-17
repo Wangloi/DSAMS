@@ -149,6 +149,14 @@ class StudentAttendanceController extends Controller
             'accuracy_m' => 'nullable|numeric',
         ]);
 
+        // Dynamic QR Token Security & Expiration Check
+        $tokenData = DynamicAttendanceQrController::tokenData($validated['token']);
+        if (! $tokenData || (int) ($tokenData['event_id'] ?? 0) !== (int) $event->id) {
+            return response()->json([
+                'message' => 'The dynamic QR code is invalid or has expired. Please scan the live QR code currently displayed on the screen.',
+            ], 422);
+        }
+
         // Geofence check
         $geoError = $this->geofenceService->validate($event, $validated['latitude'] ?? null, $validated['longitude'] ?? null, $validated['accuracy_m'] ?? null);
         if ($geoError) {

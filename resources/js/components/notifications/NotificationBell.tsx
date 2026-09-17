@@ -19,6 +19,7 @@ import {
     DropdownMenuContent,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { formatTimeAgo } from '@/lib/utils';
 import type { AppNotificationItem } from '@/types/notification';
 
 interface NotificationBellProps {
@@ -39,24 +40,6 @@ export default function NotificationBell({
     onSelectNotification,
 }: NotificationBellProps) {
     const [open, setOpen] = useState(false);
-
-    // Format relative timestamp helper
-    const formatTimeAgo = (dateStr: string) => {
-        try {
-            const date = new Date(dateStr);
-            const now = new Date();
-            const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-            if (diffInSeconds < 60) return 'Just now';
-            if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
-            if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
-            if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`;
-
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        } catch {
-            return 'Recently';
-        }
-    };
 
     const handleItemClick = (notification: AppNotificationItem) => {
         if (!notification.is_read) {

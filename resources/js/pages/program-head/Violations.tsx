@@ -11,7 +11,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+import { cn, formatDate } from '@/lib/utils';
 import IncidentReportDialog from '@/pages/admin-dashboard/incidents-violations/IncidentReportDialog';
 import Pagination from '@/pages/admin-dashboard/incidents-violations/Pagination';
 import StudentCallingProcessFlow from '@/pages/admin-dashboard/incidents-violations/StudentCallingProcessFlow';
@@ -105,12 +105,7 @@ export default function Violations() {
         return filteredRows.slice(start, start + pageSize);
     }, [filteredRows, pageIndex, pageSize, totalPages]);
 
-    const today = new Date().toLocaleDateString('en-US', {
-        weekday: 'short',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
+    const today = formatDate(new Date());
 
     const kpiData = [
         {

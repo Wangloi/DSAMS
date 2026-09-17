@@ -1,6 +1,12 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import {
     Building2,
     CheckCircle2,
@@ -420,6 +426,16 @@ export default function ViewStudentDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="flex max-h-[92vh] w-full !max-w-4xl flex-col overflow-hidden rounded-3xl border-0 bg-slate-100 p-0 shadow-2xl dark:bg-slate-900 [&>button]:hidden">
+                <DialogHeader className="sr-only">
+                    <DialogTitle>
+                        {student ? student.name : 'User Details'}
+                    </DialogTitle>
+                    <DialogDescription>
+                        {isProgramHead
+                            ? 'Program Head Profile and Assigned Academic Department details'
+                            : 'Official Student Information Sheet and institutional background record'}
+                    </DialogDescription>
+                </DialogHeader>
                 {!student ? (
                     <div className="p-8 text-center text-slate-500">
                         No record selected.

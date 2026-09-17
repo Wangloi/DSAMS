@@ -211,8 +211,8 @@ class StudentDashboardController extends Controller
                     'caseId' => $date ? ($date->format('Y').'-'.str_pad((string) $incident->id, 3, '0', STR_PAD_LEFT)) : (string) $incident->id,
                     'title' => $incident->incident_type,
                     'classification' => $incident->classification,
-                    'date' => $date ? $date->format('M d, Y') : '—',
-                    'time' => $time ? $time->format('h:i A') : '',
+                    'date' => $date ? $date->format('F j, Y') : '—',
+                    'time' => $time ? $time->format('g:i A') : '',
                     'location' => $incident->location ?? 'Office of the Dean of Student Affairs',
                     'status' => $incident->status,
                     'calling_phase' => $callingPhase,
@@ -290,11 +290,20 @@ class StudentDashboardController extends Controller
                     || ($stDbId !== '' && in_array($stDbId, $allowedScanners, true));
             }
 
+            $formattedTime = '';
+            if (! empty($event->event_time)) {
+                try {
+                    $formattedTime = Carbon::parse($event->event_time)->format('g:i A');
+                } catch (\Throwable) {
+                    $formattedTime = (string) $event->event_time;
+                }
+            }
+
             return [
                 'id'                    => $event->id,
                 'title'                 => $event->event_name,
-                'date'                  => $event->event_date ? $event->event_date->format('M d, Y') : '',
-                'time'                  => $event->event_time,
+                'date'                  => $event->event_date ? $event->event_date->format('F j, Y') : '',
+                'time'                  => $formattedTime ?: (string) ($event->event_time ?? ''),
                 'location'              => $event->location,
                 'description'           => $event->description,
                 'status'                => $isDone ? 'completed' : $event->status,

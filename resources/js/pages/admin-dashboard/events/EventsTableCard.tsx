@@ -7,7 +7,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+import { cn, formatDate, formatTime } from '@/lib/utils';
 import {
     Archive,
     ArchiveRestore,
@@ -165,31 +165,13 @@ export default function EventsTableCard({
     };
 
     const renderDateTime = (dateStr: string, timeStr: string) => {
-        let d: Date;
-        if (dateStr && dateStr.includes('-')) {
-            const parts = dateStr.split('T')[0].split('-');
-            d = new Date(
-                Number(parts[0]),
-                Number(parts[1]) - 1,
-                Number(parts[2]),
-            );
-        } else {
-            d = new Date(dateStr);
-        }
-        const options: Intl.DateTimeFormatOptions = {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-        };
-        const formattedDate = d.toLocaleDateString('en-US', options);
-
         return (
             <div className="flex flex-col">
                 <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                    {formattedDate}
+                    {formatDate(dateStr)}
                 </span>
                 <span className="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
-                    {timeStr}
+                    {formatTime(timeStr)}
                 </span>
             </div>
         );

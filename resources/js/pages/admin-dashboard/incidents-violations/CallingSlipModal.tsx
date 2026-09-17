@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { router } from '@inertiajs/react';
+import { formatDate } from '@/lib/utils';
 import type { IncidentRow } from './types';
 
 interface CallingSlipModalProps {
@@ -304,7 +305,7 @@ export default function CallingSlipModal({
 
                         {/* Date Issued */}
                         <div className="mt-2 text-right text-xs font-medium text-slate-600">
-                            <strong>Date Issued:</strong> {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                            <strong>Date Issued:</strong> {formatDate(new Date())}
                         </div>
 
                         {/* Student Details Box */}

@@ -118,16 +118,18 @@ export function useNotifications({
         if (autoConnect && userId) {
             const socket = connectSocket(userId, role);
 
-            // Listen for notification events
-            socket.on('notification', handleIncomingNotification);
+            if (socket) {
+                // Listen for notification events
+                socket.on('notification', handleIncomingNotification);
 
-            // Also join user room explicitly if socket was already open
-            socket.emit('join_user_room', userId);
+                // Also join user room explicitly if socket was already open
+                socket.emit('join_user_room', userId);
 
-            return () => {
-                isMounted.current = false;
-                socket.off('notification', handleIncomingNotification);
-            };
+                return () => {
+                    isMounted.current = false;
+                    socket.off('notification', handleIncomingNotification);
+                };
+            }
         }
 
         return () => {

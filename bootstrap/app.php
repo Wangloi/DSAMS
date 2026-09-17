@@ -38,6 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->web(append: [
+            \App\Http\Middleware\SetSecurityHeaders::class,
             \App\Http\Middleware\SyncActiveAuthGuard::class,
             AddLinkHeadersForPreloadedAssets::class,
             HandleInertiaRequests::class,

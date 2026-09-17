@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
+import { cn, formatDate } from '@/lib/utils';
 import {
     programHeadDashboard,
     programHeadReportsAttendance as reportsHome,
@@ -123,12 +123,7 @@ export default function ProgramHeadReportsPage() {
         );
     };
 
-    const today = new Date().toLocaleDateString('en-US', {
-        weekday: 'short',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
+    const today = formatDate(new Date());
 
     return (
         <ProgramHeadLayout breadcrumbs={breadcrumbs}>

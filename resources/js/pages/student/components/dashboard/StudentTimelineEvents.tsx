@@ -1,7 +1,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { cn, formatTimeTo12Hour } from '@/lib/utils';
 import { studentAttendanceScannerPortal } from '@/routes';
 import { router } from '@inertiajs/react';
 import {
@@ -136,7 +136,7 @@ export function StudentTimelineEvents({
                                                 {event.time && (
                                                     <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100/80 px-2 py-1 dark:bg-slate-800/60">
                                                         <Clock className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
-                                                        <span>{event.time}</span>
+                                                        <span>{formatTimeTo12Hour(event.time)}</span>
                                                     </span>
                                                 )}
                                                 {event.location && (

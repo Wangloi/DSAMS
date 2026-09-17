@@ -37,10 +37,26 @@ class GeofenceValidationService
             ];
         }
 
+        // Coordinate sanity checks (-90 to 90 lat, -180 to 180 lng)
+        if ($lat < -90.0 || $lat > 90.0 || $lng < -180.0 || $lng > 180.0) {
+            return [
+                'status'  => 422,
+                'message' => 'Invalid GPS coordinates detected.',
+            ];
+        }
+
+        // Anti-spoofing and precision checks
+        if ($accuracyM <= 0) {
+            return [
+                'status'  => 422,
+                'message' => 'Simulated or invalid GPS data detected. Please use your device native GPS.',
+            ];
+        }
+
         if ($accuracyM > 150) {
             return [
                 'status'  => 422,
-                'message' => 'Location accuracy is too low. Please move to an open area and try again.',
+                'message' => 'Location accuracy is too low (' . round($accuracyM) . 'm). Please move to an open area and try again.',
             ];
         }
 

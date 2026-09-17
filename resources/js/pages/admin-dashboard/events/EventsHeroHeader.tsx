@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { formatDate } from '@/lib/utils';
 import { CalendarDays, Clock, PlusCircle } from 'lucide-react';
 
 interface EventsHeroHeaderProps {
@@ -6,12 +7,7 @@ interface EventsHeroHeaderProps {
 }
 
 export default function EventsHeroHeader({ onCreateEvent }: EventsHeroHeaderProps) {
-    const today = new Date().toLocaleDateString('en-US', {
-        weekday: 'short',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
+    const today = formatDate(new Date());
 
     return (
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] p-6 shadow-xl shadow-blue-900/20">

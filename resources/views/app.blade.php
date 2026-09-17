@@ -2,7 +2,17 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'system') == 'dark'])>
     <head>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+
+        <!-- PWA Web App Manifest & App Metadata -->
+        <link rel="manifest" href="/manifest.json">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="apple-mobile-web-app-title" content="DSAMS">
+        <meta name="application-name" content="DSAMS">
+        <meta name="theme-color" content="#0b1c5c" media="(prefers-color-scheme: light)">
+        <meta name="theme-color" content="#0B192C" media="(prefers-color-scheme: dark)">
 
         {{-- Inline script to detect system dark mode preference and apply it immediately --}}
         <script>
@@ -38,6 +48,9 @@
         <link rel="icon" href="/images/DSA.ico" sizes="any">
         <link rel="icon" href="/images/DSA.png" type="image/png">
         <link rel="apple-touch-icon" href="/images/DSA.png">
+        <link rel="apple-touch-icon" sizes="152x152" href="/images/DSA.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="/images/DSA.png">
+        <link rel="apple-touch-icon" sizes="167x167" href="/images/DSA.png">
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />

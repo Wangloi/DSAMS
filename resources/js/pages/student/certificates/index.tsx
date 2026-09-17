@@ -2,7 +2,13 @@ import StudentLayout from '../components/StudentLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Head, Link, router, usePage } from '@inertiajs/react';
@@ -673,17 +679,16 @@ export default function CertificatesPage() {
             <Dialog open={showDetails} onOpenChange={setShowDetails}>
                 <DialogContent className="fixed top-[50%] left-[50%] z-50 w-[95vw] sm:max-w-[640px] md:max-w-[680px] lg:max-w-[700px] translate-x-[-50%] translate-y-[-50%] max-h-[95vh] overflow-y-auto border bg-white p-3 sm:p-4 shadow-2xl duration-200 rounded-xl sm:rounded-2xl dark:bg-slate-900 dark:border-slate-800">
                     {/* Header Controls */}
-                    <div className="mb-1.5 flex items-center justify-between border-b border-gray-100 pb-1.5 print:hidden dark:border-slate-800">
+                    <DialogHeader className="mb-1.5 flex flex-row items-center justify-between border-b border-gray-100 pb-1.5 text-left print:hidden dark:border-slate-800">
                         <div>
-                            <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+                            <DialogTitle className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
                                 Certificate Details
-                            </h3>
-                            <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">
-                                View, print, or download your evaluation
-                                completion certificate.
-                            </p>
+                            </DialogTitle>
+                            <DialogDescription className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">
+                                View, print, or download your evaluation completion certificate.
+                            </DialogDescription>
                         </div>
-                    </div>
+                    </DialogHeader>
 
                     {selectedCertificate && (
                         <div className="certificate-print-area flex w-full items-center justify-center rounded-lg bg-[#0d1e36] p-1.5 sm:p-2 print:rounded-none print:bg-white print:p-0">

@@ -27,7 +27,7 @@ import {
     Zap,
 } from 'lucide-react';
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import Swal from 'sweetalert2';
+import { formatDate, formatTime } from '@/lib/utils';
 import ProgramHeadLayout from './program-head/components/ProgramHeadLayout';
 
 type ProgramEventOption = {
@@ -84,16 +84,6 @@ const statusColor: Record<string, { bg: string; text: string; dot: string }> = {
 
 function getStatusStyle(status: string) {
     return statusColor[status?.toLowerCase()] ?? statusColor['upcoming'];
-}
-
-function formatDate(dateStr: string) {
-    if (!dateStr) return '—';
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('en-PH', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-    });
 }
 
 export default function ProgramHeadDashboard({ user }: Props) {
@@ -199,12 +189,7 @@ export default function ProgramHeadDashboard({ user }: Props) {
         1,
     );
 
-    const today = new Date().toLocaleDateString('en-US', {
-        weekday: 'short',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
+    const today = formatDate(new Date());
 
     React.useEffect(() => {
         // Poll for real-time attendance updates every 10 seconds
@@ -538,8 +523,8 @@ export default function ProgramHeadDashboard({ user }: Props) {
                                                             <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
                                                                 {formatDate(
                                                                     row.event_date,
-                                                                )}{' '}
-                                                                {row.event_time}
+                                                                )}
+                                                                {row.event_time && ` at ${formatTime(row.event_time)}`}
                                                             </span>
                                                         </td>
                                                         <td className="px-4 py-2.5">
