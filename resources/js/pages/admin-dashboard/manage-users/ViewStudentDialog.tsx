@@ -19,7 +19,6 @@ import {
     Info,
     Mail,
     MapPin,
-    Printer,
     QrCode,
     RefreshCw,
     Search,
@@ -740,14 +739,6 @@ export default function ViewStudentDialog({
                                 </div>
 
                                 <div className="flex items-center gap-2.5 self-end sm:self-auto">
-                                    <Button
-                                        type="button"
-                                        onClick={print}
-                                        className="h-9 gap-1.5 rounded-xl bg-white/15 px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-white/25 active:scale-98"
-                                    >
-                                        <Printer className="h-4 w-4 text-[#8CE4FF]" />
-                                        Print Record
-                                    </Button>
                                     <button
                                         type="button"
                                         onClick={() => onOpenChange(false)}
@@ -895,14 +886,6 @@ export default function ViewStudentDialog({
                             >
                                 Close Profile
                             </Button>
-                            <Button
-                                type="button"
-                                onClick={print}
-                                className="gap-1.5 rounded-xl bg-gradient-to-r from-[#000D6A] via-[#102A83] to-[#23509A] px-5 text-xs font-bold text-white shadow-md hover:brightness-110"
-                            >
-                                <Printer className="h-4 w-4" />
-                                Print Record
-                            </Button>
                         </div>
                     </div>
                 ) : (
@@ -952,14 +935,6 @@ export default function ViewStudentDialog({
                                 </div>
 
                                 <div className="flex items-center gap-2">
-                                    <Button
-                                        type="button"
-                                        onClick={print}
-                                        className="h-9 gap-1.5 rounded-xl bg-[#0b2d66] px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-[#1e40af] active:scale-98 dark:bg-blue-600 dark:hover:bg-blue-700"
-                                    >
-                                        <Printer className="h-4 w-4 text-[#8CE4FF]" />
-                                        {activeTab === 'info' ? 'Print Information Sheet' : 'Print Attendance Records'}
-                                    </Button>
                                     <button
                                         type="button"
                                         onClick={() => onOpenChange(false)}
