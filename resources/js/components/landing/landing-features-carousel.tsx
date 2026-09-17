@@ -12,7 +12,7 @@ import {
     TrendingUp,
     Users,
 } from 'lucide-react';
-import { useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 type Feature = {
     title: string;
@@ -25,6 +25,7 @@ type Feature = {
 
 export default function LandingFeaturesCarousel() {
     const trackRef = useRef<HTMLDivElement | null>(null);
+    const [activeIndex, setActiveIndex] = useState(0);
 
     const features: Feature[] = [
         {
@@ -147,6 +148,49 @@ export default function LandingFeaturesCarousel() {
         },
     ];
 
+    const updateActiveIndexFromScroll = useCallback(() => {
+        const el = trackRef.current;
+        if (!el) return;
+        const firstCard = el.querySelector('article');
+        if (!firstCard) return;
+        const cardWidth = firstCard.clientWidth + 16;
+        const scrollLeft = el.scrollLeft;
+        const idx = Math.round(scrollLeft / cardWidth);
+        setActiveIndex(Math.max(0, Math.min(features.length - 1, idx)));
+    }, [features.length]);
+
+    useEffect(() => {
+        const el = trackRef.current;
+        if (!el) return;
+
+        let ticking = false;
+        const onScroll = () => {
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    updateActiveIndexFromScroll();
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        };
+
+        el.addEventListener('scroll', onScroll, { passive: true });
+        return () => el.removeEventListener('scroll', onScroll);
+    }, [updateActiveIndexFromScroll]);
+
+    const scrollToSlide = (index: number) => {
+        const el = trackRef.current;
+        if (!el) return;
+        const firstCard = el.querySelector('article');
+        if (!firstCard) return;
+        const cardWidth = firstCard.clientWidth + 16;
+        el.scrollTo({
+            left: index * cardWidth,
+            behavior: 'smooth',
+        });
+        setActiveIndex(index);
+    };
+
     const scrollByAmount = (dir: -1 | 1) => {
         const el = trackRef.current;
         if (!el) return;
@@ -155,7 +199,7 @@ export default function LandingFeaturesCarousel() {
     };
 
     return (
-        <section id="features" className="relative overflow-hidden bg-gradient-to-bl from-slate-50 via-blue-50/50 to-[#000D6A]/12 py-14 sm:py-20 lg:py-32">
+        <section id="features" className="relative overflow-hidden bg-gradient-to-bl from-slate-50 via-blue-50/50 to-[#000D6A]/12 py-14 sm:py-20 lg:py-32 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
             {/* Background grid mesh in soft blue */}
             <div className="absolute inset-0 bg-[linear-gradient(to_right,#23509a0d_1px,transparent_1px),linear-gradient(to_bottom,#23509a0d_1px,transparent_1px)] bg-[size:20px_32px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_80%,transparent_100%)] pointer-events-none" />
 
@@ -167,14 +211,14 @@ export default function LandingFeaturesCarousel() {
             <div className="relative mx-auto w-full max-w-7xl px-3 sm:px-6 lg:px-8">
                 {/* Header Section */}
                 <div className="mb-10 sm:mb-16 space-y-4 sm:space-y-6 text-center">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-[#23509A]/10 px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-[#23509A]">
-                        <span className="h-2 w-2 rounded-full bg-[#23509A] animate-pulse" />
+                    <div className="inline-flex items-center gap-2 rounded-full bg-[#23509A]/10 px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-[#23509A] dark:bg-blue-500/20 dark:text-blue-300">
+                        <span className="h-2 w-2 rounded-full bg-[#23509A] dark:bg-blue-400 animate-pulse" />
                         Services & Capabilities
                     </div>
-                    <h2 className="text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[#000D6A]">
+                    <h2 className="text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[#000D6A] dark:text-white">
                         Key Features of OSAMS
                     </h2>
-                    <p className="mx-auto max-w-2xl text-sm sm:text-base lg:text-lg text-slate-500">
+                    <p className="mx-auto max-w-2xl text-sm sm:text-base lg:text-lg text-slate-500 dark:text-slate-400">
                         Discover the powerful tools that streamline student
                         affairs management and enhance campus efficiency
                         with our all-in-one unified solution.
@@ -186,7 +230,7 @@ export default function LandingFeaturesCarousel() {
                     <button
                         type="button"
                         onClick={() => scrollByAmount(-1)}
-                        className="absolute top-1/2 left-0 z-10 hidden -translate-y-1/2 items-center justify-center rounded-2xl bg-white p-4 text-[#000D6A] shadow-[0_8px_30px_rgb(0,0,0,0.06)] ring-1 ring-[#23509A]/10 transition-all duration-300 hover:-translate-x-1 hover:bg-[#23509A] hover:text-white hover:shadow-xl active:scale-95 lg:flex cursor-pointer"
+                        className="absolute top-1/2 left-0 z-10 hidden -translate-y-1/2 items-center justify-center rounded-2xl bg-white p-4 text-[#000D6A] shadow-[0_8px_30px_rgb(0,0,0,0.06)] ring-1 ring-[#23509A]/10 transition-all duration-300 hover:-translate-x-1 hover:bg-[#23509A] hover:text-white hover:shadow-xl active:scale-95 lg:flex cursor-pointer dark:bg-slate-800 dark:text-white dark:ring-slate-700 dark:hover:bg-blue-600"
                         aria-label="Previous"
                     >
                         <ChevronLeft className="h-6 w-6" />
@@ -199,7 +243,7 @@ export default function LandingFeaturesCarousel() {
                         {features.map((feature, index) => (
                             <article
                                 key={feature.title}
-                                className="group relative w-[82vw] xs:w-[300px] sm:w-[340px] md:w-[360px] max-w-[360px] shrink-0 snap-center overflow-hidden rounded-2xl sm:rounded-3xl bg-white shadow-[0_10px_35px_rgba(35,80,154,0.05)] border border-[#23509A]/5 transition-all duration-500 ease-out hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(35,80,154,0.12)] flex flex-col justify-between"
+                                className="group relative w-[82vw] xs:w-[300px] sm:w-[340px] md:w-[360px] max-w-[360px] shrink-0 snap-center overflow-hidden rounded-2xl sm:rounded-3xl bg-white shadow-[0_10px_35px_rgba(35,80,154,0.05)] border border-[#23509A]/5 transition-all duration-500 ease-out hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(35,80,154,0.12)] flex flex-col justify-between dark:bg-slate-900/90 dark:border-slate-800 dark:shadow-black/20"
                             >
                                 {/* Image and Floating Badge */}
                                 <div className="relative h-44 sm:h-52 w-full overflow-hidden">
@@ -233,10 +277,10 @@ export default function LandingFeaturesCarousel() {
 
                                 {/* Content */}
                                 <div className="flex flex-1 flex-col p-4 sm:p-6 lg:p-8">
-                                    <h3 className="mb-2 sm:mb-3 text-lg sm:text-xl font-extrabold tracking-tight text-[#000D6A] transition-colors duration-300 group-hover:text-[#23509A]">
+                                    <h3 className="mb-2 sm:mb-3 text-lg sm:text-xl font-extrabold tracking-tight text-[#000D6A] transition-colors duration-300 group-hover:text-[#23509A] dark:text-white dark:group-hover:text-blue-400">
                                         {feature.title}
                                     </h3>
-                                    <p className="mb-4 sm:mb-6 flex-1 text-xs sm:text-sm leading-relaxed text-slate-500">
+                                    <p className="mb-4 sm:mb-6 flex-1 text-xs sm:text-sm leading-relaxed text-slate-500 dark:text-slate-400">
                                         {feature.description}
                                     </p>
 
@@ -267,37 +311,37 @@ export default function LandingFeaturesCarousel() {
                     <button
                         type="button"
                         onClick={() => scrollByAmount(1)}
-                        className="absolute top-1/2 right-0 z-10 hidden -translate-y-1/2 items-center justify-center rounded-2xl bg-white p-4 text-[#000D6A] shadow-[0_8px_30px_rgb(0,0,0,0.06)] ring-1 ring-[#23509A]/10 transition-all duration-300 hover:translate-x-1 hover:bg-[#23509A] hover:text-white hover:shadow-xl active:scale-95 lg:flex cursor-pointer"
+                        className="absolute top-1/2 right-0 z-10 hidden -translate-y-1/2 items-center justify-center rounded-2xl bg-white p-4 text-[#000D6A] shadow-[0_8px_30px_rgb(0,0,0,0.06)] ring-1 ring-[#23509A]/10 transition-all duration-300 hover:translate-x-1 hover:bg-[#23509A] hover:text-white hover:shadow-xl active:scale-95 lg:flex cursor-pointer dark:bg-slate-800 dark:text-white dark:ring-slate-700 dark:hover:bg-blue-600"
                         aria-label="Next"
                     >
                         <ChevronRight className="h-6 w-6" />
                     </button>
                 </div>
 
-                {/* Dots Indicator */}
-                <div className="mt-6 flex justify-center gap-2 lg:hidden">
-                    {features.map((_, index) => (
-                        <button
-                            key={index}
-                            className="h-2 w-2 rounded-full bg-[#23509A]/20 transition-all duration-300 hover:bg-[#23509A] active:scale-125"
-                            onClick={() => {
-                                const el = trackRef.current;
-                                if (!el) return;
-                                const firstCard = el.querySelector('article');
-                                const cardWidth = firstCard ? firstCard.clientWidth + 16 : 300;
-                                el.scrollTo({
-                                    left: index * cardWidth,
-                                    behavior: 'smooth',
-                                });
-                            }}
-                            aria-label={`Go to slide ${index + 1}`}
-                        />
-                    ))}
+                {/* High-Contrast Interactive Slide Indicator */}
+                <div className="mt-8 flex items-center justify-center gap-2 sm:gap-2.5">
+                    {features.map((feature, index) => {
+                        const isActive = activeIndex === index;
+                        return (
+                            <button
+                                key={index}
+                                type="button"
+                                onClick={() => scrollToSlide(index)}
+                                className={`group relative transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#000D6A] focus-visible:ring-offset-2 ${
+                                    isActive
+                                        ? 'h-3 w-8 sm:w-10 rounded-full bg-[#000D6A] shadow-md shadow-[#000D6A]/30 dark:bg-blue-500 dark:shadow-blue-500/30 ring-2 ring-[#000D6A]/20 dark:ring-blue-400/30'
+                                        : 'h-3 w-3 rounded-full bg-slate-300 hover:bg-[#23509A]/70 dark:bg-slate-700 dark:hover:bg-slate-500 ring-1 ring-slate-400/30 dark:ring-slate-600/30'
+                                }`}
+                                aria-label={`Go to feature ${index + 1}: ${feature.title}`}
+                                aria-current={isActive ? 'true' : 'false'}
+                            />
+                        );
+                    })}
                 </div>
 
                 {/* Bottom CTA Card */}
                 <div className="mt-12 sm:mt-20">
-                    <div className="mx-auto max-w-4xl rounded-2xl sm:rounded-3xl bg-gradient-to-br from-white to-[#FBFBFB] p-5 sm:p-8 md:p-12 shadow-[0_15px_40px_rgba(0,0,0,0.02)] border border-[#23509A]/10 text-center relative overflow-hidden">
+                    <div className="mx-auto max-w-4xl rounded-2xl sm:rounded-3xl bg-gradient-to-br from-white to-[#FBFBFB] p-5 sm:p-8 md:p-12 shadow-[0_15px_40px_rgba(0,0,0,0.02)] border border-[#23509A]/10 text-center relative overflow-hidden dark:from-slate-900 dark:to-slate-900/80 dark:border-slate-800">
                         {/* Gradient background glows inside card */}
                         <div className="absolute -right-10 -bottom-10 h-40 w-40 rounded-full bg-[#23509A]/5 blur-2xl" />
                         <div className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-[#000D6A]/5 blur-2xl" />
@@ -306,10 +350,10 @@ export default function LandingFeaturesCarousel() {
                             <div className="inline-flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#23509A] to-[#000D6A] text-white shadow-lg">
                                 <Database className="h-6 w-6 sm:h-8 sm:w-8" />
                             </div>
-                            <h3 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-[#000D6A]">
+                            <h3 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-[#000D6A] dark:text-white">
                                 All-in-One Integrated Solution
                             </h3>
-                            <p className="mx-auto max-w-2xl text-xs sm:text-base md:text-lg leading-relaxed text-slate-500">
+                            <p className="mx-auto max-w-2xl text-xs sm:text-base md:text-lg leading-relaxed text-slate-500 dark:text-slate-400">
                                 OSAMS integrates all student affairs operations into a unified,
                                 real-time database. Say goodbye to scattered files and manual coordination,
                                 and embrace automated workflows built for modern education.

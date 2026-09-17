@@ -20,14 +20,7 @@ export default function StudentLayout({
         <AppShell variant="header">
             <StudentHeader />
             <PendingEvaluationsGateModal />
-            <div
-                className={cn(
-                    'relative min-h-screen overflow-x-hidden bg-slate-50 transition-colors duration-500 dark:bg-[#020617]',
-                    hideBottomNav
-                        ? 'pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-8'
-                        : 'pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8',
-                )}
-            >
+            <div className="relative flex min-h-screen flex-col justify-between overflow-x-hidden bg-slate-50 transition-colors duration-500 dark:bg-[#020617]">
                 {/* Visual Depth Layers - Mesh Gradients */}
                 <div className="pointer-events-none fixed inset-0 overflow-hidden">
                     <div className="absolute top-[-10%] left-[-10%] h-[50%] w-[50%] animate-pulse rounded-full bg-blue-600/10 mix-blend-multiply blur-[120px] dark:bg-blue-600/5 dark:mix-blend-soft-light" />
@@ -35,7 +28,7 @@ export default function StudentLayout({
                     <div className="absolute top-[20%] right-[10%] h-[30%] w-[30%] rounded-full bg-emerald-600/5 blur-[100px] dark:bg-emerald-600/5" />
                 </div>
 
-                <div className="relative z-10 pt-20">
+                <div className="relative z-10 flex-1 pt-20">
                     <div className="mx-auto max-w-7xl px-3 pt-2 sm:px-6 lg:px-8">
                         <StudentPWAInstallBanner />
                     </div>

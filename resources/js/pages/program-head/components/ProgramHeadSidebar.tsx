@@ -13,6 +13,7 @@ import {
     programHeadAttendance,
     programHeadDashboard,
     programHeadReports,
+    programHeadStudents,
     programHeadViolations,
 } from '@/routes';
 
@@ -20,6 +21,7 @@ import { Link, usePage } from '@inertiajs/react';
 import {
     CalendarDays,
     FileText,
+    GraduationCap,
     LayoutGrid,
     PanelLeftClose,
     PanelLeftOpen,
@@ -39,6 +41,11 @@ const programHeadNavItems: NavItemWithChildren[] = [
         title: 'Dashboard',
         href: programHeadDashboard(),
         icon: LayoutGrid,
+    },
+    {
+        title: 'Students',
+        href: programHeadStudents(),
+        icon: GraduationCap,
     },
     {
         title: 'Attendance',
@@ -119,8 +126,8 @@ export function ProgramHeadSidebar() {
     const baseButtonClassName =
         'relative h-10 rounded-lg px-2.5 text-sm font-medium transition-all duration-200 data-[active=true]:bg-blue-600 data-[active=true]:text-white data-[active=true]:shadow-md data-[active=true]:before:absolute data-[active=true]:before:left-0 data-[active=true]:before:top-1.5 data-[active=true]:before:h-7 data-[active=true]:before:w-1 data-[active=true]:before:rounded-r-full data-[active=true]:before:bg-white dark:data-[active=true]:bg-blue-600/20 dark:data-[active=true]:text-blue-400 dark:data-[active=true]:before:bg-blue-400 dark:hover:bg-slate-800 dark:hover:text-white';
 
-    const topNavItems = programHeadNavItems.slice(0, 2);
-    const middleNavItems = programHeadNavItems.slice(2);
+    const topNavItems = programHeadNavItems.slice(0, 3);
+    const middleNavItems = programHeadNavItems.slice(3);
 
     return (
         <Sidebar

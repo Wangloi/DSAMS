@@ -561,50 +561,7 @@ export default function LandingHelp() {
 
             {/* ─── Main Content Container ─────────────────────────────────────── */}
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-16 sm:space-y-20">
-                {/* ── Quick Overview Cards ────────────────────────────────────────── */}
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                    <div className="group rounded-3xl border border-slate-200/70 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-900/5">
-                        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-[#000D6A] group-hover:bg-[#000D6A] group-hover:text-white transition-colors duration-300">
-                            <QrCode className="h-6 w-6" />
-                        </div>
-                        <h3 className="text-base font-bold text-slate-900 mb-1.5">Smart QR & GPS Check-In</h3>
-                        <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
-                            Dynamic 30s rotating tokens and campus GPS boundary enforcement for tamper-proof attendance.
-                        </p>
-                    </div>
-
-                    <div className="group rounded-3xl border border-slate-200/70 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-900/5">
-                        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-[#23509A] group-hover:bg-[#23509A] group-hover:text-white transition-colors duration-300">
-                            <ClipboardCheck className="h-6 w-6" />
-                        </div>
-                        <h3 className="text-base font-bold text-slate-900 mb-1.5">Digital Admission Slips</h3>
-                        <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
-                            Fast online clearance application for absences with medical attachment uploads and QR verification.
-                        </p>
-                    </div>
-
-                    <div className="group rounded-3xl border border-slate-200/70 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-900/5">
-                        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-colors duration-300">
-                            <ShieldAlert className="h-6 w-6" />
-                        </div>
-                        <h3 className="text-base font-bold text-slate-900 mb-1.5">Discipline & Sanctions</h3>
-                        <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
-                            Transparent tracking of incident reports, official calling summons, and community service hours.
-                        </p>
-                    </div>
-
-                    <div className="group rounded-3xl border border-slate-200/70 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-900/5">
-                        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300">
-                            <Award className="h-6 w-6" />
-                        </div>
-                        <h3 className="text-base font-bold text-slate-900 mb-1.5">Evaluations & Certificates</h3>
-                        <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
-                            Complete post-event evaluation surveys to instantly generate authenticated PDF participation certificates.
-                        </p>
-                    </div>
-                </div>
-
-                {/* ── Detailed Step-by-Step Guides Section ────────────────────────── */}
+                {/* ── Detailed Step-by-Step Guides Section (1ST TO SEE) ────────── */}
                 <section id="guides" className="space-y-8">
                     <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200 pb-5">
                         <div>
@@ -745,6 +702,49 @@ export default function LandingHelp() {
                         </div>
                     )}
                 </section>
+
+                {/* ── Quick Overview Cards ────────────────────────────────────────── */}
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="group rounded-3xl border border-slate-200/70 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-900/5">
+                        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-[#000D6A] group-hover:bg-[#000D6A] group-hover:text-white transition-colors duration-300">
+                            <QrCode className="h-6 w-6" />
+                        </div>
+                        <h3 className="text-base font-bold text-slate-900 mb-1.5">Smart QR & GPS Check-In</h3>
+                        <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+                            Dynamic 30s rotating tokens and campus GPS boundary enforcement for tamper-proof attendance.
+                        </p>
+                    </div>
+
+                    <div className="group rounded-3xl border border-slate-200/70 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-900/5">
+                        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-[#23509A] group-hover:bg-[#23509A] group-hover:text-white transition-colors duration-300">
+                            <ClipboardCheck className="h-6 w-6" />
+                        </div>
+                        <h3 className="text-base font-bold text-slate-900 mb-1.5">Digital Admission Slips</h3>
+                        <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+                            Fast online clearance application for absences with medical attachment uploads and QR verification.
+                        </p>
+                    </div>
+
+                    <div className="group rounded-3xl border border-slate-200/70 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-900/5">
+                        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-colors duration-300">
+                            <ShieldAlert className="h-6 w-6" />
+                        </div>
+                        <h3 className="text-base font-bold text-slate-900 mb-1.5">Discipline & Sanctions</h3>
+                        <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+                            Transparent tracking of incident reports, official calling summons, and community service hours.
+                        </p>
+                    </div>
+
+                    <div className="group rounded-3xl border border-slate-200/70 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-900/5">
+                        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300">
+                            <Award className="h-6 w-6" />
+                        </div>
+                        <h3 className="text-base font-bold text-slate-900 mb-1.5">Evaluations & Certificates</h3>
+                        <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+                            Complete post-event evaluation surveys to instantly generate authenticated PDF participation certificates.
+                        </p>
+                    </div>
+                </div>
 
                 {/* ── Comprehensive FAQs Section ──────────────────────────────────── */}
                 <section id="faq" className="space-y-8">

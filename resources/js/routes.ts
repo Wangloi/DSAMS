@@ -31,6 +31,7 @@ export const studentEvaluationShow = (evaluationId: number | string) =>
 export const studentEvaluationSubmit = (evaluationId: number | string) =>
     `/student/evaluation/${evaluationId}`;
 export const programHeadDashboard = () => '/program-head-dashboard';
+export const programHeadStudents = () => '/program-head/students';
 export const programHeadAttendance = () => '/program-head/attendance';
 export const programHeadAttendanceLogs = (
     eventId: number | string,

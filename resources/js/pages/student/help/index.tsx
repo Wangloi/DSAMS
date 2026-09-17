@@ -527,50 +527,7 @@ export default function StudentHelpPage() {
                         })}
                     </div>
 
-                    {/* ── Quick Feature Cards ───────────────────────────────────── */}
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        <div className="group rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-300">
-                                <QrCode className="h-5 w-5" />
-                            </div>
-                            <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1">Dynamic QR & GPS</h3>
-                            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                                Self-scan rotating projector codes and geofence check-ins for instant attendance logs.
-                            </p>
-                        </div>
-
-                        <div className="group rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300">
-                                <ClipboardCheck className="h-5 w-5" />
-                            </div>
-                            <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1">Admission Slips</h3>
-                            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                                Request class re-entry clearances, attach medical proof, and track DSA officer approval.
-                            </p>
-                        </div>
-
-                        <div className="group rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-300">
-                                <ShieldAlert className="h-5 w-5" />
-                            </div>
-                            <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1">Discipline & Sanctions</h3>
-                            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                                Check calling slip summons, log community service hours, and obtain final clearance.
-                            </p>
-                        </div>
-
-                        <div className="group rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-300">
-                                <Award className="h-5 w-5" />
-                            </div>
-                            <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1">Evaluations & Certificates</h3>
-                            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                                Submit seminar evaluation surveys to unlock downloadable high-res PDF participation certificates.
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* ── Interactive Guides Section ────────────────────────────── */}
+                    {/* ── Interactive Guides Section (1ST TO SEE) ──────────────── */}
                     <div className="space-y-6">
                         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-4">
                             <div>
@@ -708,6 +665,49 @@ export default function StudentHelpPage() {
                                 })}
                             </div>
                         )}
+                    </div>
+
+                    {/* ── Quick Feature Cards ───────────────────────────────────── */}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="group rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-300">
+                                <QrCode className="h-5 w-5" />
+                            </div>
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1">Dynamic QR & GPS</h3>
+                            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                                Self-scan rotating projector codes and geofence check-ins for instant attendance logs.
+                            </p>
+                        </div>
+
+                        <div className="group rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300">
+                                <ClipboardCheck className="h-5 w-5" />
+                            </div>
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1">Admission Slips</h3>
+                            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                                Request class re-entry clearances, attach medical proof, and track DSA officer approval.
+                            </p>
+                        </div>
+
+                        <div className="group rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-300">
+                                <ShieldAlert className="h-5 w-5" />
+                            </div>
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1">Discipline & Sanctions</h3>
+                            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                                Check calling slip summons, log community service hours, and obtain final clearance.
+                            </p>
+                        </div>
+
+                        <div className="group rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-300">
+                                <Award className="h-5 w-5" />
+                            </div>
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1">Evaluations & Certificates</h3>
+                            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                                Submit seminar evaluation surveys to unlock downloadable high-res PDF participation certificates.
+                            </p>
+                        </div>
                     </div>
 
                     {/* ── FAQ Accordion Section ─────────────────────────────────── */}

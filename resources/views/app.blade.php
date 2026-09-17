@@ -13,7 +13,7 @@
     ]);
 @endphp
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => !$isLandingPage && ($appearance ?? 'system') == 'dark'])>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => !$isLandingPage && ($appearance ?? 'light') == 'dark'])>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -25,10 +25,9 @@
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
         <meta name="apple-mobile-web-app-title" content="DSAMS">
         <meta name="application-name" content="DSAMS">
-        <meta name="theme-color" content="#0b1c5c" media="(prefers-color-scheme: light)">
-        <meta name="theme-color" content="#0B192C" media="(prefers-color-scheme: dark)">
+        <meta name="theme-color" content="#0b1c5c">
 
-        {{-- Inline script to detect system dark mode preference and apply it immediately (disabled on landing pages) --}}
+        {{-- Inline script to apply user appearance preference immediately (disabled on landing pages) --}}
         <script>
             (function() {
                 const isLandingPage = {{ $isLandingPage ? 'true' : 'false' }};
@@ -38,14 +37,24 @@
                     return;
                 }
 
-                const appearance = '{{ $appearance ?? "system" }}';
-
-                if (appearance === 'system') {
-                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-                    if (prefersDark) {
-                        document.documentElement.classList.add('dark');
+                let appearance = 'light';
+                try {
+                    const stored = localStorage.getItem('appearance');
+                    if (stored === 'dark' || stored === 'light') {
+                        appearance = stored;
+                    } else {
+                        appearance = '{{ ($appearance ?? "light") === "dark" ? "dark" : "light" }}';
                     }
+                } catch (e) {
+                    appearance = '{{ ($appearance ?? "light") === "dark" ? "dark" : "light" }}';
+                }
+
+                if (appearance === 'dark') {
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.style.colorScheme = 'dark';
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    document.documentElement.style.colorScheme = 'light';
                 }
             })();
         </script>

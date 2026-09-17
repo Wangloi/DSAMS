@@ -254,11 +254,11 @@ export default function StudentEvaluationShow() {
                                             <div key={q.id} className="space-y-4">
                                                 {/* Section Header if new section or Standard */}
                                                 {isNewSection && q.section && (
-                                                    <div className="mt-8 mb-4 overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50/90 via-slate-50 to-white p-5 shadow-sm dark:border-slate-700/80 dark:bg-slate-800/80 dark:from-slate-800">
+                                                    <div className="mt-8 mb-4 overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50/90 via-slate-50 to-white p-5 shadow-sm dark:border-slate-700/80 dark:from-slate-800/95 dark:via-slate-800/90 dark:to-slate-900/90 dark:shadow-none">
                                                         <div className="flex flex-col gap-1">
                                                             <div className="flex items-center gap-2">
-                                                                <span className="inline-block h-2 w-2 rounded-full bg-[#0b2d66] dark:bg-blue-400"></span>
-                                                                <h2 className="text-base font-black tracking-tight text-[#0b2d66] uppercase sm:text-lg dark:text-blue-300">
+                                                                <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#0b2d66] dark:bg-blue-400"></span>
+                                                                <h2 className="text-base font-black tracking-tight text-[#0b2d66] uppercase sm:text-lg dark:text-white">
                                                                     {q.section}
                                                                 </h2>
                                                             </div>
@@ -271,26 +271,26 @@ export default function StudentEvaluationShow() {
 
                                                         {/* Standard 1 Rating Legend */}
                                                         {q.type === 'rating' && (
-                                                            <div className="mt-4 grid grid-cols-5 gap-1.5 rounded-xl border border-blue-200/60 bg-white/90 p-2.5 text-center dark:border-slate-700 dark:bg-slate-800">
-                                                                <div className="rounded-lg bg-blue-50/80 p-1.5 dark:bg-slate-800">
-                                                                    <span className="block text-xs font-black text-[#0b2d66] dark:text-blue-300">1</span>
-                                                                    <span className="text-[10px] font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400">Poor</span>
+                                                            <div className="mt-4 grid grid-cols-5 gap-1.5 rounded-xl border border-blue-200/60 bg-white/90 p-2 text-center dark:border-slate-700/80 dark:bg-slate-900/80">
+                                                                <div className="rounded-lg bg-blue-50/80 p-2 dark:border dark:border-slate-700/50 dark:bg-slate-800/90">
+                                                                    <span className="block text-xs font-black text-[#0b2d66] dark:text-blue-400">1</span>
+                                                                    <span className="text-[10px] font-bold tracking-wider text-slate-600 uppercase dark:text-slate-300">Poor</span>
                                                                 </div>
-                                                                <div className="rounded-lg bg-blue-50/80 p-1.5 dark:bg-slate-800">
-                                                                    <span className="block text-xs font-black text-[#0b2d66] dark:text-blue-300">2</span>
-                                                                    <span className="text-[10px] font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400">Fair</span>
+                                                                <div className="rounded-lg bg-blue-50/80 p-2 dark:border dark:border-slate-700/50 dark:bg-slate-800/90">
+                                                                    <span className="block text-xs font-black text-[#0b2d66] dark:text-blue-400">2</span>
+                                                                    <span className="text-[10px] font-bold tracking-wider text-slate-600 uppercase dark:text-slate-300">Fair</span>
                                                                 </div>
-                                                                <div className="rounded-lg bg-blue-50/80 p-1.5 dark:bg-slate-800">
-                                                                    <span className="block text-xs font-black text-[#0b2d66] dark:text-blue-300">3</span>
-                                                                    <span className="text-[10px] font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400">Good</span>
+                                                                <div className="rounded-lg bg-blue-50/80 p-2 dark:border dark:border-slate-700/50 dark:bg-slate-800/90">
+                                                                    <span className="block text-xs font-black text-[#0b2d66] dark:text-blue-400">3</span>
+                                                                    <span className="text-[10px] font-bold tracking-wider text-slate-600 uppercase dark:text-slate-300">Good</span>
                                                                 </div>
-                                                                <div className="rounded-lg bg-blue-50/80 p-1.5 dark:bg-slate-800">
-                                                                    <span className="block text-xs font-black text-[#0b2d66] dark:text-blue-300">4</span>
-                                                                    <span className="text-[10px] font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400">Very Good</span>
+                                                                <div className="rounded-lg bg-blue-50/80 p-2 dark:border dark:border-slate-700/50 dark:bg-slate-800/90">
+                                                                    <span className="block text-xs font-black text-[#0b2d66] dark:text-blue-400">4</span>
+                                                                    <span className="text-[10px] font-bold tracking-wider text-slate-600 uppercase dark:text-slate-300">Very Good</span>
                                                                 </div>
-                                                                <div className="rounded-lg bg-blue-50/80 p-1.5 dark:bg-slate-800">
-                                                                    <span className="block text-xs font-black text-[#0b2d66] dark:text-blue-300">5</span>
-                                                                    <span className="text-[10px] font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400">Excellent</span>
+                                                                <div className="rounded-lg bg-blue-50/80 p-2 dark:border dark:border-slate-700/50 dark:bg-slate-800/90">
+                                                                    <span className="block text-xs font-black text-[#0b2d66] dark:text-blue-400">5</span>
+                                                                    <span className="text-[10px] font-bold tracking-wider text-slate-600 uppercase dark:text-slate-300">Excellent</span>
                                                                 </div>
                                                             </div>
                                                         )}
