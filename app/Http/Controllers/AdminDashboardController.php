@@ -101,12 +101,18 @@ class AdminDashboardController extends Controller
             $evaluationsCount = Evaluation::where('is_archived', false)->count();
         }
 
+        $totalStudents = 0;
+        if (Schema::hasTable('students')) {
+            $totalStudents = \App\Models\Student::where('is_archived', false)->count();
+        }
+
         return [
-            ['title' => 'Total Events', 'value' => $totalEvents],
             ['title' => "Today's Attendance", 'value' => $todayAttendance, 'hasEventToday' => $hasEventToday || ($todayAttendance > 0)],
-            ['title' => 'Active Cases', 'value' => $activeCases],
             ['title' => 'Admission Slips', 'value' => $admissionSlips],
+            ['title' => 'Active Cases', 'value' => $activeCases],
             ['title' => 'Evaluation Surveys', 'value' => $evaluationsCount],
+            ['title' => 'Total Events', 'value' => $totalEvents],
+            ['title' => 'Total Students', 'value' => $totalStudents],
         ];
     }
 
