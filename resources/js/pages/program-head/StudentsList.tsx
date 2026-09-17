@@ -76,10 +76,30 @@ type Props = {
     students: StudentRow[];
 };
 
+export function formatLastNameFirst(student: {
+    name?: string;
+    first_name?: string | null;
+    last_name?: string | null;
+    middle_name?: string | null;
+}): string {
+    if (student.last_name && student.first_name) {
+        const middle = student.middle_name ? ` ${student.middle_name}` : '';
+        return `${student.last_name}, ${student.first_name}${middle}`;
+    }
+    if (!student.name) return '';
+    const parts = student.name.trim().split(/\s+/);
+    if (parts.length <= 1) return student.name;
+    const lastName = parts.pop();
+    const firstNames = parts.join(' ');
+    return `${lastName}, ${firstNames}`;
+}
+
 export default function StudentsList({ user, program, students }: Props) {
     const [searchQuery, setSearchQuery] = useState('');
     const [yearFilter, setYearFilter] = useState('All');
     const [currentPage, setCurrentPage] = useState(1);
+    const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
+    const itemsPerPage = 10;
 
     const [viewingStudent, setViewingStudent] = useState<UserRow | null>(null);
     const [isViewOpen, setIsViewOpen] = useState(false);
@@ -91,13 +111,15 @@ export default function StudentsList({ user, program, students }: Props) {
         } as any);
         setIsViewOpen(true);
     };
-    const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
-    const itemsPerPage = 10;
 
     const filteredStudents = useMemo(() => {
-        return students.filter((student) => {
+        const filtered = students.filter((student) => {
+            const formattedName = formatLastNameFirst(student);
             const matchesSearch =
                 student.name
+                    .toLowerCase()
+                    .includes(searchQuery.toLowerCase()) ||
+                formattedName
                     .toLowerCase()
                     .includes(searchQuery.toLowerCase()) ||
                 student.student_id
@@ -106,6 +128,12 @@ export default function StudentsList({ user, program, students }: Props) {
             const matchesYear =
                 yearFilter === 'All' || student.year_level === yearFilter;
             return matchesSearch && matchesYear;
+        });
+
+        return filtered.sort((a, b) => {
+            const nameA = formatLastNameFirst(a).toLowerCase();
+            const nameB = formatLastNameFirst(b).toLowerCase();
+            return nameA.localeCompare(nameB);
         });
     }, [students, searchQuery, yearFilter]);
 
@@ -576,13 +604,23 @@ export default function StudentsList({ user, program, students }: Props) {
                                         <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-transparent">
                                             {paginatedStudents.map(
                                                 (student) => {
-                                                    const initials =
-                                                        student.name
-                                                            .split(' ')
-                                                            .map((n) => n[0])
-                                                            .join('')
-                                                            .slice(0, 2)
-                                                            .toUpperCase();
+                                                    const displayName =
+                                                        formatLastNameFirst(
+                                                            student,
+                                                        );
+                                                    const initials = (
+                                                        student.last_name &&
+                                                        student.first_name
+                                                            ? `${student.first_name[0]}${student.last_name[0]}`
+                                                            : student.name
+                                                                  .split(' ')
+                                                                  .map(
+                                                                      (n) =>
+                                                                          n[0],
+                                                                  )
+                                                                  .join('')
+                                                                  .slice(0, 2)
+                                                    ).toUpperCase();
 
                                                     return (
                                                         <tr
@@ -606,7 +644,7 @@ export default function StudentsList({ user, program, students }: Props) {
                                                                             checked as boolean,
                                                                         )
                                                                     }
-                                                                    aria-label={`Select ${student.name}`}
+                                                                    aria-label={`Select ${displayName}`}
                                                                 />
                                                             </td>
                                                             <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">
@@ -623,7 +661,7 @@ export default function StudentsList({ user, program, students }: Props) {
                                                                     </div>
                                                                     <span className="font-semibold text-slate-700 dark:text-slate-200">
                                                                         {
-                                                                            student.name
+                                                                            displayName
                                                                         }
                                                                     </span>
                                                                 </div>
@@ -644,13 +682,14 @@ export default function StudentsList({ user, program, students }: Props) {
                                                             </td>
                                                             <td className="px-6 py-4 text-right">
                                                                 <Button
+                                                                    type="button"
                                                                     variant="outline"
-                                                                    size="sm"
+                                                                    size="icon"
                                                                     onClick={() => handleViewRecord(student)}
-                                                                    className="h-8 gap-1.5 rounded-lg border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                                                                    className="h-8 w-8 rounded-lg border-slate-200 bg-white text-slate-700 shadow-xs transition-colors hover:bg-slate-100 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-blue-400"
+                                                                    aria-label="View Student Attendance"
                                                                 >
-                                                                    <Eye className="h-3.5 w-3.5" />
-                                                                    View Record
+                                                                    <Eye className="h-4 w-4" />
                                                                 </Button>
                                                             </td>
                                                         </tr>

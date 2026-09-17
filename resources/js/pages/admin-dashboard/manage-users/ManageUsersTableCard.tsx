@@ -51,6 +51,24 @@ interface ManageUsersTableCardProps {
     isAdminRow: (user: UserRow) => boolean;
 }
 
+export function formatLastNameFirst(user: {
+    name?: string;
+    first_name?: string | null;
+    last_name?: string | null;
+    middle_name?: string | null;
+}): string {
+    if (user.last_name && user.first_name) {
+        const middle = user.middle_name ? ` ${user.middle_name}` : '';
+        return `${user.last_name}, ${user.first_name}${middle}`;
+    }
+    if (!user.name) return '';
+    const parts = user.name.trim().split(/\s+/);
+    if (parts.length <= 1) return user.name;
+    const lastName = parts.pop();
+    const firstNames = parts.join(' ');
+    return `${lastName}, ${firstNames}`;
+}
+
 export function ManageUsersTableCard({
     totalUsers,
     searchQuery,
@@ -339,7 +357,7 @@ export function ManageUsersTableCard({
                                                     </Avatar>
                                                     <div>
                                                         <div className="font-bold text-slate-900 dark:text-white">
-                                                            {u.name}
+                                                            {formatLastNameFirst(u)}
                                                         </div>
                                                         <div className="text-[11px] text-slate-500 dark:text-slate-400">
                                                             {u.email}
