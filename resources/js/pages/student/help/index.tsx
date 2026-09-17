@@ -2,6 +2,7 @@ import { studentDashboard, studentHelp } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import {
+    ArrowLeft,
     ArrowRight,
     Award,
     BookOpen,
@@ -443,51 +444,61 @@ export default function StudentHelpPage() {
 
             <div className="pb-12 text-slate-900 dark:text-white">
                 <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-3 sm:px-6 lg:px-8">
-                    {/* ── Header Banner with Search ─────────────────────────────── */}
-                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#000D6A] via-[#0B2D66] to-[#12397B] p-5 sm:p-6 text-white shadow-lg">
-                        <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-blue-400/10 blur-xl pointer-events-none" />
-                        <div className="absolute right-1/3 bottom-0 h-40 w-40 rounded-full bg-indigo-400/10 blur-2xl pointer-events-none" />
+                    {/* ── Header Banner with Search & Back Button ─────────────────────────────── */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[#000D6A] via-[#0B2D66] to-[#12397B] p-4 sm:p-5 text-white shadow-md">
+                        <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-blue-400/10 blur-xl pointer-events-none" />
 
-                        <div className="relative z-10 max-w-2xl space-y-2.5">
-                            <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-400/30 bg-white/10 px-2.5 py-0.5 text-[11px] font-semibold tracking-wide text-blue-200 uppercase backdrop-blur-md">
-                                <LifeBuoy className="h-3 w-3 text-blue-300 animate-pulse" />
-                                Student Help & Documentation
+                        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div className="space-y-1.5">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <Link
+                                        href={studentDashboard()}
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-md hover:bg-white/20 active:scale-95 transition-all shadow-sm"
+                                    >
+                                        <ArrowLeft className="h-3.5 w-3.5" />
+                                        Back to Dashboard
+                                    </Link>
+                                    <div className="inline-flex items-center gap-1 rounded-full border border-blue-400/30 bg-white/10 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-blue-200 uppercase backdrop-blur-md">
+                                        <LifeBuoy className="h-2.5 w-2.5 text-blue-300 animate-pulse" />
+                                        Help & Documentation
+                                    </div>
+                                </div>
+
+                                <h1 className="text-base sm:text-lg md:text-xl font-bold tracking-tight text-white">
+                                    Student Help Center
+                                </h1>
+
+                                <p className="text-xs text-blue-100/80 leading-relaxed font-normal max-w-xl">
+                                    Guides for QR check-in, GPS geofencing, admission clearance slips, and certificates.
+                                </p>
                             </div>
 
-                            <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-white">
-                                Student Help Center
-                            </h1>
-
-                            <p className="text-xs text-blue-100/90 leading-relaxed font-normal">
-                                Guides for QR check-in, GPS geofencing, admission clearance slips, and certificates.
-                            </p>
-
                             {/* Search Input */}
-                            <div className="pt-1">
+                            <div className="w-full md:w-80 shrink-0">
                                 <div className="relative flex items-center rounded-xl bg-white/95 dark:bg-slate-900/95 p-1 shadow-md ring-1 ring-black/10 dark:ring-white/10 backdrop-blur-md focus-within:ring-2 focus-within:ring-blue-400 transition-all">
-                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center text-slate-400 pl-1">
-                                        <Search className="h-4 w-4" />
+                                    <div className="flex h-7 w-7 shrink-0 items-center justify-center text-slate-400 pl-1">
+                                        <Search className="h-3.5 w-3.5" />
                                     </div>
                                     <input
                                         type="text"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder="Search guides, policies, or questions..."
-                                        className="w-full bg-transparent px-2 py-1.5 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none"
+                                        placeholder="Search guides or FAQs..."
+                                        className="w-full bg-transparent px-2 py-1 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none"
                                     />
                                     {searchQuery && (
                                         <button
                                             onClick={() => setSearchQuery('')}
-                                            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 transition-colors mr-1"
+                                            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 transition-colors mr-1"
                                         >
-                                            <X className="h-3.5 w-3.5" />
+                                            <X className="h-3 w-3" />
                                         </button>
                                     )}
                                 </div>
 
                                 {searchQuery && (
-                                    <div className="mt-2 text-[11px] text-blue-200 font-medium">
-                                        Found <strong>{filteredGuides.length}</strong> guide(s) and <strong>{filteredFaqs.length}</strong> FAQ(s) matching "{searchQuery}"
+                                    <div className="mt-1.5 text-[10px] text-blue-200 font-medium">
+                                        Found <strong>{filteredGuides.length}</strong> guide(s) and <strong>{filteredFaqs.length}</strong> FAQ(s)
                                     </div>
                                 )}
                             </div>
