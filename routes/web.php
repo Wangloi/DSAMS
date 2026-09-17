@@ -37,9 +37,11 @@ use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use App\Models\Student;
+use App\Models\Attendance;
 use App\Models\Event;
 use App\Models\Evaluation;
 use App\Models\ActivityLog;
+use Carbon\Carbon;
 
 // Custom password reset routes (handle students, admin_users, and program_heads)
 use App\Http\Controllers\ForgotPasswordController;
@@ -439,22 +441,29 @@ Route::get('/admin/students/lookup', function (Request $request) {
     ]);
 })->middleware('auth:admin,web')->name('admin.students.lookup');
 
-Route::get('/students/{student}/attendance-history', function (Request $request, $studentId) {
+Route::get('/students/{student}/attendance-history', function (Request $request, $student = null) {
     $user = Auth::guard('admin')->user()
         ?: Auth::guard('program_head')->user()
         ?: Auth::guard('student')->user()
-        ?: Auth::guard('web')->user();
+        ?: Auth::guard('web')->user()
+        ?: Auth::user();
 
     if (!$user) {
-        abort(403, 'Unauthorized');
+        return response()->json(['message' => 'Unauthorized'], 401);
     }
 
-    $student = Student::query()
-        ->where('id', $studentId)
-        ->orWhere('student_id', $studentId)
-        ->first();
+    $identifier = $student instanceof Student ? $student->id : ($student ?? $request->route('student'));
 
-    if (!$student) {
+    $studentModel = null;
+    if ($student instanceof Student) {
+        $studentModel = $student;
+    } elseif ($identifier) {
+        $studentModel = Student::where('id', $identifier)
+            ->orWhere('student_id', $identifier)
+            ->first();
+    }
+
+    if (!$studentModel) {
         return response()->json([
             'message' => 'Student not found',
             'attendances' => [],
@@ -466,14 +475,14 @@ Route::get('/students/{student}/attendance-history', function (Request $request,
                 'override_count' => 0,
                 'attendance_rate' => 0,
             ],
-        ], 404);
+        ], 200);
     }
 
     $attendances = Attendance::with(['event'])
-        ->where(function ($q) use ($student) {
-            $q->where('student_id', $student->id);
-            if (!empty($student->student_id)) {
-                $q->orWhere('student_id', $student->student_id);
+        ->where(function ($q) use ($studentModel) {
+            $q->where('student_id', $studentModel->id);
+            if (!empty($studentModel->student_id)) {
+                $q->orWhere('student_id', $studentModel->student_id);
             }
         })
         ->orderByDesc('checked_in_at')
@@ -496,7 +505,7 @@ Route::get('/students/{student}/attendance-history', function (Request $request,
         return [
             'id' => $att->id,
             'event_id' => $att->event_id,
-            'event_name' => $event ? ($event->event_name ?? ('Event #' . $att->event_id)) : 'General / Removed Event',
+            'event_name' => $event ? ($event->event_name ?? ('Event #' . $att->event_id)) : 'General / Campus Event',
             'event_date' => $event && $event->event_date ? Carbon::parse($event->event_date)->format('M d, Y') : null,
             'event_time' => $event ? (string)($event->event_time ?? '') : null,
             'event_location' => $event ? ($event->location ?? 'Campus') : 'Campus',
@@ -520,11 +529,11 @@ Route::get('/students/{student}/attendance-history', function (Request $request,
 
     return response()->json([
         'student' => [
-            'id' => $student->id,
-            'student_id' => $student->student_id,
-            'name' => $student->name,
-            'course' => $student->course,
-            'year_level' => $student->year_level,
+            'id' => $studentModel->id,
+            'student_id' => $studentModel->student_id,
+            'name' => $studentModel->name,
+            'course' => $studentModel->course,
+            'year_level' => $studentModel->year_level,
         ],
         'summary' => [
             'total_attended' => $totalAttended,

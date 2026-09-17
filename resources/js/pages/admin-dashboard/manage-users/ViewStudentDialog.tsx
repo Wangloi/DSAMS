@@ -97,11 +97,15 @@ export default function ViewStudentDialog({
         let isMounted = true;
         setIsLoadingAttendance(true);
 
+        const studentIdentifier = student.id || student.student_id;
+
         const fetchAttendance = async () => {
             try {
-                const res = await fetch(`/students/${student.id}/attendance-history`, {
+                const res = await fetch(`/students/${encodeURIComponent(String(studentIdentifier))}/attendance-history`, {
+                    credentials: 'same-origin',
                     headers: {
                         Accept: 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
                     },
                 });
                 if (!res.ok) {
@@ -128,7 +132,7 @@ export default function ViewStudentDialog({
         return () => {
             isMounted = false;
         };
-    }, [open, student?.id, isProgramHead]);
+    }, [open, student?.id, student?.student_id, isProgramHead]);
 
     // Filtered attendance list
     const filteredAttendances = useMemo(() => {
