@@ -2,7 +2,7 @@
     "name": "DSAMS Student Portal",
     "short_name": "DSAMS",
     "description": "Dean of Student Affairs Management System - Student Portal",
-    "start_url": "/student/dashboard",
+    "start_url": "/",
     "scope": "/",
     "display": "standalone",
     "background_color": "#0B192C",
@@ -39,21 +39,14 @@
             "name": "Home Dashboard",
             "short_name": "Home",
             "description": "View student campus schedule & stats",
-            "url": "/student/dashboard",
+            "url": "/student-dashboard",
             "icons": [{ "src": "/images/DSA.png", "sizes": "192x192" }]
         },
         {
             "name": "Admission Slips",
             "short_name": "Slips",
             "description": "Access my admission slips and passes",
-            "url": "/student/admission-slips",
-            "icons": [{ "src": "/images/DSA.png", "sizes": "192x192" }]
-        },
-        {
-            "name": "Certificates",
-            "short_name": "Certs",
-            "description": "View and download earned certificates",
-            "url": "/student/certificates",
+            "url": "/student/admission-slip",
             "icons": [{ "src": "/images/DSA.png", "sizes": "192x192" }]
         },
         {

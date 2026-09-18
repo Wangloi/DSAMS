@@ -141,6 +141,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::get('/student-dashboard', [StudentDashboardController::class, 'index'])->middleware(['auth:student', 'approved'])->name('student.dashboard');
 
+// PWA and legacy route aliases to prevent 404 errors
+Route::get('/student/dashboard', function () {
+    return redirect()->route('student.dashboard');
+});
+Route::get('/student/admission-slips', function () {
+    return redirect()->route('student.admission-slip.index');
+});
+Route::get('/student/certificates', function () {
+    return redirect()->route('student.dashboard');
+});
+
 Route::get('/student/help', function () {
     return Inertia::render('student/help/index');
 })->middleware(['auth:student', 'approved'])->name('student.help');

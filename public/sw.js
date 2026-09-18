@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dsams-cache-v1';
+const CACHE_NAME = 'dsams-cache-v2';
 const STATIC_ASSETS = [
     '/',
     '/manifest.json',
@@ -83,9 +83,9 @@ self.addEventListener('fetch', (event) => {
                     if (cachedResponse) {
                         return cachedResponse;
                     }
-                    // Fallback to offline message or home
+                    // Fallback to cached home/shell
                     if (request.mode === 'navigate') {
-                        return caches.match('/student/dashboard');
+                        return caches.match('/');
                     }
                     return new Response('Offline: Connection lost', {
                         status: 503,
