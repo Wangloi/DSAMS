@@ -433,77 +433,44 @@ export default function AdminDashboard({
                         </div>
                     )}
 
-                    {/* ── HERO BANNER: HIGH-TECH EXECUTIVE COMMAND CENTER ── */}
-                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0B1E48] via-[#123274] to-[#1D4ED8] p-6 text-white shadow-2xl shadow-blue-900/30 ring-1 ring-white/15 sm:p-8">
-                        {/* Background glowing ambient elements */}
-                        <div className="pointer-events-none absolute -top-24 -right-24 h-96 w-96 rounded-full bg-blue-400/20 blur-3xl" />
-                        <div className="pointer-events-none absolute -bottom-20 -left-20 h-80 w-80 rounded-full bg-indigo-500/20 blur-3xl" />
-                        <div className="pointer-events-none absolute top-1/2 right-1/4 h-64 w-64 -translate-y-1/2 rounded-full bg-cyan-400/10 blur-2xl" />
-
-                        <div className="relative z-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
-                            {/* Left: Identity & Status */}
-                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
-                                <div className="relative grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-white/10 p-3.5 shadow-inner ring-1 ring-white/25 backdrop-blur-xl">
-                                    <Sparkles className="h-8 w-8 text-cyan-300 drop-shadow-[0_0_12px_rgba(103,232,249,0.8)]" />
-                                    <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-[#0B1E48]">
-                                        <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
-                                    </div>
+                    {/* ── HERO BANNER ── */}
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] p-6 shadow-xl shadow-blue-900/20">
+                        <div className="pointer-events-none absolute -top-12 -right-12 h-56 w-56 rounded-full bg-white/5" />
+                        <div className="pointer-events-none absolute -top-4 -right-4 h-32 w-32 rounded-full bg-white/5" />
+                        <div className="pointer-events-none absolute bottom-0 left-1/3 h-48 w-48 -translate-y-1/4 rounded-full bg-blue-400/10 blur-2xl" />
+                        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/10 text-white shadow-inner ring-1 ring-white/20 backdrop-blur-sm">
+                                    <BarChart3 className="h-7 w-7" />
                                 </div>
                                 <div>
-                                    <div className="flex flex-wrap items-center gap-2.5">
-                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/15 px-3 py-1 text-[11px] font-bold tracking-wide text-emerald-300 ring-1 ring-emerald-400/30 backdrop-blur-md">
-                                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                            SYSTEM OPERATIONAL
-                                        </span>
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-blue-100 ring-1 ring-white/15">
-                                            <ShieldCheck className="h-3 w-3 text-cyan-300" />
-                                            Admin Access
-                                        </span>
-                                    </div>
-                                    <h1 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl lg:text-4xl">
-                                        Welcome back, {currentUser?.name || 'Administrator'}
+                                    <h1 className="text-2xl font-black tracking-tight text-white">
+                                        Welcome Back, {currentUser?.name || 'Administrator'}!
                                     </h1>
-                                    <p className="mt-1 max-w-xl text-xs font-medium text-blue-100/80 sm:text-sm">
-                                        DSAMS Institutional Command Center • Real-time student attendance, conduct compliance, and event orchestration.
+                                    <p className="mt-0.5 text-sm font-medium text-blue-200/80">
+                                        System Command Center • Incoming Events & Performance Metrics
                                     </p>
                                 </div>
                             </div>
-
-                            {/* Right: Real-time Indicators & Actions */}
-                            <div className="flex flex-wrap items-center gap-3">
-                                {/* Live Time & Date Badge */}
-                                <div className="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 shadow-lg backdrop-blur-xl ring-1 ring-white/10">
-                                    <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-500/20 text-cyan-300 ring-1 ring-cyan-300/30">
-                                        <Clock className="h-5 w-5" />
+                            <div className="flex flex-wrap items-center gap-3 self-start sm:self-auto">
+                                {/* Live Date Indicator widget */}
+                                <div className="hidden items-center gap-3 rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-white ring-1 ring-white/20 backdrop-blur-md sm:flex">
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/20">
+                                        <Clock className="h-4.5 w-4.5 text-blue-200" />
                                     </div>
-                                    <div className="text-left">
-                                        <div className="font-mono text-sm font-bold tracking-wider text-white">
-                                            {currentTime || '--:--:--'}
-                                        </div>
-                                        <div className="text-[10px] font-medium tracking-wide text-blue-200/80 uppercase">
+                                    <div>
+                                        <p className="text-[9px] font-black tracking-widest text-blue-200/60 uppercase">
+                                            System Date
+                                        </p>
+                                        <p className="text-xs font-bold tracking-tight text-white">
                                             {new Date().toLocaleDateString('en-US', {
-                                                weekday: 'short',
                                                 month: 'short',
                                                 day: 'numeric',
                                                 year: 'numeric',
                                             })}
-                                        </div>
+                                        </p>
                                     </div>
                                 </div>
-
-                                {/* Refresh Button */}
-                                <button
-                                    type="button"
-                                    onClick={handleRefresh}
-                                    disabled={isRefreshing}
-                                    className="inline-flex h-12 items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-4 text-xs font-bold text-white shadow-md backdrop-blur-xl transition-all hover:bg-white/20 active:scale-95 disabled:opacity-50"
-                                    title="Refresh Dashboard Data"
-                                >
-                                    <RefreshCw
-                                        className={`h-4 w-4 text-cyan-300 ${isRefreshing ? 'animate-spin' : ''}`}
-                                    />
-                                    <span className="hidden sm:inline">Sync Data</span>
-                                </button>
                             </div>
                         </div>
                     </div>
