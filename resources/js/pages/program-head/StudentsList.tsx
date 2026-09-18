@@ -16,7 +16,6 @@ import {
     CalendarDays,
     CheckCircle,
     ChevronDown,
-    ChevronRight,
     Eye,
     Filter,
     GraduationCap,
@@ -206,20 +205,6 @@ export default function StudentsList({ user, program, students }: Props) {
                 </div>
 
                 <div className="relative flex w-full flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
-                    {/* Breadcrumbs */}
-                    <nav className="flex items-center space-x-2 text-sm font-medium text-slate-500 dark:text-slate-400">
-                        <Link
-                            href="/program-head-dashboard"
-                            className="transition-colors hover:text-blue-600 dark:hover:text-blue-400"
-                        >
-                            Dashboard
-                        </Link>
-                        <ChevronRight className="h-4 w-4" />
-                        <span className="font-bold tracking-tight text-slate-900 dark:text-white">
-                            Students
-                        </span>
-                    </nav>
-
                     {/* Premium Hero Header */}
                     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] p-6 shadow-xl shadow-blue-900/20">
                         <div className="pointer-events-none absolute -top-12 -right-12 h-56 w-56 rounded-full bg-white/5" />
