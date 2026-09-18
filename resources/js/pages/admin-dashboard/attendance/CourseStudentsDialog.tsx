@@ -5,6 +5,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { useState } from 'react';
+import { formatLastNameFirst } from '@/lib/utils';
 import type { StudentByCourseRow } from './types';
 
 interface CourseStudentsDialogProps {
@@ -26,13 +27,18 @@ export default function CourseStudentsDialog({
 }: CourseStudentsDialogProps) {
     const [yearFilter, setYearFilter] = useState<string>('all');
 
-    const filteredRows =
+    const filteredRows = (
         yearFilter === 'all'
             ? rows
             : rows.filter((row) => {
                   const raw = String(row.year_level ?? '').toLowerCase();
                   return raw.includes(yearFilter.toLowerCase());
-              });
+              })
+    ).slice().sort((a, b) => {
+        const nameA = formatLastNameFirst(a.name).toLowerCase();
+        const nameB = formatLastNameFirst(b.name).toLowerCase();
+        return nameA.localeCompare(nameB);
+    });
 
     const scannedCount = rows.filter((r) => r.scanned).length;
 
@@ -114,7 +120,7 @@ export default function CourseStudentsDialog({
                                                         {row.student_id || '—'}
                                                     </td>
                                                     <td className="px-5 py-3 text-slate-700 dark:text-slate-300">
-                                                        {row.name || '—'}
+                                                        {formatLastNameFirst(row.name)}
                                                     </td>
                                                     <td className="px-5 py-3 text-slate-700 dark:text-slate-300">
                                                         {row.year_level || '—'}

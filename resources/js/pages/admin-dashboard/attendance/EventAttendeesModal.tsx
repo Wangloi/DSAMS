@@ -17,6 +17,7 @@ import {
 import { adminAttendanceLogs } from '@/routes';
 import { AlertCircle, CheckCircle2, Clock, Printer, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { formatLastNameFirst } from '@/lib/utils';
 type Attendee = {
     id: string;
     student_id: string;
@@ -258,7 +259,7 @@ export default function EventAttendeesModal({
                                                                     </td>
                                                                     <td className="px-4 py-3 text-sm font-medium text-slate-900 dark:text-white">
                                                                         {
-                                                                            attendee.name
+                                                                            formatLastNameFirst(attendee.name)
                                                                         }
                                                                     </td>
                                                                     <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">

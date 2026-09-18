@@ -11,7 +11,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
+import { cn, formatLastNameFirst } from '@/lib/utils';
 import {
     studentAttendanceLogs,
     studentAttendanceScan,
@@ -1520,7 +1520,7 @@ export default function StudentAttendanceScannerPortalPage({
                                                                 <tr key={row.id || idx} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
                                                                     <td className="px-5 py-3">
                                                                         <p className="font-bold text-slate-900 dark:text-white truncate max-w-[150px]">
-                                                                            {row.name}
+                                                                            {formatLastNameFirst(row.name)}
                                                                         </p>
                                                                         <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
                                                                             {row.student_id || row.id} • {row.program}
@@ -1706,7 +1706,7 @@ export default function StudentAttendanceScannerPortalPage({
                                                                         </div>
                                                                         <div className="min-w-0">
                                                                             <p className="truncate font-bold text-slate-900 dark:text-white">
-                                                                                {row.name}
+                                                                                {formatLastNameFirst(row.name)}
                                                                             </p>
                                                                             <p className="truncate text-[11px] font-medium text-slate-500 dark:text-slate-400">
                                                                                 {row.student_id || row.id}

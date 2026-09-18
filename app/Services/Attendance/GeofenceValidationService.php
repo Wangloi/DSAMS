@@ -30,10 +30,10 @@ class GeofenceValidationService
             return null;
         }
 
-        if ($lat === null || $lng === null || $accuracyM === null) {
+        if ($lat === null || $lng === null) {
             return [
                 'status'  => 422,
-                'message' => 'Location is required to record attendance for this event.',
+                'message' => 'Location coordinates are required to record attendance for this event.',
             ];
         }
 
@@ -45,32 +45,30 @@ class GeofenceValidationService
             ];
         }
 
-        // Anti-spoofing and precision checks
-        if ($accuracyM <= 0) {
-            return [
-                'status'  => 422,
-                'message' => 'Simulated or invalid GPS data detected. Please use your device native GPS.',
-            ];
-        }
+        // Accuracy handling
+        $accuracy = ($accuracyM !== null && $accuracyM > 0) ? (float) $accuracyM : 15.0;
 
-        if ($accuracyM > 150) {
+        if ($accuracy > 1000) {
             return [
                 'status'  => 422,
-                'message' => 'Location accuracy is too low (' . round($accuracyM) . 'm). Please move to an open area and try again.',
+                'message' => 'Location accuracy is too low (' . round($accuracy) . 'm). Please move to an open area and try again.',
             ];
         }
 
         $eventLat = $event->geofence_latitude ?? config('geofence.campus_latitude', 8.743070);
         $eventLng = $event->geofence_longitude ?? config('geofence.campus_longitude', 124.774500);
-        $radius = max((int) ($event->geofence_radius_m ?? 300), 200);
+        $radius = (int) ($event->geofence_radius_m ?? 50);
+        if ($radius <= 0) {
+            $radius = 50;
+        }
 
         $distance = $this->haversineDistanceMeters((float) $lat, (float) $lng, (float) $eventLat, (float) $eventLng);
-        $buffer = min($accuracyM, 50.0);
+        $buffer = min($accuracy, 50.0);
 
         if (($distance - $buffer) > $radius) {
             return [
                 'status'  => 403,
-                'message' => 'Geofence violation: You must be physically at the event venue to check-in/out.',
+                'message' => 'Geofence violation: You must be physically at the event venue to check in/out. (Distance: ' . round($distance) . 'm, Allowed: ' . $radius . 'm)',
                 'distance_m' => round($distance, 1),
                 'allowed_radius_m' => $radius,
             ];

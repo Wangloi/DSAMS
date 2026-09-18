@@ -29,6 +29,7 @@ import {
     X,
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
+import { formatLastNameFirst } from '@/lib/utils';
 import type { UserRow } from './types';
 
 export type StudentAttendanceRecord = {
@@ -702,7 +703,7 @@ export default function ViewStudentDialog({
             <DialogContent className="flex max-h-[92vh] w-full !max-w-4xl flex-col overflow-hidden rounded-3xl border-0 bg-slate-100 p-0 shadow-2xl dark:bg-slate-900 [&>button]:hidden">
                 <DialogHeader className="sr-only">
                     <DialogTitle>
-                        {student ? student.name : 'User Details'}
+                        {student ? formatLastNameFirst(student) : 'User Details'}
                     </DialogTitle>
                     <DialogDescription>
                         {isProgramHead
@@ -730,7 +731,7 @@ export default function ViewStudentDialog({
                                     <div>
                                         <div className="flex flex-wrap items-center gap-2">
                                             <h2 className="text-xl font-black tracking-tight text-white sm:text-2xl">
-                                                {student.name}
+                                                {formatLastNameFirst(student)}
                                             </h2>
                                             <span className="rounded-full bg-blue-400/20 px-2.5 py-0.5 text-[10px] font-bold text-[#8CE4FF] uppercase tracking-wider backdrop-blur-xs">
                                                 Program Head
@@ -905,7 +906,7 @@ export default function ViewStudentDialog({
                                     <div>
                                         <div className="flex items-center gap-2">
                                             <h3 className="text-base font-black text-slate-900 dark:text-white">
-                                                {student.name}
+                                                {formatLastNameFirst(student)}
                                             </h3>
                                             <Badge
                                                 className={

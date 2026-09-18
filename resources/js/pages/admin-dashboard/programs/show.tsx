@@ -18,6 +18,7 @@ import {
     Users,
 } from 'lucide-react';
 import AdminLayout from '../admin-layout';
+import { formatLastNameFirst } from '@/lib/utils';
 
 interface Student {
     id: string;
@@ -305,7 +306,7 @@ export default function AdminProgramsShowPage({ program }: ShowPageProps) {
                                                                 <div>
                                                                     <div className="font-medium text-slate-900 dark:text-white">
                                                                         {
-                                                                            student.name
+                                                                            formatLastNameFirst(student.name)
                                                                         }
                                                                     </div>
                                                                     <div className="text-xs text-slate-500 dark:text-slate-400">

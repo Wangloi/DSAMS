@@ -128,3 +128,65 @@ export function formatDateTime(raw?: string | Date | number | null, fallback: st
     }
 }
 
+export function formatLastNameFirst(
+    input?:
+        | string
+        | {
+              name?: string | null;
+              student_name?: string | null;
+              first_name?: string | null;
+              last_name?: string | null;
+              middle_name?: string | null;
+              student?: {
+                  name?: string | null;
+                  first_name?: string | null;
+                  last_name?: string | null;
+                  middle_name?: string | null;
+              } | null;
+          }
+        | null,
+    fallback: string = '—'
+): string {
+    if (!input) return fallback;
+
+    if (typeof input === 'string') {
+        const trimmed = input.trim();
+        if (!trimmed) return fallback;
+        if (trimmed.includes(',')) return trimmed;
+        const parts = trimmed.split(/\s+/);
+        if (parts.length <= 1) return trimmed;
+        const lastName = parts.pop();
+        const firstNames = parts.join(' ');
+        return `${lastName}, ${firstNames}`;
+    }
+
+    if (typeof input === 'object') {
+        const lastName = input.last_name || input.student?.last_name;
+        const firstName = input.first_name || input.student?.first_name;
+        const middleName = input.middle_name || input.student?.middle_name;
+
+        if (lastName && firstName) {
+            const middle = middleName ? ` ${middleName}` : '';
+            return `${lastName}, ${firstName}${middle}`.trim();
+        }
+
+        const rawName =
+            input.student_name ||
+            input.name ||
+            input.student?.name ||
+            '';
+
+        if (rawName) {
+            const trimmed = String(rawName).trim();
+            if (trimmed.includes(',')) return trimmed;
+            const parts = trimmed.split(/\s+/);
+            if (parts.length <= 1) return trimmed;
+            const last = parts.pop();
+            const firsts = parts.join(' ');
+            return `${last}, ${firsts}`;
+        }
+    }
+
+    return fallback;
+}
+

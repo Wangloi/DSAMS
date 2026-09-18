@@ -365,10 +365,10 @@ export default function BulkAddUsersDialog({ open, onOpenChange }: Props) {
                                                         Student ID
                                                     </th>
                                                     <th className="px-3 py-1.5">
-                                                        First Name
+                                                        Last Name
                                                     </th>
                                                     <th className="px-3 py-1.5">
-                                                        Last Name
+                                                        First Name
                                                     </th>
                                                     <th className="px-3 py-1.5">
                                                         Year Level
@@ -393,10 +393,10 @@ export default function BulkAddUsersDialog({ open, onOpenChange }: Props) {
                                                                 {r.student_id}
                                                             </td>
                                                             <td className="px-3 py-1 text-slate-700 dark:text-slate-300">
-                                                                {r.first_name}
+                                                                {r.last_name}
                                                             </td>
                                                             <td className="px-3 py-1 text-slate-700 dark:text-slate-300">
-                                                                {r.last_name}
+                                                                {r.first_name}
                                                             </td>
                                                             <td className="px-3 py-1 text-slate-700 dark:text-slate-300">
                                                                 {r.year_level}

@@ -20,6 +20,7 @@ import {
     Users,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { formatLastNameFirst } from '@/lib/utils';
 import AdminLayout from '../admin-layout';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -454,7 +455,7 @@ export default function AdminActivityLogPage() {
                                                             </div>
                                                             <div>
                                                                 <div className="font-bold text-slate-900 dark:text-white">
-                                                                    {row.user}
+                                                                    {formatLastNameFirst(row.user)}
                                                                 </div>
                                                                 <div className="text-[10px] font-bold tracking-tight text-blue-600 uppercase dark:text-blue-400">
                                                                     {row.userType ||

@@ -259,6 +259,15 @@ class StudentAttendanceController extends Controller
             return response()->json(['message' => 'Your account is pending approval.'], 403);
         }
 
+        $courses = is_array($event->courses) ? $event->courses : [];
+        $yearLevels = is_array($event->year_levels) ? $event->year_levels : [];
+        $studentCourse = $student->course ?? $student->program;
+        $studentYearLevel = $student->year_level;
+
+        if ((! empty($courses) && ! in_array($studentCourse, $courses, true)) || (! empty($yearLevels) && ! in_array($studentYearLevel, $yearLevels, true))) {
+            return response()->json(['message' => 'This event is not assigned to your course or year level.'], 403);
+        }
+
         $validated = $request->validate([
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
@@ -288,9 +297,10 @@ class StudentAttendanceController extends Controller
         }
 
         $existing = Attendance::query()->where('event_id', $event->id)->where('student_id', $student->id)->first();
-        $eventLat = (float) $event->geofence_latitude;
-        $eventLng = (float) $event->geofence_longitude;
-        $distanceRounded = (int) round($this->geofenceService->haversineDistanceMeters((float) $validated['latitude'], (float) $validated['longitude'], $eventLat, $eventLng));
+        $eventLat = $event->geofence_latitude ?? config('geofence.campus_latitude', 8.743070);
+        $eventLng = $event->geofence_longitude ?? config('geofence.campus_longitude', 124.774500);
+        $distanceRounded = (int) round($this->geofenceService->haversineDistanceMeters((float) $validated['latitude'], (float) $validated['longitude'], (float) $eventLat, (float) $eventLng));
+        $allowedRadius = (int) ($event->geofence_radius_m ?? 50);
 
         if (! $existing) {
             $attendance = Attendance::create([
@@ -315,6 +325,7 @@ class StudentAttendanceController extends Controller
                 'type' => 'check_in',
                 'status' => $status,
                 'distance_m' => $distanceRounded,
+                'allowed_radius_m' => $allowedRadius,
                 'checked_at' => $now->toDateTimeString(),
             ]);
         } elseif ($existing->checked_out_at) {
@@ -337,6 +348,7 @@ class StudentAttendanceController extends Controller
                 'type' => 'check_out',
                 'status' => $existing->status,
                 'distance_m' => $distanceRounded,
+                'allowed_radius_m' => $allowedRadius,
                 'checked_at' => $now->toDateTimeString(),
             ]);
         }

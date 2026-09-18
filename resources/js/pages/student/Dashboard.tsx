@@ -84,11 +84,7 @@ export default function StudentDashboard({
     const [gpsCheckingIn, setGpsCheckingIn] = useState<number | null>(null);
 
     const isGpsAttendance = (e: EventRecord) => {
-        const type = (e.attendance_type || 'qr_scanner').toLowerCase();
-        if (type === 'qr_scanner' || type === 'qr') {
-            return false;
-        }
-        return (type === 'gps' || type === 'direct_gps') && !!e.geofence_enabled;
+        return !!e.geofence_enabled;
     };
 
     const activeEvents = events.filter(

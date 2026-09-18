@@ -18,6 +18,7 @@ import {
 import { router, usePage } from '@inertiajs/react';
 import { Archive, Eye, FileText, Search, X } from 'lucide-react';
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import { formatLastNameFirst } from '@/lib/utils';
 import type { SlipRow } from './types';
 
 type Props = {
@@ -378,7 +379,7 @@ export default function AdmissionSlipTableCard({
                                                     </div>
                                                     <div>
                                                         <div className="font-bold text-slate-900 dark:text-white">
-                                                            {slip.studentName}
+                                                            {formatLastNameFirst(slip.studentName)}
                                                         </div>
                                                         <div className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
                                                             {slip.programYear}

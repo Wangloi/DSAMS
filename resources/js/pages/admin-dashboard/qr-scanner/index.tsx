@@ -7,7 +7,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
+import { cn, formatLastNameFirst } from '@/lib/utils';
 import {
     adminAttendance,
     adminAttendanceActivateScannerPortal,
@@ -941,7 +941,7 @@ export default function AdminQrScannerPage({
                                                                         </td>
                                                                         <td className="px-8 py-4 text-sm font-bold text-slate-600 transition-colors group-hover:text-slate-900 dark:text-slate-400 dark:group-hover:text-white">
                                                                             {
-                                                                                row.name
+                                                                                formatLastNameFirst(row.name)
                                                                             }
                                                                         </td>
                                                                         <td className="px-8 py-4">
@@ -1708,8 +1708,7 @@ export default function AdminQrScannerPage({
                                                                                 </div>
                                                                                 <div>
                                                                                     <div className="text-sm font-bold text-slate-900 dark:text-white">
-                                                                                        {row.name ||
-                                                                                            'Unknown Student'}
+                                                                                        {formatLastNameFirst(row.name)}
                                                                                     </div>
                                                                                     <div className="text-[11px] font-bold text-slate-500">
                                                                                         {(
@@ -2178,8 +2177,7 @@ export default function AdminQrScannerPage({
                                                                                 '—'}
                                                                         </td>
                                                                         <td className="px-8 py-4 text-sm font-bold text-slate-600 transition-colors group-hover:text-slate-900 dark:text-slate-400 dark:group-hover:text-white">
-                                                                            {row.name ||
-                                                                                '—'}
+                                                                            {formatLastNameFirst(row.name)}
                                                                         </td>
                                                                         <td className="px-8 py-4 text-sm font-black text-slate-500 dark:text-slate-500">
                                                                             {row.year_level ||

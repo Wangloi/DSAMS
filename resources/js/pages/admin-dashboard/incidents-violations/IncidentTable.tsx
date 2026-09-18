@@ -9,7 +9,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+import { cn, formatLastNameFirst } from '@/lib/utils';
 import { Archive, ChevronRight, Clock, Gavel, Printer, Search } from 'lucide-react';
 import { STUDENT_CALLING_PHASES } from './StudentCallingProcessFlow';
 import type { IncidentRow, StatusFilter, TypeFilter } from './types';
@@ -306,7 +306,7 @@ export default function IncidentTable({
                                                     </div>
                                                     <div>
                                                         <div className="font-medium text-slate-900 dark:text-white">
-                                                            {row.student}
+                                                            {formatLastNameFirst(row.student)}
                                                         </div>
                                                         <div className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
                                                             ID: {row.studentId}

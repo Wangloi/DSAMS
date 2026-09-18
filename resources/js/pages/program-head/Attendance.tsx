@@ -26,6 +26,7 @@ import AttendanceHeader from '../admin-dashboard/attendance/AttendanceHeader';
 import AttendanceStatsCards from '../admin-dashboard/attendance/AttendanceStatsCards';
 import AttendanceTable from '../admin-dashboard/attendance/AttendanceTable';
 import ProgramHeadLayout from './components/ProgramHeadLayout';
+import { formatLastNameFirst } from '@/lib/utils';
 
 type AttendanceRow = {
     id: string;
@@ -451,8 +452,7 @@ export default function Attendance({
                                                             >
                                                                 <td className="px-5 py-4">
                                                                     <p className="font-bold text-slate-900 dark:text-white">
-                                                                        {row.name ||
-                                                                            '-'}
+                                                                        {formatLastNameFirst(row.name)}
                                                                     </p>
                                                                     <p className="text-xs text-slate-500 dark:text-slate-400">
                                                                         {row.student_id ||
@@ -676,7 +676,7 @@ export default function Attendance({
                                                 >
                                                     <td className="px-5 py-3.5">
                                                         <p className="text-xs font-bold text-slate-900 dark:text-white">
-                                                            {row.name}
+                                                            {formatLastNameFirst(row.name)}
                                                         </p>
                                                         <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
                                                             {row.student_id}

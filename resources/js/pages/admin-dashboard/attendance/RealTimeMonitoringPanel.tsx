@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { cn, formatLastNameFirst } from '@/lib/utils';
 import {
     adminAttendanceActivateScannerPortal,
     adminAttendanceDynamicQrToken,
@@ -1142,7 +1142,7 @@ export default function RealTimeMonitoringPanel({
                                                                         </div>
                                                                         <div>
                                                                             <div className="text-sm font-bold text-slate-900 dark:text-white">
-                                                                                {row.name || 'Unknown Student'}
+                                                                                {formatLastNameFirst(row.name)}
                                                                             </div>
                                                                             <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
                                                                                 {row.student_id || '---'}
@@ -1657,7 +1657,7 @@ export default function RealTimeMonitoringPanel({
                                                     <tr key={row.id} className="transition-colors hover:bg-blue-50/40 dark:hover:bg-blue-950/20">
                                                         <td className="px-6 py-4">
                                                             <div className="text-sm font-bold text-slate-900 dark:text-white">
-                                                                {row.name}
+                                                                {formatLastNameFirst(row.name)}
                                                             </div>
                                                             <div className="text-[11px] text-slate-500 dark:text-slate-400">
                                                                 {row.student_id}

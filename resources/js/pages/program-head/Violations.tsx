@@ -11,7 +11,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { cn, formatDate } from '@/lib/utils';
+import { cn, formatDate, formatLastNameFirst } from '@/lib/utils';
 import IncidentReportDialog from '@/pages/admin-dashboard/incidents-violations/IncidentReportDialog';
 import Pagination from '@/pages/admin-dashboard/incidents-violations/Pagination';
 import StudentCallingProcessFlow from '@/pages/admin-dashboard/incidents-violations/StudentCallingProcessFlow';
@@ -460,7 +460,7 @@ export default function Violations() {
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <div className="font-semibold text-slate-900 dark:text-white">
-                                                            {row.student}
+                                                            {formatLastNameFirst(row.student)}
                                                         </div>
                                                         <div className="text-xs text-slate-500 dark:text-slate-400">
                                                             {row.studentId}
