@@ -606,70 +606,7 @@ export default function AdminDashboard({
                         </div>
                     </div>
 
-                    {/* ── SECONDARY METRIC SUMMARY BAR ── */}
-                    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                        <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
-                            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-purple-500/10 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400">
-                                <CalendarDays className="h-5 w-5" />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
-                                    Total Events
-                                </p>
-                                <p className="text-lg font-black text-slate-900 dark:text-white">
-                                    {getKpiVal('Total Events').toLocaleString()}
-                                </p>
-                            </div>
-                        </div>
 
-                        <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
-                            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-cyan-500/10 text-cyan-600 dark:bg-cyan-500/20 dark:text-cyan-400">
-                                <Users className="h-5 w-5" />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
-                                    Active Students
-                                </p>
-                                <p className="text-lg font-black text-slate-900 dark:text-white">
-                                    {getKpiVal('Total Students').toLocaleString()}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
-                            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-teal-500/10 text-teal-600 dark:bg-teal-500/20 dark:text-teal-400">
-                                <Package className="h-5 w-5" />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
-                                    Lost & Found Vault
-                                </p>
-                                <p className="text-lg font-black text-slate-900 dark:text-white">
-                                    {totalLostFound} items{' '}
-                                    <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                                        ({recoveryRate}% claimed)
-                                    </span>
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/80">
-                            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
-                                <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">
-                                    Avg Feedback Score
-                                </p>
-                                <p className="text-lg font-black text-slate-900 dark:text-white">
-                                    {averageRating > 0 ? `${averageRating} / 5.0` : 'N/A'}{' '}
-                                    <span className="text-xs font-semibold text-slate-400">
-                                        ({totalFeedbackResponses} responses)
-                                    </span>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
 
                     {/* ── INCOMING EVENTS HUB & QUICK COMMAND LAUNCHPAD ── */}
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
