@@ -110,6 +110,8 @@ class AdminAdmissionSlipController extends Controller
             'status' => ['sometimes', 'string', 'max:255'],
         ]);
 
+        $oldStatus = $admissionSlip->status;
+
         $admissionSlip->fill([
             'student_name' => $validated['student_name'],
             'program_year_level' => $validated['program_year_level'],
@@ -121,7 +123,22 @@ class AdminAdmissionSlipController extends Controller
         ]);
         $admissionSlip->save();
 
-        return redirect()->route('admin.admission-slip');
+        if (Schema::hasTable('activity_logs')) {
+            $admin = auth()->guard('admin')->user();
+            ActivityLog::logForUser($admin, 'Admission Slip', 'Updated', 'Updated admission slip #' . $admissionSlip->id . ' for student ' . $admissionSlip->student_name);
+        }
+
+        if (Schema::hasTable('notifications') && !empty($admissionSlip->student_id) && $oldStatus !== $admissionSlip->status) {
+            $student = Student::query()->find($admissionSlip->student_id);
+            if ($student) {
+                $student->notify(new AdmissionSlipStatusUpdated($admissionSlip));
+            }
+        }
+
+        return redirect()
+            ->route('admin.admission-slip')
+            ->with('success', 'Admission slip updated successfully.')
+            ->setStatusCode(303);
     }
 
     public function destroy(AdmissionSlip $admissionSlip): RedirectResponse

@@ -90,16 +90,16 @@ export default function AddAdminDialog({ open, onOpenChange }: Props) {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="overflow-hidden rounded-3xl border-0 bg-white p-0 shadow-2xl sm:max-w-2xl dark:bg-slate-900 [&>button]:hidden">
+            <DialogContent className="flex max-h-[85vh] w-[95vw] sm:max-w-2xl flex-col overflow-hidden rounded-3xl border-0 bg-white p-0 shadow-2xl dark:bg-slate-900 [&>button]:hidden">
                 {/* Hero Header */}
-                <div className="relative overflow-hidden bg-gradient-to-r from-[#000D6A] via-[#102A83] to-[#23509A] px-6 py-6 text-white shadow-md">
+                <div className="relative shrink-0 overflow-hidden bg-gradient-to-r from-[#000D6A] via-[#102A83] to-[#23509A] px-6 py-4.5 text-white shadow-md">
                     <div className="pointer-events-none absolute -top-10 -right-10 h-36 w-36 rounded-full bg-[#8CE4FF]/10 blur-2xl" />
                     <div className="relative z-10 flex items-center gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 shadow-inner ring-1 ring-white/20 backdrop-blur-md shrink-0">
-                            <Shield className="h-6 w-6 text-[#8CE4FF]" />
+                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 shadow-inner ring-1 ring-white/20 backdrop-blur-md shrink-0">
+                            <Shield className="h-5 w-5 text-[#8CE4FF]" />
                         </div>
                         <DialogHeader className="p-0 text-left">
-                            <DialogTitle className="text-xl font-black tracking-tight text-white flex items-center gap-2">
+                            <DialogTitle className="text-lg font-black tracking-tight text-white sm:text-xl flex items-center gap-2">
                                 <span>Add New Administrator</span>
                                 <span className="rounded-full bg-blue-400/20 px-2 py-0.5 text-[10px] font-bold text-[#8CE4FF] uppercase tracking-wider">
                                     Handover Flow
@@ -112,7 +112,7 @@ export default function AddAdminDialog({ open, onOpenChange }: Props) {
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-5 p-6">
+                <form onSubmit={handleSubmit} className="min-h-0 flex-1 space-y-5 overflow-y-auto p-6 flex flex-col justify-between">
                     {/* 3-Day Handover Warning Banner */}
                     <div className="rounded-2xl border border-amber-200 bg-amber-50/90 p-4 shadow-sm dark:border-amber-900/40 dark:bg-amber-950/30">
                         <div className="flex items-start gap-3">

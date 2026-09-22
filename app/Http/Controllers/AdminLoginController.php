@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\TwoFactorLoginHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -26,6 +27,10 @@ class AdminLoginController extends Controller
                     'email' => 'This administrator account has expired following the 3-day handover transition period. Please sign in using the new administrator account.',
                 ]);
             }
+            // Check for two-factor authentication
+            if ($redirect = TwoFactorLoginHelper::redirectIfTwoFactorEnabled($request, $admin, 'admin', $request->boolean('remember'))) {
+                return $redirect;
+            }
             $request->session()->regenerate();
             $request->session()->flash('status', 'Login successful! Welcome back, Admin!');
 
@@ -37,3 +42,4 @@ class AdminLoginController extends Controller
         ]);
     }
 }
+

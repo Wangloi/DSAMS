@@ -82,15 +82,20 @@ class DSAAdmissionSlipController extends Controller
         }
 
         $validated = $request->validate([
+            'student_name' => 'sometimes|string|max:255',
+            'program_year_level' => 'sometimes|string|max:255',
+            'date_issued' => 'sometimes|string|max:255',
             'case_text' => 'required|string|max:255',
             'reason_text' => 'required|string|max:255',
-            'valid_until' => 'required|date|after:today',
+            'valid_until' => 'required|string|max:255',
+            'status' => 'sometimes|string|max:255',
         ]);
 
         $admissionSlip->update($validated);
 
         return redirect()->route('dsa.admission-slip')
-            ->with('success', 'Admission slip updated successfully');
+            ->with('success', 'Admission slip updated successfully')
+            ->setStatusCode(303);
     }
 
     public function destroy(AdmissionSlip $admissionSlip)

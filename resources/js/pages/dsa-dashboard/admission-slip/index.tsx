@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import AdmissionSlipHeader from '../../admin-dashboard/admission-slip/AdmissionSlipHeader';
 import AdmissionSlipStatsCard from '../../admin-dashboard/admission-slip/AdmissionSlipStatsCard';
 import AdmissionSlipTableCard from '../../admin-dashboard/admission-slip/AdmissionSlipTableCard';
+import EditAdmissionSlipDialog from '../../admin-dashboard/admission-slip/EditAdmissionSlipDialog';
 import printSlip from '../../admin-dashboard/admission-slip/printSlip';
 import type {
     PageProps,
@@ -25,6 +26,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function DSAAdmissionSlipPage() {
     const [open, setOpen] = useState(false);
+    const [editOpen, setEditOpen] = useState(false);
+    const [editingSlip, setEditingSlip] = useState<SlipRow | null>(null);
     const { props } = usePage() as { props: PageProps };
     const errors = props.errors ?? {};
     const [activeTab, setActiveTab] = useState<
@@ -168,6 +171,11 @@ export default function DSAAdmissionSlipPage() {
         setOpen(true);
     };
 
+    const openEdit = (slip: SlipRow) => {
+        setEditingSlip(slip);
+        setEditOpen(true);
+    };
+
     return (
         <DSALayout breadcrumbs={breadcrumbs}>
             <Head title="Admission Slip - DSA" />
@@ -200,6 +208,7 @@ export default function DSAAdmissionSlipPage() {
                                 setSearchQuery={setSearchQuery}
                                 setPageIndex={setPageIndex}
                                 printSlip={printSlip}
+                                onEdit={openEdit}
                             />
                         </div>
                         <AdmissionSlipStatsCard stats={stats} />
@@ -213,6 +222,12 @@ export default function DSAAdmissionSlipPage() {
                     </div>
                 </div>
             </div>
+            <EditAdmissionSlipDialog
+                open={editOpen}
+                setOpen={setEditOpen}
+                slip={editingSlip}
+                errors={errors}
+            />
         </DSALayout>
     );
 }

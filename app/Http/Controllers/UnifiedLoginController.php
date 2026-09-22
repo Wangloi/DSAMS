@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\TwoFactorLoginHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -44,6 +45,10 @@ class UnifiedLoginController extends Controller
                     'identifier' => $msg,
                 ]);
             }
+            // Check for two-factor authentication
+            if ($redirect = TwoFactorLoginHelper::redirectIfTwoFactorEnabled($request, $user, 'student', $remember)) {
+                return $redirect;
+            }
             $request->session()->regenerate();
             $request->session()->flash('status', $successMessages['student']);
             $request->session()->flash('success', $successMessages['student']);
@@ -59,6 +64,10 @@ class UnifiedLoginController extends Controller
                 throw ValidationException::withMessages([
                     'identifier' => $msg,
                 ]);
+            }
+            // Check for two-factor authentication
+            if ($redirect = TwoFactorLoginHelper::redirectIfTwoFactorEnabled($request, $user, 'student', $remember)) {
+                return $redirect;
             }
             $request->session()->regenerate();
             $request->session()->flash('status', $successMessages['student']);
@@ -78,6 +87,10 @@ class UnifiedLoginController extends Controller
                     'identifier' => 'This administrator account has expired following the 3-day handover transition period. Please sign in using the new administrator account.',
                 ]);
             }
+            // Check for two-factor authentication
+            if ($redirect = TwoFactorLoginHelper::redirectIfTwoFactorEnabled($request, $admin, 'admin', $remember)) {
+                return $redirect;
+            }
             $request->session()->regenerate();
             $request->session()->flash('status', $successMessages['admin']);
             $request->session()->flash('success', $successMessages['admin']);
@@ -96,6 +109,10 @@ class UnifiedLoginController extends Controller
                     'identifier' => $msg,
                 ]);
             }
+            // Check for two-factor authentication
+            if ($redirect = TwoFactorLoginHelper::redirectIfTwoFactorEnabled($request, $user, 'program_head', $remember)) {
+                return $redirect;
+            }
             $request->session()->regenerate();
             $request->session()->flash('status', $successMessages['program_head']);
             $request->session()->flash('success', $successMessages['program_head']);
@@ -108,3 +125,4 @@ class UnifiedLoginController extends Controller
         ]);
     }
 }
+

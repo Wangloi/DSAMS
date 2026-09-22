@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\TwoFactorLoginHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -26,6 +27,10 @@ class ProgramHeadLoginController extends Controller
                     'email' => $msg,
                 ]);
             }
+            // Check for two-factor authentication
+            if ($redirect = TwoFactorLoginHelper::redirectIfTwoFactorEnabled($request, $user, 'program_head', $request->boolean('remember'))) {
+                return $redirect;
+            }
             $request->session()->regenerate();
             $request->session()->flash('status', 'Login successful! Welcome back, Program Head!');
 
@@ -37,3 +42,4 @@ class ProgramHeadLoginController extends Controller
         ]);
     }
 }
+

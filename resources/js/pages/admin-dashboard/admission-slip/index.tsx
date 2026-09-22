@@ -8,7 +8,6 @@ import AdmissionSlipHeader from './AdmissionSlipHeader';
 import AdmissionSlipStatsCard from './AdmissionSlipStatsCard';
 import AdmissionSlipTableCard from './AdmissionSlipTableCard';
 import CreateAdmissionSlipDialog from './CreateAdmissionSlipDialog';
-import EditAdmissionSlipDialog from './EditAdmissionSlipDialog';
 import Pagination from './Pagination';
 import printSlip from './printSlip';
 import type { PageProps, SlipRow } from './types';
@@ -26,8 +25,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function AdminAdmissionSlipPage() {
     const [open, setOpen] = useState(false);
-    const [editOpen, setEditOpen] = useState(false);
-    const [editingSlip, setEditingSlip] = useState<SlipRow | null>(null);
     const [viewSlipId, setViewSlipId] = useState<number | null>(null);
     const { props } = usePage() as { props: PageProps };
     const errors = props.errors ?? {};
@@ -146,11 +143,6 @@ export default function AdminAdmissionSlipPage() {
         setOpen(true);
     };
 
-    const openEdit = (slip: SlipRow) => {
-        setEditingSlip(slip);
-        setEditOpen(true);
-    };
-
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
         const slipId = urlParams.get('slip_id');
@@ -225,7 +217,6 @@ export default function AdminAdmissionSlipPage() {
                                     setSearchQuery={setSearchQuery}
                                     setPageIndex={setPageIndex}
                                     printSlip={printSlip}
-                                    onEdit={openEdit}
                                     onArchive={archiveSlip}
                                     activeTab={activeTab}
                                     setActiveTab={setActiveTab}
@@ -251,12 +242,6 @@ export default function AdminAdmissionSlipPage() {
             <CreateAdmissionSlipDialog
                 open={open}
                 setOpen={setOpen}
-                errors={errors}
-            />
-            <EditAdmissionSlipDialog
-                open={editOpen}
-                setOpen={setEditOpen}
-                slip={editingSlip}
                 errors={errors}
             />
         </AdminLayout>

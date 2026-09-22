@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\TwoFactorLoginHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -34,6 +35,10 @@ class StudentLoginController extends Controller
                 throw ValidationException::withMessages([
                     'email' => $msg,
                 ]);
+            }
+            // Check for two-factor authentication
+            if ($redirect = TwoFactorLoginHelper::redirectIfTwoFactorEnabled($request, $user, 'student', $remember)) {
+                return $redirect;
             }
             $request->session()->regenerate();
             $request->session()->flash('status', 'Login successful! Welcome back!');

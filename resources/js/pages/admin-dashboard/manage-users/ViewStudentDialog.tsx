@@ -8,6 +8,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import {
+    AlertTriangle,
     Building2,
     Calendar,
     CalendarCheck2,
@@ -59,6 +60,32 @@ export type AttendanceSummary = {
     attendance_rate: number;
 };
 
+export type ViolationRecord = {
+    id: number;
+    violation_code: string;
+    violation_name: string;
+    violation_section: string;
+    incident_type: string;
+    incident_date: string | null;
+    incident_time: string | null;
+    location: string;
+    description: string;
+    immediate_action: string | null;
+    classification: string;
+    status: string;
+    calling_phase: string | null;
+    reported_by: string | null;
+    created_at: string | null;
+};
+
+export type ViolationSummary = {
+    total: number;
+    warning: number;
+    suspension: number;
+    exclusion: number;
+    expulsion: number;
+};
+
 type Props = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -74,7 +101,7 @@ export default function ViewStudentDialog({
         student?.userType === 'program_head' ||
         String(student?.role ?? '').toLowerCase().includes('program');
 
-    const [activeTab, setActiveTab] = useState<'attendance' | 'info'>('attendance');
+    const [activeTab, setActiveTab] = useState<'attendance' | 'info' | 'violations'>('info');
     const [attendances, setAttendances] = useState<StudentAttendanceRecord[]>([]);
     const [summary, setSummary] = useState<AttendanceSummary>({
         total_attended: 0,
@@ -88,13 +115,26 @@ export default function ViewStudentDialog({
     const [attendanceSearch, setAttendanceSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'present' | 'late' | 'excused' | 'override'>('all');
 
+    // Violations state
+    const [violations, setViolations] = useState<ViolationRecord[]>([]);
+    const [violationSummary, setViolationSummary] = useState<ViolationSummary>({
+        total: 0,
+        warning: 0,
+        suspension: 0,
+        exclusion: 0,
+        expulsion: 0,
+    });
+    const [isLoadingViolations, setIsLoadingViolations] = useState(false);
+    const [violationSearch, setViolationSearch] = useState('');
+    const [violationSectionFilter, setViolationSectionFilter] = useState<'all' | 'Warning' | 'Suspension' | 'Exclusion' | 'Expulsion'>('all');
+
     // Fetch student's attendance records and reset to attendance tab when dialog opens
     useEffect(() => {
         if (!open || !student || isProgramHead) {
             return;
         }
 
-        setActiveTab('attendance');
+        setActiveTab('info');
         let isMounted = true;
         setIsLoadingAttendance(true);
 
@@ -135,6 +175,52 @@ export default function ViewStudentDialog({
         };
     }, [open, student?.id, student?.student_id, isProgramHead]);
 
+    // Fetch student's violation records when dialog opens
+    useEffect(() => {
+        if (!open || !student || isProgramHead) {
+            return;
+        }
+
+        let isMounted = true;
+        setIsLoadingViolations(true);
+
+        const studentIdentifier = student.id || student.student_id;
+
+        const fetchViolations = async () => {
+            try {
+                const res = await fetch(`/students/${encodeURIComponent(String(studentIdentifier))}/violations`, {
+                    credentials: 'same-origin',
+                    headers: {
+                        Accept: 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+                if (!res.ok) {
+                    throw new Error('Failed to fetch violations');
+                }
+                const data = await res.json();
+                if (isMounted) {
+                    setViolations(data.violations || []);
+                    if (data.summary) {
+                        setViolationSummary(data.summary);
+                    }
+                }
+            } catch (err) {
+                console.error('Error fetching violations:', err);
+            } finally {
+                if (isMounted) {
+                    setIsLoadingViolations(false);
+                }
+            }
+        };
+
+        fetchViolations();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [open, student?.id, student?.student_id, isProgramHead]);
+
     // Filtered attendance list
     const filteredAttendances = useMemo(() => {
         return attendances.filter((record) => {
@@ -150,6 +236,22 @@ export default function ViewStudentDialog({
             return record.status?.toLowerCase() === statusFilter;
         });
     }, [attendances, attendanceSearch, statusFilter]);
+
+    // Filtered violations list
+    const filteredViolations = useMemo(() => {
+        return violations.filter((record) => {
+            const matchesSearch =
+                (record.violation_name || '').toLowerCase().includes(violationSearch.toLowerCase()) ||
+                (record.violation_code || '').toLowerCase().includes(violationSearch.toLowerCase()) ||
+                (record.location || '').toLowerCase().includes(violationSearch.toLowerCase()) ||
+                (record.description || '').toLowerCase().includes(violationSearch.toLowerCase());
+
+            if (!matchesSearch) return false;
+
+            if (violationSectionFilter === 'all') return true;
+            return record.violation_section === violationSectionFilter;
+        });
+    }, [violations, violationSearch, violationSectionFilter]);
 
     const printableHtml = useMemo(() => {
         if (!student) return '';
@@ -543,7 +645,11 @@ export default function ViewStudentDialog({
 
 <div class="form-group">
     <span class="form-label">Name:</span>
-    <div class="form-value" style="text-align: center; text-transform: uppercase;">${student.name}</div>
+    <div class="form-value" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-transform: uppercase;">
+        <div style="text-align: center; font-weight: 900;">${student.last_name || 'N/A'}</div>
+        <div style="text-align: center; font-weight: 900;">${student.first_name || 'N/A'}</div>
+        <div style="text-align: center; font-weight: 900;">${student.middle_name || 'N/A'}</div>
+    </div>
 </div>
 <div class="sub-labels">
     <div>(Surname)</div>
@@ -954,6 +1060,18 @@ export default function ViewStudentDialog({
                             <div className="flex items-center gap-2 px-6 pt-2 sm:px-8 bg-slate-50/70 dark:bg-slate-900/60">
                                 <button
                                     type="button"
+                                    onClick={() => setActiveTab('info')}
+                                    className={`relative flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-all ${
+                                        activeTab === 'info'
+                                            ? 'border-[#000D6A] text-[#000D6A] dark:border-[#8CE4FF] dark:text-[#8CE4FF]'
+                                            : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                                    }`}
+                                >
+                                    <FileText className="h-4 w-4" />
+                                    Student Information Sheet
+                                </button>
+                                <button
+                                    type="button"
                                     onClick={() => setActiveTab('attendance')}
                                     className={`relative flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-all ${
                                         activeTab === 'attendance'
@@ -975,15 +1093,26 @@ export default function ViewStudentDialog({
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => setActiveTab('info')}
+                                    onClick={() => setActiveTab('violations')}
                                     className={`relative flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-all ${
-                                        activeTab === 'info'
+                                        activeTab === 'violations'
                                             ? 'border-[#000D6A] text-[#000D6A] dark:border-[#8CE4FF] dark:text-[#8CE4FF]'
                                             : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
                                     }`}
                                 >
-                                    <FileText className="h-4 w-4" />
-                                    Student Information Sheet
+                                    <ShieldAlert className="h-4 w-4" />
+                                    Violations
+                                    {violations.length > 0 && (
+                                        <span
+                                            className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
+                                                activeTab === 'violations'
+                                                    ? 'bg-rose-600 text-white dark:bg-rose-500'
+                                                    : 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300'
+                                            }`}
+                                        >
+                                            {violations.length}
+                                        </span>
+                                    )}
                                 </button>
                             </div>
                         </div>
@@ -1130,17 +1259,28 @@ export default function ViewStudentDialog({
                                         </div>
                                         <div className="mt-4 space-y-4 text-xs">
                                             <div className="flex items-end gap-2">
-                                                <span className="font-bold text-[#0b2d66] dark:text-blue-400">
+                                                <span className="shrink-0 font-bold text-[#0b2d66] dark:text-blue-400">
                                                     Name:
                                                 </span>
-                                                <div className="flex-1 border-b border-slate-300 pb-0.5 text-center font-black text-slate-900 uppercase dark:border-slate-700 dark:text-white">
-                                                    {student.name}
+                                                <div className="grid flex-1 grid-cols-3 gap-2">
+                                                    <div className="border-b border-slate-300 pb-0.5 text-center font-black text-slate-900 uppercase dark:border-slate-700 dark:text-white">
+                                                        {student.last_name || 'N/A'}
+                                                    </div>
+                                                    <div className="border-b border-slate-300 pb-0.5 text-center font-black text-slate-900 uppercase dark:border-slate-700 dark:text-white">
+                                                        {student.first_name || 'N/A'}
+                                                    </div>
+                                                    <div className="border-b border-slate-300 pb-0.5 text-center font-black text-slate-900 uppercase dark:border-slate-700 dark:text-white">
+                                                        {student.middle_name || 'N/A'}
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="-mt-2 grid grid-cols-3 text-center text-[9px] text-slate-400">
-                                                <div>(Surname)</div>
-                                                <div>(Given Name)</div>
-                                                <div>(Middle Name)</div>
+                                            <div className="-mt-2 grid grid-cols-[auto_1fr] gap-2">
+                                                <div></div>
+                                                <div className="grid grid-cols-3 text-center text-[9px] text-slate-400">
+                                                    <div>(Surname)</div>
+                                                    <div>(Given Name)</div>
+                                                    <div>(Middle Name)</div>
+                                                </div>
                                             </div>
 
                                             <div className="flex items-end gap-2">
@@ -1615,6 +1755,310 @@ export default function ViewStudentDialog({
                                                                 </span>
                                                                 <span className="font-semibold text-slate-600 dark:text-slate-400">
                                                                     {record.checked_out_at}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 3: VIOLATIONS */}
+                        {activeTab === 'violations' && (
+                            <div className="min-h-0 flex-1 overflow-y-auto p-6 scrollbar-thin">
+                                <div className="mx-auto max-w-4xl space-y-5">
+                                    {/* Violation Summary Cards */}
+                                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                                        <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50/80 to-slate-100/50 p-4 shadow-xs dark:border-slate-800 dark:from-slate-900/40 dark:to-slate-950/30">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                                    Total
+                                                </span>
+                                                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#000D6A] text-white">
+                                                    <ShieldAlert className="h-4 w-4" />
+                                                </div>
+                                            </div>
+                                            <div className="mt-2 text-2xl font-black text-[#000D6A] dark:text-[#8CE4FF]">
+                                                {violationSummary.total}
+                                            </div>
+                                            <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                                                All recorded violations
+                                            </p>
+                                        </div>
+
+                                        <div className="rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50/80 to-yellow-50/50 p-4 shadow-xs dark:border-amber-900/40 dark:from-amber-950/40 dark:to-yellow-950/30">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                                    Warning
+                                                </span>
+                                                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500 text-white">
+                                                    <AlertTriangle className="h-4 w-4" />
+                                                </div>
+                                            </div>
+                                            <div className="mt-2 text-2xl font-black text-amber-700 dark:text-amber-400">
+                                                {violationSummary.warning}
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-2xl border border-orange-100 bg-gradient-to-br from-orange-50/80 to-red-50/50 p-4 shadow-xs dark:border-orange-900/40 dark:from-orange-950/40 dark:to-red-950/30">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                                    Suspension
+                                                </span>
+                                                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-600 text-white">
+                                                    <Clock className="h-4 w-4" />
+                                                </div>
+                                            </div>
+                                            <div className="mt-2 text-2xl font-black text-orange-700 dark:text-orange-400">
+                                                {violationSummary.suspension}
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-2xl border border-rose-100 bg-gradient-to-br from-rose-50/80 to-pink-50/50 p-4 shadow-xs dark:border-rose-900/40 dark:from-rose-950/40 dark:to-pink-950/30">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                                    Exclusion
+                                                </span>
+                                                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-600 text-white">
+                                                    <ShieldAlert className="h-4 w-4" />
+                                                </div>
+                                            </div>
+                                            <div className="mt-2 text-2xl font-black text-rose-700 dark:text-rose-400">
+                                                {violationSummary.exclusion}
+                                            </div>
+                                        </div>
+
+                                        <div className="col-span-2 sm:col-span-1 rounded-2xl border border-red-100 bg-gradient-to-br from-red-50/80 to-rose-50/50 p-4 shadow-xs dark:border-red-900/40 dark:from-red-950/40 dark:to-rose-950/30">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                                    Expulsion
+                                                </span>
+                                                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-red-700 text-white">
+                                                    <X className="h-4 w-4" />
+                                                </div>
+                                            </div>
+                                            <div className="mt-2 text-2xl font-black text-red-700 dark:text-red-400">
+                                                {violationSummary.expulsion}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Filters and Search */}
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                                        <div className="relative flex-1">
+                                            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                            <input
+                                                type="text"
+                                                value={violationSearch}
+                                                onChange={(e) => setViolationSearch(e.target.value)}
+                                                placeholder="Search by violation name, code, location, or description..."
+                                                className="w-full rounded-xl border-0 bg-slate-50 pl-10 pr-4 py-2 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-[#000D6A] dark:bg-slate-800/80 dark:text-white dark:focus:ring-blue-500"
+                                            />
+                                        </div>
+
+                                        <div className="flex flex-wrap items-center gap-1.5 self-center sm:self-auto">
+                                            <button
+                                                type="button"
+                                                onClick={() => setViolationSectionFilter('all')}
+                                                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
+                                                    violationSectionFilter === 'all'
+                                                        ? 'bg-[#000D6A] text-white dark:bg-blue-600'
+                                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                                                }`}
+                                            >
+                                                All ({violations.length})
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setViolationSectionFilter('Warning')}
+                                                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
+                                                    violationSectionFilter === 'Warning'
+                                                        ? 'bg-amber-600 text-white'
+                                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                                                }`}
+                                            >
+                                                Warning
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setViolationSectionFilter('Suspension')}
+                                                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
+                                                    violationSectionFilter === 'Suspension'
+                                                        ? 'bg-orange-600 text-white'
+                                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                                                }`}
+                                            >
+                                                Suspension
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setViolationSectionFilter('Exclusion')}
+                                                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
+                                                    violationSectionFilter === 'Exclusion'
+                                                        ? 'bg-rose-600 text-white'
+                                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                                                }`}
+                                            >
+                                                Exclusion
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setViolationSectionFilter('Expulsion')}
+                                                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
+                                                    violationSectionFilter === 'Expulsion'
+                                                        ? 'bg-red-700 text-white'
+                                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                                                }`}
+                                            >
+                                                Expulsion
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Violations List */}
+                                    {isLoadingViolations ? (
+                                        <div className="flex flex-col items-center justify-center py-16">
+                                            <RefreshCw className="h-8 w-8 animate-spin text-[#000D6A] dark:text-[#8CE4FF]" />
+                                            <p className="mt-4 text-sm font-semibold text-slate-500 dark:text-slate-400">
+                                                Loading violation records...
+                                            </p>
+                                        </div>
+                                    ) : filteredViolations.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 py-16 dark:border-slate-800 dark:bg-slate-900/30">
+                                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+                                                <ShieldCheck className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+                                            </div>
+                                            <p className="mt-4 text-sm font-bold text-slate-800 dark:text-slate-200">
+                                                {violations.length === 0 ? 'No Violations Found' : 'No Matching Results'}
+                                            </p>
+                                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                                {violations.length === 0
+                                                    ? 'This student has a clean disciplinary record.'
+                                                    : 'Try adjusting your search or filter criteria.'}
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {filteredViolations.map((record) => (
+                                                <div
+                                                    key={record.id}
+                                                    className="flex flex-col sm:flex-row sm:items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+                                                >
+                                                    {/* Severity indicator */}
+                                                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${
+                                                        record.violation_section === 'Warning'
+                                                            ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
+                                                            : record.violation_section === 'Suspension'
+                                                              ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'
+                                                              : record.violation_section === 'Exclusion'
+                                                                ? 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400'
+                                                                : record.violation_section === 'Expulsion'
+                                                                  ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                                                  : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                                                    }`}>
+                                                        <ShieldAlert className="h-5 w-5" />
+                                                    </div>
+
+                                                    {/* Content */}
+                                                    <div className="flex-1 min-w-0 space-y-1.5">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                                                                {record.violation_name}
+                                                            </h4>
+                                                            <Badge
+                                                                className={
+                                                                    record.violation_section === 'Warning'
+                                                                        ? 'rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400'
+                                                                        : record.violation_section === 'Suspension'
+                                                                          ? 'rounded-full border border-orange-500/20 bg-orange-500/10 px-2.5 py-0.5 text-[10px] font-bold text-orange-600 dark:text-orange-400'
+                                                                          : record.violation_section === 'Exclusion'
+                                                                            ? 'rounded-full border border-rose-500/20 bg-rose-500/10 px-2.5 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-400'
+                                                                            : record.violation_section === 'Expulsion'
+                                                                              ? 'rounded-full border border-red-500/20 bg-red-500/10 px-2.5 py-0.5 text-[10px] font-bold text-red-600 dark:text-red-400'
+                                                                              : 'rounded-full border border-slate-500/20 bg-slate-500/10 px-2.5 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-400'
+                                                                }
+                                                            >
+                                                                {record.violation_section}
+                                                            </Badge>
+                                                            <Badge className="rounded-full border border-slate-500/20 bg-slate-500/10 px-2.5 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-400">
+                                                                {record.violation_code}
+                                                            </Badge>
+                                                            {record.status && (
+                                                                <Badge
+                                                                    className={
+                                                                        record.status === 'resolved'
+                                                                            ? 'rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400'
+                                                                            : record.status === 'under_investigation'
+                                                                              ? 'rounded-full border border-blue-500/20 bg-blue-500/10 px-2.5 py-0.5 text-[10px] font-bold text-blue-600 dark:text-blue-400'
+                                                                              : 'rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400'
+                                                                    }
+                                                                >
+                                                                    {record.status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+
+                                                        {record.description && (
+                                                            <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">
+                                                                {record.description}
+                                                            </p>
+                                                        )}
+
+                                                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                                                            {record.incident_date && (
+                                                                <span className="flex items-center gap-1.5">
+                                                                    <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                                                                    {record.incident_date} {record.incident_time ? `• ${record.incident_time}` : ''}
+                                                                </span>
+                                                            )}
+                                                            {record.location && (
+                                                                <span className="flex items-center gap-1.5">
+                                                                    <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                                                                    {record.location}
+                                                                </span>
+                                                            )}
+                                                            {record.classification && (
+                                                                <span className="flex items-center gap-1.5">
+                                                                    <Info className="h-3.5 w-3.5 text-slate-400" />
+                                                                    {record.classification}
+                                                                </span>
+                                                            )}
+                                                            {record.reported_by && (
+                                                                <span className="flex items-center gap-1.5">
+                                                                    <User className="h-3.5 w-3.5 text-slate-400" />
+                                                                    Reported by: {record.reported_by}
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        {record.immediate_action && (
+                                                            <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">
+                                                                Action Taken: {record.immediate_action}
+                                                            </p>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Date filed */}
+                                                    <div className="flex sm:flex-col sm:items-end justify-between items-center text-xs shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800">
+                                                        <div className="space-y-0.5">
+                                                            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
+                                                                Filed
+                                                            </span>
+                                                            <span className="font-bold text-slate-800 dark:text-slate-200">
+                                                                {record.created_at || 'Recorded'}
+                                                            </span>
+                                                        </div>
+                                                        {record.calling_phase && (
+                                                            <div className="space-y-0.5 mt-1 sm:text-right">
+                                                                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
+                                                                    Phase
+                                                                </span>
+                                                                <span className="font-semibold text-slate-600 dark:text-slate-400">
+                                                                    {record.calling_phase}
                                                                 </span>
                                                             </div>
                                                         )}

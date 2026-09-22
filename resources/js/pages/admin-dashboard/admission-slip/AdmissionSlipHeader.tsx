@@ -1,12 +1,22 @@
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils';
-import { CalendarDays, ClipboardList, PlusCircle } from 'lucide-react';
+import { CalendarDays, ClipboardList, PlusCircle, RefreshCw } from 'lucide-react';
 
 type Props = {
     onCreateNew: () => void;
+    isRefreshing?: boolean;
+    lastUpdated?: Date;
+    isAutoRefreshEnabled?: boolean;
+    onToggleAutoRefresh?: () => void;
 };
 
-export default function AdmissionSlipHeader({ onCreateNew }: Props) {
+export default function AdmissionSlipHeader({
+    onCreateNew,
+    isRefreshing,
+    lastUpdated,
+    isAutoRefreshEnabled,
+    onToggleAutoRefresh,
+}: Props) {
     return (
         <div className="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] p-6 shadow-xl shadow-blue-900/20">
             <div className="pointer-events-none absolute -top-12 -right-12 h-56 w-56 rounded-full bg-white/5" />
@@ -29,10 +39,36 @@ export default function AdmissionSlipHeader({ onCreateNew }: Props) {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
+                    {onToggleAutoRefresh && (
+                        <button
+                            type="button"
+                            onClick={onToggleAutoRefresh}
+                            className={`flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-xs font-semibold backdrop-blur-md transition-all ${
+                                isAutoRefreshEnabled
+                                    ? 'border-emerald-400/30 bg-emerald-500/20 text-emerald-100 hover:bg-emerald-500/30'
+                                    : 'border-white/10 bg-white/10 text-white/70 hover:bg-white/20'
+                            }`}
+                            title={
+                                isAutoRefreshEnabled
+                                    ? 'Auto-refresh active (every 5s)'
+                                    : 'Auto-refresh paused'
+                            }
+                        >
+                            <RefreshCw
+                                className={`h-3.5 w-3.5 ${
+                                    isRefreshing ? 'animate-spin text-white' : ''
+                                }`}
+                            />
+                            <span>
+                                {isAutoRefreshEnabled ? 'Live Sync' : 'Sync Paused'}
+                            </span>
+                        </button>
+                    )}
+
                     <div className="hidden items-center gap-3 rounded-xl border border-white/10 bg-white/10 px-4 py-2.5 text-white ring-1 ring-white/20 backdrop-blur-md md:flex">
                         <CalendarDays className="h-4 w-4 text-blue-200" />
                         <div className="text-xs font-semibold tracking-wide text-white/90 uppercase">
-                            {formatDate(new Date())}
+                            {formatDate(lastUpdated || new Date())}
                         </div>
                     </div>
 

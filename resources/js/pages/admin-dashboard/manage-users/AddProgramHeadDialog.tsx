@@ -194,34 +194,34 @@ export default function AddProgramHeadDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="overflow-hidden rounded-3xl border-0 bg-white p-0 shadow-2xl sm:max-w-3xl dark:bg-slate-950 [&>button]:hidden">
+            <DialogContent className="flex max-h-[85vh] w-[95vw] sm:max-w-3xl flex-col overflow-hidden rounded-3xl border-0 bg-white p-0 shadow-2xl dark:bg-slate-950 [&>button]:hidden">
                 {/* Hero Header with Deep Blue Gradient & Glassmorphism */}
-                <div className="relative overflow-hidden bg-gradient-to-r from-[#000D6A] via-[#102A83] to-[#0B4DFF] px-6 py-6 text-white shadow-lg sm:px-8">
+                <div className="relative shrink-0 overflow-hidden bg-gradient-to-r from-[#000D6A] via-[#102A83] to-[#0B4DFF] px-6 py-4 text-white shadow-md sm:px-8">
                     {/* Decorative glowing blobs */}
                     <div className="pointer-events-none absolute -top-12 -right-12 h-44 w-44 rounded-full bg-cyan-400/20 blur-3xl" />
                     <div className="pointer-events-none absolute -bottom-10 left-1/3 h-32 w-32 rounded-full bg-blue-500/20 blur-2xl" />
 
-                    <div className="relative z-10 flex items-start justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                            <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/10 shadow-inner ring-1 ring-white/30 backdrop-blur-md">
-                                <GraduationCap className="h-7 w-7 text-[#8CE4FF]" />
-                                <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-[#102A83]">
-                                    <Sparkles className="h-3 w-3 text-white" />
+                    <div className="relative z-10 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3.5">
+                            <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/10 shadow-inner ring-1 ring-white/30 backdrop-blur-md">
+                                <GraduationCap className="h-6 w-6 text-[#8CE4FF]" />
+                                <span className="absolute -bottom-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-[#102A83]">
+                                    <Sparkles className="h-2.5 w-2.5 text-white" />
                                 </span>
                             </div>
 
                             <DialogHeader className="p-0 text-left">
                                 <div className="flex items-center gap-2">
-                                    <DialogTitle className="text-xl font-black tracking-tight text-white sm:text-2xl">
+                                    <DialogTitle className="text-lg font-black tracking-tight text-white sm:text-xl">
                                         {editingUser
                                             ? 'Edit Program Head'
                                             : 'Add Program Head'}
                                     </DialogTitle>
-                                    <span className="rounded-full bg-blue-400/20 px-2.5 py-0.5 text-[11px] font-bold text-[#8CE4FF] uppercase tracking-wider backdrop-blur-sm">
+                                    <span className="rounded-full bg-blue-400/20 px-2.5 py-0.5 text-[10px] font-bold text-[#8CE4FF] uppercase tracking-wider backdrop-blur-sm">
                                         Department Lead
                                     </span>
                                 </div>
-                                <DialogDescription className="mt-1 text-xs font-medium text-blue-100/90 sm:text-sm">
+                                <DialogDescription className="mt-0.5 text-xs font-medium text-blue-100/90">
                                     {editingUser
                                         ? 'Update leadership credentials and assigned academic department.'
                                         : 'Assign a designated academic program head to oversee departmental student records & clearances.'}
@@ -233,15 +233,15 @@ export default function AddProgramHeadDialog({
                         <button
                             type="button"
                             onClick={onClose}
-                            className="rounded-full bg-white/10 p-2 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+                            className="rounded-full bg-white/10 p-1.5 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
                         >
-                            <X className="h-5 w-5" />
+                            <X className="h-4.5 w-4.5" />
                         </button>
                     </div>
                 </div>
 
                 {/* Form Body Scrollable Area */}
-                <div className="scrollbar-thin max-h-[72vh] space-y-6 overflow-y-auto px-6 py-6 sm:px-8">
+                <div className="scrollbar-thin min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5 sm:px-8">
                     {/* Error Banner */}
                     {hasAnyError && (
                         <div className="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50/90 p-4 text-xs font-semibold text-red-700 shadow-sm dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
@@ -474,7 +474,7 @@ export default function AddProgramHeadDialog({
                 </div>
 
                 {/* Dialog Footer Actions */}
-                <DialogFooter className="flex items-center justify-between border-t border-slate-100 bg-slate-50/90 px-6 py-4 dark:border-slate-800/80 dark:bg-slate-900/90 sm:px-8">
+                <DialogFooter className="shrink-0 flex items-center justify-between border-t border-slate-100 bg-slate-50/90 px-6 py-3.5 dark:border-slate-800/80 dark:bg-slate-900/90 sm:px-8">
                     <div className="text-[11px] font-medium text-slate-400">
                         * Required departmental fields
                     </div>

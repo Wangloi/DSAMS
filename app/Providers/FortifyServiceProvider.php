@@ -6,6 +6,7 @@ use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -21,6 +22,31 @@ class FortifyServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(\Laravel\Fortify\Contracts\LoginResponse::class, \App\Http\Responses\LoginResponse::class);
+        $this->app->singleton(\Laravel\Fortify\Contracts\TwoFactorLoginResponse::class, \App\Http\Responses\TwoFactorLoginResponse::class);
+
+        // Bind the custom TwoFactorLoginRequest that resolves the challenged
+        // user from the correct model based on the login.guard session value.
+        $this->app->bind(
+            \Laravel\Fortify\Http\Requests\TwoFactorLoginRequest::class,
+            \App\Http\Requests\MultiGuardTwoFactorLoginRequest::class,
+        );
+
+        // Override the StatefulGuard binding so that the 2FA challenge
+        // controller logs the user in with the correct guard (not 'web').
+        $this->app->bind(\Illuminate\Contracts\Auth\StatefulGuard::class, function ($app) {
+            $guard = config('fortify.guard', 'web');
+
+            try {
+                $request = $app['request'];
+                if ($request->hasSession()) {
+                    $guard = $request->session()->get('login.guard', $guard);
+                }
+            } catch (\RuntimeException) {
+                // Session not yet available (e.g. during route compilation)
+            }
+
+            return Auth::guard($guard);
+        });
     }
 
     /**

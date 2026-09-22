@@ -7,6 +7,13 @@ import {
     DialogFooter,
     DialogTitle,
 } from '@/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -16,9 +23,12 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { router, usePage } from '@inertiajs/react';
-import { Archive, Eye, FileText, Search, X } from 'lucide-react';
+import { Archive, Check, ChevronDown, Eye, FileText, Pencil, Printer, Search, Settings2, X } from 'lucide-react';
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { formatLastNameFirst } from '@/lib/utils';
+import Swal from 'sweetalert2';
+import ThermalPrinterModal from '@/components/ThermalPrinterModal';
+import { thermalPrinterClient, type PrinterHealth } from '@/services/thermalPrinterClient';
 import type { SlipRow } from './types';
 
 type Props = {
@@ -76,6 +86,8 @@ export default function AdmissionSlipTableCard({
 
     const [viewOpen, setViewOpen] = useState(false);
     const [viewingSlip, setViewingSlip] = useState<SlipRow | null>(null);
+    const [printerModalOpen, setPrinterModalOpen] = useState(false);
+    const [isPrintingThermal, setIsPrintingThermal] = useState(false);
 
     useEffect(() => {
         if (viewSlipId) {
@@ -87,10 +99,173 @@ export default function AdmissionSlipTableCard({
         }
     }, [viewSlipId, allSlips]);
 
+    const [printerHealth, setPrinterHealth] = useState<PrinterHealth | null>(null);
+
+    useEffect(() => {
+        if (viewOpen || printerModalOpen) {
+            thermalPrinterClient.checkHealth().then(setPrinterHealth);
+        }
+    }, [viewOpen, printerModalOpen]);
+
+    const handlePrintThermal = async () => {
+        if (!viewingSlip) return;
+        setIsPrintingThermal(true);
+        try {
+            const res = await thermalPrinterClient.printAdmissionSlip({
+                studentName: viewingSlip.studentName,
+                program: viewingSlip.programYear,
+                caseText: viewingSlip.caseText,
+                reasonText: viewingSlip.reasonText,
+                date: viewingSlip.dateIssued,
+                validUntil: viewingSlip.validUntil,
+                status: viewingSlip.status,
+                deanName: deanName,
+                slipId: viewingSlip.id,
+            });
+
+            if (res.success) {
+                Swal.fire({
+                    title: 'Printing on PT-210...',
+                    text: `Admission Slip #${viewingSlip.id} sent to printer.`,
+                    icon: 'success',
+                    timer: 2500,
+                    showConfirmButton: false,
+                });
+
+                // Approve in background if pending
+                if (viewingSlip.status !== 'APPROVED') {
+                    const role = (pageProps as any)?.auth?.user?.role;
+                    const endpoint =
+                        role === 'dsa'
+                            ? `/dsa/admission-slip/${viewingSlip.id}/approve`
+                            : `/admin/admission-slip/${viewingSlip.id}/approve`;
+
+                    router.put(endpoint, {}, { preserveScroll: true });
+                }
+                setViewOpen(false);
+            } else {
+                Swal.fire({
+                    title: 'Thermal Printer Issue',
+                    text: res.message,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Open Printer Setup',
+                    cancelButtonText: 'Use Screen Print',
+                }).then((r) => {
+                    if (r.isConfirmed) {
+                        setPrinterModalOpen(true);
+                    } else if (r.dismiss === Swal.DismissReason.cancel) {
+                        printSlip(viewingSlip, deanName);
+                    }
+                });
+            }
+        } finally {
+            setIsPrintingThermal(false);
+        }
+    };
+
+    const handleBrowserPrint = () => {
+        if (!viewingSlip) return;
+        printSlip(viewingSlip, deanName);
+
+        if (viewingSlip.status !== 'APPROVED') {
+            const role = (pageProps as any)?.auth?.user?.role;
+            const endpoint =
+                role === 'dsa'
+                    ? `/dsa/admission-slip/${viewingSlip.id}/approve`
+                    : `/admin/admission-slip/${viewingSlip.id}/approve`;
+
+            router.put(
+                endpoint,
+                {},
+                {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        setViewOpen(false);
+                    },
+                },
+            );
+        } else {
+            setViewOpen(false);
+        }
+    };
+
+    const handleApprove = () => {
+        if (!viewingSlip) return;
+        const role = (pageProps as any)?.auth?.user?.role;
+        const endpoint =
+            role === 'dsa'
+                ? `/dsa/admission-slip/${viewingSlip.id}/approve`
+                : `/admin/admission-slip/${viewingSlip.id}/approve`;
+
+        router.put(
+            endpoint,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    Swal.fire({
+                        title: 'Approved!',
+                        text: `Admission Slip #${viewingSlip.id} has been approved.`,
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false,
+                    });
+                    setViewOpen(false);
+                },
+            },
+        );
+    };
+
+    const handleReject = () => {
+        if (!viewingSlip) return;
+        const role = (pageProps as any)?.auth?.user?.role;
+        const endpoint =
+            role === 'dsa'
+                ? `/dsa/admission-slip/${viewingSlip.id}/reject`
+                : `/admin/admission-slip/${viewingSlip.id}/reject`;
+
+        Swal.fire({
+            title: 'Reject Request?',
+            text: `Are you sure you want to reject Admission Slip #${viewingSlip.id}?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e11d48',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Yes, Reject',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.put(
+                    endpoint,
+                    {},
+                    {
+                        preserveScroll: true,
+                        onSuccess: () => {
+                            Swal.fire({
+                                title: 'Rejected',
+                                text: `Admission Slip #${viewingSlip.id} has been rejected.`,
+                                icon: 'info',
+                                timer: 2000,
+                                showConfirmButton: false,
+                            });
+                            setViewOpen(false);
+                        },
+                    },
+                );
+            }
+        });
+    };
+
     const totalPages = Math.max(1, Math.ceil(filteredCount / pageSize));
 
     return (
         <Card className="overflow-hidden rounded-2xl border-0 bg-white shadow-sm ring-1 ring-slate-200 dark:bg-[#0B192C]/60 dark:ring-slate-800">
+            {/* THERMAL PRINTER SETTINGS MODAL */}
+            <ThermalPrinterModal
+                open={printerModalOpen}
+                onOpenChange={setPrinterModalOpen}
+            />
+
             {/* VIEW DIALOG */}
             <Dialog
                 open={viewOpen}
@@ -102,19 +277,25 @@ export default function AdmissionSlipTableCard({
                 <DialogContent className="flex max-h-[90vh] w-[96vw] max-w-2xl flex-col overflow-hidden rounded-3xl border-0 bg-white p-0 shadow-2xl dark:bg-slate-900">
                     <div className="relative bg-gradient-to-br from-[#0b2d66] to-[#1e40af] px-8 py-8 text-white">
                         <div className="absolute top-0 right-0 h-64 w-64 translate-x-1/2 -translate-y-1/2 rounded-full bg-white/5 blur-3xl" />
-                        <div className="relative flex items-center gap-6">
-                            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/20 bg-white/10 shadow-inner backdrop-blur-xl">
-                                <FileText className="h-8 w-8 text-blue-300" />
+                        <div className="relative flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-6">
+                                <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/20 bg-white/10 shadow-inner backdrop-blur-xl">
+                                    <FileText className="h-8 w-8 text-blue-300" />
+                                </div>
+                                <div>
+                                    <DialogTitle className="text-2xl font-black tracking-tight text-white">
+                                        Admission Slip Details
+                                    </DialogTitle>
+                                    <DialogDescription className="mt-1 text-xs font-medium text-blue-100/70">
+                                        Review student request details and approve or print admission pass.
+                                    </DialogDescription>
+                                </div>
                             </div>
-                            <div>
-                                <DialogTitle className="text-2xl font-black tracking-tight text-white">
-                                    Admission Slip Details
-                                </DialogTitle>
-                                <DialogDescription className="mt-1 text-xs font-medium text-blue-100/70">
-                                    Review admission slip details before
-                                    printing.
-                                </DialogDescription>
-                            </div>
+                            {viewingSlip && (
+                                <div className="shrink-0 bg-white/10 rounded-full px-3 py-1 border border-white/20 text-xs font-black uppercase tracking-wider backdrop-blur-md">
+                                    {viewingSlip.status || 'PENDING'}
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -181,37 +362,141 @@ export default function AdmissionSlipTableCard({
                         )}
                     </div>
 
-                    <DialogFooter className="gap-3 border-t border-slate-100 bg-slate-50/50 px-8 py-6 dark:border-slate-800 dark:bg-slate-900/50">
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            onClick={() => setViewOpen(false)}
-                            className="rounded-xl px-6 text-[10px] font-black tracking-widest text-slate-500 uppercase transition-all hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-                        >
-                            Close
-                        </Button>
-                        <Button
-                            disabled={!viewingSlip}
-                            onClick={() => {
-                                if (viewingSlip) {
-                                    router.put(
-                                        `/admin/admission-slip/${viewingSlip.id}/approve`,
-                                        {},
-                                        {
-                                            preserveScroll: true,
-                                            onSuccess: () => {
-                                                printSlip(viewingSlip, deanName);
-                                                setViewOpen(false);
-                                            },
-                                        },
-                                    );
-                                }
-                            }}
-                            className="rounded-xl bg-blue-600 px-8 text-[10px] font-black tracking-widest text-white uppercase shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-700 active:scale-95"
-                        >
-                            <Eye className="mr-1.5 h-4 w-4" />
-                            Print
-                        </Button>
+                    <DialogFooter className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-4 border-t border-slate-100 bg-slate-50/50 px-8 py-5 dark:border-slate-800 dark:bg-slate-900/50">
+                        {/* Option 1 Left: Approve & Reject Action Buttons */}
+                        <div className="flex items-center gap-2">
+                            {viewingSlip && viewingSlip.status !== 'APPROVED' ? (
+                                <>
+                                    <Button
+                                        type="button"
+                                        onClick={handleApprove}
+                                        className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-95"
+                                    >
+                                        <Check className="h-4 w-4" />
+                                        Approve
+                                    </Button>
+
+                                    {viewingSlip.status !== 'REJECTED' && (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={handleReject}
+                                            className="inline-flex items-center gap-1.5 rounded-xl border-rose-200 bg-rose-50/60 px-3.5 py-2 text-xs font-bold text-rose-600 hover:bg-rose-100 hover:text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300"
+                                        >
+                                            <X className="h-3.5 w-3.5" />
+                                            Reject
+                                        </Button>
+                                    )}
+                                </>
+                            ) : viewingSlip?.status === 'APPROVED' ? (
+                                <div className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-1.5 text-xs font-bold text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-400">
+                                    <Check className="h-3.5 w-3.5" />
+                                    Approved
+                                </div>
+                            ) : null}
+                        </div>
+
+                        {/* Option 1 Right: Clear action buttons */}
+                        <div className="flex items-center justify-end gap-2.5">
+                            {onEdit && viewingSlip && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => {
+                                        const slipToEdit = viewingSlip;
+                                        setViewOpen(false);
+                                        onEdit(slipToEdit);
+                                    }}
+                                    className="rounded-xl border-amber-200 bg-amber-50/60 px-4 text-xs font-bold text-amber-700 hover:bg-amber-100 hover:text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-900/60"
+                                    title="Edit admission slip details"
+                                >
+                                    <Pencil className="mr-1.5 h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                                    Edit Slip
+                                </Button>
+                            )}
+
+                            {/* PRINT TYPE DROPDOWN */}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        disabled={!viewingSlip || isPrintingThermal}
+                                        className="rounded-xl bg-blue-600 px-5 text-xs font-black tracking-wider text-white uppercase shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-700 active:scale-95"
+                                    >
+                                        <Printer className="mr-1.5 h-4 w-4" />
+                                        {isPrintingThermal ? 'Printing...' : 'Print Slip'}
+                                        <ChevronDown className="ml-2 h-3.5 w-3.5 opacity-80" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-60 p-1.5 rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900">
+                                    <DropdownMenuItem
+                                        onClick={handlePrintThermal}
+                                        className="flex items-start gap-2.5 p-2 rounded-lg cursor-pointer hover:bg-blue-50 focus:bg-blue-50 dark:hover:bg-blue-950/40 dark:focus:bg-blue-950/40"
+                                    >
+                                        <Printer className="mt-0.5 h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                                        <div className="flex flex-col text-left">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                                                    PT-210 Thermal Print
+                                                </span>
+                                                <span
+                                                    className={`h-1.5 w-1.5 rounded-full ${
+                                                        printerHealth?.status === 'online' && printerHealth.configured
+                                                            ? 'bg-emerald-500 animate-pulse'
+                                                            : 'bg-amber-500'
+                                                    }`}
+                                                />
+                                            </div>
+                                            <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                                                58mm Bluetooth pass slip
+                                            </span>
+                                        </div>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={handleBrowserPrint}
+                                        className="flex items-start gap-2.5 p-2 rounded-lg cursor-pointer hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-800 dark:focus:bg-slate-800"
+                                    >
+                                        <FileText className="mt-0.5 h-4 w-4 text-slate-600 dark:text-slate-400 shrink-0" />
+                                        <div className="flex flex-col text-left">
+                                            <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                                                Browser / PDF Print
+                                            </span>
+                                            <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                                                Standard document / PDF save
+                                            </span>
+                                        </div>
+                                    </DropdownMenuItem>
+
+                                    <DropdownMenuSeparator className="my-1 border-slate-100 dark:border-slate-800" />
+
+                                    <DropdownMenuItem
+                                        onClick={() => setPrinterModalOpen(true)}
+                                        className="flex items-start gap-2.5 p-2 rounded-lg cursor-pointer hover:bg-slate-100 focus:bg-slate-100 dark:hover:bg-slate-800 dark:focus:bg-slate-800"
+                                    >
+                                        <Settings2 className="mt-0.5 h-4 w-4 text-slate-500 dark:text-slate-400 shrink-0" />
+                                        <div className="flex flex-col text-left">
+                                            <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                                                PT-210 Setup & Config
+                                            </span>
+                                            <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                                                {printerHealth?.status === 'online' && printerHealth.configured
+                                                    ? `Connected (${printerHealth.port})`
+                                                    : 'Configure COM port & test bridge'}
+                                            </span>
+                                        </div>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                onClick={() => setViewOpen(false)}
+                                className="rounded-xl px-4 text-xs font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                            >
+                                Close
+                            </Button>
+                        </div>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -255,10 +540,10 @@ export default function AdmissionSlipTableCard({
                             setPageIndex(1);
                         }}
                     >
-                        <SelectTrigger className="h-9 w-32 rounded-xl border-slate-200 bg-slate-50 text-xs font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-white">
-                            <SelectValue placeholder="All Status" />
+                        <SelectTrigger className="h-9 w-32 rounded-xl border-slate-200 bg-slate-50 text-xs font-medium focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                            <SelectValue placeholder="Status" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="rounded-xl border-slate-200 dark:border-slate-800 dark:bg-slate-900">
                             <SelectItem value="all">All Status</SelectItem>
                             <SelectItem value="pending">Pending</SelectItem>
                             <SelectItem value="approved">Approved</SelectItem>
@@ -405,21 +690,38 @@ export default function AdmissionSlipTableCard({
                                                 }
                                             >
                                                 <div className="ml-auto flex w-fit items-center justify-end gap-1 rounded-lg border border-slate-100/50 bg-slate-50/50 p-1 shadow-sm dark:border-slate-800 dark:bg-slate-800/40">
+                                                    {/* 1. Eye (View Details) */}
                                                     <Button
                                                         type="button"
                                                         variant="ghost"
                                                         size="icon"
                                                         className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-blue-50 hover:text-blue-600 dark:text-slate-400 dark:hover:bg-blue-950/30 dark:hover:text-blue-300"
                                                         onClick={() => {
-                                                            setViewingSlip(
-                                                                slip,
-                                                            );
+                                                            setViewingSlip(slip);
                                                             setViewOpen(true);
                                                         }}
-                                                        title="View slip"
+                                                        title="View slip details"
                                                     >
                                                         <Eye className="h-4 w-4" />
                                                     </Button>
+
+                                                    {/* 2. Edit (Edit Admission Slip) */}
+                                                    {onEdit && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 rounded-md text-amber-600 transition-all duration-200 hover:bg-amber-50 hover:text-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/30 dark:hover:text-amber-300"
+                                                            onClick={() =>
+                                                                onEdit(slip)
+                                                            }
+                                                            title="Edit admission slip"
+                                                        >
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+
+                                                    {/* 3. Archive */}
                                                     {onArchive && (
                                                         <Button
                                                             type="button"

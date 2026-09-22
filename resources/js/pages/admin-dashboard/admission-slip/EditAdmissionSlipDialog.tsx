@@ -17,7 +17,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 import type { SweetAlertResult } from 'sweetalert2';
 import Swal from 'sweetalert2';
@@ -68,6 +68,9 @@ export default function EditAdmissionSlipDialog({
         if (open && slip) setForm(synced);
     }, [open, slip, synced]);
 
+    const { props: pageProps } = usePage<any>();
+    const role = pageProps?.auth?.user?.role;
+
     const closeEdit = () => {
         setOpen(false);
     };
@@ -98,17 +101,22 @@ export default function EditAdmissionSlipDialog({
         setOpen(false);
         Swal.fire({
             title: 'Confirm Update',
-            text: 'Are you sure you want to save changes?',
+            text: 'Are you sure you want to save changes to this admission slip?',
             icon: 'question',
             showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
+            confirmButtonColor: '#2563eb',
+            cancelButtonColor: '#64748b',
             confirmButtonText: 'Yes, update',
             cancelButtonText: 'Cancel',
         }).then((result: SweetAlertResult) => {
             if (result.isConfirmed && slip) {
+                const endpoint =
+                    role === 'dsa'
+                        ? `/dsa/admission-slip/${slip.id}`
+                        : `/admin/admission-slip/${slip.id}`;
+
                 router.put(
-                    `/admin/admission-slip/${slip.id}`,
+                    endpoint,
                     {
                         student_name: form.studentName.trim(),
                         program_year_level: form.programYear.trim(),
@@ -122,6 +130,16 @@ export default function EditAdmissionSlipDialog({
                         preserveScroll: true,
                         onSuccess: () => {
                             setOpen(false);
+                            Swal.fire({
+                                title: 'Updated!',
+                                text: 'Admission slip has been updated successfully.',
+                                icon: 'success',
+                                timer: 2000,
+                                showConfirmButton: false,
+                            });
+                        },
+                        onError: () => {
+                            setOpen(true);
                         },
                     },
                 );

@@ -11,10 +11,7 @@ export default function printSlip(s: SlipRow, deanName?: string) {
 
     const effectiveDeanName = (deanName || 'Rey John N. Bongcas').trim().toUpperCase();
 
-    const win = window.open('', '_blank', 'width=450,height=600');
-    if (!win) return;
-
-    const html = `<!doctype html>
+    const printHtml = `<!doctype html>
 <html>
 <head>
   <meta charset="utf-8" />
@@ -217,16 +214,58 @@ export default function printSlip(s: SlipRow, deanName?: string) {
   </div>
 
   <script>
-    window.addEventListener('load', () => {
-      setTimeout(() => {
-        window.print();
-      }, 300);
-    });
+    function triggerPrint() {
+      window.focus();
+      window.print();
+    }
+    if (document.readyState === 'complete') {
+      setTimeout(triggerPrint, 250);
+    } else {
+      window.addEventListener('load', () => setTimeout(triggerPrint, 250));
+      setTimeout(triggerPrint, 600);
+    }
   </script>
 </body>
 </html>`;
 
-    win.document.open();
-    win.document.write(html);
-    win.document.close();
+    const win = window.open('', '_blank', 'width=480,height=650');
+    if (win) {
+        win.document.open();
+        win.document.write(printHtml);
+        win.document.close();
+        win.focus();
+        setTimeout(() => {
+            try {
+                win.print();
+            } catch (_) {
+                // Handled in window script
+            }
+        }, 500);
+    } else {
+        // Fallback: Use a hidden iframe if popup blocker prevented window.open
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+
+        const doc = iframe.contentWindow?.document || iframe.contentDocument;
+        if (doc) {
+            doc.open();
+            doc.write(printHtml);
+            doc.close();
+            setTimeout(() => {
+                iframe.contentWindow?.focus();
+                iframe.contentWindow?.print();
+                setTimeout(() => {
+                    if (iframe.parentNode) {
+                        iframe.parentNode.removeChild(iframe);
+                    }
+                }, 3000);
+            }, 350);
+        }
+    }
 }

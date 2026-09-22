@@ -41,6 +41,7 @@ use App\Models\Attendance;
 use App\Models\Event;
 use App\Models\Evaluation;
 use App\Models\ActivityLog;
+use App\Models\Incident;
 use Carbon\Carbon;
 
 // Custom password reset routes (handle students, admin_users, and program_heads)
@@ -251,7 +252,20 @@ Route::get('/student/students/search', function (Request $request) {
 Route::post('/student/incidents', [StudentIncidentController::class, 'store'])->middleware(['auth:student', 'approved'])->name('student.incidents.store');
 
 Route::get('/student/admission-slip', function () {
-    return Inertia::render('student/admission-slip/index');
+    $student = auth()->guard('student')->user();
+    $slips = [];
+    if ($student) {
+        $slips = \App\Models\AdmissionSlip::where('is_archived', false)
+            ->where(function ($q) use ($student) {
+                $q->where('student_id', $student->id)
+                  ->orWhere('student_name', $student->name);
+            })
+            ->latest()
+            ->get();
+    }
+    return Inertia::render('student/admission-slip/index', [
+        'slips' => $slips,
+    ]);
 })->middleware(['auth:student', 'approved'])->name('student.admission-slip.index');
 
 Route::post('/student/admission-slip', [\App\Http\Controllers\StudentAdmissionSlipController::class, 'store'])
@@ -421,6 +435,15 @@ Route::put('/dsa/admission-slip/{admissionSlip}/reject', [DSAAdmissionSlipContro
 Route::put('/dsa/admission-slip/{admissionSlip}/archive', [DSAAdmissionSlipController::class, 'archive'])->middleware('auth:dsa')->name('dsa.admission-slip.archive');
 Route::put('/dsa/admission-slip/{admissionSlip}/unarchive', [DSAAdmissionSlipController::class, 'unarchive'])->middleware('auth:dsa')->name('dsa.admission-slip.unarchive');
 
+// Thermal Printer Bridge Routes (Works for both Admin & DSA)
+Route::middleware(['auth:admin,dsa,web'])->group(function () {
+    Route::get('/thermal-printer/health', [\App\Http\Controllers\ThermalPrintController::class, 'health'])->name('thermal-printer.health');
+    Route::get('/thermal-printer/printers', [\App\Http\Controllers\ThermalPrintController::class, 'printers'])->name('thermal-printer.printers');
+    Route::post('/thermal-printer/setup', [\App\Http\Controllers\ThermalPrintController::class, 'setup'])->name('thermal-printer.setup');
+    Route::post('/thermal-printer/print-test', [\App\Http\Controllers\ThermalPrintController::class, 'printTest'])->name('thermal-printer.print-test');
+    Route::post('/thermal-printer/print-slip/{admissionSlip}', [\App\Http\Controllers\ThermalPrintController::class, 'printAdmissionSlip'])->name('thermal-printer.print-slip');
+});
+
 Route::get('/admin/students/lookup', function (Request $request) {
     // Authenticate admin or web (dsa) user
     $user = Auth::guard('admin')->user() ?: Auth::guard('web')->user();
@@ -557,6 +580,105 @@ Route::get('/students/{student}/attendance-history', function (Request $request,
         'attendances' => $attendanceRecords->values(),
     ]);
 })->middleware(['web'])->name('students.attendance-history');
+
+// ── Student Violations History (for ViewStudentDialog) ──────────────
+Route::get('/students/{student}/violations', function (Request $request, $student = null) {
+    $user = Auth::guard('admin')->user()
+        ?: Auth::guard('program_head')->user()
+        ?: Auth::guard('web')->user()
+        ?: Auth::user();
+
+    if (!$user) {
+        return response()->json(['message' => 'Unauthorized'], 401);
+    }
+
+    $identifier = $student instanceof Student ? $student->id : ($student ?? $request->route('student'));
+
+    $studentModel = null;
+    if ($student instanceof Student) {
+        $studentModel = $student;
+    } elseif ($identifier) {
+        $studentModel = Student::where('id', $identifier)
+            ->orWhere('student_id', $identifier)
+            ->first();
+    }
+
+    if (!$studentModel) {
+        return response()->json([
+            'message' => 'Student not found',
+            'violations' => [],
+            'summary' => [
+                'total' => 0,
+                'warning' => 0,
+                'suspension' => 0,
+                'exclusion' => 0,
+                'expulsion' => 0,
+            ],
+        ], 200);
+    }
+
+    // Search for incidents where this student is listed in students_involved (JSON array)
+    $nameVariants = array_filter([
+        $studentModel->name,
+        $studentModel->student_id,
+        trim(($studentModel->first_name ?? '') . ' ' . ($studentModel->last_name ?? '')),
+        trim(($studentModel->last_name ?? '') . ', ' . ($studentModel->first_name ?? '')),
+    ]);
+
+    $incidents = Incident::with('violation')
+        ->where(function ($q) use ($studentModel, $nameVariants) {
+            foreach ($nameVariants as $variant) {
+                if (!empty($variant)) {
+                    $q->orWhereJsonContains('students_involved', $variant);
+                }
+            }
+            // Also try partial JSON search for student_id
+            if (!empty($studentModel->student_id)) {
+                $q->orWhere('students_involved', 'like', '%' . $studentModel->student_id . '%');
+            }
+        })
+        ->orderByDesc('incident_date')
+        ->orderByDesc('created_at')
+        ->get();
+
+    $violationRecords = $incidents->map(function (Incident $inc) {
+        $violation = $inc->violation;
+        return [
+            'id' => $inc->id,
+            'violation_code' => $violation->code ?? 'N/A',
+            'violation_name' => $violation->name ?? 'Unknown Violation',
+            'violation_section' => $violation->section ?? 'N/A',
+            'incident_type' => $inc->incident_type,
+            'incident_date' => $inc->incident_date ? Carbon::parse($inc->incident_date)->format('M d, Y') : null,
+            'incident_time' => $inc->incident_time,
+            'location' => $inc->location,
+            'description' => $inc->description,
+            'immediate_action' => $inc->immediate_action,
+            'classification' => $inc->classification,
+            'status' => $inc->status,
+            'calling_phase' => $inc->calling_phase,
+            'reported_by' => $inc->reported_by,
+            'created_at' => $inc->created_at ? Carbon::parse($inc->created_at)->format('M d, Y • h:i A') : null,
+        ];
+    });
+
+    $totalCount = $violationRecords->count();
+    $warningCount = $violationRecords->where('violation_section', 'Warning')->count();
+    $suspensionCount = $violationRecords->where('violation_section', 'Suspension')->count();
+    $exclusionCount = $violationRecords->where('violation_section', 'Exclusion')->count();
+    $expulsionCount = $violationRecords->where('violation_section', 'Expulsion')->count();
+
+    return response()->json([
+        'violations' => $violationRecords->values(),
+        'summary' => [
+            'total' => $totalCount,
+            'warning' => $warningCount,
+            'suspension' => $suspensionCount,
+            'exclusion' => $exclusionCount,
+            'expulsion' => $expulsionCount,
+        ],
+    ]);
+})->middleware(['web'])->name('students.violations');
 
 Route::get('/admin/students/search', function (Request $request) {
     // Authenticate admin or web (dsa) user

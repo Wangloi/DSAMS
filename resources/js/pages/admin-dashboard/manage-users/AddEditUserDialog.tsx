@@ -85,17 +85,17 @@ export default function AddEditUserDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="overflow-hidden rounded-2xl border-0 bg-white p-0 shadow-2xl sm:max-w-4xl dark:bg-slate-900 [&>button]:hidden">
+            <DialogContent className="flex max-h-[85vh] w-[95vw] sm:max-w-4xl flex-col overflow-hidden rounded-2xl border-0 bg-white p-0 shadow-2xl dark:bg-slate-900 [&>button]:hidden">
                 {/* Hero Gradient Header */}
-                <div className="relative overflow-hidden bg-gradient-to-r from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] px-6 py-6 text-white shadow-md">
+                <div className="relative shrink-0 overflow-hidden bg-gradient-to-r from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] px-6 py-4.5 text-white shadow-md">
                     <div className="pointer-events-none absolute -top-10 -right-10 h-36 w-36 rounded-full bg-blue-400/10 blur-2xl" />
                     <div className="relative z-10 flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3.5">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 shadow-inner ring-1 ring-white/20 backdrop-blur-md">
-                                <UserPlus className="h-6 w-6 text-white" />
+                            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 shadow-inner ring-1 ring-white/20 backdrop-blur-md">
+                                <UserPlus className="h-5 w-5 text-white" />
                             </div>
                             <DialogHeader className="p-0 text-left">
-                                <DialogTitle className="text-xl font-black tracking-tight text-white">
+                                <DialogTitle className="text-lg font-black tracking-tight text-white sm:text-xl">
                                     {editingUser
                                         ? 'Edit Student User'
                                         : 'Add Student Account'}
@@ -115,7 +115,7 @@ export default function AddEditUserDialog({
                                     onClose();
                                     onOpenBulkAdd();
                                 }}
-                                className="shrink-0 gap-2 rounded-xl border border-emerald-400/30 bg-emerald-500 px-4 py-2 text-xs font-bold text-white shadow-md shadow-emerald-900/30 transition-all hover:scale-[1.02] hover:bg-emerald-600"
+                                className="shrink-0 gap-2 rounded-xl border border-emerald-400/30 bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-md shadow-emerald-900/30 transition-all hover:scale-[1.02] hover:bg-emerald-600"
                             >
                                 <Users className="h-4 w-4" />
                                 Bulk Import CSV
@@ -125,7 +125,7 @@ export default function AddEditUserDialog({
                 </div>
 
                 {/* Dialog Form Scroll Area */}
-                <div className="scrollbar-thin max-h-[72vh] space-y-6 overflow-y-auto px-6 py-6">
+                <div className="scrollbar-thin min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5">
                     {hasAnyError && (
                         <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50/90 p-4 text-xs font-semibold text-red-700 shadow-sm dark:border-red-800/50 dark:bg-red-950/30 dark:text-red-300">
                             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-600 text-[10px] font-black text-white">
@@ -528,7 +528,7 @@ export default function AddEditUserDialog({
                 </div>
 
                 {/* Dialog Footer Actions */}
-                <DialogFooter className="flex items-center justify-end gap-3 border-t border-slate-200/80 bg-slate-50/80 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/80">
+                <DialogFooter className="shrink-0 flex items-center justify-end gap-3 border-t border-slate-200/80 bg-slate-50/80 px-6 py-3.5 dark:border-slate-800 dark:bg-slate-900/80">
                     <Button
                         variant="secondary"
                         type="button"

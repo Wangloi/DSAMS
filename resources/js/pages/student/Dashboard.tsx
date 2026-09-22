@@ -4,7 +4,6 @@ import Swal from 'sweetalert2';
 import { useInitials } from '@/hooks/use-initials';
 import type { SharedData } from '@/types';
 import StudentProfileCompletionModal from '@/components/StudentProfileCompletionModal';
-import { AdmissionSlipRequestModal } from '@/components/AdmissionSlipRequestModal';
 import {
     playScanSuccessSound,
     playScanErrorSound,
@@ -80,7 +79,6 @@ export default function StudentDashboard({
 
     const [academicYear, setAcademicYear] = useState('2024 - 2025');
     const [reportIncidentOpen, setReportIncidentOpen] = useState(false);
-    const [admissionSlipOpen, setAdmissionSlipOpen] = useState(false);
     const [gpsCheckingIn, setGpsCheckingIn] = useState<number | null>(null);
 
     const isGpsAttendance = (e: EventRecord) => {
@@ -268,27 +266,6 @@ export default function StudentDashboard({
                 violations={violations}
             />
 
-            {/* ADMISSION SLIP MODAL */}
-            <AdmissionSlipRequestModal
-                open={admissionSlipOpen}
-                setOpen={setAdmissionSlipOpen}
-                errors={(page.props.errors as Record<string, string>) || {}}
-                mode="student"
-                user={{
-                    student_id:
-                        (authUser as any)?.student_id ??
-                        (authUser as any)?.id ??
-                        '',
-                    name: authUser?.name ?? '',
-                    course:
-                        resolvedProgram?.name ??
-                        (authUser as any)?.course ??
-                        (authUser as any)?.program ??
-                        '',
-                    year_level: (authUser as any)?.year_level ?? '',
-                }}
-            />
-
             <div className="mx-auto max-w-7xl px-3 pt-6 pb-8 sm:px-6 lg:px-8">
                 <div className="space-y-6 sm:space-y-8">
                     {/* ACTIVE CALLING SLIPS / NOTICE TO APPEAR BANNER */}
@@ -322,7 +299,7 @@ export default function StudentDashboard({
                         isGpsAttendance={isGpsAttendance}
                         handleGpsCheckin={handleGpsCheckin}
                         onOpenReportIncident={() => setReportIncidentOpen(true)}
-                        onOpenAdmissionSlip={() => setAdmissionSlipOpen(true)}
+                        onOpenAdmissionSlip={() => router.visit('/student/admission-slip')}
                     />
                 </div>
             </div>
