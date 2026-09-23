@@ -78,6 +78,13 @@ class ThermalPrinterService
             $response = Http::timeout(6)->post("{$this->bridgeUrl}/print-test");
             return $response->json();
         } catch (\Exception $e) {
+            $msg = $e->getMessage();
+            if (str_contains($msg, 'Failed to connect') || str_contains($msg, 'cURL error 7') || str_contains($msg, 'port 9101')) {
+                return [
+                    'success' => false,
+                    'message' => 'PT-210 Print Bridge is not running on your computer. Please start "start-bridge.bat" in tools/PT210PrintBridge, or use Browser/PDF Print.',
+                ];
+            }
             return ['success' => false, 'message' => $e->getMessage()];
         }
     }
@@ -103,9 +110,16 @@ class ThermalPrinterService
 
             return $response->json();
         } catch (\Exception $e) {
+            $msg = $e->getMessage();
+            if (str_contains($msg, 'Failed to connect') || str_contains($msg, 'cURL error 7') || str_contains($msg, 'port 9101')) {
+                return [
+                    'success' => false,
+                    'message' => 'PT-210 Print Bridge is not running on your computer. Please launch "start-bridge.bat" in tools/PT210PrintBridge, or use "Browser / PDF Print" instead.',
+                ];
+            }
             return [
                 'success' => false,
-                'message' => 'Failed to connect to local thermal print bridge: ' . $e->getMessage(),
+                'message' => 'Thermal print error: ' . $msg,
             ];
         }
     }

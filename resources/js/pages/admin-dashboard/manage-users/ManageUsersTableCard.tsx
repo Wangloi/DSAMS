@@ -1,6 +1,7 @@
 import React from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -317,9 +318,31 @@ export function ManageUsersTableCard({
                                     pagedStudents.map((u, idx) => (
                                         <tr
                                             key={u.id}
-                                            className="transition-colors duration-200 hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
+                                            onClick={() => {
+                                                if (!isAdminRow(u)) {
+                                                    onViewUser(u);
+                                                }
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault();
+                                                    if (!isAdminRow(u)) {
+                                                        onViewUser(u);
+                                                    }
+                                                }
+                                            }}
+                                            tabIndex={isAdminRow(u) ? undefined : 0}
+                                            role={isAdminRow(u) ? undefined : 'button'}
+                                            aria-label={isAdminRow(u) ? undefined : `View details for ${formatLastNameFirst(u)}`}
+                                            className={`transition-colors duration-150 hover:bg-blue-50/80 dark:hover:bg-slate-800 dark:hover:bg-blue-950/60 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50 ${
+                                                !isAdminRow(u) ? 'cursor-pointer' : ''
+                                            }`}
                                         >
-                                            <td className="px-4 py-4">
+                                            <td
+                                                className="px-4 py-4"
+                                                onClick={(e) => e.stopPropagation()}
+                                                onKeyDown={(e) => e.stopPropagation()}
+                                            >
                                                 <Checkbox
                                                     checked={selectedUserIds.includes(
                                                         Number((u as any).id),
@@ -415,38 +438,46 @@ export function ManageUsersTableCard({
                                                 </div>
                                             </td>
 
-                                            <td className="px-4 py-3">
-                                                <div className="flex items-center gap-3">
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="icon"
-                                                        className="h-8 w-8 border-slate-300 bg-white transition-colors hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700"
-                                                        onClick={() => {
-                                                            if (isAdminRow(u)) {
-                                                                return;
-                                                            }
-                                                            onViewUser(u);
-                                                        }}
-                                                        aria-label="View"
-                                                    >
-                                                        <Eye className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="icon"
-                                                        className="h-8 w-8 border-slate-300 bg-white transition-colors hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700"
-                                                        onClick={() => {
-                                                            if (isAdminRow(u)) {
-                                                                return;
-                                                            }
-                                                            onEditUser(u);
-                                                        }}
-                                                        aria-label="Edit"
-                                                    >
-                                                        <Pencil className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                                                    </Button>
+                                            <td
+                                                className="px-4 py-3"
+                                                onClick={(e) => e.stopPropagation()}
+                                                onKeyDown={(e) => e.stopPropagation()}
+                                            >
+                                                <div className="flex items-center gap-1.5">
+                                                    <SimpleTooltip content="View User Details">
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 rounded-md text-blue-600 transition-all duration-200 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/30 dark:hover:text-blue-300"
+                                                            onClick={() => {
+                                                                if (isAdminRow(u)) {
+                                                                    return;
+                                                                }
+                                                                onViewUser(u);
+                                                            }}
+                                                            aria-label="View"
+                                                        >
+                                                            <Eye className="h-4 w-4" />
+                                                        </Button>
+                                                    </SimpleTooltip>
+                                                    <SimpleTooltip content="Edit User">
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 rounded-md text-amber-600 transition-all duration-200 hover:bg-amber-50 hover:text-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/30 dark:hover:text-amber-300"
+                                                            onClick={() => {
+                                                                if (isAdminRow(u)) {
+                                                                    return;
+                                                                }
+                                                                onEditUser(u);
+                                                            }}
+                                                            aria-label="Edit"
+                                                        >
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Button>
+                                                    </SimpleTooltip>
                                                 </div>
                                             </td>
                                         </tr>

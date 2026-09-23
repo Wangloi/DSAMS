@@ -21,13 +21,14 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import {
     adminProgramsArchive,
     adminProgramsStore,
     adminProgramsUnarchive,
 } from '@/routes';
 import { router, useForm } from '@inertiajs/react';
-import { BookOpen, Edit, Eye, Plus, Search, Trash2, Users } from 'lucide-react';
+import { Archive, ArchiveRestore, BookOpen, Edit, Eye, Plus, Search, Trash2, Users } from 'lucide-react';
 import type { ProgramRow } from './types';
 
 interface ManageProgramsTabProps {
@@ -363,61 +364,69 @@ export function ManageProgramsTab({
                                         <div className="pointer-events-none mt-4 h-1 w-0 bg-gradient-to-r from-[#0b2d66] via-[#23509A] to-[#1e40af] transition-all duration-200 group-hover:w-full" />
 
                                         {/* Actions */}
-                                        <div className="absolute right-4 bottom-4 flex items-center gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    router.visit(
-                                                        `/admin/programs/${r.id}`,
-                                                    )
-                                                }
-                                                className="inline-flex items-center justify-center rounded-lg border border-blue-200/60 p-2 text-blue-700 hover:bg-blue-50 hover:text-blue-800 dark:border-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/40"
-                                                aria-label="View"
-                                            >
-                                                <Eye className="h-4 w-4" />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    router.visit(
-                                                        `/admin/programs/${r.id}/edit`,
-                                                    )
-                                                }
-                                                className="inline-flex items-center justify-center rounded-lg border border-emerald-200/60 p-2 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 dark:border-emerald-900/40 dark:text-emerald-300 dark:hover:bg-emerald-900/40"
-                                                aria-label="Edit"
-                                            >
-                                                <Edit className="h-4 w-4" />
-                                            </button>
+                                        <div className="absolute right-4 bottom-4 flex items-center gap-1.5">
+                                            <SimpleTooltip content="View Program Details">
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        router.visit(
+                                                            `/admin/programs/${r.id}`,
+                                                        )
+                                                    }
+                                                    className="inline-flex items-center justify-center rounded-lg border border-blue-200/60 p-2 text-blue-600 transition-all hover:bg-blue-50 hover:text-blue-700 dark:border-blue-900/40 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                                                    aria-label="View"
+                                                >
+                                                    <Eye className="h-4 w-4" />
+                                                </button>
+                                            </SimpleTooltip>
+                                            <SimpleTooltip content="Edit Program">
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        router.visit(
+                                                            `/admin/programs/${r.id}/edit`,
+                                                        )
+                                                    }
+                                                    className="inline-flex items-center justify-center rounded-lg border border-amber-200/60 p-2 text-amber-600 transition-all hover:bg-amber-50 hover:text-amber-700 dark:border-amber-900/40 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                                                    aria-label="Edit"
+                                                >
+                                                    <Edit className="h-4 w-4" />
+                                                </button>
+                                            </SimpleTooltip>
                                             {r.status === 'active' ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        router.post(
-                                                            adminProgramsArchive(
-                                                                r.id,
-                                                            ),
-                                                        )
-                                                    }
-                                                    className="inline-flex items-center justify-center rounded-lg border border-amber-200/60 p-2 text-amber-700 hover:bg-amber-50 hover:text-amber-800 dark:border-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/40"
-                                                    aria-label="Archive"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
+                                                <SimpleTooltip content="Archive Program">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            router.post(
+                                                                adminProgramsArchive(
+                                                                    r.id,
+                                                                ),
+                                                            )
+                                                        }
+                                                        className="inline-flex items-center justify-center rounded-lg border border-orange-200/60 p-2 text-orange-600 transition-all hover:bg-orange-50 hover:text-orange-700 dark:border-orange-900/40 dark:text-orange-400 dark:hover:bg-orange-950/30"
+                                                        aria-label="Archive"
+                                                    >
+                                                        <Archive className="h-4 w-4" />
+                                                    </button>
+                                                </SimpleTooltip>
                                             ) : (
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        router.post(
-                                                            adminProgramsUnarchive(
-                                                                r.id,
-                                                            ),
-                                                        )
-                                                    }
-                                                    className="inline-flex items-center justify-center rounded-lg border border-blue-200/60 p-2 text-blue-700 hover:bg-blue-50 hover:text-blue-800 dark:border-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/40"
-                                                    aria-label="Unarchive"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
+                                                <SimpleTooltip content="Restore Program">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            router.post(
+                                                                adminProgramsUnarchive(
+                                                                    r.id,
+                                                                ),
+                                                            )
+                                                        }
+                                                        className="inline-flex items-center justify-center rounded-lg border border-emerald-200/60 p-2 text-emerald-600 transition-all hover:bg-emerald-50 hover:text-emerald-700 dark:border-emerald-900/40 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+                                                        aria-label="Restore"
+                                                    >
+                                                        <ArchiveRestore className="h-4 w-4" />
+                                                    </button>
+                                                </SimpleTooltip>
                                             )}
                                         </div>
                                     </div>

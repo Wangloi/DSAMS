@@ -26,6 +26,7 @@ import { router, usePage } from '@inertiajs/react';
 import { Archive, Check, ChevronDown, Eye, FileText, Pencil, Printer, Search, Settings2, X } from 'lucide-react';
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { formatLastNameFirst } from '@/lib/utils';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import Swal from 'sweetalert2';
 import ThermalPrinterModal from '@/components/ThermalPrinterModal';
 import { thermalPrinterClient, type PrinterHealth } from '@/services/thermalPrinterClient';
@@ -649,7 +650,17 @@ export default function AdmissionSlipTableCard({
                                                 setViewingSlip(slip);
                                                 setViewOpen(true);
                                             }}
-                                            className="cursor-pointer transition-colors duration-150 hover:bg-blue-50/50 dark:hover:bg-blue-950/15"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault();
+                                                    setViewingSlip(slip);
+                                                    setViewOpen(true);
+                                                }
+                                            }}
+                                            tabIndex={0}
+                                            role="button"
+                                            aria-label={`View details for admission slip ${slip.id} - ${slip.studentName}`}
+                                            className="cursor-pointer transition-colors duration-150 hover:bg-blue-50/80 dark:hover:bg-slate-800 dark:hover:bg-blue-950/60 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50"
                                         >
                                             <td className="px-6 py-4 font-medium text-slate-500 dark:text-slate-400">
                                                 {(pageIndex - 1) * pageSize +
@@ -688,53 +699,59 @@ export default function AdmissionSlipTableCard({
                                                 onClick={(e) =>
                                                     e.stopPropagation()
                                                 }
+                                                onKeyDown={(e) =>
+                                                    e.stopPropagation()
+                                                }
                                             >
                                                 <div className="ml-auto flex w-fit items-center justify-end gap-1 rounded-lg border border-slate-100/50 bg-slate-50/50 p-1 shadow-sm dark:border-slate-800 dark:bg-slate-800/40">
                                                     {/* 1. Eye (View Details) */}
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-blue-50 hover:text-blue-600 dark:text-slate-400 dark:hover:bg-blue-950/30 dark:hover:text-blue-300"
-                                                        onClick={() => {
-                                                            setViewingSlip(slip);
-                                                            setViewOpen(true);
-                                                        }}
-                                                        title="View slip details"
-                                                    >
-                                                        <Eye className="h-4 w-4" />
-                                                    </Button>
-
-                                                    {/* 2. Edit (Edit Admission Slip) */}
-                                                    {onEdit && (
+                                                    <SimpleTooltip content="View Slip Details">
                                                         <Button
                                                             type="button"
                                                             variant="ghost"
                                                             size="icon"
-                                                            className="h-8 w-8 rounded-md text-amber-600 transition-all duration-200 hover:bg-amber-50 hover:text-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/30 dark:hover:text-amber-300"
-                                                            onClick={() =>
-                                                                onEdit(slip)
-                                                            }
-                                                            title="Edit admission slip"
+                                                            className="h-8 w-8 rounded-md text-blue-600 transition-all duration-200 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                                                            onClick={() => {
+                                                                setViewingSlip(slip);
+                                                                setViewOpen(true);
+                                                            }}
                                                         >
-                                                            <Pencil className="h-4 w-4" />
+                                                            <Eye className="h-4 w-4" />
                                                         </Button>
+                                                    </SimpleTooltip>
+
+                                                    {/* 2. Edit (Edit Admission Slip) */}
+                                                    {onEdit && (
+                                                        <SimpleTooltip content="Edit Admission Slip">
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 rounded-md text-amber-600 transition-all duration-200 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                                                                onClick={() =>
+                                                                    onEdit(slip)
+                                                                }
+                                                            >
+                                                                <Pencil className="h-4 w-4" />
+                                                            </Button>
+                                                        </SimpleTooltip>
                                                     )}
 
                                                     {/* 3. Archive */}
                                                     {onArchive && (
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-8 w-8 rounded-md text-rose-500 transition-all duration-200 hover:bg-rose-50 hover:text-rose-600 dark:text-rose-400 dark:hover:bg-rose-950/30 dark:hover:text-rose-300"
-                                                            onClick={() =>
-                                                                onArchive(slip)
-                                                            }
-                                                            title="Archive slip"
-                                                        >
-                                                            <Archive className="h-4 w-4" />
-                                                        </Button>
+                                                        <SimpleTooltip content="Archive Slip">
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 rounded-md text-orange-600 transition-all duration-200 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-950/30"
+                                                                onClick={() =>
+                                                                    onArchive(slip)
+                                                                }
+                                                            >
+                                                                <Archive className="h-4 w-4" />
+                                                            </Button>
+                                                        </SimpleTooltip>
                                                     )}
                                                 </div>
                                             </td>

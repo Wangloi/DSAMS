@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import {
     Sidebar,
     SidebarContent,
@@ -105,22 +106,27 @@ const adminNavItems: NavItem[] = [
 
 // Toggle button component for sidebar
 function SidebarToggle() {
-    const { open, setOpen, toggleSidebar } = useSidebar();
+    const { open, toggleSidebar } = useSidebar();
 
     return (
-        <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleSidebar}
-            className="h-8 w-8 rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
-            title={open ? 'Collapse Sidebar' : 'Expand Sidebar'}
+        <SimpleTooltip
+            content={open ? 'Collapse Sidebar' : 'Expand Sidebar'}
+            side="right"
         >
-            {open ? (
-                <PanelLeftClose className="h-[18px] w-[18px]" />
-            ) : (
-                <PanelLeftOpen className="h-[18px] w-[18px]" />
-            )}
-        </Button>
+            <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleSidebar}
+                className="h-8 w-8 rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 cursor-pointer"
+                aria-label={open ? 'Collapse Sidebar' : 'Expand Sidebar'}
+            >
+                {open ? (
+                    <PanelLeftClose className="h-[18px] w-[18px]" />
+                ) : (
+                    <PanelLeftOpen className="h-[18px] w-[18px]" />
+                )}
+            </Button>
+        </SimpleTooltip>
     );
 }
 

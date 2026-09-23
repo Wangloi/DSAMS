@@ -45,8 +45,8 @@ public class ThermalPrintService
         bool lockAcquired = false;
         try
         {
-            // Acquire lock with 8 second timeout to prevent concurrent port collisions
-            lockAcquired = await PrintLock.WaitAsync(TimeSpan.FromSeconds(8));
+            // Acquire lock with 6 second timeout to prevent concurrent port collisions
+            lockAcquired = await PrintLock.WaitAsync(TimeSpan.FromSeconds(6));
             if (!lockAcquired)
             {
                 return (false, $"PT-210 detected on {config.Port}, but the port is currently busy processing another print job.");
@@ -59,39 +59,59 @@ public class ThermalPrintService
                 return (false, $"PT-210 Bluetooth printer was not detected on {config.Port}. Please make sure the printer is powered on and paired with Windows.");
             }
 
-            using var port = new SerialPort(config.Port)
+            return await Task.Run(() =>
             {
-                BaudRate = config.BaudRate > 0 ? config.BaudRate : 9600,
-                DataBits = config.DataBits > 0 ? config.DataBits : 8,
-                Parity = Parity.None,
-                StopBits = StopBits.One,
-                Handshake = Handshake.None,
-                WriteTimeout = 6000,
-                ReadTimeout = 4000
-            };
+                using var port = new SerialPort(config.Port)
+                {
+                    BaudRate = config.BaudRate > 0 ? config.BaudRate : 9600,
+                    DataBits = config.DataBits > 0 ? config.DataBits : 8,
+                    Parity = Parity.None,
+                    StopBits = StopBits.One,
+                    Handshake = Handshake.None,
+                    DtrEnable = true,
+                    RtsEnable = true,
+                    WriteTimeout = 5000,
+                    ReadTimeout = 3000
+                };
 
-            try
-            {
-                port.Open();
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return (false, $"PT-210 detected on {config.Port}, but the port is currently in use by another process.");
-            }
-            catch (IOException ex)
-            {
-                return (false, $"Could not open {config.Port}: {ex.Message}. Make sure the PT-210 Bluetooth printer is connected.");
-            }
+                try
+                {
+                    port.Open();
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    return (false, $"PT-210 detected on {config.Port}, but the port is currently in use by another process.");
+                }
+                catch (Exception ex)
+                {
+                    return (false, $"Could not open {config.Port}: {ex.Message}. Make sure the PT-210 Bluetooth printer is connected and powered on.");
+                }
 
-            _logger.LogInformation("Sending {Count} bytes to {Port} for job: {Job}", data.Length, config.Port, jobName);
-            await port.BaseStream.WriteAsync(data);
-            await port.BaseStream.FlushAsync();
-            
-            // Allow small delay for printer buffer to receive all bytes before disposing
-            await Task.Delay(250);
+                try
+                {
+                    _logger.LogInformation("Sending {Count} bytes to {Port} for job: {Job}", data.Length, config.Port, jobName);
+                    
+                    // Synchronous write on dedicated thread to prevent Windows Bluetooth SPP async hang
+                    port.Write(data, 0, data.Length);
+                    
+                    // Small delay for printer buffer to receive all bytes before closing
+                    Thread.Sleep(300);
 
-            port.Close();
-            return (true, $"Printed successfully on {config.Port}");
+                    return (true, $"Printed successfully on {config.Port}");
+                }
+                catch (TimeoutException)
+                {
+                    return (false, $"Write timed out on {config.Port}. Please check that the PT-210 printer is turned on and paired.");
+                }
+                catch (Exception ex)
+                {
+                    return (false, $"Error transmitting data to {config.Port}: {ex.Message}");
+                }
+                finally
+                {
+                    try { if (port.IsOpen) port.Close(); } catch { }
+                }
+            });
         }
         catch (Exception ex)
         {

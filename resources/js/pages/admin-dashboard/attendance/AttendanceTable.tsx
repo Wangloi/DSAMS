@@ -9,6 +9,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import { Activity, Archive, Eye, MapPin, Printer, Search } from 'lucide-react';
 
 type AttendanceRow = {
@@ -329,75 +330,79 @@ export default function AttendanceTable({
                                         >
                                             <div className="ml-auto flex w-fit items-center justify-end gap-1 rounded-lg border border-slate-100/50 bg-slate-50/50 p-1 shadow-sm dark:border-slate-800 dark:bg-slate-800/40">
                                                 {onViewStudents && (
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-blue-50 hover:text-blue-600 dark:text-slate-400 dark:hover:bg-blue-950/30 dark:hover:text-blue-300"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onViewStudents(
-                                                                row.id,
-                                                            );
-                                                        }}
-                                                        title="View Students List"
-                                                    >
-                                                        <Eye className="h-4 w-4" />
-                                                    </Button>
+                                                    <SimpleTooltip content="View Students List">
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 rounded-md text-blue-600 transition-all duration-200 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                onViewStudents(
+                                                                    row.id,
+                                                                );
+                                                            }}
+                                                        >
+                                                            <Eye className="h-4 w-4" />
+                                                        </Button>
+                                                    </SimpleTooltip>
                                                 )}
                                                 {onOpenRealTimeMonitoring && (
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-violet-50 hover:text-violet-600 dark:text-slate-400 dark:hover:bg-violet-950/30 dark:hover:text-violet-300"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onOpenRealTimeMonitoring(
-                                                                row.id,
-                                                                'dashboard',
-                                                            );
-                                                        }}
-                                                        title="Real-Time Attendance Monitoring"
-                                                    >
-                                                        <Activity className="h-4 w-4" />
-                                                    </Button>
+                                                    <SimpleTooltip content="Real-Time Attendance Monitoring">
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 rounded-md text-cyan-600 transition-all duration-200 hover:bg-cyan-50 dark:text-cyan-400 dark:hover:bg-cyan-950/30"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                onOpenRealTimeMonitoring(
+                                                                    row.id,
+                                                                    'dashboard',
+                                                                );
+                                                            }}
+                                                        >
+                                                            <Activity className="h-4 w-4" />
+                                                        </Button>
+                                                    </SimpleTooltip>
                                                 )}
 
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-sky-50 hover:text-sky-600 dark:text-slate-400 dark:hover:bg-sky-950/30 dark:hover:text-sky-300"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        window.open(
-                                                            printUrlForEvent
-                                                                ? printUrlForEvent(
-                                                                      row.id,
-                                                                  )
-                                                                : `/admin/attendance/${row.id}/print`,
-                                                            '_blank',
-                                                        );
-                                                    }}
-                                                    title="Print Attendance Sheet"
-                                                >
-                                                    <Printer className="h-4 w-4" />
-                                                </Button>
-                                                {onDelete && (
+                                                <SimpleTooltip content="Print Attendance Sheet">
                                                     <Button
                                                         type="button"
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 rounded-md text-rose-500 transition-all duration-200 hover:bg-rose-50 hover:text-rose-600 dark:text-rose-400 dark:hover:bg-rose-950/30 dark:hover:text-rose-300"
+                                                        className="h-8 w-8 rounded-md text-indigo-600 transition-all duration-200 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/30"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            onDelete(row.id);
+                                                            window.open(
+                                                                printUrlForEvent
+                                                                    ? printUrlForEvent(
+                                                                          row.id,
+                                                                      )
+                                                                    : `/admin/attendance/${row.id}/print`,
+                                                                '_blank',
+                                                            );
                                                         }}
-                                                        title="Archive Event"
                                                     >
-                                                        <Archive className="h-4 w-4" />
+                                                        <Printer className="h-4 w-4" />
                                                     </Button>
+                                                </SimpleTooltip>
+                                                {onDelete && (
+                                                    <SimpleTooltip content="Archive Event">
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 rounded-md text-orange-600 transition-all duration-200 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-950/30"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                onDelete(row.id);
+                                                            }}
+                                                        >
+                                                            <Archive className="h-4 w-4" />
+                                                        </Button>
+                                                    </SimpleTooltip>
                                                 )}
                                             </div>
                                         </td>

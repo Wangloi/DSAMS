@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -333,7 +334,17 @@ export default function EventsTableCard({
                             displayedEvents.map((event: Event, idx: number) => (
                                 <tr
                                     key={event.id}
-                                    className="group transition-colors duration-150 hover:bg-blue-50/40 dark:hover:bg-blue-950/10"
+                                    onClick={() => onViewEvent(event)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            onViewEvent(event);
+                                        }
+                                    }}
+                                    tabIndex={0}
+                                    role="button"
+                                    aria-label={`View details for event ${event.event_name}`}
+                                    className="group cursor-pointer transition-colors duration-150 hover:bg-blue-50/80 dark:hover:bg-slate-800 dark:hover:bg-blue-950/60 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50"
                                 >
                                     <td className="px-6 py-4 text-xs font-bold text-slate-400 tabular-nums dark:text-slate-600">
                                         {(pageIndex - 1) * pageSize + idx + 1}
@@ -357,94 +368,107 @@ export default function EventsTableCard({
                                     <td className="px-6 py-4">
                                         {renderAttendanceProgress(event)}
                                     </td>
-                                    <td className="px-6 py-4 text-right">
+                                    <td
+                                        className="px-6 py-4 text-right"
+                                        onClick={(e) => e.stopPropagation()}
+                                        onKeyDown={(e) => e.stopPropagation()}
+                                    >
                                         <div className="flex items-center justify-end gap-1">
                                             {event.approval_status === 'pending' && (
                                                 <>
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 rounded-lg text-emerald-600 transition-colors hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
-                                                        onClick={() =>
-                                                            onApproveSchedule(
-                                                                event.id,
-                                                                event.event_name,
-                                                            )
-                                                        }
-                                                        title="Approve Schedule Request"
-                                                    >
-                                                        <CheckCircle2 className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 rounded-lg text-rose-600 transition-colors hover:bg-rose-50 dark:hover:bg-rose-950/30"
-                                                        onClick={() =>
-                                                            onRejectSchedule(
-                                                                event.id,
-                                                                event.event_name,
-                                                            )
-                                                        }
-                                                        title="Reject Schedule Request"
-                                                    >
-                                                        <XCircle className="h-4 w-4" />
-                                                    </Button>
+                                                    <SimpleTooltip content="Approve Schedule Request">
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 rounded-lg text-emerald-600 transition-colors hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                                                            onClick={() =>
+                                                                onApproveSchedule(
+                                                                    event.id,
+                                                                    event.event_name,
+                                                                )
+                                                            }
+                                                        >
+                                                            <CheckCircle2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </SimpleTooltip>
+                                                    <SimpleTooltip content="Reject Schedule Request">
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 rounded-lg text-rose-600 transition-colors hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                                                            onClick={() =>
+                                                                onRejectSchedule(
+                                                                    event.id,
+                                                                    event.event_name,
+                                                                )
+                                                            }
+                                                        >
+                                                            <XCircle className="h-4 w-4" />
+                                                        </Button>
+                                                    </SimpleTooltip>
                                                 </>
                                             )}
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8 rounded-lg text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/30 dark:hover:text-blue-400"
-                                                onClick={() => onOpenAttendees(event)}
-                                                title="View Attendees"
-                                            >
-                                                <Users className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8 rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                                                onClick={() => onViewEvent(event)}
-                                                aria-label="View"
-                                            >
-                                                <Eye className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8 rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                                                onClick={() => onEditEvent(event)}
-                                                aria-label="Edit"
-                                            >
-                                                <Edit className="h-4 w-4" />
-                                            </Button>
+                                            <SimpleTooltip content="View Attendees">
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 rounded-lg text-cyan-600 transition-colors hover:bg-cyan-50 dark:text-cyan-400 dark:hover:bg-cyan-950/30"
+                                                    onClick={() => onOpenAttendees(event)}
+                                                >
+                                                    <Users className="h-4 w-4" />
+                                                </Button>
+                                            </SimpleTooltip>
+                                            <SimpleTooltip content="View Details">
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 rounded-lg text-blue-600 transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                                                    onClick={() => onViewEvent(event)}
+                                                    aria-label="View"
+                                                >
+                                                    <Eye className="h-4 w-4" />
+                                                </Button>
+                                            </SimpleTooltip>
+                                            <SimpleTooltip content="Edit Event">
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 rounded-lg text-amber-600 transition-colors hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                                                    onClick={() => onEditEvent(event)}
+                                                    aria-label="Edit"
+                                                >
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                            </SimpleTooltip>
                                             {event.archived_at ? (
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 rounded-lg text-slate-400 transition-colors hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950/30"
-                                                    onClick={() => onUnarchiveEvent(event)}
-                                                    title="Restore Event"
-                                                >
-                                                    <ArchiveRestore className="h-4 w-4" />
-                                                </Button>
+                                                <SimpleTooltip content="Restore Event">
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 rounded-lg text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+                                                        onClick={() => onUnarchiveEvent(event)}
+                                                    >
+                                                        <ArchiveRestore className="h-4 w-4" />
+                                                    </Button>
+                                                </SimpleTooltip>
                                             ) : (
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 rounded-lg text-slate-400 transition-colors hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-950/30"
-                                                    onClick={() => onArchiveEvent(event)}
-                                                    title="Archive Event"
-                                                >
-                                                    <Archive className="h-4 w-4" />
-                                                </Button>
+                                                <SimpleTooltip content="Archive Event">
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 rounded-lg text-orange-600 transition-colors hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-950/30"
+                                                        onClick={() => onArchiveEvent(event)}
+                                                    >
+                                                        <Archive className="h-4 w-4" />
+                                                    </Button>
+                                                </SimpleTooltip>
                                             )}
                                         </div>
                                     </td>

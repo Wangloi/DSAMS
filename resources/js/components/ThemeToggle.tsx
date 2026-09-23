@@ -1,5 +1,6 @@
 import { useAppearance } from '@/hooks/use-appearance';
 import { cn } from '@/lib/utils';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import { Moon, Sun } from 'lucide-react';
 import React from 'react';
 
@@ -88,40 +89,44 @@ export function ThemeToggle({
 
     // Default: 'header' or 'ghost'
     return (
-        <button
-            type="button"
-            onClick={toggleTheme}
-            className={cn(
-                'group relative flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full text-white transition-all duration-200 hover:bg-white/15 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50',
-                className,
-            )}
-            title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            aria-label={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        <SimpleTooltip
+            content={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            side="bottom"
         >
-            <div className="relative h-4 w-4 sm:h-5 sm:w-5">
-                <Sun
-                    className={cn(
-                        'absolute inset-0 h-full w-full text-amber-300 transition-all duration-300 transform',
-                        isDark
-                            ? 'rotate-0 scale-100 opacity-100'
-                            : 'rotate-90 scale-0 opacity-0',
-                    )}
-                />
-                <Moon
-                    className={cn(
-                        'absolute inset-0 h-full w-full text-white/90 transition-all duration-300 transform',
-                        isDark
-                            ? '-rotate-90 scale-0 opacity-0'
-                            : 'rotate-0 scale-100 opacity-100',
-                    )}
-                />
-            </div>
-            {showLabel && (
-                <span className="ml-2 text-xs font-semibold capitalize">
-                    {resolvedAppearance}
-                </span>
-            )}
-        </button>
+            <button
+                type="button"
+                onClick={toggleTheme}
+                className={cn(
+                    'group relative flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full text-white transition-all duration-200 hover:bg-white/15 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 cursor-pointer',
+                    className,
+                )}
+                aria-label={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+                <div className="relative h-4 w-4 sm:h-5 sm:w-5">
+                    <Sun
+                        className={cn(
+                            'absolute inset-0 h-full w-full text-amber-300 transition-all duration-300 transform',
+                            isDark
+                                ? 'rotate-0 scale-100 opacity-100'
+                                : 'rotate-90 scale-0 opacity-0',
+                        )}
+                    />
+                    <Moon
+                        className={cn(
+                            'absolute inset-0 h-full w-full text-white/90 transition-all duration-300 transform',
+                            isDark
+                                ? '-rotate-90 scale-0 opacity-0'
+                                : 'rotate-0 scale-100 opacity-100',
+                        )}
+                    />
+                </div>
+                {showLabel && (
+                    <span className="ml-2 text-xs font-semibold capitalize">
+                        {resolvedAppearance}
+                    </span>
+                )}
+            </button>
+        </SimpleTooltip>
     );
 }
 

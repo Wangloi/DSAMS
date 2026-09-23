@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -610,9 +611,23 @@ export default function StudentsList({ user, program, students }: Props) {
                                                     return (
                                                         <tr
                                                             key={student.id}
-                                                            className="transition-colors duration-200 hover:bg-slate-50/70 dark:hover:bg-slate-800/40"
+                                                            onClick={() => handleViewRecord(student)}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                                    e.preventDefault();
+                                                                    handleViewRecord(student);
+                                                                }
+                                                            }}
+                                                            tabIndex={0}
+                                                            role="button"
+                                                            aria-label={`View record for ${displayName}`}
+                                                            className="cursor-pointer transition-colors duration-150 hover:bg-blue-50/80 dark:hover:bg-slate-800 dark:hover:bg-blue-950/60 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50"
                                                         >
-                                                            <td className="px-6 py-4">
+                                                            <td
+                                                                className="px-6 py-4"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                onKeyDown={(e) => e.stopPropagation()}
+                                                            >
                                                                 <Checkbox
                                                                     checked={selectedUserIds.includes(
                                                                         Number(
@@ -665,17 +680,23 @@ export default function StudentsList({ user, program, students }: Props) {
                                                                     }
                                                                 </Badge>
                                                             </td>
-                                                            <td className="px-6 py-4 text-right">
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="outline"
-                                                                    size="icon"
-                                                                    onClick={() => handleViewRecord(student)}
-                                                                    className="h-8 w-8 rounded-lg border-slate-200 bg-white text-slate-700 shadow-xs transition-colors hover:bg-slate-100 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-blue-400"
-                                                                    aria-label="View Student Attendance"
-                                                                >
-                                                                    <Eye className="h-4 w-4" />
-                                                                </Button>
+                                                            <td
+                                                                className="px-6 py-4 text-right"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                onKeyDown={(e) => e.stopPropagation()}
+                                                            >
+                                                                <SimpleTooltip content="View Student Record">
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        onClick={() => handleViewRecord(student)}
+                                                                        className="h-8 w-8 rounded-lg text-blue-600 transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                                                                        aria-label="View Student Attendance"
+                                                                    >
+                                                                        <Eye className="h-4 w-4" />
+                                                                    </Button>
+                                                                </SimpleTooltip>
                                                             </td>
                                                         </tr>
                                                     );

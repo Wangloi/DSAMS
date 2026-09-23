@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { adminEvaluationMetrics } from '@/routes';
 import { Link } from '@inertiajs/react';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import {
     Archive,
     BarChart3,
@@ -145,9 +146,18 @@ export default function EvaluationTable({
                                                     );
                                                 }
                                             }}
+                                            onKeyDown={(e) => {
+                                                if ((e.key === 'Enter' || e.key === ' ') && evaluation) {
+                                                    e.preventDefault();
+                                                    handlePreviewEvaluation(evaluation);
+                                                }
+                                            }}
+                                            tabIndex={evaluation ? 0 : undefined}
+                                            role={evaluation ? 'button' : undefined}
+                                            aria-label={evaluation ? `View evaluation preview for ${event.name}` : undefined}
                                             className={
                                                 evaluation
-                                                    ? 'cursor-pointer transition-colors duration-150 hover:bg-blue-50/50 dark:hover:bg-blue-950/15'
+                                                    ? 'cursor-pointer transition-colors duration-150 hover:bg-blue-50/80 dark:hover:bg-slate-800 dark:hover:bg-blue-950/60 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50'
                                                     : 'transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40'
                                             }
                                         >
@@ -195,106 +205,118 @@ export default function EvaluationTable({
                                                 onClick={(e) =>
                                                     e.stopPropagation()
                                                 }
+                                                onKeyDown={(e) =>
+                                                    e.stopPropagation()
+                                                }
                                             >
                                                 <div className="ml-auto flex w-fit items-center justify-end gap-1 rounded-lg border border-slate-100/50 bg-slate-50/50 p-1 shadow-sm dark:border-slate-800 dark:bg-slate-800/40">
                                                     {evaluation ? (
                                                         <>
-                                                            <Link
-                                                                href={adminEvaluationMetrics(
-                                                                    evaluation.id,
-                                                                )}
-                                                            >
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-indigo-50 hover:text-indigo-600 dark:text-slate-400 dark:hover:bg-indigo-950/30 dark:hover:text-indigo-300"
-                                                                    title="View Metrics"
-                                                                    aria-label="View Metrics"
+                                                            <SimpleTooltip content="View Metrics">
+                                                                <Link
+                                                                    href={adminEvaluationMetrics(
+                                                                        evaluation.id,
+                                                                    )}
                                                                 >
-                                                                    <BarChart3 className="h-4 w-4" />
-                                                                </Button>
-                                                            </Link>
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-8 w-8 rounded-md text-cyan-600 transition-all duration-200 hover:bg-cyan-50 dark:text-cyan-400 dark:hover:bg-cyan-950/30"
+                                                                        aria-label="View Metrics"
+                                                                    >
+                                                                        <BarChart3 className="h-4 w-4" />
+                                                                    </Button>
+                                                                </Link>
+                                                            </SimpleTooltip>
+
                                                             {evaluation &&
                                                             !evaluation.is_active ? (
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-emerald-50 hover:text-emerald-600 dark:text-slate-400 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-300"
-                                                                    onClick={() =>
-                                                                        handlePublish(
-                                                                            evaluation,
-                                                                        )
-                                                                    }
-                                                                    title="Publish Evaluation"
-                                                                    aria-label="Publish Evaluation"
-                                                                >
-                                                                    <Send className="h-4 w-4" />
-                                                                </Button>
+                                                                <SimpleTooltip content="Publish Evaluation">
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-8 w-8 rounded-md text-emerald-600 transition-all duration-200 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+                                                                        onClick={() =>
+                                                                            handlePublish(
+                                                                                evaluation,
+                                                                            )
+                                                                        }
+                                                                        aria-label="Publish Evaluation"
+                                                                    >
+                                                                        <Send className="h-4 w-4" />
+                                                                    </Button>
+                                                                </SimpleTooltip>
                                                             ) : (
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-amber-50 hover:text-amber-600 dark:text-slate-400 dark:hover:bg-amber-950/30 dark:hover:text-amber-300"
-                                                                    onClick={() =>
-                                                                        handleUnpublish(
-                                                                            evaluation,
-                                                                        )
-                                                                    }
-                                                                    title="Unpublish Evaluation"
-                                                                    aria-label="Unpublish Evaluation"
-                                                                >
-                                                                    <XCircle className="h-4 w-4" />
-                                                                </Button>
+                                                                <SimpleTooltip content="Unpublish Evaluation">
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-8 w-8 rounded-md text-rose-600 transition-all duration-200 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/30"
+                                                                        onClick={() =>
+                                                                            handleUnpublish(
+                                                                                evaluation,
+                                                                            )
+                                                                        }
+                                                                        aria-label="Unpublish Evaluation"
+                                                                    >
+                                                                        <XCircle className="h-4 w-4" />
+                                                                    </Button>
+                                                                </SimpleTooltip>
                                                             )}
 
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-blue-50 hover:text-blue-600 dark:text-slate-400 dark:hover:bg-blue-950/30 dark:hover:text-blue-300"
-                                                                onClick={() =>
-                                                                    handlePreviewEvaluation(
-                                                                        evaluation,
-                                                                    )
-                                                                }
-                                                                title="View Details"
-                                                                aria-label="View Details"
-                                                            >
-                                                                <Eye className="h-4 w-4" />
-                                                            </Button>
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-violet-50 hover:text-violet-600 dark:text-slate-400 dark:hover:bg-violet-950/30 dark:hover:text-violet-300"
-                                                                onClick={() =>
-                                                                    handleEditEvaluation(
-                                                                        evaluation,
-                                                                    )
-                                                                }
-                                                                title="Edit Form"
-                                                                aria-label="Edit Form"
-                                                            >
-                                                                <Pencil className="h-4 w-4" />
-                                                            </Button>
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-8 w-8 rounded-md text-rose-500 transition-all duration-200 hover:bg-rose-50 hover:text-rose-600 dark:text-rose-400 dark:hover:bg-rose-950/30 dark:hover:text-rose-300"
-                                                                onClick={() =>
-                                                                    handleArchiveEvaluation(
-                                                                        evaluation,
-                                                                    )
-                                                                }
-                                                                title="Archive Evaluation"
-                                                                aria-label="Archive Evaluation"
-                                                            >
-                                                                <Archive className="h-4 w-4" />
-                                                            </Button>
+                                                            <SimpleTooltip content="Preview Form">
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 rounded-md text-blue-600 transition-all duration-200 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                                                                    onClick={() =>
+                                                                        handlePreviewEvaluation(
+                                                                            evaluation,
+                                                                        )
+                                                                    }
+                                                                    aria-label="View Details"
+                                                                >
+                                                                    <Eye className="h-4 w-4" />
+                                                                </Button>
+                                                            </SimpleTooltip>
+
+                                                            <SimpleTooltip content="Edit Form">
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 rounded-md text-amber-600 transition-all duration-200 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                                                                    onClick={() =>
+                                                                        handleEditEvaluation(
+                                                                            evaluation,
+                                                                        )
+                                                                    }
+                                                                    aria-label="Edit Form"
+                                                                >
+                                                                    <Pencil className="h-4 w-4" />
+                                                                </Button>
+                                                            </SimpleTooltip>
+
+                                                            <SimpleTooltip content="Archive Evaluation">
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 rounded-md text-orange-600 transition-all duration-200 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-950/30"
+                                                                    onClick={() =>
+                                                                        handleArchiveEvaluation(
+                                                                            evaluation,
+                                                                        )
+                                                                    }
+                                                                    aria-label="Archive Evaluation"
+                                                                >
+                                                                    <Archive className="h-4 w-4" />
+                                                                </Button>
+                                                            </SimpleTooltip>
                                                         </>
                                                     ) : (
                                                         <div className="flex items-center gap-1">
@@ -313,21 +335,22 @@ export default function EvaluationTable({
                                                                 <span>Generate</span>
                                                             </Button>
                                                             {handleOpenCreateForEvent && (
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="h-7 w-7 rounded-md text-slate-500 transition-all duration-200 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
-                                                                    onClick={() =>
-                                                                        handleOpenCreateForEvent(
-                                                                            event,
-                                                                        )
-                                                                    }
-                                                                    title="Configure Evaluation"
-                                                                    aria-label="Configure Evaluation"
-                                                                >
-                                                                    <Pencil className="h-3.5 w-3.5" />
-                                                                </Button>
+                                                                <SimpleTooltip content="Configure Evaluation">
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-7 w-7 rounded-md text-amber-600 transition-all duration-200 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                                                                        onClick={() =>
+                                                                            handleOpenCreateForEvent(
+                                                                                event,
+                                                                            )
+                                                                        }
+                                                                        aria-label="Configure Evaluation"
+                                                                    >
+                                                                        <Pencil className="h-3.5 w-3.5" />
+                                                                    </Button>
+                                                                </SimpleTooltip>
                                                             )}
                                                         </div>
                                                     )}

@@ -19,6 +19,7 @@ import {
     XAxis,
     YAxis,
 } from 'recharts';
+import { ChartTooltip } from '@/components/ui/chart-tooltip';
 
 export function AnalysisPanels() {
     const useChartWidth = () => {
@@ -139,7 +140,7 @@ export function AnalysisPanels() {
                                         tick={{ fontSize: 12 }}
                                     />
                                     <YAxis tick={{ fontSize: 12 }} />
-                                    <Tooltip />
+                                    <Tooltip content={<ChartTooltip />} />
                                     <Legend wrapperStyle={{ fontSize: 12 }} />
                                     <Bar
                                         dataKey="resolved"
@@ -216,7 +217,7 @@ export function AnalysisPanels() {
                                     width={attendanceChart.width}
                                     height={chartHeights.h72}
                                 >
-                                    <Tooltip />
+                                    <Tooltip content={<ChartTooltip />} />
                                     <Legend wrapperStyle={{ fontSize: 12 }} />
                                     <Pie
                                         data={attendanceByProgram}
@@ -275,7 +276,7 @@ export function AnalysisPanels() {
                                 />
                                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                                 <YAxis tick={{ fontSize: 12 }} />
-                                <Tooltip />
+                                <Tooltip content={<ChartTooltip />} />
                                 <Legend wrapperStyle={{ fontSize: 12 }} />
                                 <Bar
                                     dataKey="attendance"
@@ -341,7 +342,7 @@ export function AnalysisPanels() {
                                 />
                                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                                 <YAxis tick={{ fontSize: 12 }} />
-                                <Tooltip />
+                                <Tooltip content={<ChartTooltip />} />
                                 <Bar dataKey="value" name="Participation">
                                     {intramurals.map((entry) => (
                                         <Cell

@@ -10,6 +10,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+    SimpleTooltip,
     Tooltip,
     TooltipContent,
     TooltipTrigger,
@@ -1085,7 +1086,17 @@ export default function AdminAnnouncementPage() {
                                                             (a) => (
                                                                 <tr
                                                                     key={a.id}
-                                                                    className="transition-colors hover:bg-slate-50"
+                                                                    onClick={() => handleViewAnnouncement(a.id)}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                                            e.preventDefault();
+                                                                            handleViewAnnouncement(a.id);
+                                                                        }
+                                                                    }}
+                                                                    tabIndex={0}
+                                                                    role="button"
+                                                                    aria-label={`View details for announcement: ${a.title}`}
+                                                                    className="cursor-pointer transition-colors duration-150 hover:bg-blue-50/80 dark:hover:bg-slate-800 dark:hover:bg-blue-950/60 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50"
                                                                 >
                                                                     <td className="px-4 py-3 font-medium text-slate-900">
                                                                         {
@@ -1120,50 +1131,60 @@ export default function AdminAnnouncementPage() {
                                                                     <td className="px-4 py-3 text-slate-700">
                                                                         {a.date}
                                                                     </td>
-                                                                    <td className="px-4 py-3">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <Button
-                                                                                type="button"
-                                                                                variant="outline"
-                                                                                size="icon"
-                                                                                className="h-8 w-8 border-slate-200 text-black transition-colors hover:bg-slate-100"
-                                                                                aria-label="View"
-                                                                                onClick={() =>
-                                                                                    handleViewAnnouncement(
-                                                                                        a.id,
-                                                                                    )
-                                                                                }
-                                                                            >
-                                                                                <Eye className="h-4 w-4" />
-                                                                            </Button>
-                                                                            <Button
-                                                                                type="button"
-                                                                                variant="outline"
-                                                                                size="icon"
-                                                                                className="h-8 w-8 border-slate-200 text-black transition-colors hover:bg-slate-100"
-                                                                                aria-label="Edit"
-                                                                                onClick={() =>
-                                                                                    handleEditAnnouncement(
-                                                                                        a.id,
-                                                                                    )
-                                                                                }
-                                                                            >
-                                                                                <Pencil className="h-4 w-4" />
-                                                                            </Button>
-                                                                            <Button
-                                                                                type="button"
-                                                                                variant="outline"
-                                                                                size="icon"
-                                                                                className="h-8 w-8 border-slate-200 text-black transition-colors hover:bg-slate-100"
-                                                                                aria-label="Archive"
-                                                                                onClick={() =>
-                                                                                    handleArchiveAnnouncement(
-                                                                                        a.id,
-                                                                                    )
-                                                                                }
-                                                                            >
-                                                                                <Archive className="h-4 w-4" />
-                                                                            </Button>
+                                                                    <td
+                                                                        className="px-4 py-3"
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                        onKeyDown={(e) => e.stopPropagation()}
+                                                                    >
+                                                                        <div className="flex w-fit items-center gap-1 rounded-lg border border-slate-100/50 bg-slate-50/50 p-1 shadow-sm dark:border-slate-800 dark:bg-slate-800/40">
+                                                                            <SimpleTooltip content="View Announcement">
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    variant="ghost"
+                                                                                    size="icon"
+                                                                                    className="h-8 w-8 rounded-md text-blue-600 transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                                                                                    aria-label="View"
+                                                                                    onClick={() =>
+                                                                                        handleViewAnnouncement(
+                                                                                            a.id,
+                                                                                        )
+                                                                                    }
+                                                                                >
+                                                                                    <Eye className="h-4 w-4" />
+                                                                                </Button>
+                                                                            </SimpleTooltip>
+                                                                            <SimpleTooltip content="Edit Announcement">
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    variant="ghost"
+                                                                                    size="icon"
+                                                                                    className="h-8 w-8 rounded-md text-amber-600 transition-colors hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                                                                                    aria-label="Edit"
+                                                                                    onClick={() =>
+                                                                                        handleEditAnnouncement(
+                                                                                            a.id,
+                                                                                        )
+                                                                                    }
+                                                                                >
+                                                                                    <Pencil className="h-4 w-4" />
+                                                                                </Button>
+                                                                            </SimpleTooltip>
+                                                                            <SimpleTooltip content="Archive Announcement">
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    variant="ghost"
+                                                                                    size="icon"
+                                                                                    className="h-8 w-8 rounded-md text-orange-600 transition-colors hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-950/30"
+                                                                                    aria-label="Archive"
+                                                                                    onClick={() =>
+                                                                                        handleArchiveAnnouncement(
+                                                                                            a.id,
+                                                                                        )
+                                                                                    }
+                                                                                >
+                                                                                    <Archive className="h-4 w-4" />
+                                                                                </Button>
+                                                                            </SimpleTooltip>
                                                                         </div>
                                                                     </td>
                                                                 </tr>
@@ -1377,10 +1398,10 @@ export default function AdminAnnouncementPage() {
                                                                 </TooltipTrigger>
                                                                 <TooltipContent
                                                                     side="top"
-                                                                    className="max-w-[180px] border-slate-200 bg-slate-900 px-3 py-2 text-white shadow-xl"
+                                                                    className="max-w-[200px] p-2.5"
                                                                 >
                                                                     <div className="space-y-1.5">
-                                                                        <div className="mb-1 border-b border-white/20 pb-1 text-[10px] font-bold tracking-wider uppercase opacity-60">
+                                                                        <div className="mb-1 border-b border-white/20 pb-1 text-[10px] font-bold tracking-wider uppercase opacity-70 dark:border-slate-300/40">
                                                                             Scheduled
                                                                             Events
                                                                         </div>
@@ -1392,7 +1413,7 @@ export default function AdminAnnouncementPage() {
                                                                                     key={
                                                                                         ev.id
                                                                                     }
-                                                                                    className="line-clamp-2 text-xs leading-tight font-semibold"
+                                                                                    className="line-clamp-2 text-xs leading-tight font-medium"
                                                                                 >
                                                                                     •{' '}
                                                                                     {

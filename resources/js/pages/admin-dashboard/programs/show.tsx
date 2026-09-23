@@ -291,7 +291,7 @@ export default function AdminProgramsShowPage({ program }: ShowPageProps) {
                                                     (student, index) => (
                                                         <tr
                                                             key={student.id}
-                                                            className={`transition-colors duration-200 hover:bg-slate-50 dark:hover:bg-slate-700 ${index === 0 ? 'bg-gradient-to-r from-blue-50/30 to-transparent dark:from-blue-900/20' : ''}`}
+                                                            className={`transition-colors duration-150 hover:bg-blue-50/80 dark:hover:bg-slate-800 dark:hover:bg-blue-950/60 ${index === 0 ? 'bg-gradient-to-r from-blue-50/30 to-transparent dark:from-blue-900/20' : ''}`}
                                                         >
                                                             <td className="px-5 py-4 text-sm font-semibold text-slate-800 dark:text-white">
                                                                 {(program

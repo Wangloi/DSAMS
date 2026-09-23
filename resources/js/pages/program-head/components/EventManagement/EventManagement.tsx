@@ -818,12 +818,21 @@ function formatToIsoStart(dateStr: string, timeStr: string): string {
                                                     ) => (
                                                         <tr
                                                             key={event.id}
-                                                            className="cursor-pointer transition-colors duration-200 hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
                                                             onClick={() =>
                                                                 setSelectedEvent(
                                                                     event,
                                                                 )
                                                             }
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                                    e.preventDefault();
+                                                                    setSelectedEvent(event);
+                                                                }
+                                                            }}
+                                                            tabIndex={0}
+                                                            role="button"
+                                                            aria-label={`View details for event: ${event.event_name}`}
+                                                            className="cursor-pointer transition-colors duration-150 hover:bg-blue-50/80 dark:hover:bg-slate-800 dark:hover:bg-blue-950/60 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50"
                                                         >
                                                             <td className="px-6 py-4 text-slate-500 dark:text-slate-400">
                                                                 {idx + 1}

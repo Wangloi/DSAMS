@@ -25,6 +25,7 @@ import {
 import React, { useState } from 'react';
 import { router } from '@inertiajs/react';
 import { formatDate } from '@/lib/utils';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import type { IncidentRow } from './types';
 
 interface CallingSlipModalProps {
@@ -113,7 +114,7 @@ export default function CallingSlipModal({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 overlayClassName="z-[90]"
-                className="z-[95] max-w-4xl sm:max-w-4xl md:max-w-5xl w-[95vw] overflow-y-auto max-h-[90vh] p-0 bg-slate-100 dark:bg-slate-950 border-0 shadow-2xl"
+                className="z-[95] max-w-4xl sm:max-w-4xl md:max-w-5xl w-[95vw] overflow-y-auto max-h-[90vh] p-0 bg-slate-100 dark:bg-slate-950 border-0 shadow-2xl [&>button:last-child]:hidden"
             >
                 <DialogHeader className="sr-only">
                     <DialogTitle>Official Calling Slip Notice - Case #{caseId}</DialogTitle>
@@ -202,14 +203,14 @@ export default function CallingSlipModal({
                 )}
 
                 {/* Print & Action control bar (hidden when printing) */}
-                <div className="print:hidden sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-white/95 px-6 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
+                <div className="print:hidden sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-6 py-3.5 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
                     <div className="flex flex-wrap items-center gap-2">
                         <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 font-bold">
                             Printable Document
                         </Badge>
-                        <span className="text-xs text-slate-500">Notice to Appear / Calling Slip</span>
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Notice to Appear / Calling Slip</span>
                         {alreadySentAt && (
-                            <Badge className="bg-emerald-600 text-white font-black text-[10px] gap-1">
+                            <Badge className="bg-emerald-600 text-white font-black text-[10px] gap-1 shadow-xs">
                                 <CheckCircle2 className="h-3 w-3" />
                                 <span>Sent to Student Account</span>
                             </Badge>
@@ -222,33 +223,43 @@ export default function CallingSlipModal({
                         )}
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button
-                            type="button"
-                            disabled={isSending}
-                            onClick={handleOpenConfirm}
-                            className="h-8 gap-1.5 rounded-lg bg-indigo-600 px-3.5 text-xs font-black text-white shadow hover:bg-indigo-700 cursor-pointer"
-                            title="Dispatch official calling notice alert directly to the student's DSAMS account"
-                        >
-                            <Send className="h-3.5 w-3.5" />
-                            <span>{alreadySentAt ? 'Resend to Student' : 'Send to Student Account'}</span>
-                        </Button>
-                        <Button
-                            type="button"
-                            onClick={handlePrint}
-                            className="h-8 gap-1.5 rounded-lg bg-[#0b2d66] px-4 text-xs font-bold text-white shadow hover:bg-blue-900 cursor-pointer"
-                        >
-                            <Printer className="h-3.5 w-3.5" />
-                            Print Calling Slip
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onOpenChange(false)}
-                            className="h-8 w-8 p-0 rounded-lg text-slate-500"
-                        >
-                            <X className="h-4 w-4" />
-                        </Button>
+                        <SimpleTooltip content="Dispatch official calling notice alert directly to the student's DSAMS account">
+                            <Button
+                                type="button"
+                                disabled={isSending}
+                                onClick={handleOpenConfirm}
+                                className="h-8 gap-1.5 rounded-lg bg-indigo-600 px-3.5 text-xs font-black text-white shadow hover:bg-indigo-700 cursor-pointer transition-colors"
+                            >
+                                <Send className="h-3.5 w-3.5" />
+                                <span>{alreadySentAt ? 'Resend to Student' : 'Send to Student Account'}</span>
+                            </Button>
+                        </SimpleTooltip>
+
+                        <SimpleTooltip content="Print official calling slip summons paper">
+                            <Button
+                                type="button"
+                                onClick={handlePrint}
+                                className="h-8 gap-1.5 rounded-lg bg-[#0b2d66] px-4 text-xs font-bold text-white shadow hover:bg-blue-900 cursor-pointer transition-colors"
+                            >
+                                <Printer className="h-3.5 w-3.5" />
+                                <span>Print Calling Slip</span>
+                            </Button>
+                        </SimpleTooltip>
+
+                        <div className="h-5 w-px bg-slate-200 dark:bg-slate-700 mx-0.5" />
+
+                        <SimpleTooltip content="Close (Esc)">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onOpenChange(false)}
+                                className="h-8 w-8 p-0 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 cursor-pointer transition-colors shrink-0"
+                                aria-label="Close modal"
+                            >
+                                <X className="h-4.5 w-4.5" />
+                            </Button>
+                        </SimpleTooltip>
                     </div>
                 </div>
 

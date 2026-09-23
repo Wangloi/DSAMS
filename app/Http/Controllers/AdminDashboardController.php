@@ -257,9 +257,14 @@ class AdminDashboardController extends Controller
             ->whereDate('event_date', '>=', $today)
             ->orderBy('event_date', 'asc')
             ->orderBy('event_time', 'asc')
-            ->limit(6)
             ->get()
-            ->map(function ($event) use ($today) {
+            ->filter(function ($event) {
+                $status = $event->status;
+                return in_array($status, ['upcoming', 'ongoing'], true);
+            })
+            ->take(6)
+            ->values()
+            ->map(function ($event) {
                 $totalAttendees = 0;
                 $presentCount = 0;
                 
@@ -271,18 +276,15 @@ class AdminDashboardController extends Controller
                     $totalAttendees = $event->expected_attendees ?? 0;
                 }
 
-                $eventDateStr = $event->event_date ? $event->event_date->format('Y-m-d') : null;
-                $status = 'upcoming';
-                if ($eventDateStr === $today->format('Y-m-d')) {
-                    $status = 'ongoing';
-                } elseif ($eventDateStr && $eventDateStr < $today->format('Y-m-d')) {
-                    $status = 'completed';
-                }
-
                 $formattedTime = '';
                 if ($event->event_time) {
                     try {
-                        $formattedTime = ' at ' . Carbon::parse($event->event_time)->format('g:i A');
+                        $raw = trim((string) $event->event_time);
+                        if (str_contains($raw, '-') || str_contains($raw, '–') || str_contains($raw, 'to')) {
+                            $formattedTime = ' (' . $raw . ')';
+                        } else {
+                            $formattedTime = ' at ' . Carbon::parse($raw)->format('g:i A');
+                        }
                     } catch (\Exception $e) {
                         $formattedTime = ' at ' . $event->event_time;
                     }
@@ -296,7 +298,7 @@ class AdminDashboardController extends Controller
                     'location' => $event->location,
                     'totalAttendees' => $totalAttendees,
                     'presentCount' => $presentCount,
-                    'status' => $event->status ?? $status,
+                    'status' => $event->status,
                 ];
             });
     }

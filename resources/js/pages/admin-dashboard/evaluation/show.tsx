@@ -31,6 +31,7 @@ import {
     XAxis,
     YAxis,
 } from 'recharts';
+import { ChartTooltip } from '@/components/ui/chart-tooltip';
 import Swal from 'sweetalert2';
 import AdminLayout from '../admin-layout';
 
@@ -629,7 +630,7 @@ export default function AdminEvaluationShowPage() {
                                                                             false
                                                                         }
                                                                     />
-                                                                    <Tooltip />
+                                                                    <Tooltip content={<ChartTooltip />} />
                                                                     <Bar
                                                                         dataKey="value"
                                                                         fill="#2563eb"
@@ -677,7 +678,7 @@ export default function AdminEvaluationShowPage() {
                                                                     dataKey="label"
                                                                     width={140}
                                                                 />
-                                                                <Tooltip />
+                                                                <Tooltip content={<ChartTooltip />} />
                                                                 <Bar
                                                                     dataKey="value"
                                                                     fill="#16a34a"

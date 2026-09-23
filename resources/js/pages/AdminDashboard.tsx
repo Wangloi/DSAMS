@@ -67,6 +67,7 @@ import {
     XAxis,
     YAxis,
 } from 'recharts';
+import { ChartTooltip } from '@/components/ui/chart-tooltip';
 import Swal from 'sweetalert2';
 import { AdminLayout } from './admin-dashboard';
 
@@ -127,51 +128,6 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: adminDashboard(),
     },
 ];
-
-interface CustomTooltipProps {
-    active?: boolean;
-    payload?: any[];
-    label?: string;
-    valueSuffix?: string;
-}
-
-const ChartTooltip = ({ active, payload, label, valueSuffix = '' }: CustomTooltipProps) => {
-    if (active && payload && payload.length) {
-        return (
-            <div className="min-w-[140px] rounded-xl border border-slate-200/80 bg-white/95 p-3 shadow-xl backdrop-blur-md dark:border-slate-700/80 dark:bg-slate-900/95 ring-1 ring-black/5 dark:ring-white/10">
-                {label && (
-                    <p className="mb-1 text-[11px] font-bold tracking-wider text-slate-400 uppercase dark:text-slate-400">
-                        {label}
-                    </p>
-                )}
-                <div className="space-y-1.5">
-                    {payload.map((item: any, index: number) => (
-                        <div key={index} className="flex items-center justify-between gap-3 text-xs">
-                            <div className="flex items-center gap-1.5">
-                                <span
-                                    className="h-2.5 w-2.5 rounded-full shrink-0 shadow-sm"
-                                    style={{ backgroundColor: item.color || '#3b82f6' }}
-                                />
-                                <span className="font-semibold text-slate-600 dark:text-slate-300">
-                                    {item.name && item.name !== 'value' ? item.name : 'Count'}
-                                </span>
-                            </div>
-                            <div className="font-extrabold text-slate-900 dark:text-white">
-                                {Number(item.value).toLocaleString()}
-                                {valueSuffix && (
-                                    <span className="ml-1 text-[10px] font-normal text-slate-400">
-                                        {valueSuffix}
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    }
-    return null;
-};
 
 export default function AdminDashboard({
     user,
@@ -648,118 +604,121 @@ export default function AdminDashboard({
 
                             {/* Events List / Table */}
                             <div className="flex-1 p-0">
-                                {incomingEvents.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center py-16 text-center">
-                                        <div className="grid h-14 w-14 place-items-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
-                                            <CalendarDays className="h-7 w-7" />
-                                        </div>
-                                        <h4 className="mt-3 text-sm font-bold text-slate-900 dark:text-white">
-                                            No Upcoming Events Scheduled
-                                        </h4>
-                                        <p className="mt-1 max-w-xs text-xs text-slate-500 dark:text-slate-400">
-                                            There are no upcoming campus events found in the system calendar.
-                                        </p>
-                                        <Link
-                                            href={adminEvents()}
-                                            className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 transition"
-                                        >
-                                            <Plus className="h-3.5 w-3.5" />
-                                            Create First Event
-                                        </Link>
-                                    </div>
-                                ) : (
-                                    <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
-                                        {incomingEvents.slice(0, 5).map((evt) => {
-                                            const total = evt.totalAttendees || 0;
-                                            const present = evt.presentCount || 0;
-                                            const percentage =
-                                                total > 0 ? Math.round((present / total) * 100) : 0;
-                                            const isOngoing = evt.status === 'ongoing';
-                                            const isEnded =
-                                                evt.status === 'completed' || evt.status === 'ended';
+                                {(() => {
+                                    const activeEvents = incomingEvents.filter(
+                                        (evt) => evt.status === 'upcoming' || evt.status === 'ongoing'
+                                    );
 
-                                            return (
-                                                <div
-                                                    key={evt.id}
-                                                    className="group flex flex-col gap-3 p-4 transition-colors hover:bg-blue-50/40 sm:flex-row sm:items-center sm:justify-between dark:hover:bg-slate-800/50"
-                                                >
-                                                    {/* Left: Event Details & Badges */}
-                                                    <div className="flex items-start gap-3.5">
-                                                        <div
-                                                            className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl border text-center shadow-sm transition-transform duration-200 group-hover:scale-105 ${
-                                                                isOngoing
-                                                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
-                                                                    : 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300'
-                                                            }`}
-                                                        >
-                                                            <CalendarDays className="h-5 w-5" />
-                                                        </div>
-                                                        <div className="min-w-0">
-                                                            <div className="flex flex-wrap items-center gap-2">
-                                                                <h4 className="text-sm font-bold text-slate-900 transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
-                                                                    {evt.event}
-                                                                </h4>
-                                                                {isOngoing && (
-                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-black text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/30 animate-pulse">
-                                                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                                                                        LIVE NOW
-                                                                    </span>
-                                                                )}
-                                                                {isEnded && (
-                                                                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                                                                        Concluded
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-                                                                <span className="flex items-center gap-1 font-medium">
-                                                                    <Clock className="h-3.5 w-3.5 text-slate-400" />
-                                                                    {evt.dateTime}
-                                                                </span>
-                                                                <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-700" />
-                                                                <span className="flex items-center gap-1 font-medium">
-                                                                    <MapPin className="h-3.5 w-3.5 text-slate-400" />
-                                                                    {evt.location || 'Campus Grounds'}
-                                                                </span>
-                                                                {evt.organizer && (
-                                                                    <>
-                                                                        <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-700" />
-                                                                        <span className="font-semibold text-slate-600 dark:text-slate-300">
-                                                                            {evt.organizer}
-                                                                        </span>
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Right: Attendance Quorum Meter */}
-                                                    <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end sm:justify-center">
-                                                        <div className="text-left sm:text-right">
-                                                            <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                                {present.toLocaleString()} /{' '}
-                                                                {total.toLocaleString()} Attendees
-                                                            </div>
-                                                            <div className="text-[10px] font-medium text-slate-400">
-                                                                {percentage}% Quorum reached
-                                                            </div>
-                                                        </div>
-                                                        <div className="h-2 w-32 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                                            <div
-                                                                className={`h-full rounded-full transition-all duration-700 ${
-                                                                    isOngoing
-                                                                        ? 'bg-gradient-to-r from-emerald-500 to-teal-400'
-                                                                        : 'bg-gradient-to-r from-blue-500 to-indigo-600'
-                                                                }`}
-                                                                style={{ width: `${percentage}%` }}
-                                                            />
-                                                        </div>
-                                                    </div>
+                                    if (activeEvents.length === 0) {
+                                        return (
+                                            <div className="flex flex-col items-center justify-center py-16 text-center">
+                                                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+                                                    <CalendarDays className="h-7 w-7" />
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
+                                                <h4 className="mt-3 text-sm font-bold text-slate-900 dark:text-white">
+                                                    No Upcoming Events Scheduled
+                                                </h4>
+                                                <p className="mt-1 max-w-xs text-xs text-slate-500 dark:text-slate-400">
+                                                    There are no active or upcoming campus events found in the system calendar.
+                                                </p>
+                                                <Link
+                                                    href={adminEvents()}
+                                                    className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-blue-600/20 hover:bg-blue-700 transition"
+                                                >
+                                                    <Plus className="h-3.5 w-3.5" />
+                                                    Schedule Event
+                                                </Link>
+                                            </div>
+                                        );
+                                    }
+
+                                    return (
+                                        <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                                            {activeEvents.slice(0, 5).map((evt) => {
+                                                const total = evt.totalAttendees || 0;
+                                                const present = evt.presentCount || 0;
+                                                const percentage =
+                                                    total > 0 ? Math.round((present / total) * 100) : 0;
+                                                const isOngoing = evt.status === 'ongoing';
+
+                                                return (
+                                                    <div
+                                                        key={evt.id}
+                                                        className="group flex flex-col gap-3 p-4 transition-colors hover:bg-blue-50/40 sm:flex-row sm:items-center sm:justify-between dark:hover:bg-slate-800/50"
+                                                    >
+                                                        {/* Left: Event Details & Badges */}
+                                                        <div className="flex items-start gap-3.5">
+                                                            <div
+                                                                className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl border text-center shadow-sm transition-transform duration-200 group-hover:scale-105 ${
+                                                                    isOngoing
+                                                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
+                                                                        : 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300'
+                                                                }`}
+                                                            >
+                                                                <CalendarDays className="h-5 w-5" />
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <div className="flex flex-wrap items-center gap-2">
+                                                                    <h4 className="text-sm font-bold text-slate-900 transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
+                                                                        {evt.event}
+                                                                    </h4>
+                                                                    {isOngoing && (
+                                                                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-black text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/30 animate-pulse">
+                                                                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                                                            LIVE NOW
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                                                                    <span className="flex items-center gap-1 font-medium">
+                                                                        <Clock className="h-3.5 w-3.5 text-slate-400" />
+                                                                        {evt.dateTime}
+                                                                    </span>
+                                                                    <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+                                                                    <span className="flex items-center gap-1 font-medium">
+                                                                        <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                                                                        {evt.location || 'Campus Grounds'}
+                                                                    </span>
+                                                                    {evt.organizer && (
+                                                                        <>
+                                                                            <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+                                                                            <span className="font-semibold text-slate-600 dark:text-slate-300">
+                                                                                {evt.organizer}
+                                                                            </span>
+                                                                        </>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Right: Attendance Quorum Meter */}
+                                                        <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end sm:justify-center">
+                                                            <div className="text-left sm:text-right">
+                                                                <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                                                    {present.toLocaleString()} /{' '}
+                                                                    {total.toLocaleString()} Attendees
+                                                                </div>
+                                                                <div className="text-[10px] font-medium text-slate-400">
+                                                                    {percentage}% Quorum reached
+                                                                </div>
+                                                            </div>
+                                                            <div className="h-2 w-32 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                                                <div
+                                                                    className={`h-full rounded-full transition-all duration-700 ${
+                                                                        isOngoing
+                                                                            ? 'bg-gradient-to-r from-emerald-500 to-teal-400'
+                                                                            : 'bg-gradient-to-r from-blue-500 to-indigo-600'
+                                                                    }`}
+                                                                    style={{ width: `${percentage}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         </div>
 

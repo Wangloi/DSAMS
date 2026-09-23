@@ -48,10 +48,11 @@ class GeofenceValidationService
         // Accuracy handling
         $accuracy = ($accuracyM !== null && $accuracyM > 0) ? (float) $accuracyM : 15.0;
 
-        if ($accuracy > 1000) {
+        $maxAccuracy = (float) config('geofence.max_accuracy_m', 5000);
+        if ($accuracy > $maxAccuracy) {
             return [
                 'status'  => 422,
-                'message' => 'Location accuracy is too low (' . round($accuracy) . 'm). Please move to an open area and try again.',
+                'message' => 'Location accuracy is too low (' . round($accuracy) . 'm). Please ensure GPS/Location is enabled with High Accuracy.',
             ];
         }
 
@@ -63,7 +64,7 @@ class GeofenceValidationService
         }
 
         $distance = $this->haversineDistanceMeters((float) $lat, (float) $lng, (float) $eventLat, (float) $eventLng);
-        $buffer = min($accuracy, 50.0);
+        $buffer = min($accuracy, max(50.0, (float) $radius));
 
         if (($distance - $buffer) > $radius) {
             return [

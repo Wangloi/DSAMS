@@ -2,6 +2,7 @@ import { Head, usePage } from '@inertiajs/react';
 // Force Vite HMR reload
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
@@ -446,7 +447,17 @@ export default function Violations() {
                                             pagedRows.map((row) => (
                                                 <tr
                                                     key={row.id}
-                                                    className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40"
+                                                    onClick={() => handleViewDetails(row)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                            e.preventDefault();
+                                                            handleViewDetails(row);
+                                                        }
+                                                    }}
+                                                    tabIndex={0}
+                                                    role="button"
+                                                    aria-label={`View details for case ${row.caseId} - ${row.student}`}
+                                                    className="cursor-pointer transition-colors duration-150 hover:bg-blue-50/80 dark:hover:bg-slate-800 dark:hover:bg-blue-950/60 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50"
                                                 >
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-3">
@@ -493,20 +504,30 @@ export default function Violations() {
                                                             {row.status}
                                                         </Badge>
                                                     </td>
-                                                    <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
+                                                    <td
+                                                        className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap"
+                                                        onClick={(e) =>
+                                                            e.stopPropagation()
+                                                        }
+                                                        onKeyDown={(e) =>
+                                                            e.stopPropagation()
+                                                        }
+                                                    >
                                                         <div className="ml-auto flex w-fit items-center justify-end gap-1 rounded-lg border border-slate-100/50 bg-slate-50/50 p-1 shadow-sm dark:border-slate-800 dark:bg-slate-800/40">
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() =>
-                                                                    handleViewDetails(
-                                                                        row,
-                                                                    )
-                                                                }
-                                                                className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-blue-50 hover:text-blue-600 dark:text-slate-400 dark:hover:bg-blue-950/30 dark:hover:text-blue-300"
-                                                            >
-                                                                <Eye className="h-4 w-4" />
-                                                            </Button>
+                                                            <SimpleTooltip content="View Case Details">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() =>
+                                                                        handleViewDetails(
+                                                                            row,
+                                                                        )
+                                                                    }
+                                                                    className="h-8 w-8 rounded-md text-blue-600 transition-all duration-200 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                                                                >
+                                                                    <Eye className="h-4 w-4" />
+                                                                </Button>
+                                                            </SimpleTooltip>
                                                         </div>
                                                     </td>
                                                 </tr>

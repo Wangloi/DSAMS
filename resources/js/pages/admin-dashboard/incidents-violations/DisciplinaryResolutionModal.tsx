@@ -26,12 +26,13 @@ import {
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { router } from '@inertiajs/react';
-import type { IncidentRow, DisciplinaryDecisionData } from './types';
+import type { DisciplinaryDecisionData, IncidentRow } from './types';
 import {
     DISCIPLINARY_POLICIES,
     getApplicablePolicy,
     type DisciplinaryPolicyItem,
 } from './disciplinaryPolicies';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 
 interface DisciplinaryResolutionModalProps {
     open: boolean;
@@ -196,7 +197,7 @@ export default function DisciplinaryResolutionModal({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 overlayClassName="z-[90]"
-                className="z-[95] max-w-5xl sm:max-w-5xl md:max-w-6xl w-[95vw] overflow-y-auto max-h-[92vh] p-0 bg-slate-100 dark:bg-slate-950 border-0 shadow-2xl"
+                className="z-[95] max-w-5xl sm:max-w-5xl md:max-w-6xl w-[95vw] overflow-y-auto max-h-[92vh] p-0 bg-slate-100 dark:bg-slate-950 border-0 shadow-2xl [&>button:last-child]:hidden"
             >
                 <DialogHeader className="sr-only">
                     <DialogTitle>Disciplinary Resolution & Decision - Case #{caseId}</DialogTitle>
@@ -282,17 +283,17 @@ export default function DisciplinaryResolutionModal({
                 )}
 
                 {/* Control Top Bar (Hidden on print) */}
-                <div className="print:hidden sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-white/95 px-6 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
+                <div className="print:hidden sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-6 py-3.5 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
                     <div className="flex flex-wrap items-center gap-2">
-                        <Badge className="bg-[#0B192C] text-amber-400 font-black text-xs gap-1.5">
+                        <Badge className="bg-[#0B192C] text-amber-400 font-black text-xs gap-1.5 shadow-xs">
                             <Scale className="h-3.5 w-3.5" />
                             <span>Step 4: Outcome & Sanction</span>
                         </Badge>
-                        <span className="text-xs font-semibold text-slate-500">
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
                             Disciplinary Resolution & Decision
                         </span>
                         {existingDecision && (
-                            <Badge className="bg-emerald-600 text-white font-black text-[10px] gap-1">
+                            <Badge className="bg-emerald-600 text-white font-black text-[10px] gap-1 shadow-xs">
                                 <CheckCircle2 className="h-3 w-3" />
                                 <span>Served: {existingDecision.sanction}</span>
                             </Badge>
@@ -332,36 +333,44 @@ export default function DisciplinaryResolutionModal({
                             </button>
                         </div>
 
-                        <Button
-                            type="button"
-                            size="sm"
-                            onClick={() => setConfirmServeOpen(true)}
-                            className="h-8 gap-1.5 rounded-lg bg-emerald-600 px-3.5 text-xs font-black text-white shadow hover:bg-emerald-700 cursor-pointer"
-                            title="Dispatch official decision directly to student account and 201 records"
-                        >
-                            <Send className="h-3.5 w-3.5" />
-                            <span>{existingDecision ? 'Update / Resend Decision' : 'Serve Decision to Student'}</span>
-                        </Button>
+                        <SimpleTooltip content="Dispatch official decision directly to student account and 201 records">
+                            <Button
+                                type="button"
+                                size="sm"
+                                onClick={() => setConfirmServeOpen(true)}
+                                className="h-8 gap-1.5 rounded-lg bg-emerald-600 px-3.5 text-xs font-black text-white shadow hover:bg-emerald-700 cursor-pointer transition-colors"
+                            >
+                                <Send className="h-3.5 w-3.5" />
+                                <span>{existingDecision ? 'Update / Resend Decision' : 'Serve Decision to Student'}</span>
+                            </Button>
+                        </SimpleTooltip>
 
-                        <Button
-                            type="button"
-                            size="sm"
-                            onClick={handlePrint}
-                            className="h-8 gap-1.5 rounded-lg bg-[#0b2d66] px-3.5 text-xs font-bold text-white shadow hover:bg-blue-900 cursor-pointer"
-                        >
-                            <Printer className="h-3.5 w-3.5" />
-                            <span>Print Resolution</span>
-                        </Button>
+                        <SimpleTooltip content="Print formal disciplinary resolution letter">
+                            <Button
+                                type="button"
+                                size="sm"
+                                onClick={handlePrint}
+                                className="h-8 gap-1.5 rounded-lg bg-[#0b2d66] px-3.5 text-xs font-bold text-white shadow hover:bg-blue-900 cursor-pointer transition-colors"
+                            >
+                                <Printer className="h-3.5 w-3.5" />
+                                <span>Print Resolution</span>
+                            </Button>
+                        </SimpleTooltip>
 
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onOpenChange(false)}
-                            className="h-8 w-8 p-0 rounded-lg text-slate-500"
-                        >
-                            <X className="h-4 w-4" />
-                        </Button>
+                        <div className="h-5 w-px bg-slate-200 dark:bg-slate-700 mx-0.5" />
+
+                        <SimpleTooltip content="Close (Esc)">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onOpenChange(false)}
+                                className="h-8 w-8 p-0 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 cursor-pointer transition-colors shrink-0"
+                                aria-label="Close modal"
+                            >
+                                <X className="h-4.5 w-4.5" />
+                            </Button>
+                        </SimpleTooltip>
                     </div>
                 </div>
 

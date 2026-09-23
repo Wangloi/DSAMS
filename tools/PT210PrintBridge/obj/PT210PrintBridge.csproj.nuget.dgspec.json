@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "c:\\laragon\\www\\DSAMS\\tools\\PT210PrintBridge\\PT210PrintBridge.csproj": {}
+    "C:\\laragon\\www\\DSAMS\\tools\\PT210PrintBridge\\PT210PrintBridge.csproj": {}
   },
   "projects": {
-    "c:\\laragon\\www\\DSAMS\\tools\\PT210PrintBridge\\PT210PrintBridge.csproj": {
+    "C:\\laragon\\www\\DSAMS\\tools\\PT210PrintBridge\\PT210PrintBridge.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "c:\\laragon\\www\\DSAMS\\tools\\PT210PrintBridge\\PT210PrintBridge.csproj",
+        "projectUniqueName": "C:\\laragon\\www\\DSAMS\\tools\\PT210PrintBridge\\PT210PrintBridge.csproj",
         "projectName": "PT210PrintBridge",
-        "projectPath": "c:\\laragon\\www\\DSAMS\\tools\\PT210PrintBridge\\PT210PrintBridge.csproj",
+        "projectPath": "C:\\laragon\\www\\DSAMS\\tools\\PT210PrintBridge\\PT210PrintBridge.csproj",
         "packagesPath": "C:\\Users\\Maricar\\.nuget\\packages\\",
-        "outputPath": "c:\\laragon\\www\\DSAMS\\tools\\PT210PrintBridge\\obj\\",
+        "outputPath": "C:\\laragon\\www\\DSAMS\\tools\\PT210PrintBridge\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Maricar\\AppData\\Roaming\\NuGet\\NuGet.Config",

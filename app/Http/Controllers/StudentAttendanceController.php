@@ -133,12 +133,7 @@ class StudentAttendanceController extends Controller
             return response()->json(['message' => 'Your account is pending approval.'], 403);
         }
 
-        $courses = is_array($event->courses) ? $event->courses : [];
-        $yearLevels = is_array($event->year_levels) ? $event->year_levels : [];
-        $studentCourse = $student->course ?? $student->program;
-        $studentYearLevel = $student->year_level;
-
-        if ((! empty($courses) && ! in_array($studentCourse, $courses, true)) || (! empty($yearLevels) && ! in_array($studentYearLevel, $yearLevels, true))) {
+        if (! $this->isStudentEligible($student, $event)) {
             return response()->json(['message' => 'This event is not assigned to your course or year level.'], 403);
         }
 
@@ -149,98 +144,104 @@ class StudentAttendanceController extends Controller
             'accuracy_m' => 'nullable|numeric',
         ]);
 
-        // Dynamic QR Token Security & Expiration Check
-        $tokenData = DynamicAttendanceQrController::tokenData($validated['token']);
-        if (! $tokenData || (int) ($tokenData['event_id'] ?? 0) !== (int) $event->id) {
-            return response()->json([
-                'message' => 'The dynamic QR code is invalid or has expired. Please scan the live QR code currently displayed on the screen.',
-            ], 422);
-        }
-
-        // Geofence check
-        $geoError = $this->geofenceService->validate($event, $validated['latitude'] ?? null, $validated['longitude'] ?? null, $validated['accuracy_m'] ?? null);
-        if ($geoError) {
-            return response()->json($geoError, $geoError['status']);
-        }
-
-        // Pending evaluations check
-        if ($this->evaluationGateService->hasPendingEvaluations($student, $event)) {
-            return response()->json([
-                'message' => 'You must complete evaluations for previous events before attending this one.',
-                'requires_evaluation' => true,
-            ], 422);
-        }
-
-        $existing = Attendance::query()->where('event_id', $event->id)->where('student_id', $student->id)->first();
-        if ($existing && $existing->checked_out_at) {
-            return response()->json(['message' => 'You have already checked out for this event.'], 409);
-        }
-
-        $now = Carbon::now();
-        $status = 'present';
-
-        if (! empty($event->registration_end_time)) {
-            $eventDate = Carbon::parse($event->event_date);
-            $cutoff = Carbon::parse($eventDate->format('Y-m-d') . ' ' . $event->registration_end_time);
-            if ($now->greaterThan($cutoff)) {
-                $status = 'late';
+        try {
+            // Dynamic QR Token Security & Expiration Check
+            $tokenData = DynamicAttendanceQrController::tokenData($validated['token']);
+            if (! $tokenData || (int) ($tokenData['event_id'] ?? 0) !== (int) $event->id) {
+                return response()->json([
+                    'message' => 'The dynamic QR code is invalid or has expired. Please scan the live QR code currently displayed on the screen.',
+                ], 422);
             }
-        }
 
-        $eventLat = $event->geofence_latitude;
-        $eventLng = $event->geofence_longitude;
-        $distanceRounded = null;
-        if ((bool) ($event->geofence_enabled ?? false) && isset($validated['latitude'], $validated['longitude']) && $eventLat !== null && $eventLng !== null) {
-            $distanceRounded = (int) round($this->geofenceService->haversineDistanceMeters((float) $validated['latitude'], (float) $validated['longitude'], (float) $eventLat, (float) $eventLng));
-        }
+            // Geofence check
+            $geoError = $this->geofenceService->validate($event, $validated['latitude'] ?? null, $validated['longitude'] ?? null, $validated['accuracy_m'] ?? null);
+            if ($geoError) {
+                return response()->json($geoError, $geoError['status']);
+            }
 
-        if (! $existing) {
-            $attendance = Attendance::create([
-                'event_id' => $event->id,
-                'student_id' => $student->id,
-                'scanned_at' => $now,
-                'status' => $status,
-                'checked_in_at' => $now,
-                'check_in_latitude' => $validated['latitude'] ?? null,
-                'check_in_longitude' => $validated['longitude'] ?? null,
-                'check_in_accuracy_m' => isset($validated['accuracy_m']) ? (int) round((float) $validated['accuracy_m']) : null,
-                'check_in_distance_m' => $distanceRounded,
-                'check_in_token_id' => $validated['token'],
-                'check_in_user_agent' => $request->userAgent(),
+            // Pending evaluations check
+            if ($this->evaluationGateService->hasPendingEvaluations($student, $event)) {
+                return response()->json([
+                    'message' => 'You must complete evaluations for previous events before attending this one.',
+                    'requires_evaluation' => true,
+                ], 422);
+            }
+
+            $existing = Attendance::query()->where('event_id', $event->id)->where('student_id', $student->id)->first();
+            $now = Carbon::now();
+
+            $scanEval = $event->evaluateAttendanceScan($now, $existing);
+            if (! $scanEval['allowed']) {
+                return response()->json([
+                    'message' => $scanEval['error_message'],
+                ], $scanEval['status_code']);
+            }
+
+            $status = $scanEval['status'];
+            $isTimeOut = ($scanEval['action'] === 'check_out');
+
+            $eventLat = $event->geofence_latitude;
+            $eventLng = $event->geofence_longitude;
+            $distanceRounded = null;
+            if ((bool) ($event->geofence_enabled ?? false) && isset($validated['latitude'], $validated['longitude']) && $eventLat !== null && $eventLng !== null) {
+                $distanceRounded = (int) round($this->geofenceService->haversineDistanceMeters((float) $validated['latitude'], (float) $validated['longitude'], (float) $eventLat, (float) $eventLng));
+            }
+
+            if (! $existing) {
+                $attendance = Attendance::create([
+                    'event_id' => $event->id,
+                    'student_id' => $student->id,
+                    'scanned_at' => $now,
+                    'status' => $status,
+                    'checked_in_at' => $now,
+                    'check_in_latitude' => $validated['latitude'] ?? null,
+                    'check_in_longitude' => $validated['longitude'] ?? null,
+                    'check_in_accuracy_m' => isset($validated['accuracy_m']) ? (int) round((float) $validated['accuracy_m']) : null,
+                    'check_in_distance_m' => $distanceRounded,
+                    'check_in_token_id' => $validated['token'],
+                    'check_in_user_agent' => $request->userAgent(),
+                ]);
+            } else {
+                $existing->update([
+                    'scanned_at' => $now,
+                    'checked_out_at' => $now,
+                    'check_out_latitude' => $validated['latitude'] ?? null,
+                    'check_out_longitude' => $validated['longitude'] ?? null,
+                    'check_out_accuracy_m' => isset($validated['accuracy_m']) ? (int) round((float) $validated['accuracy_m']) : null,
+                    'check_out_distance_m' => $distanceRounded,
+                    'check_out_token_id' => $validated['token'],
+                    'check_out_user_agent' => $request->userAgent(),
+                ]);
+                $attendance = $existing;
+            }
+
+            $event->updateAttendanceCounts();
+            try {
+                app(StudentNotificationDispatcher::class)->attendanceRecorded($event, $attendance);
+            } catch (\Throwable) {}
+
+            $checkInLabel = $status === 'late'
+                ? 'Time-in (Check-in) recorded as LATE.'
+                : 'Time-in (Check-in) recorded successfully (On-Time).';
+
+            return response()->json([
+                'attendance_id' => $attendance->id,
+                'status' => $attendance->status,
+                'action' => $isTimeOut ? 'check_out' : 'check_in',
+                'message' => $isTimeOut ? 'Time-out (Check-out) recorded successfully.' : $checkInLabel,
+                'checked_in_at' => optional($attendance->checked_in_at)->toDateTimeString(),
+                'checked_out_at' => $attendance->checked_out_at ? optional($attendance->checked_out_at)->toDateTimeString() : null,
+                'student' => [
+                    'id' => $student->id,
+                    'student_id' => $student->student_id,
+                    'name' => $student->name,
+                    'program' => (string) ($student->course ?? $student->program ?? ''),
+                ],
             ]);
-            $isTimeOut = false;
-        } else {
-            $existing->update([
-                'scanned_at' => $now,
-                'checked_out_at' => $now,
-                'check_out_latitude' => $validated['latitude'] ?? null,
-                'check_out_longitude' => $validated['longitude'] ?? null,
-                'check_out_accuracy_m' => isset($validated['accuracy_m']) ? (int) round((float) $validated['accuracy_m']) : null,
-                'check_out_distance_m' => $distanceRounded,
-                'check_out_token_id' => $validated['token'],
-                'check_out_user_agent' => $request->userAgent(),
-            ]);
-            $attendance = $existing;
-            $isTimeOut = true;
+        } catch (\Throwable $e) {
+            \Log::error('Dynamic QR scan error: ' . $e->getMessage(), ['exception' => $e]);
+            return response()->json(['message' => 'Attendance error: ' . $e->getMessage()], 500);
         }
-
-        $event->updateAttendanceCounts();
-        app(StudentNotificationDispatcher::class)->attendanceRecorded($event, $attendance);
-
-        return response()->json([
-            'attendance_id' => $attendance->id,
-            'status' => $attendance->status,
-            'action' => $isTimeOut ? 'check_out' : 'check_in',
-            'message' => $isTimeOut ? 'Time-out (Check-out) recorded successfully.' : 'Time-in (Check-in) recorded successfully.',
-            'checked_in_at' => optional($attendance->checked_in_at)->toDateTimeString(),
-            'checked_out_at' => $attendance->checked_out_at ? optional($attendance->checked_out_at)->toDateTimeString() : null,
-            'student' => [
-                'id' => $student->id,
-                'student_id' => $student->student_id,
-                'name' => $student->name,
-                'program' => (string) ($student->course ?? $student->program ?? ''),
-            ],
-        ]);
     }
 
     /**
@@ -259,12 +260,7 @@ class StudentAttendanceController extends Controller
             return response()->json(['message' => 'Your account is pending approval.'], 403);
         }
 
-        $courses = is_array($event->courses) ? $event->courses : [];
-        $yearLevels = is_array($event->year_levels) ? $event->year_levels : [];
-        $studentCourse = $student->course ?? $student->program;
-        $studentYearLevel = $student->year_level;
-
-        if ((! empty($courses) && ! in_array($studentCourse, $courses, true)) || (! empty($yearLevels) && ! in_array($studentYearLevel, $yearLevels, true))) {
+        if (! $this->isStudentEligible($student, $event)) {
             return response()->json(['message' => 'This event is not assigned to your course or year level.'], 403);
         }
 
@@ -274,84 +270,104 @@ class StudentAttendanceController extends Controller
             'accuracy_m' => 'nullable|numeric',
         ]);
 
-        $geoError = $this->geofenceService->validate($event, (float) $validated['latitude'], (float) $validated['longitude'], isset($validated['accuracy_m']) ? (float) $validated['accuracy_m'] : null);
-        if ($geoError) {
-            return response()->json($geoError, $geoError['status']);
-        }
-
-        if ($this->evaluationGateService->hasPendingEvaluations($student, $event)) {
-            return response()->json([
-                'message' => 'You must complete evaluations for previous events before attending this one.',
-                'requires_evaluation' => true,
-            ], 422);
-        }
-
-        $now = Carbon::now();
-        $status = 'present';
-
-        if (! empty($event->registration_end_time)) {
-            $cutoff = Carbon::parse(Carbon::parse($event->event_date)->format('Y-m-d') . ' ' . $event->registration_end_time);
-            if ($now->greaterThan($cutoff)) {
-                $status = 'late';
+        try {
+            $geoError = $this->geofenceService->validate($event, (float) $validated['latitude'], (float) $validated['longitude'], isset($validated['accuracy_m']) ? (float) $validated['accuracy_m'] : null);
+            if ($geoError) {
+                return response()->json($geoError, $geoError['status']);
             }
+
+            if ($this->evaluationGateService->hasPendingEvaluations($student, $event)) {
+                return response()->json([
+                    'message' => 'You must complete evaluations for previous events before attending this one.',
+                    'requires_evaluation' => true,
+                ], 422);
+            }
+
+            $existing = Attendance::query()->where('event_id', $event->id)->where('student_id', $student->id)->first();
+            $now = Carbon::now();
+
+            $scanEval = $event->evaluateAttendanceScan($now, $existing);
+            if (! $scanEval['allowed']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $scanEval['error_message'],
+                ], $scanEval['status_code']);
+            }
+
+            $status = $scanEval['status'];
+            $isTimeOut = ($scanEval['action'] === 'check_out');
+
+            $eventLat = $event->geofence_latitude ?? config('geofence.campus_latitude', 8.743070);
+            $eventLng = $event->geofence_longitude ?? config('geofence.campus_longitude', 124.774500);
+            $distanceRounded = (int) round($this->geofenceService->haversineDistanceMeters((float) $validated['latitude'], (float) $validated['longitude'], (float) $eventLat, (float) $eventLng));
+            $allowedRadius = (int) ($event->geofence_radius_m ?? 50);
+
+            if (! $existing) {
+                $attendance = Attendance::create([
+                    'event_id' => $event->id,
+                    'student_id' => $student->id,
+                    'scanned_at' => $now,
+                    'status' => $status,
+                    'checked_in_at' => $now,
+                    'check_in_latitude' => $validated['latitude'],
+                    'check_in_longitude' => $validated['longitude'],
+                    'check_in_accuracy_m' => isset($validated['accuracy_m']) ? (int) round((float) $validated['accuracy_m']) : null,
+                    'check_in_distance_m' => $distanceRounded,
+                    'check_in_user_agent' => $request->userAgent(),
+                ]);
+
+                $event->updateAttendanceCounts();
+                try {
+                    app(StudentNotificationDispatcher::class)->attendanceRecorded($event, $attendance);
+                } catch (\Throwable) {}
+
+                $checkInMsg = $status === 'late'
+                    ? "Check-in successful (Late Arrival)! You are {$distanceRounded}m from the venue."
+                    : "Check-in successful! You are {$distanceRounded}m from the venue.";
+
+                return response()->json([
+                    'success' => true,
+                    'message' => $checkInMsg,
+                    'type' => 'check_in',
+                    'status' => $status,
+                    'distance_m' => $distanceRounded,
+                    'allowed_radius_m' => $allowedRadius,
+                    'checked_at' => $now->toDateTimeString(),
+                ]);
+            } else {
+                $existing->update([
+                    'scanned_at' => $now,
+                    'checked_out_at' => $now,
+                    'check_out_latitude' => $validated['latitude'],
+                    'check_out_longitude' => $validated['longitude'],
+                    'check_out_accuracy_m' => isset($validated['accuracy_m']) ? (int) round((float) $validated['accuracy_m']) : null,
+                    'check_out_distance_m' => $distanceRounded,
+                ]);
+
+                $event->updateAttendanceCounts();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => "Check-out successful! You are {$distanceRounded}m from the venue.",
+                    'type' => 'check_out',
+                    'status' => $existing->status,
+                    'distance_m' => $distanceRounded,
+                    'allowed_radius_m' => $allowedRadius,
+                    'checked_at' => $now->toDateTimeString(),
+                ]);
+            }
+        } catch (\Throwable $e) {
+            \Log::error('Direct geofence checkin error: ' . $e->getMessage(), ['exception' => $e]);
+            return response()->json(['message' => 'Attendance error: ' . $e->getMessage()], 500);
         }
+    }
 
-        $existing = Attendance::query()->where('event_id', $event->id)->where('student_id', $student->id)->first();
-        $eventLat = $event->geofence_latitude ?? config('geofence.campus_latitude', 8.743070);
-        $eventLng = $event->geofence_longitude ?? config('geofence.campus_longitude', 124.774500);
-        $distanceRounded = (int) round($this->geofenceService->haversineDistanceMeters((float) $validated['latitude'], (float) $validated['longitude'], (float) $eventLat, (float) $eventLng));
-        $allowedRadius = (int) ($event->geofence_radius_m ?? 50);
-
-        if (! $existing) {
-            $attendance = Attendance::create([
-                'event_id' => $event->id,
-                'student_id' => $student->id,
-                'scanned_at' => $now,
-                'status' => $status,
-                'checked_in_at' => $now,
-                'check_in_latitude' => $validated['latitude'],
-                'check_in_longitude' => $validated['longitude'],
-                'check_in_accuracy_m' => isset($validated['accuracy_m']) ? (int) round((float) $validated['accuracy_m']) : null,
-                'check_in_distance_m' => $distanceRounded,
-                'check_in_user_agent' => $request->userAgent(),
-            ]);
-
-            $event->updateAttendanceCounts();
-            app(StudentNotificationDispatcher::class)->attendanceRecorded($event, $attendance);
-
-            return response()->json([
-                'success' => true,
-                'message' => "Check-in successful! You are {$distanceRounded}m from the venue.",
-                'type' => 'check_in',
-                'status' => $status,
-                'distance_m' => $distanceRounded,
-                'allowed_radius_m' => $allowedRadius,
-                'checked_at' => $now->toDateTimeString(),
-            ]);
-        } elseif ($existing->checked_out_at) {
-            return response()->json(['message' => 'You have already checked out for this event.'], 409);
-        } else {
-            $existing->update([
-                'scanned_at' => $now,
-                'checked_out_at' => $now,
-                'check_out_latitude' => $validated['latitude'],
-                'check_out_longitude' => $validated['longitude'],
-                'check_out_accuracy_m' => isset($validated['accuracy_m']) ? (int) round((float) $validated['accuracy_m']) : null,
-                'check_out_distance_m' => $distanceRounded,
-            ]);
-
-            $event->updateAttendanceCounts();
-
-            return response()->json([
-                'success' => true,
-                'message' => "Check-out successful! You are {$distanceRounded}m from the venue.",
-                'type' => 'check_out',
-                'status' => $existing->status,
-                'distance_m' => $distanceRounded,
-                'allowed_radius_m' => $allowedRadius,
-                'checked_at' => $now->toDateTimeString(),
-            ]);
-        }
+    /**
+     * Determine if a student is eligible for an event based on courses and year levels.
+     */
+    protected function isStudentEligible(Student $student, Event $event): bool
+    {
+        return \App\Services\Attendance\EventEligibilityService::isStudentEligible($student, $event);
     }
 
     /**

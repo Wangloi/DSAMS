@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
@@ -275,8 +276,17 @@ export default function IncidentTable({
                                         <tr
                                             key={row.id}
                                             onClick={() => onViewDetail?.(row)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault();
+                                                    onViewDetail?.(row);
+                                                }
+                                            }}
+                                            tabIndex={0}
+                                            role="button"
+                                            aria-label={`View details for case ${row.caseId} - ${row.student}`}
                                             className={cn(
-                                                "cursor-pointer transition-colors duration-150 hover:bg-blue-50/50 dark:hover:bg-blue-950/15",
+                                                "cursor-pointer transition-colors duration-150 hover:bg-blue-50/80 dark:hover:bg-slate-800 dark:hover:bg-blue-950/60 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50",
                                                 hasBatch && selectedIds!.has(row.id) && "bg-blue-50/70 dark:bg-blue-950/20"
                                             )}
                                         >
@@ -284,6 +294,7 @@ export default function IncidentTable({
                                                 <td
                                                     className="w-10 px-3 py-4 text-center"
                                                     onClick={(e) => e.stopPropagation()}
+                                                    onKeyDown={(e) => e.stopPropagation()}
                                                 >
                                                     <input
                                                         type="checkbox"
@@ -357,6 +368,9 @@ export default function IncidentTable({
                                                 onClick={(e) =>
                                                     e.stopPropagation()
                                                 }
+                                                onKeyDown={(e) =>
+                                                    e.stopPropagation()
+                                                }
                                             >
                                                 <Select
                                                     value={row.status}
@@ -402,70 +416,79 @@ export default function IncidentTable({
                                                 onClick={(e) =>
                                                     e.stopPropagation()
                                                 }
+                                                onKeyDown={(e) =>
+                                                    e.stopPropagation()
+                                                }
                                             >
                                                 <div className="ml-auto flex w-fit items-center justify-end gap-1 rounded-lg border border-slate-100/50 bg-slate-50/50 p-1 shadow-sm dark:border-slate-800 dark:bg-slate-800/40">
                                                     {/* #4: Quick phase advance button */}
                                                     {canAdvance && onAdvancePhase && (
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-8 w-8 rounded-md text-blue-600 transition-all duration-200 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/30 dark:hover:text-blue-300"
-                                                            onClick={() =>
-                                                                onAdvancePhase(row)
-                                                            }
-                                                            aria-label={`Advance to Phase ${phaseNum + 1}`}
-                                                            title={`Advance to Phase ${phaseNum + 1}: ${STUDENT_CALLING_PHASES[phaseNum]?.shortLabel ?? 'Next'}`}
+                                                        <SimpleTooltip
+                                                            content={`Advance to Phase ${phaseNum + 1}: ${STUDENT_CALLING_PHASES[phaseNum]?.shortLabel ?? 'Next'}`}
                                                         >
-                                                            <ChevronRight className="h-4 w-4" />
-                                                        </Button>
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 rounded-md text-emerald-600 transition-all duration-200 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-300"
+                                                                onClick={() =>
+                                                                    onAdvancePhase(row)
+                                                                }
+                                                                aria-label={`Advance to Phase ${phaseNum + 1}`}
+                                                            >
+                                                                <ChevronRight className="h-4 w-4" />
+                                                            </Button>
+                                                        </SimpleTooltip>
                                                     )}
                                                     {onCallStudent && (
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-8 w-8 rounded-md text-indigo-600 transition-all duration-200 hover:bg-indigo-50 hover:text-indigo-700 dark:text-indigo-400 dark:hover:bg-indigo-950/30 dark:hover:text-indigo-300"
-                                                            onClick={() =>
-                                                                onCallStudent(row)
-                                                            }
-                                                            aria-label="Call Student (Calling Slip)"
-                                                            title="Call Student (Generate Calling Slip)"
-                                                        >
-                                                            <Printer className="h-4 w-4" />
-                                                        </Button>
+                                                        <SimpleTooltip content="Call Student (Generate Calling Slip)">
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 rounded-md text-indigo-600 transition-all duration-200 hover:bg-indigo-50 hover:text-indigo-700 dark:text-indigo-400 dark:hover:bg-indigo-950/30 dark:hover:text-indigo-300"
+                                                                onClick={() =>
+                                                                    onCallStudent(row)
+                                                                }
+                                                                aria-label="Call Student (Calling Slip)"
+                                                            >
+                                                                <Printer className="h-4 w-4" />
+                                                            </Button>
+                                                        </SimpleTooltip>
                                                     )}
                                                     {onViewDetail && (
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-indigo-50 hover:text-indigo-600 dark:text-slate-400 dark:hover:bg-indigo-950/30 dark:hover:text-indigo-300"
-                                                            onClick={() =>
-                                                                onViewDetail(
-                                                                    row,
-                                                                )
-                                                            }
-                                                            aria-label="Disciplinary Case Detail"
-                                                            title="Disciplinary Case Detail"
-                                                        >
-                                                            <Gavel className="h-4 w-4" />
-                                                        </Button>
+                                                        <SimpleTooltip content="Disciplinary Case Detail">
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 rounded-md text-blue-600 transition-all duration-200 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                                                                onClick={() =>
+                                                                    onViewDetail(
+                                                                        row,
+                                                                    )
+                                                                }
+                                                                aria-label="Disciplinary Case Detail"
+                                                            >
+                                                                <Gavel className="h-4 w-4" />
+                                                            </Button>
+                                                        </SimpleTooltip>
                                                     )}
                                                     {onArchive && (
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-8 w-8 rounded-md text-rose-500 transition-all duration-200 hover:bg-rose-50 hover:text-rose-600 dark:text-rose-400 dark:hover:bg-rose-950/30 dark:hover:text-rose-300"
-                                                            onClick={() =>
-                                                                onArchive(row)
-                                                            }
-                                                            aria-label="Archive Incident"
-                                                            title="Archive Incident"
-                                                        >
-                                                            <Archive className="h-4 w-4" />
-                                                        </Button>
+                                                        <SimpleTooltip content="Archive Incident">
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 rounded-md text-orange-600 transition-all duration-200 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-950/30"
+                                                                onClick={() =>
+                                                                    onArchive(row)
+                                                                }
+                                                                aria-label="Archive Incident"
+                                                            >
+                                                                <Archive className="h-4 w-4" />
+                                                            </Button>
+                                                        </SimpleTooltip>
                                                     )}
                                                 </div>
                                             </td>

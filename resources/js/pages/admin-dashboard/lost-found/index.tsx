@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
@@ -506,53 +507,56 @@ export default function AdminLostFoundPage() {
                                                 </div>
 
                                                 <div
-                                                    className="mt-4 flex items-center justify-between gap-1.5 border-t border-slate-50 pt-3"
+                                                    className="mt-4 flex items-center justify-between gap-1.5 border-t border-slate-50 pt-3 dark:border-slate-800"
                                                     onClick={(e) =>
                                                         e.stopPropagation()
                                                     }
                                                 >
                                                     <div className="flex gap-1">
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-7 w-7 text-slate-400 hover:bg-slate-100 hover:text-slate-900"
-                                                            onClick={() =>
-                                                                openEditModal(
-                                                                    item,
-                                                                )
-                                                            }
-                                                            title="Edit"
-                                                        >
-                                                            <Edit className="h-3.5 w-3.5" />
-                                                        </Button>
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-7 w-7 text-slate-400 hover:bg-slate-100 hover:text-amber-600"
-                                                            onClick={() =>
-                                                                handleArchive(
-                                                                    item,
-                                                                )
-                                                            }
-                                                            title="Archive"
-                                                        >
-                                                            <Archive className="h-3.5 w-3.5" />
-                                                        </Button>
+                                                        <SimpleTooltip content="Edit Item">
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-7 w-7 text-amber-600 transition-colors hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                                                                onClick={() =>
+                                                                    openEditModal(
+                                                                        item,
+                                                                    )
+                                                                }
+                                                            >
+                                                                <Edit className="h-3.5 w-3.5" />
+                                                            </Button>
+                                                        </SimpleTooltip>
+                                                        <SimpleTooltip content="Archive Item">
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-7 w-7 text-orange-600 transition-colors hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-950/30"
+                                                                onClick={() =>
+                                                                    handleArchive(
+                                                                        item,
+                                                                    )
+                                                                }
+                                                            >
+                                                                <Archive className="h-3.5 w-3.5" />
+                                                            </Button>
+                                                        </SimpleTooltip>
                                                     </div>
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-7 w-7 text-slate-400 hover:bg-slate-100 hover:text-rose-600"
-                                                        onClick={() =>
-                                                            handleDelete(item)
-                                                        }
-                                                        title="Delete"
-                                                    >
-                                                        <Trash2 className="h-3.5 w-3.5" />
-                                                    </Button>
+                                                    <SimpleTooltip content="Delete Item">
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-7 w-7 text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/30"
+                                                            onClick={() =>
+                                                                handleDelete(item)
+                                                            }
+                                                        >
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    </SimpleTooltip>
                                                 </div>
                                             </CardContent>
                                         </Card>

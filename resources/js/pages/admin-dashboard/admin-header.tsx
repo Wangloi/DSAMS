@@ -1,5 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import {
     Dialog,
     DialogContent,
@@ -184,15 +185,17 @@ export function AdminHeader() {
                         open={mobileMenuOpen}
                         onOpenChange={setMobileMenuOpen}
                     >
-                        <SheetTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-10 w-10 rounded-xl text-white hover:bg-white/10"
-                            >
-                                <Menu className="h-5 w-5" />
-                            </Button>
-                        </SheetTrigger>
+                        <SimpleTooltip content="Open Navigation Menu" side="bottom">
+                            <SheetTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-10 w-10 rounded-xl text-white hover:bg-white/10 cursor-pointer"
+                                >
+                                    <Menu className="h-5 w-5" />
+                                </Button>
+                            </SheetTrigger>
+                        </SimpleTooltip>
                         <SheetContent
                             side="left"
                             className="w-72 border-r border-slate-200 bg-white p-0 dark:border-white/10 dark:bg-[#0B192C] [&>button]:hidden"
@@ -284,34 +287,38 @@ export function AdminHeader() {
                     <ThemeToggle variant="header" />
 
                     {/* Detailed Help Center Page Link */}
-                    <Link
-                        href={adminHelp()}
-                        className="relative flex h-9 w-9 items-center justify-center rounded-full text-white hover:bg-white/15 hover:text-white sm:h-10 sm:w-10"
-                        title="Administrator Help & Guidelines Center"
-                    >
-                        <HelpCircle className="h-4 w-4 sm:h-5 sm:w-5" />
-                    </Link>
+                    <SimpleTooltip content="Help & Guidelines Center" side="bottom">
+                        <Link
+                            href={adminHelp()}
+                            className="relative flex h-9 w-9 items-center justify-center rounded-full text-white hover:bg-white/15 hover:text-white sm:h-10 sm:w-10"
+                        >
+                            <HelpCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                        </Link>
+                    </SimpleTooltip>
 
                     {/* Notifications */}
                     <DropdownMenu modal={false}>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={handleNotificationBellClick}
-                                className="relative h-9 w-9 rounded-full text-white hover:bg-white/15 hover:text-white sm:h-10 sm:w-10"
-                            >
-                                <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
-                                {unreadNotifications > 0 ? (
-                                    <span className="absolute -top-1 -right-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[8px] leading-none font-bold text-white sm:h-5 sm:w-5 sm:text-[9px]">
-                                        {unreadNotifications > 99
-                                            ? '99+'
-                                            : unreadNotifications}
-                                    </span>
-                                ) : null}
-                            </Button>
-                        </DropdownMenuTrigger>
+                        <SimpleTooltip content="Notifications" side="bottom">
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={handleNotificationBellClick}
+                                    className="relative h-9 w-9 rounded-full text-white hover:bg-white/15 hover:text-white sm:h-10 sm:w-10 cursor-pointer"
+                                    aria-label="Notifications"
+                                >
+                                    <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
+                                    {unreadNotifications > 0 ? (
+                                        <span className="absolute -top-1 -right-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[8px] leading-none font-bold text-white sm:h-5 sm:w-5 sm:text-[9px]">
+                                            {unreadNotifications > 99
+                                                ? '99+'
+                                                : unreadNotifications}
+                                        </span>
+                                    ) : null}
+                                </Button>
+                            </DropdownMenuTrigger>
+                        </SimpleTooltip>
                         <DropdownMenuContent
                             className="z-[60] w-88 rounded-2xl border border-slate-100 shadow-xl dark:border-slate-800 dark:bg-[#0B192C]"
                             align="end"
@@ -405,33 +412,36 @@ export function AdminHeader() {
 
                     {/* User Menu */}
                     <DropdownMenu modal={false}>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                className="h-auto gap-1 rounded-full border border-white/15 bg-white/5 px-1.5 py-1.5 text-white hover:bg-white/15 hover:text-white sm:gap-2 sm:px-2 sm:py-2"
-                            >
-                                <Avatar className="size-7 overflow-hidden rounded-full sm:size-8">
-                                    <AvatarImage
-                                        src={displayUser.avatar}
-                                        alt={displayUser.name}
-                                    />
-                                    <AvatarFallback className="rounded-lg bg-white/20 text-xs text-white sm:text-sm">
-                                        {getInitials(displayUser.name)}
-                                    </AvatarFallback>
-                                </Avatar>
-                                <div className="hidden text-left leading-tight md:block">
-                                    <div className="max-w-32 truncate text-xs font-semibold sm:text-sm">
-                                        {displayUser.name}
-                                    </div>
-                                    {subtitleLabel && (
-                                        <div className="hidden text-xs text-white/90 lg:block">
-                                            {subtitleLabel}
+                        <SimpleTooltip content="Account Settings & Profile" side="bottom">
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    className="h-auto gap-1 rounded-full border border-white/15 bg-white/5 px-1.5 py-1.5 text-white hover:bg-white/15 hover:text-white sm:gap-2 sm:px-2 sm:py-2 cursor-pointer"
+                                    aria-label="Account Settings & Profile"
+                                >
+                                    <Avatar className="size-7 overflow-hidden rounded-full sm:size-8">
+                                        <AvatarImage
+                                            src={displayUser.avatar}
+                                            alt={displayUser.name}
+                                        />
+                                        <AvatarFallback className="rounded-lg bg-white/20 text-xs text-white sm:text-sm">
+                                            {getInitials(displayUser.name)}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="hidden text-left leading-tight md:block">
+                                        <div className="max-w-32 truncate text-xs font-semibold sm:text-sm">
+                                            {displayUser.name}
                                         </div>
-                                    )}
-                                </div>
-                                <ChevronDown className="hidden h-3 w-3 opacity-90 sm:h-4 sm:w-4 md:block" />
-                            </Button>
-                        </DropdownMenuTrigger>
+                                        {subtitleLabel && (
+                                            <div className="hidden text-xs text-white/90 lg:block">
+                                                {subtitleLabel}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <ChevronDown className="hidden h-3 w-3 opacity-90 sm:h-4 sm:w-4 md:block" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                        </SimpleTooltip>
                         <DropdownMenuContent className="w-56" align="end">
                             <UserMenuContent user={displayUser} />
                         </DropdownMenuContent>

@@ -28,6 +28,7 @@ import {
     XAxis,
     YAxis,
 } from 'recharts';
+import { ChartTooltip } from '@/components/ui/chart-tooltip';
 import AdminLayout from '../admin-layout';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -589,19 +590,7 @@ export default function AdminAnalyticsPage(props: Props) {
                                                 axisLine={false}
                                                 tickLine={false}
                                             />
-                                            <Tooltip
-                                                contentStyle={{
-                                                    backgroundColor:
-                                                        'rgba(15, 23, 42, 0.95)',
-                                                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                    borderRadius: '12px',
-                                                    color: '#fff',
-                                                    fontSize: '12px',
-                                                    fontWeight: '600',
-                                                    boxShadow:
-                                                        '0 10px 15px -3px rgba(0, 0, 0, 0.3)',
-                                                }}
-                                            />
+                                            <Tooltip content={<ChartTooltip valueSuffix="Scans" />} />
                                             <Area
                                                 type="monotone"
                                                 dataKey="value"
@@ -674,19 +663,7 @@ export default function AdminAnalyticsPage(props: Props) {
                                                 axisLine={false}
                                                 tickLine={false}
                                             />
-                                            <Tooltip
-                                                contentStyle={{
-                                                    backgroundColor:
-                                                        'rgba(15, 23, 42, 0.95)',
-                                                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                    borderRadius: '12px',
-                                                    color: '#fff',
-                                                    fontSize: '12px',
-                                                    fontWeight: '600',
-                                                    boxShadow:
-                                                        '0 10px 15px -3px rgba(0, 0, 0, 0.3)',
-                                                }}
-                                            />
+                                            <Tooltip content={<ChartTooltip valueSuffix="Cases" />} />
                                             <Bar
                                                 dataKey="warning"
                                                 stackId="a"
@@ -791,19 +768,7 @@ export default function AdminAnalyticsPage(props: Props) {
                                                     ),
                                                 )}
                                             </Pie>
-                                            <Tooltip
-                                                contentStyle={{
-                                                    backgroundColor:
-                                                        'rgba(15, 23, 42, 0.95)',
-                                                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                    borderRadius: '12px',
-                                                    color: '#fff',
-                                                    fontSize: '12px',
-                                                    fontWeight: '600',
-                                                    boxShadow:
-                                                        '0 10px 15px -3px rgba(0, 0, 0, 0.3)',
-                                                }}
-                                            />
+                                            <Tooltip content={<ChartTooltip valueSuffix="Responses" />} />
                                         </PieChart>
                                     </ResponsiveContainer>
                                 </div>
@@ -891,17 +856,7 @@ export default function AdminAnalyticsPage(props: Props) {
                                                 cursor={{
                                                     fill: 'rgba(147, 51, 234, 0.06)',
                                                 }}
-                                                contentStyle={{
-                                                    backgroundColor:
-                                                        'rgba(15, 23, 42, 0.95)',
-                                                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                    borderRadius: '12px',
-                                                    color: '#fff',
-                                                    fontSize: '12px',
-                                                    fontWeight: '600',
-                                                    boxShadow:
-                                                        '0 10px 15px -3px rgba(0, 0, 0, 0.3)',
-                                                }}
+                                                content={<ChartTooltip valueSuffix="Forms" />}
                                             />
                                             <Bar
                                                 dataKey="value"

@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import type { IncidentRow, InvestigationDetails } from './types';
 
 interface InvestigationDialogProps {
@@ -163,7 +164,7 @@ export default function InvestigationDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 overlayClassName="z-[90]"
-                className="z-[95] max-h-[92vh] w-[95vw] sm:max-w-4xl md:max-w-5xl gap-0 overflow-y-auto border-slate-200 bg-slate-50 p-0 shadow-2xl dark:border-slate-800 dark:bg-[#0B192C]"
+                className="z-[95] max-h-[92vh] w-[95vw] sm:max-w-4xl md:max-w-5xl gap-0 overflow-y-auto border-slate-200 bg-slate-50 p-0 shadow-2xl dark:border-slate-800 dark:bg-[#0B192C] [&>button:last-child]:hidden"
             >
                 <DialogHeader className="sr-only">
                     <DialogTitle>Step 2: Investigation & Fact-Finding</DialogTitle>
@@ -200,6 +201,19 @@ export default function InvestigationDialog({
                         <Badge variant="outline" className="border-pink-300/40 bg-pink-950/40 text-pink-200 text-xs font-bold">
                             Investigation Protocol
                         </Badge>
+                        <div className="h-5 w-px bg-pink-800 mx-0.5" />
+                        <SimpleTooltip content="Close (Esc)">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onOpenChange(false)}
+                                className="h-8 w-8 p-0 rounded-lg text-pink-200 hover:text-white hover:bg-white/15 cursor-pointer transition-colors shrink-0"
+                                aria-label="Close modal"
+                            >
+                                <X className="h-4.5 w-4.5" />
+                            </Button>
+                        </SimpleTooltip>
                     </div>
                 </div>
 

@@ -74,13 +74,7 @@ class EvaluationEligibilityService
             return false;
         }
 
-        $courses = is_array($event->courses) ? array_filter($event->courses) : [];
-        $yearLevels = is_array($event->year_levels) ? array_filter($event->year_levels) : [];
-
-        if (! empty($courses) && ! in_array((string) $student->course, $courses, true)) {
-            return false;
-        }
-        if (! empty($yearLevels) && ! in_array((string) $student->year_level, $yearLevels, true)) {
+        if (! \App\Services\Attendance\EventEligibilityService::isStudentEligible($student, $event)) {
             return false;
         }
 

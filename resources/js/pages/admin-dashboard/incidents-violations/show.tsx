@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import AdminLayout from '../admin-layout';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import CallingSlipModal from './CallingSlipModal';
 import InvestigationDialog from './InvestigationDialog';
 import DisciplinaryResolutionModal from './DisciplinaryResolutionModal';
@@ -149,7 +150,7 @@ export default function DisciplinaryCaseDetailPage({
             <Head title={`Disciplinary Case Detail - #${caseId}`} />
 
             <div className="min-h-[calc(100vh-4rem)] bg-slate-100 pb-12 dark:bg-[#020617] print:hidden">
-                <div className="flex w-full flex-col gap-6 px-6 py-6 max-w-7xl mx-auto">
+                <div className="flex w-full flex-col gap-6 px-6 py-6">
                     {/* ── Official DSAMS Brand Hero Header ── */}
                     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] p-6 shadow-xl shadow-blue-900/20">
                         <div className="pointer-events-none absolute -top-12 -right-12 h-56 w-56 rounded-full bg-white/5" />
@@ -158,13 +159,15 @@ export default function DisciplinaryCaseDetailPage({
 
                         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-center gap-4">
-                                <Link
-                                    href={adminIncidentsViolations()}
-                                    className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 text-white shadow-inner ring-1 ring-white/20 backdrop-blur-sm transition-all duration-200 hover:bg-white/20"
-                                    title="Back to Violation Registry"
-                                >
-                                    <ArrowLeft className="h-5 w-5" />
-                                </Link>
+                                <SimpleTooltip content="Back to Violation Registry">
+                                    <Link
+                                        href={adminIncidentsViolations()}
+                                        className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 text-white shadow-inner ring-1 ring-white/20 backdrop-blur-sm transition-all duration-200 hover:bg-white/20"
+                                        aria-label="Back to Violation Registry"
+                                    >
+                                        <ArrowLeft className="h-5 w-5" />
+                                    </Link>
+                                </SimpleTooltip>
                                 <div>
                                     <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-blue-200/90 uppercase">
                                         <span>Registry</span>
@@ -193,48 +196,53 @@ export default function DisciplinaryCaseDetailPage({
 
                             {/* Primary Action Button Group */}
                             <div className="flex flex-wrap items-center gap-2.5">
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    className="h-10 gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3.5 text-xs font-bold text-white shadow-xs backdrop-blur-md hover:bg-white/20 cursor-pointer"
-                                    onClick={() => setCallingSlipOpen(true)}
-                                    title="Open Step 3 Calling Slip / Summon Notice"
-                                >
-                                    <Printer className="h-4 w-4 text-amber-300" />
-                                    <span>Calling Slip</span>
-                                </Button>
+                                <SimpleTooltip content="Open Step 3: Notice to Appear / Calling Slip Summon">
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        className="h-10 gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3.5 text-xs font-bold text-white shadow-xs backdrop-blur-md hover:bg-white/20 cursor-pointer"
+                                        onClick={() => setCallingSlipOpen(true)}
+                                    >
+                                        <Printer className="h-4 w-4 text-amber-300" />
+                                        <span>Calling Slip</span>
+                                    </Button>
+                                </SimpleTooltip>
 
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    className="h-10 gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3.5 text-xs font-bold text-white shadow-xs backdrop-blur-md hover:bg-white/20 cursor-pointer"
-                                    onClick={() => setInvestigationOpen(true)}
-                                    title="Open Step 2 Fact-Finding & Investigation Summary"
-                                >
-                                    <ClipboardCheck className="h-4 w-4 text-pink-300" />
-                                    <span>Investigation Log</span>
-                                </Button>
+                                <SimpleTooltip content="Open Step 2: Fact-Finding & Investigation Summary">
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        className="h-10 gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3.5 text-xs font-bold text-white shadow-xs backdrop-blur-md hover:bg-white/20 cursor-pointer"
+                                        onClick={() => setInvestigationOpen(true)}
+                                    >
+                                        <ClipboardCheck className="h-4 w-4 text-pink-300" />
+                                        <span>Investigation Log</span>
+                                    </Button>
+                                </SimpleTooltip>
 
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    className="h-10 gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3.5 text-xs font-bold text-white shadow-xs backdrop-blur-md hover:bg-white/20 cursor-pointer"
-                                    onClick={() => setDecisionOpen(true)}
-                                    title="Open Step 4 Disciplinary Resolution & Decision Modal"
-                                >
-                                    <Scale className="h-4 w-4 text-emerald-300" />
-                                    <span>Notice of Decision</span>
-                                </Button>
+                                <SimpleTooltip content="Open Step 4: Disciplinary Resolution & Decision Modal">
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        className="h-10 gap-1.5 rounded-xl border border-white/15 bg-white/10 px-3.5 text-xs font-bold text-white shadow-xs backdrop-blur-md hover:bg-white/20 cursor-pointer"
+                                        onClick={() => setDecisionOpen(true)}
+                                    >
+                                        <Scale className="h-4 w-4 text-emerald-300" />
+                                        <span>Notice of Decision</span>
+                                    </Button>
+                                </SimpleTooltip>
 
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    className="h-10 gap-2 rounded-xl bg-white px-4 font-bold text-[#0b1c5c] shadow-md transition-all hover:bg-blue-50 cursor-pointer"
-                                    onClick={() => window.print()}
-                                >
-                                    <Printer className="h-4 w-4" />
-                                    <span>Export PDF</span>
-                                </Button>
+                                <SimpleTooltip content="Print or Export Case Summary as Official Document / PDF">
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        className="h-10 gap-2 rounded-xl bg-white px-4 font-bold text-[#0b1c5c] shadow-md transition-all hover:bg-blue-50 cursor-pointer"
+                                        onClick={() => window.print()}
+                                    >
+                                        <Printer className="h-4 w-4" />
+                                        <span>Export PDF</span>
+                                    </Button>
+                                </SimpleTooltip>
                             </div>
                         </div>
                     </div>
@@ -333,44 +341,50 @@ export default function DisciplinaryCaseDetailPage({
 
                     {/* ── DSAMS Tab Bar ── */}
                     <div className="flex items-center border-b border-slate-200 dark:border-slate-800 gap-3">
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab('flow')}
-                            className={`flex items-center gap-2 pb-3 px-3.5 text-xs font-extrabold uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
-                                activeTab === 'flow'
-                                    ? 'border-blue-600 text-blue-900 dark:border-amber-400 dark:text-amber-300'
-                                    : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                            }`}
-                        >
-                            <Layers className="h-4 w-4" />
-                            <span>5-Step Due Process Flow</span>
-                        </button>
+                        <SimpleTooltip content="5-step structured due process timeline and state progression">
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('flow')}
+                                className={`flex items-center gap-2 pb-3 px-3.5 text-xs font-extrabold uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
+                                    activeTab === 'flow'
+                                        ? 'border-blue-600 text-blue-900 dark:border-amber-400 dark:text-amber-300'
+                                        : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                                }`}
+                            >
+                                <Layers className="h-4 w-4" />
+                                <span>5-Step Due Process Flow</span>
+                            </button>
+                        </SimpleTooltip>
 
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab('sanctions')}
-                            className={`flex items-center gap-2 pb-3 px-3.5 text-xs font-extrabold uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
-                                activeTab === 'sanctions'
-                                    ? 'border-blue-600 text-blue-900 dark:border-amber-400 dark:text-amber-300'
-                                    : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                            }`}
-                        >
-                            <Scale className="h-4 w-4" />
-                            <span>Disciplinary Sanctions & Actions</span>
-                        </button>
+                        <SimpleTooltip content="Manage corrective sanctions, penalty actions, and service hours">
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('sanctions')}
+                                className={`flex items-center gap-2 pb-3 px-3.5 text-xs font-extrabold uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
+                                    activeTab === 'sanctions'
+                                        ? 'border-blue-600 text-blue-900 dark:border-amber-400 dark:text-amber-300'
+                                        : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                                }`}
+                            >
+                                <Scale className="h-4 w-4" />
+                                <span>Disciplinary Sanctions & Actions</span>
+                            </button>
+                        </SimpleTooltip>
 
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab('history')}
-                            className={`flex items-center gap-2 pb-3 px-3.5 text-xs font-extrabold uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
-                                activeTab === 'history'
-                                    ? 'border-blue-600 text-blue-900 dark:border-amber-400 dark:text-amber-300'
-                                    : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                            }`}
-                        >
-                            <History className="h-4 w-4" />
-                            <span>Student Disciplinary History ({totalWarnings})</span>
-                        </button>
+                        <SimpleTooltip content="Cumulative history of violations and disciplinary records for this student">
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('history')}
+                                className={`flex items-center gap-2 pb-3 px-3.5 text-xs font-extrabold uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
+                                    activeTab === 'history'
+                                        ? 'border-blue-600 text-blue-900 dark:border-amber-400 dark:text-amber-300'
+                                        : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                                }`}
+                            >
+                                <History className="h-4 w-4" />
+                                <span>Student Disciplinary History ({totalWarnings})</span>
+                            </button>
+                        </SimpleTooltip>
                     </div>
 
                     {/* ── TAB 1: 5-STEP DUE PROCESS FLOW & TIMELINE ── */}

@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import {
     Sidebar,
     SidebarContent,
@@ -55,19 +56,24 @@ function SidebarToggle() {
     const { open, toggleSidebar } = useSidebar();
 
     return (
-        <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleSidebar}
-            className="h-8 w-8 rounded-md text-[#0b2d66] transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
-            title={open ? 'Collapse Sidebar' : 'Expand Sidebar'}
+        <SimpleTooltip
+            content={open ? 'Collapse Sidebar' : 'Expand Sidebar'}
+            side="right"
         >
-            {open ? (
-                <PanelLeftClose className="h-5 w-5" />
-            ) : (
-                <PanelLeftOpen className="h-5 w-5" />
-            )}
-        </Button>
+            <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleSidebar}
+                className="h-8 w-8 rounded-md text-[#0b2d66] transition-colors hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 cursor-pointer"
+                aria-label={open ? 'Collapse Sidebar' : 'Expand Sidebar'}
+            >
+                {open ? (
+                    <PanelLeftClose className="h-5 w-5" />
+                ) : (
+                    <PanelLeftOpen className="h-5 w-5" />
+                )}
+            </Button>
+        </SimpleTooltip>
     );
 }
 

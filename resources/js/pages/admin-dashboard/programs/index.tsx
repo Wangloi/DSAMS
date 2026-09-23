@@ -26,8 +26,9 @@ import {
     adminProgramsUnarchive,
 } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { BookOpen, Edit, Eye, Plus, Search, Trash2, Users } from 'lucide-react';
+import { Archive, ArchiveRestore, BookOpen, Edit, Eye, Plus, Search, Trash2, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import AdminLayout from '../admin-layout';
 
@@ -440,59 +441,75 @@ export default function AdminProgramsPage() {
 
                                                 {/* Actions (bottom-right, horizontal) */}
                                                 <div
-                                                    className="absolute right-4 bottom-4 flex items-center gap-2"
+                                                    className="absolute right-4 bottom-4 flex items-center gap-1 rounded-lg border border-slate-100/50 bg-slate-50/50 p-1 shadow-sm dark:border-slate-800 dark:bg-slate-850"
                                                     onClick={(e) =>
                                                         e.stopPropagation()
                                                     }
                                                 >
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            handleView(r.id)
-                                                        }
-                                                        className="inline-flex items-center justify-center rounded-lg border border-blue-200/60 p-2 text-blue-700 hover:bg-blue-50 hover:text-blue-800 dark:border-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/40 dark:hover:text-blue-200"
-                                                        aria-label="View"
-                                                    >
-                                                        <Eye className="h-4 w-4" />
-                                                    </button>
+                                                    <SimpleTooltip content="View Program Details">
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() =>
+                                                                handleView(r.id)
+                                                            }
+                                                            className="h-8 w-8 rounded-md text-blue-600 transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                                                            aria-label="View"
+                                                        >
+                                                            <Eye className="h-4 w-4" />
+                                                        </Button>
+                                                    </SimpleTooltip>
 
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            handleEdit(r.id)
-                                                        }
-                                                        className="inline-flex items-center justify-center rounded-lg border border-emerald-200/60 p-2 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 dark:border-emerald-900/40 dark:text-emerald-300 dark:hover:bg-emerald-900/40 dark:hover:text-emerald-200"
-                                                        aria-label="Edit"
-                                                    >
-                                                        <Edit className="h-4 w-4" />
-                                                    </button>
+                                                    <SimpleTooltip content="Edit Program">
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() =>
+                                                                handleEdit(r.id)
+                                                            }
+                                                            className="h-8 w-8 rounded-md text-amber-600 transition-colors hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                                                            aria-label="Edit"
+                                                        >
+                                                            <Edit className="h-4 w-4" />
+                                                        </Button>
+                                                    </SimpleTooltip>
 
                                                     {r.status === 'active' ? (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                handleArchive(
-                                                                    r.id,
-                                                                )
-                                                            }
-                                                            className="inline-flex items-center justify-center rounded-lg border border-amber-200/60 p-2 text-amber-700 hover:bg-amber-50 hover:text-amber-800 dark:border-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/40 dark:hover:text-amber-200"
-                                                            aria-label="Archive"
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </button>
+                                                        <SimpleTooltip content="Archive Program">
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() =>
+                                                                    handleArchive(
+                                                                        r.id,
+                                                                    )
+                                                                }
+                                                                className="h-8 w-8 rounded-md text-orange-600 transition-colors hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-950/30"
+                                                                aria-label="Archive"
+                                                            >
+                                                                <Archive className="h-4 w-4" />
+                                                            </Button>
+                                                        </SimpleTooltip>
                                                     ) : (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                handleUnarchive(
-                                                                    r.id,
-                                                                )
-                                                            }
-                                                            className="inline-flex items-center justify-center rounded-lg border border-blue-200/60 p-2 text-blue-700 hover:bg-blue-50 hover:text-blue-800 dark:border-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/40 dark:hover:text-blue-200"
-                                                            aria-label="Unarchive"
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </button>
+                                                        <SimpleTooltip content="Restore Program">
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() =>
+                                                                    handleUnarchive(
+                                                                        r.id,
+                                                                    )
+                                                                }
+                                                                className="h-8 w-8 rounded-md text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+                                                                aria-label="Restore"
+                                                            >
+                                                                <ArchiveRestore className="h-4 w-4" />
+                                                            </Button>
+                                                        </SimpleTooltip>
                                                     )}
                                                 </div>
                                             </div>

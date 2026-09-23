@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "GblO4fqK+VE=",
+  "dgSpecHash": "OZmL7WO4gNs=",
   "success": true,
-  "projectFilePath": "c:\\laragon\\www\\DSAMS\\tools\\PT210PrintBridge\\PT210PrintBridge.csproj",
+  "projectFilePath": "C:\\laragon\\www\\DSAMS\\tools\\PT210PrintBridge\\PT210PrintBridge.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Maricar\\.nuget\\packages\\microsoft.net.illink.tasks\\8.0.22\\microsoft.net.illink.tasks.8.0.22.nupkg.sha512",
     "C:\\Users\\Maricar\\.nuget\\packages\\runtime.linux-arm.runtime.native.system.io.ports\\8.0.0\\runtime.linux-arm.runtime.native.system.io.ports.8.0.0.nupkg.sha512",

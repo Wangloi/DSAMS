@@ -155,6 +155,220 @@ class Event extends Model
     }
 
     /**
+     * Resolve structured attendance time windows:
+     * - time_in_start: Carbon when Time-In scanning opens
+     * - time_in_cutoff: Carbon until which check-in is considered 'present' (on-time)
+     * - time_out_start: Carbon when Time-Out scanning opens
+     * - time_out_end: Carbon when Time-Out scanning closes
+     *
+     * @return array{time_in_start: ?Carbon, time_in_cutoff: ?Carbon, time_out_start: ?Carbon, time_out_end: ?Carbon}
+     */
+    public function getAttendanceTimeWindows(): array
+    {
+        $dateStr = null;
+        if (! empty($this->event_date)) {
+            $dateStr = $this->event_date instanceof \DateTimeInterface
+                ? $this->event_date->format('Y-m-d')
+                : Carbon::parse((string) $this->event_date)->format('Y-m-d');
+        }
+
+        if (! $dateStr) {
+            return [
+                'time_in_start' => null,
+                'time_in_cutoff' => null,
+                'time_out_start' => null,
+                'time_out_end' => null,
+            ];
+        }
+
+        $timeInStart = null;
+        $timeInCutoff = null;
+
+        // Parse event_time (e.g. "07:30", "07:30 - 08:30", "7:30 AM to 8:30 AM")
+        $rawEventTime = trim((string) ($this->event_time ?? ''));
+        if ($rawEventTime !== '') {
+            $delimiters = [' - ', ' – ', ' to ', '-', '–'];
+            $matchedDelim = null;
+            foreach ($delimiters as $delim) {
+                if (str_contains($rawEventTime, $delim)) {
+                    $matchedDelim = $delim;
+                    break;
+                }
+            }
+
+            if ($matchedDelim) {
+                $parts = explode($matchedDelim, $rawEventTime);
+                try {
+                    $timeInStart = Carbon::parse($dateStr . ' ' . trim($parts[0]));
+                } catch (\Throwable) {}
+                try {
+                    $timeInCutoff = Carbon::parse($dateStr . ' ' . trim($parts[1]));
+                } catch (\Throwable) {}
+            } else {
+                try {
+                    $timeInStart = Carbon::parse($dateStr . ' ' . $rawEventTime);
+                    // Default on-time cutoff is 60 minutes after start time if single time
+                    $timeInCutoff = $timeInStart->copy()->addMinutes(60);
+                } catch (\Throwable) {}
+            }
+        }
+
+        $timeOutStart = null;
+        $timeOutEnd = null;
+
+        // Parse registration_end_time (e.g. "11:00", "11:00 - 12:00", "2026-09-22 11:00:00")
+        $rawEndTime = trim((string) ($this->registration_end_time ?? ''));
+        if ($rawEndTime !== '') {
+            $delimiters = [' - ', ' – ', ' to ', '-', '–'];
+            $matchedDelim = null;
+            foreach ($delimiters as $delim) {
+                if (str_contains($rawEndTime, $delim)) {
+                    $matchedDelim = $delim;
+                    break;
+                }
+            }
+
+            if ($matchedDelim) {
+                $parts = explode($matchedDelim, $rawEndTime);
+                try {
+                    $timeOutStart = Carbon::parse($dateStr . ' ' . trim($parts[0]));
+                } catch (\Throwable) {}
+                try {
+                    $timeOutEnd = Carbon::parse($dateStr . ' ' . trim($parts[1]));
+                } catch (\Throwable) {}
+            } else {
+                try {
+                    $timeOutStart = Carbon::parse($dateStr . ' ' . $rawEndTime);
+                    $timeOutEnd = $timeOutStart->copy()->addMinutes(60);
+                } catch (\Throwable) {
+                    try {
+                        $timeOutStart = Carbon::parse($rawEndTime);
+                        $timeOutEnd = $timeOutStart->copy()->addMinutes(60);
+                    } catch (\Throwable) {}
+                }
+            }
+        }
+
+        // Safety check: ensure time_in_cutoff does not exceed time_out_start if time_out_start is defined
+        if ($timeInCutoff && $timeOutStart && $timeInCutoff->greaterThan($timeOutStart)) {
+            $timeInCutoff = $timeOutStart->copy();
+        }
+
+        return [
+            'time_in_start' => $timeInStart,
+            'time_in_cutoff' => $timeInCutoff,
+            'time_out_start' => $timeOutStart,
+            'time_out_end' => $timeOutEnd,
+        ];
+    }
+
+    /**
+     * Evaluate scan timing status and action based on event time windows.
+     *
+     * @return array{
+     *     allowed: bool,
+     *     action: 'check_in'|'check_out',
+     *     status: 'present'|'late',
+     *     error_message: ?string,
+     *     status_code: int
+     * }
+     */
+    public function evaluateAttendanceScan(\Carbon\CarbonInterface $now, ?Attendance $existingAttendance = null): array
+    {
+        $windows = $this->getAttendanceTimeWindows();
+        $start = $windows['time_in_start'];
+        $cutoff = $windows['time_in_cutoff'];
+        $outStart = $windows['time_out_start'];
+        $outEnd = $windows['time_out_end'];
+
+        $checkedOutAt = $existingAttendance ? ($existingAttendance->getAttributes()['checked_out_at'] ?? $existingAttendance->checked_out_at) : null;
+        $checkedInAt = $existingAttendance ? ($existingAttendance->getAttributes()['checked_in_at'] ?? $existingAttendance->checked_in_at) : null;
+
+        // Case 1: Student is already checked out
+        if ($existingAttendance && ! empty($checkedOutAt)) {
+            return [
+                'allowed' => false,
+                'action' => 'check_out',
+                'status' => $existingAttendance->status ?? 'present',
+                'error_message' => 'Student has already timed out (checked out) for this event.',
+                'status_code' => 409,
+            ];
+        }
+
+        // Case 2: Student is already checked in (attempting Time-Out / Check-Out)
+        if ($existingAttendance && ! empty($checkedInAt)) {
+            // Check if Time-Out window has started
+            if ($outStart && $now->lessThan($outStart)) {
+                $statusLabel = ucfirst($existingAttendance->status ?? 'present');
+                return [
+                    'allowed' => false,
+                    'action' => 'check_out',
+                    'status' => $existingAttendance->status ?? 'present',
+                    'error_message' => "Time-out (Check-out) is not allowed yet. You are already checked in ({$statusLabel}). Time-out scanning will be open from {$outStart->format('h:i A')}" . ($outEnd ? " to {$outEnd->format('h:i A')}" : '') . '.',
+                    'status_code' => 400,
+                ];
+            }
+
+            // Check if Time-Out window has closed
+            if ($outEnd && $now->greaterThan($outEnd)) {
+                return [
+                    'allowed' => false,
+                    'action' => 'check_out',
+                    'status' => $existingAttendance->status ?? 'present',
+                    'error_message' => "Time-out (Check-out) window is closed. Time-out ended at {$outEnd->format('h:i A')}.",
+                    'status_code' => 403,
+                ];
+            }
+
+            // Time-out is allowed
+            return [
+                'allowed' => true,
+                'action' => 'check_out',
+                'status' => $existingAttendance->status ?? 'present',
+                'error_message' => null,
+                'status_code' => 200,
+            ];
+        }
+
+        // Case 3: Initial Check-In (no existing attendance record)
+        // Check if scanning has started
+        if ($start && $now->lessThan($start)) {
+            return [
+                'allowed' => false,
+                'action' => 'check_in',
+                'status' => 'present',
+                'error_message' => "Attendance scanning has not started yet. Event start time is at {$start->format('h:i A')}.",
+                'status_code' => 403,
+            ];
+        }
+
+        // Check if event scanning has completely closed
+        if ($outEnd && $now->greaterThan($outEnd)) {
+            return [
+                'allowed' => false,
+                'action' => 'check_in',
+                'status' => 'late',
+                'error_message' => "Attendance scanning is closed. Event ended at {$outEnd->format('h:i A')}.",
+                'status_code' => 403,
+            ];
+        }
+
+        // Determine if initial check-in is 'present' (on-time) or 'late'
+        $status = 'present';
+        if ($cutoff && $now->greaterThan($cutoff)) {
+            $status = 'late';
+        }
+
+        return [
+            'allowed' => true,
+            'action' => 'check_in',
+            'status' => $status,
+            'error_message' => null,
+            'status_code' => 200,
+        ];
+    }
+
+    /**
      * Compare event calendar date and time boundaries:
      * past date or ended time → completed, active time today → ongoing, future → upcoming.
      *
@@ -188,66 +402,23 @@ class Event extends Model
             return 'upcoming';
         }
 
-        // 3. Event is scheduled for today: Check specific cutoff / end times
-        // Check registration_end_time first
-        if (!empty($registrationEndTime)) {
-            try {
-                $cutoff = Carbon::parse($formattedDate . ' ' . $registrationEndTime);
-                if ($now->greaterThanOrEqualTo($cutoff)) {
-                    return 'completed';
-                }
-            } catch (\Throwable) {
-                // ignore parsing error
-            }
+        // 3. Event is scheduled for today: evaluate using structured windows
+        $dummy = new static([
+            'event_date' => $formattedDate,
+            'event_time' => $eventTime,
+            'registration_end_time' => $registrationEndTime,
+        ]);
+        $windows = $dummy->getAttendanceTimeWindows();
+
+        $start = $windows['time_in_start'];
+        $end = $windows['time_out_end'] ?? ($windows['time_out_start'] ? $windows['time_out_start']->copy()->addMinutes(60) : null);
+
+        if ($start && $now->lessThan($start)) {
+            return 'upcoming';
         }
 
-        // Check event_time for end time or time range (e.g. "08:00 AM - 05:00 PM")
-        if (!empty($eventTime)) {
-            $timeStr = trim((string) $eventTime);
-
-            if (str_contains($timeStr, '-') || str_contains($timeStr, '–') || str_contains($timeStr, 'to')) {
-                $delimiters = ['-', '–', 'to'];
-                $parts = [];
-                foreach ($delimiters as $delim) {
-                    if (str_contains($timeStr, $delim)) {
-                        $parts = explode($delim, $timeStr);
-                        break;
-                    }
-                }
-
-                if (count($parts) >= 2) {
-                    $endTimeStr = trim($parts[1]);
-                    try {
-                        $endTime = Carbon::parse($formattedDate . ' ' . $endTimeStr);
-                        if ($now->greaterThanOrEqualTo($endTime)) {
-                            return 'completed';
-                        }
-                    } catch (\Throwable) {
-                        // ignore
-                    }
-
-                    $startTimeStr = trim($parts[0]);
-                    try {
-                        $startTime = Carbon::parse($formattedDate . ' ' . $startTimeStr);
-                        if ($now->lessThan($startTime)) {
-                            return 'upcoming';
-                        }
-
-                        return 'ongoing';
-                    } catch (\Throwable) {
-                        // ignore
-                    }
-                }
-            } else {
-                try {
-                    $startTime = Carbon::parse($formattedDate . ' ' . $timeStr);
-                    if ($now->lessThan($startTime)) {
-                        return 'upcoming';
-                    }
-                } catch (\Throwable) {
-                    // ignore
-                }
-            }
+        if ($end && $now->greaterThanOrEqualTo($end)) {
+            return 'completed';
         }
 
         return 'ongoing';
@@ -475,8 +646,9 @@ class Event extends Model
     public function eligibleStudentsCount(): int
     {
         $query = Student::query()->where('status', 'approved');
-        $courses = is_array($this->courses) ? $this->courses : [];
-        $yearLevels = is_array($this->year_levels) ? $this->year_levels : [];
+        $courses = is_array($this->courses) ? array_values(array_filter($this->courses, fn($c) => !\App\Services\Attendance\EventEligibilityService::isAllWildcard((string) $c))) : [];
+        $yearLevels = is_array($this->year_levels) ? array_values(array_filter($this->year_levels, fn($y) => !\App\Services\Attendance\EventEligibilityService::isAllWildcard((string) $y))) : [];
+
         if (! empty($courses)) {
             $query->whereIn('course', $courses);
         }
@@ -504,32 +676,15 @@ class Event extends Model
     }
 
 
-    /**
-     * Update the total attendees and present count based on attendance records.
-     */
     public function updateAttendanceCounts()
     {
-        $courses = is_array($this->courses) ? $this->courses : [];
-        $yearLevels = is_array($this->year_levels) ? $this->year_levels : [];
-
-        $eligibleStudentIdsQuery = Student::query()->select('id')->where('status', 'approved');
-        if (!empty($courses)) {
-            $eligibleStudentIdsQuery->whereIn('course', $courses);
+        try {
+            $this->total_attendees = (int) $this->attendances()->count();
+            $this->present_count = (int) $this->attendances()->where('status', 'present')->count();
+            $this->save();
+        } catch (\Throwable) {
+            // Ignore count update failure
         }
-        if (!empty($yearLevels)) {
-            $eligibleStudentIdsQuery->whereIn('year_level', $yearLevels);
-        }
-
-        $this->total_attendees = $this->attendances()
-            ->whereIn('student_id', $eligibleStudentIdsQuery)
-            ->count();
-
-        $this->present_count = $this->attendances()
-            ->whereIn('student_id', $eligibleStudentIdsQuery)
-            ->where('status', 'present')
-            ->count();
-
-        $this->save();
     }
 
 }

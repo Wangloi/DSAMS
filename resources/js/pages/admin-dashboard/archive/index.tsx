@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
@@ -604,18 +605,20 @@ export default function AdminArchivePage() {
                                                         </td>
                                                         <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
                                                             <div className="ml-auto flex w-fit items-center justify-end gap-1 rounded-lg border border-slate-100/50 bg-slate-50/50 p-1 shadow-sm dark:border-slate-800 dark:bg-slate-800/40">
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-emerald-50 hover:text-emerald-600 dark:text-slate-400 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-300"
-                                                                    onClick={() =>
-                                                                        handleUnarchive(
-                                                                            row,
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    <RotateCcw className="h-4 w-4" />
-                                                                </Button>
+                                                                <SimpleTooltip content="Restore Record">
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-8 w-8 rounded-md text-emerald-600 transition-all duration-200 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+                                                                        onClick={() =>
+                                                                            handleUnarchive(
+                                                                                row,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <RotateCcw className="h-4 w-4" />
+                                                                    </Button>
+                                                                </SimpleTooltip>
                                                             </div>
                                                         </td>
                                                     </tr>

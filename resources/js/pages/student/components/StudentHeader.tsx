@@ -1,5 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import {
     Dialog,
     DialogContent,
@@ -301,33 +302,36 @@ export function StudentHeader() {
                     <ThemeToggle variant="header" />
 
                     {/* Detailed Help Center Link - Desktop only to avoid redundancy with mobile bottom nav */}
-                    <Link
-                        href={studentHelp()}
-                        className="relative hidden h-10 w-10 items-center justify-center rounded-xl text-white transition-colors hover:bg-white/10 lg:inline-flex"
-                        title="Student Help & Guidelines Center"
-                    >
-                        <HelpCircle className="h-5 w-5" />
-                    </Link>
+                    <SimpleTooltip content="Help & Guidelines">
+                        <Link
+                            href={studentHelp()}
+                            className="relative hidden h-10 w-10 items-center justify-center rounded-xl text-white transition-colors hover:bg-white/10 lg:inline-flex"
+                        >
+                            <HelpCircle className="h-5 w-5" />
+                        </Link>
+                    </SimpleTooltip>
 
                     {/* Notification Bell Dropdown - Desktop only to avoid redundancy with mobile bottom nav */}
                     <div className="hidden lg:block">
                         <DropdownMenu modal={false}>
-                            <DropdownMenuTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={handleNotificationBellClick}
-                                    className="relative h-10 w-10 rounded-xl text-white transition-colors hover:bg-white/10"
-                                >
-                                    <Bell className="h-5 w-5" />
-                                    {unreadNotifications > 0 ? (
-                                        <span className="absolute top-2 right-2 inline-flex h-2 w-2 items-center justify-center rounded-full bg-rose-500 ring-2 ring-[#0b2d66] dark:ring-[#051139]">
-                                            <span className="absolute inset-0 animate-ping rounded-full bg-rose-500 opacity-75"></span>
-                                        </span>
-                                    ) : null}
-                                </Button>
-                            </DropdownMenuTrigger>
+                            <SimpleTooltip content="Notifications">
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={handleNotificationBellClick}
+                                        className="relative h-10 w-10 rounded-xl text-white transition-colors hover:bg-white/10"
+                                    >
+                                        <Bell className="h-5 w-5" />
+                                        {unreadNotifications > 0 ? (
+                                            <span className="absolute top-2 right-2 inline-flex h-2 w-2 items-center justify-center rounded-full bg-rose-500 ring-2 ring-[#0b2d66] dark:ring-[#051139]">
+                                                <span className="absolute inset-0 animate-ping rounded-full bg-rose-500 opacity-75"></span>
+                                            </span>
+                                        ) : null}
+                                    </Button>
+                                </DropdownMenuTrigger>
+                            </SimpleTooltip>
                             <DropdownMenuContent
                                 className="z-[60] w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-2xl dark:border-white/10 dark:bg-[#051139]"
                                 align="end"

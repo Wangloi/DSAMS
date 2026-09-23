@@ -467,47 +467,16 @@ class AdminAttendanceController extends Controller
         }
 
         $now = Carbon::now();
-        $status = 'present';
 
-        if (! empty($event->event_date) && ! empty($event->event_time)) {
-            try {
-                $eventDateStr = Carbon::parse($event->event_date)->format('Y-m-d');
-                $startDateTime = Carbon::parse($eventDateStr . ' ' . $event->event_time);
-
-                if ($now->lessThan($startDateTime)) {
-                    return response()->json([
-                        'message' => 'Attendance scanning has not started yet. Event start time is at ' . $startDateTime->format('h:i A') . '.',
-                    ], 403);
-                }
-            } catch (\Exception $e) {
-                \Log::warning('[AdminAttendance] Could not parse event start time', ['error' => $e->getMessage()]);
-            }
+        $scanEval = $event->evaluateAttendanceScan($now, $existingAttendance);
+        if (! $scanEval['allowed']) {
+            return response()->json([
+                'message' => $scanEval['error_message'],
+            ], $scanEval['status_code']);
         }
 
-        if (! empty($event->registration_end_time)) {
-            $cutoff = Carbon::parse(Carbon::parse($event->event_date)->format('Y-m-d').' '.$event->registration_end_time);
-
-            $blockAt = $cutoff->copy()->addMinutes(30);
-            if ($now->greaterThanOrEqualTo($blockAt)) {
-                if (Schema::hasColumn('events', 'scanner_portal_active') && (bool) $event->scanner_portal_active) {
-                    $event->update(['scanner_portal_active' => false]);
-                }
-                app(StudentNotificationDispatcher::class)->attendanceIssue(
-                    $event,
-                    $student,
-                    'Attendance scanning for '.(string) $event->event_name.' is already closed.',
-                    'scanner_closed',
-                );
-
-                return response()->json([
-                    'message' => 'Scanning is disabled 30 minutes after the registration end time.',
-                ], 403);
-            }
-
-            if ($now->greaterThan($cutoff)) {
-                $status = 'late';
-            }
-        }
+        $status = $scanEval['status'];
+        $isTimeOut = ($scanEval['action'] === 'check_out');
 
         if (! $existingAttendance) {
             $attendance = Attendance::create([
@@ -517,24 +486,26 @@ class AdminAttendanceController extends Controller
                 'checked_in_at' => $now,
                 'status'        => $status,
             ]);
-            $isTimeOut = false;
         } else {
             $existingAttendance->update([
                 'scanned_at'     => $now,
                 'checked_out_at' => $now,
             ]);
             $attendance = $existingAttendance;
-            $isTimeOut = true;
         }
 
         $event->updateAttendanceCounts();
         app(StudentNotificationDispatcher::class)->attendanceRecorded($event, $attendance);
 
+        $checkInLabel = $status === 'late'
+            ? 'Time-in (Check-in) recorded as LATE.'
+            : 'Time-in (Check-in) recorded successfully (On-Time).';
+
         return response()->json([
             'attendance_id'  => $attendance->id,
             'status'         => $attendance->status,
             'action'         => $isTimeOut ? 'check_out' : 'check_in',
-            'message'        => $isTimeOut ? 'Time-out (Check-out) recorded successfully.' : 'Time-in (Check-in) recorded successfully.',
+            'message'        => $isTimeOut ? 'Time-out (Check-out) recorded successfully.' : $checkInLabel,
             'scanned_at'     => $now->toDateTimeString(),
             'checked_in_at'  => optional($attendance->checked_in_at)->toDateTimeString(),
             'checked_out_at' => $attendance->checked_out_at ? optional($attendance->checked_out_at)->toDateTimeString() : null,

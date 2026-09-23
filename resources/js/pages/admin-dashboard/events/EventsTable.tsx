@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import { formatDate, formatTime } from '@/lib/utils';
 import {
     Archive,
@@ -117,7 +118,16 @@ export default function EventsTable({
                                     <tr
                                         key={event.id}
                                         onClick={() => onView(event)}
-                                        className="cursor-pointer transition-colors duration-150 hover:bg-blue-50/50 dark:hover:bg-blue-950/15"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                onView(event);
+                                            }
+                                        }}
+                                        tabIndex={0}
+                                        role="button"
+                                        aria-label={`View details for event ${event.event_name}`}
+                                        className="cursor-pointer transition-colors duration-150 hover:bg-blue-50/80 dark:hover:bg-slate-800 dark:hover:bg-blue-950/60 focus:outline-hidden focus:ring-1 focus:ring-blue-500/50"
                                     >
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
@@ -163,60 +173,69 @@ export default function EventsTable({
                                         <td
                                             className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap"
                                             onClick={(e) => e.stopPropagation()}
+                                            onKeyDown={(e) => e.stopPropagation()}
                                         >
                                             <div className="ml-auto flex w-fit items-center justify-end gap-1 rounded-lg border border-slate-100/50 bg-slate-50/50 p-1 shadow-sm dark:border-slate-800 dark:bg-slate-800/40">
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() =>
-                                                        onView(event)
-                                                    }
-                                                    className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-blue-50 hover:text-blue-600 dark:text-slate-400 dark:hover:bg-blue-950/30 dark:hover:text-blue-300"
-                                                    aria-label="View event"
-                                                >
-                                                    <Eye className="h-4 w-4" />
-                                                </Button>
+                                                <SimpleTooltip content="View Event Details">
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() =>
+                                                            onView(event)
+                                                        }
+                                                        className="h-8 w-8 rounded-md text-blue-600 transition-all duration-200 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                                                        aria-label="View event"
+                                                    >
+                                                        <Eye className="h-4 w-4" />
+                                                    </Button>
+                                                </SimpleTooltip>
 
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() =>
-                                                        onEdit(event)
-                                                    }
-                                                    className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-violet-50 hover:text-violet-600 dark:text-slate-400 dark:hover:bg-violet-950/30 dark:hover:text-violet-300"
-                                                    aria-label="Edit event"
-                                                >
-                                                    <Edit className="h-4 w-4" />
-                                                </Button>
+                                                <SimpleTooltip content="Edit Event">
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() =>
+                                                            onEdit(event)
+                                                        }
+                                                        className="h-8 w-8 rounded-md text-amber-600 transition-all duration-200 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                                                        aria-label="Edit event"
+                                                    >
+                                                        <Edit className="h-4 w-4" />
+                                                    </Button>
+                                                </SimpleTooltip>
 
                                                 {event.archived_at ? (
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() =>
-                                                            onUnarchive(event)
-                                                        }
-                                                        className="h-8 w-8 rounded-md text-slate-500 transition-all duration-200 hover:bg-emerald-50 hover:text-emerald-600 dark:text-slate-400 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-300"
-                                                        aria-label="Restore event"
-                                                    >
-                                                        <ArchiveRestore className="h-4 w-4" />
-                                                    </Button>
+                                                    <SimpleTooltip content="Restore Event">
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() =>
+                                                                onUnarchive(event)
+                                                            }
+                                                            className="h-8 w-8 rounded-md text-emerald-600 transition-all duration-200 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+                                                            aria-label="Restore event"
+                                                        >
+                                                            <ArchiveRestore className="h-4 w-4" />
+                                                        </Button>
+                                                    </SimpleTooltip>
                                                 ) : (
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() =>
-                                                            onArchive(event)
-                                                        }
-                                                        className="h-8 w-8 rounded-md text-rose-500 transition-all duration-200 hover:bg-rose-50 hover:text-rose-600 dark:text-rose-400 dark:hover:bg-rose-950/30 dark:hover:text-rose-300"
-                                                        aria-label="Archive event"
-                                                    >
-                                                        <Archive className="h-4 w-4" />
-                                                    </Button>
+                                                    <SimpleTooltip content="Archive Event">
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() =>
+                                                                onArchive(event)
+                                                            }
+                                                            className="h-8 w-8 rounded-md text-orange-600 transition-all duration-200 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-950/30"
+                                                            aria-label="Archive event"
+                                                        >
+                                                            <Archive className="h-4 w-4" />
+                                                        </Button>
+                                                    </SimpleTooltip>
                                                 )}
                                             </div>
                                         </td>

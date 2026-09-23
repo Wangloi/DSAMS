@@ -1,6 +1,7 @@
 import StudentLayout from '../components/StudentLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import { Card, CardContent } from '@/components/ui/card';
 import {
     Dialog,
@@ -630,42 +631,46 @@ export default function CertificatesPage() {
                                                 </div>
 
                                                 <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-4 dark:border-white/5">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() =>
-                                                            openCertificate(
-                                                                certificate,
-                                                            )
-                                                        }
-                                                        className="h-9 flex-1 rounded-lg border-slate-200 text-[9px] font-black tracking-widest uppercase transition-all hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                                                    >
-                                                        <Eye className="mr-1.5 h-3.5 w-3.5" />
-                                                        Preview
-                                                    </Button>
-                                                    <Button
-                                                        size="sm"
-                                                        disabled={
-                                                            downloading ===
-                                                            certificate.id
-                                                        }
-                                                        onClick={() =>
-                                                            downloadCertificate(
-                                                                certificate.id,
-                                                            )
-                                                        }
-                                                        className="h-9 flex-1 rounded-lg bg-slate-900 text-[9px] font-black tracking-widest text-white uppercase shadow-md transition-all hover:bg-blue-600 hover:text-white active:scale-95 dark:bg-white dark:text-slate-900 dark:hover:bg-blue-600"
-                                                    >
-                                                        {downloading ===
-                                                        certificate.id ? (
-                                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                                        ) : (
-                                                            <>
-                                                                <Download className="mr-1.5 h-3.5 w-3.5" />
-                                                                Download
-                                                            </>
-                                                        )}
-                                                    </Button>
+                                                    <SimpleTooltip content="Preview E-Certificate">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() =>
+                                                                openCertificate(
+                                                                    certificate,
+                                                                )
+                                                            }
+                                                            className="h-9 flex-1 rounded-lg border-slate-200 text-[9px] font-black tracking-widest text-slate-700 uppercase transition-all hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-blue-950/30 dark:hover:text-blue-400"
+                                                        >
+                                                            <Eye className="mr-1.5 h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                                                            Preview
+                                                        </Button>
+                                                    </SimpleTooltip>
+                                                    <SimpleTooltip content="Download PDF Certificate">
+                                                        <Button
+                                                            size="sm"
+                                                            disabled={
+                                                                downloading ===
+                                                                certificate.id
+                                                            }
+                                                            onClick={() =>
+                                                                downloadCertificate(
+                                                                    certificate.id,
+                                                                )
+                                                            }
+                                                            className="h-9 flex-1 rounded-lg bg-slate-900 text-[9px] font-black tracking-widest text-white uppercase shadow-md transition-all hover:bg-blue-600 hover:text-white active:scale-95 dark:bg-white dark:text-slate-900 dark:hover:bg-blue-600 dark:hover:text-white"
+                                                        >
+                                                            {downloading ===
+                                                            certificate.id ? (
+                                                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                            ) : (
+                                                                <>
+                                                                    <Download className="mr-1.5 h-3.5 w-3.5" />
+                                                                    Download
+                                                                </>
+                                                            )}
+                                                        </Button>
+                                                    </SimpleTooltip>
                                                 </div>
                                             </div>
                                         </CardContent>
@@ -899,33 +904,37 @@ export default function CertificatesPage() {
                     {/* Modal Controls Actions Bar */}
                     {selectedCertificate && (
                         <div className="mt-2 flex flex-col-reverse sm:flex-row justify-end gap-2 border-t border-gray-100 pt-2 print:hidden dark:border-slate-800">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={printCertificate}
-                                className="h-8 w-full sm:w-auto gap-1.5 border-slate-200 text-xs text-slate-700 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:text-white"
-                            >
-                                <Printer className="h-3.5 w-3.5" />
-                                Print
-                            </Button>
+                            <SimpleTooltip content="Print E-Certificate">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={printCertificate}
+                                    className="h-8 w-full sm:w-auto gap-1.5 border-slate-200 text-xs text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-indigo-950/30 dark:hover:text-indigo-400"
+                                >
+                                    <Printer className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                                    Print
+                                </Button>
+                            </SimpleTooltip>
 
-                            <Button
-                                size="sm"
-                                onClick={() =>
-                                    downloadCertificate(selectedCertificate.id)
-                                }
-                                disabled={
-                                    downloading === selectedCertificate.id
-                                }
-                                className="h-8 w-full sm:w-auto gap-1.5 bg-[#0c2340] text-xs text-white hover:bg-[#14325c] dark:bg-blue-600 dark:hover:bg-blue-700"
-                            >
-                                {downloading === selectedCertificate.id ? (
-                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                ) : (
-                                    <Download className="h-3.5 w-3.5" />
-                                )}
-                                Download
-                            </Button>
+                            <SimpleTooltip content="Download PDF Certificate">
+                                <Button
+                                    size="sm"
+                                    onClick={() =>
+                                        downloadCertificate(selectedCertificate.id)
+                                    }
+                                    disabled={
+                                        downloading === selectedCertificate.id
+                                    }
+                                    className="h-8 w-full sm:w-auto gap-1.5 bg-[#0c2340] text-xs text-white hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+                                >
+                                    {downloading === selectedCertificate.id ? (
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    ) : (
+                                        <Download className="h-3.5 w-3.5" />
+                                    )}
+                                    Download
+                                </Button>
+                            </SimpleTooltip>
                         </div>
                     )}
                 </DialogContent>

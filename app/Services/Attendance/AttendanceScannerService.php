@@ -133,15 +133,7 @@ class AttendanceScannerService
         }
 
         // Check Course & Year Eligibility
-        $courses = is_array($event->courses) ? $event->courses : [];
-        $yearLevels = is_array($event->year_levels) ? $event->year_levels : [];
-        $studentCourse = $student->course ?? $student->program;
-        $studentYearLevel = $student->year_level;
-
-        $courseMatch = empty($courses) || in_array($studentCourse, $courses, true);
-        $yearLevelMatch = empty($yearLevels) || in_array($studentYearLevel, $yearLevels, true);
-
-        if (! $courseMatch || ! $yearLevelMatch) {
+        if (! $this->isStudentEligible($student, $event)) {
             if (Schema::hasTable('activity_logs')) {
                 ActivityLog::logForUser($scanner, 'Attendance', 'Denied', "Attendee '{$student->student_id}' not eligible for event #{$event->id}", $request);
             }
@@ -169,54 +161,33 @@ class AttendanceScannerService
         }
 
         $now = Carbon::now();
-        $status = 'present';
-
-        // Start time verification
-        if (! empty($event->event_date) && ! empty($event->event_time)) {
-            try {
-                $eventDateStr = $event->event_date instanceof \DateTimeInterface 
-                    ? $event->event_date->format('Y-m-d') 
-                    : Carbon::parse((string) $event->event_date)->format('Y-m-d');
-                $startDateTime = Carbon::parse($eventDateStr . ' ' . $event->event_time);
-
-                if ($now->lessThan($startDateTime)) {
-                    if (Schema::hasTable('activity_logs')) {
-                        ActivityLog::logForUser($scanner, 'Attendance', 'Denied', 'Scanning attempted before start time for event #' . $event->id, $request);
-                    }
-                    return response()->json([
-                        'message' => 'Attendance scanning has not started yet. Event start time is at ' . $startDateTime->format('h:i A') . '.',
-                    ], 403);
-                }
-            } catch (\Exception $e) {
-                \Log::warning('[ScannerPortal] Could not parse event start time', ['error' => $e->getMessage()]);
-            }
-        }
-
         $attendance = Attendance::query()
             ->where('event_id', $event->id)
             ->where('student_id', $student->id)
             ->first();
 
-        // Registration End & Gap Window checks
-        if (! empty($event->registration_end_time)) {
-            $eventDateStr = $event->event_date instanceof \DateTimeInterface 
-                ? $event->event_date->format('Y-m-d') 
-                : Carbon::parse((string) $event->event_date)->format('Y-m-d');
-            $cutoff = Carbon::parse($eventDateStr . ' ' . $event->registration_end_time);
-            $timeInClose = $cutoff->copy()->addMinutes(60);
-
-            if ($now->greaterThanOrEqualTo($timeInClose) && $now->lessThan($cutoff->copy()->addHours(2))) {
-                if (! $attendance) {
-                    return response()->json([
-                        'message' => 'Attendance Time-In is closed. Time-Out scanning will begin during the checkout window.',
-                    ], 403);
-                }
+        // Evaluate Time-In vs Late vs Time-Out based on event time windows
+        $scanEval = $event->evaluateAttendanceScan($now, $attendance);
+        if (! $scanEval['allowed']) {
+            if (Schema::hasTable('activity_logs')) {
+                ActivityLog::logForUser($scanner, 'Attendance', 'Denied', $scanEval['error_message'] . ' in event #' . $event->id, $request);
+            }
+            if ($scanEval['status_code'] === 409) {
+                app(StudentNotificationDispatcher::class)->attendanceIssue(
+                    $event,
+                    $student,
+                    'A scanner attempted another attendance scan after you had already checked out.',
+                    'already_checked_out',
+                );
             }
 
-            if ($now->greaterThan($cutoff)) {
-                $status = 'late';
-            }
+            return response()->json([
+                'message' => $scanEval['error_message'],
+            ], $scanEval['status_code']);
         }
+
+        $status = $scanEval['status'];
+        $isTimeOut = ($scanEval['action'] === 'check_out');
 
         $eventLat = $event->geofence_latitude;
         $eventLng = $event->geofence_longitude;
@@ -237,18 +208,6 @@ class AttendanceScannerService
                 'check_in_accuracy_m' => $accuracyM !== null ? (int) round((float) $accuracyM) : null,
                 'check_in_distance_m' => $distanceRounded,
             ]);
-        } elseif ($attendance->checked_out_at) {
-            if (Schema::hasTable('activity_logs')) {
-                ActivityLog::logForUser($scanner, 'Attendance', 'Denied', 'Already checked out for event #' . $event->id, $request);
-            }
-            app(StudentNotificationDispatcher::class)->attendanceIssue(
-                $event,
-                $student,
-                'A scanner attempted another attendance scan after you had already checked out.',
-                'already_checked_out',
-            );
-
-            return response()->json(['message' => 'Student has already timed out (checked out) for this event.'], 409);
         } else {
             $attendance->update([
                 'scanned_at' => $now,
@@ -260,7 +219,6 @@ class AttendanceScannerService
             ]);
         }
 
-        $isTimeOut = ! empty($attendance->checked_out_at);
         $this->evaluationGateService->triggerEvaluationNotification($student, $event);
 
         $event->updateAttendanceCounts();
@@ -270,12 +228,16 @@ class AttendanceScannerService
             ActivityLog::logForUser($scanner, 'Attendance', $isTimeOut ? 'Checked Out' : 'Checked In', "Recorded attendance for event #{$event->id} (status: {$status}, action: " . ($isTimeOut ? 'Time Out' : 'Time In') . ")", $request);
         }
 
+        $checkInLabel = $status === 'late'
+            ? 'Time-in (Check-in) recorded as LATE.'
+            : 'Time-in (Check-in) recorded successfully (On-Time).';
+
         return response()->json([
             'attendance_id' => $attendance->id,
-            'status' => $status,
+            'status' => $attendance->status,
             'scanned_at' => $now->toDateTimeString(),
             'action' => $isTimeOut ? 'check_out' : 'check_in',
-            'message' => $isTimeOut ? 'Time-out (Check-out) recorded successfully.' : 'Time-in (Check-in) recorded successfully.',
+            'message' => $isTimeOut ? 'Time-out (Check-out) recorded successfully.' : $checkInLabel,
             'time_in' => optional($attendance->checked_in_at)->format('h:i A'),
             'time_out' => $attendance->checked_out_at ? optional($attendance->checked_out_at)->format('h:i A') : null,
             'student' => [
@@ -286,5 +248,13 @@ class AttendanceScannerService
                 'year_level' => $student->year_level,
             ],
         ]);
+    }
+
+    /**
+     * Determine if a student is eligible for an event based on courses and year levels.
+     */
+    protected function isStudentEligible(Student $student, Event $event): bool
+    {
+        return EventEligibilityService::isStudentEligible($student, $event);
     }
 }

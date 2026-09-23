@@ -2,6 +2,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 // Force Vite HMR refresh
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { cn, formatDate } from '@/lib/utils';
@@ -295,30 +296,34 @@ export default function ProgramHeadReportsPage() {
                                 </div>
 
                                 <div className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                                    <Button
-                                        onClick={() =>
-                                            window.open(
-                                                printUrl(report.key),
-                                                '_blank',
-                                            )
-                                        }
-                                        className="h-10 gap-2 rounded-xl bg-slate-900 text-xs font-black tracking-wider text-white uppercase shadow-md transition-all hover:bg-blue-600 active:scale-95 dark:bg-white dark:text-slate-900 dark:hover:bg-blue-600"
-                                    >
-                                        <Printer className="h-4 w-4" />
-                                        Print / PDF
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => {
-                                            window.location.href = csvUrl(
-                                                report.key,
-                                            );
-                                        }}
-                                        className="h-10 gap-2 rounded-xl border border-slate-200 bg-white text-xs font-bold hover:bg-slate-50 dark:border-slate-800 dark:bg-transparent dark:hover:bg-white/5"
-                                    >
-                                        <Download className="h-4 w-4" />
-                                        Export CSV
-                                    </Button>
+                                    <SimpleTooltip content="Print or Export PDF Report">
+                                        <Button
+                                            onClick={() =>
+                                                window.open(
+                                                    printUrl(report.key),
+                                                    '_blank',
+                                                )
+                                            }
+                                            className="h-10 gap-2 rounded-xl bg-slate-900 text-xs font-black tracking-wider text-white uppercase shadow-md transition-all hover:bg-blue-600 active:scale-95 dark:bg-white dark:text-slate-900 dark:hover:bg-blue-600"
+                                        >
+                                            <Printer className="h-4 w-4" />
+                                            Print / PDF
+                                        </Button>
+                                    </SimpleTooltip>
+                                    <SimpleTooltip content="Export CSV Data">
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => {
+                                                window.location.href = csvUrl(
+                                                    report.key,
+                                                );
+                                            }}
+                                            className="h-10 gap-2 rounded-xl border border-slate-200 bg-white text-xs font-bold hover:bg-slate-50 dark:border-slate-800 dark:bg-transparent dark:hover:bg-white/5"
+                                        >
+                                            <Download className="h-4 w-4" />
+                                            Export CSV
+                                        </Button>
+                                    </SimpleTooltip>
                                 </div>
                                 <div className="mt-5 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                                     <div
