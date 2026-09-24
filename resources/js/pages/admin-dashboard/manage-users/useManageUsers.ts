@@ -211,6 +211,7 @@ export function useManageUsers(errors: Record<string, string> = {}) {
             name: string;
             email: string;
             program?: string;
+            role?: string;
             password?: string;
         },
     ) => {
@@ -221,7 +222,7 @@ export function useManageUsers(errors: Record<string, string> = {}) {
                 Swal.fire({
                     icon: 'success',
                     title: 'Account updated',
-                    text: 'Program Head account has been updated successfully.',
+                    text: 'Personnel account has been updated successfully.',
                     timer: 2000,
                     showConfirmButton: false,
                 });
@@ -240,6 +241,7 @@ export function useManageUsers(errors: Record<string, string> = {}) {
                 name: form.name,
                 email: form.email,
                 program: form.program,
+                role: form.role || 'Program Head',
                 password: form.password,
             },
             {
@@ -249,7 +251,7 @@ export function useManageUsers(errors: Record<string, string> = {}) {
                     Swal.fire({
                         icon: 'success',
                         title: 'Account created',
-                        text: 'Program Head account has been created successfully.',
+                        text: 'Personnel account has been created successfully.',
                         timer: 2000,
                         showConfirmButton: false,
                     });
@@ -269,7 +271,7 @@ export function useManageUsers(errors: Record<string, string> = {}) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Update failed',
-                    text: 'Missing program head id. Please refresh the page and try again.',
+                    text: 'Missing personnel id. Please refresh the page and try again.',
                 });
                 return;
             }
@@ -294,6 +296,7 @@ export function useManageUsers(errors: Record<string, string> = {}) {
                 name,
                 email,
                 program: String(form.program ?? '').trim() || undefined,
+                role: form.role || 'Program Head',
                 password: String(form.password ?? '').trim() || undefined,
             });
         } else {
@@ -554,6 +557,50 @@ export function useManageUsers(errors: Record<string, string> = {}) {
                     },
                 },
             );
+        },
+        deleteProgramHead: async (user: UserRow) => {
+            const rawPhId = Number((user as any)?.program_head_id || user.id);
+            const phId = rawPhId >= 1000000000 ? rawPhId - 1000000000 : rawPhId;
+            if (!phId || Number.isNaN(phId)) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Delete failed',
+                    text: 'Missing program head id. Please refresh the page and try again.',
+                });
+                return;
+            }
+
+            const result = await Swal.fire({
+                icon: 'warning',
+                title: 'Delete Program Head?',
+                text: `Are you sure you want to delete ${user.name}? This action cannot be undone.`,
+                showCancelButton: true,
+                confirmButtonText: 'Delete',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#ef4444',
+            });
+
+            if (!result.isConfirmed) return;
+
+            router.delete(`/admin/program-heads/${phId}`, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Deleted',
+                        text: 'Program Head account has been deleted successfully.',
+                        timer: 2000,
+                        showConfirmButton: false,
+                    });
+                },
+                onError: () => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Delete failed',
+                        text: 'Unable to delete the Program Head account. Please try again.',
+                    });
+                },
+            });
         },
     };
 }

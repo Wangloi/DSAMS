@@ -111,6 +111,13 @@ export default function EventAttendeesModal({
                         Late
                     </Badge>
                 );
+            case 'absent':
+                return (
+                    <Badge className="gap-1 border-rose-100 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-900/30 dark:bg-rose-950/30 dark:text-rose-400">
+                        <AlertCircle className="h-3 w-3" />
+                        Absent
+                    </Badge>
+                );
             default:
                 return (
                     <Badge variant="outline" className="gap-1">

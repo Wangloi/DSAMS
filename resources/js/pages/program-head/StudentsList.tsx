@@ -1,3 +1,4 @@
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { SimpleTooltip } from '@/components/ui/tooltip';
@@ -31,6 +32,7 @@ import Swal from 'sweetalert2';
 import ProgramHeadLayout from './components/ProgramHeadLayout';
 import ViewStudentDialog from '../admin-dashboard/manage-users/ViewStudentDialog';
 import type { UserRow } from '../admin-dashboard/manage-users/types';
+import { getProgramBadgeClass } from '../admin-dashboard/manage-users/ManageUsersTableCard';
 
 type StudentRow = {
     id: string;
@@ -573,17 +575,17 @@ export default function StudentsList({ user, program, students }: Props) {
                                                 <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
                                                     Student ID
                                                 </th>
-                                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
-                                                    Name
-                                                </th>
-                                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
-                                                    Program
+                                                <th className="min-w-[260px] px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
+                                                    Full Name
                                                 </th>
                                                 <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
                                                     Year Level
                                                 </th>
+                                                <th className="px-6 py-4 text-left text-[10px] font-bold tracking-wider uppercase">
+                                                    Department / Program
+                                                </th>
                                                 <th className="px-6 py-4 text-right text-[10px] font-bold tracking-wider uppercase">
-                                                    Actions
+                                                    Action
                                                 </th>
                                             </tr>
                                         </thead>
@@ -654,49 +656,66 @@ export default function StudentsList({ user, program, students }: Props) {
                                                             </td>
                                                             <td className="px-6 py-4">
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 text-xs font-bold text-[#1e40af] shadow-sm dark:from-blue-500/20 dark:to-indigo-500/20 dark:text-blue-300">
-                                                                        {
-                                                                            initials
-                                                                        }
+                                                                    <Avatar className="size-10 ring-2 ring-white dark:ring-slate-800">
+                                                                        <AvatarFallback className="bg-slate-100 text-xs font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                                                                            {initials}
+                                                                        </AvatarFallback>
+                                                                    </Avatar>
+                                                                    <div>
+                                                                        <div className="font-bold text-slate-900 dark:text-white">
+                                                                            {displayName}
+                                                                        </div>
+                                                                        {student.email && (
+                                                                            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                                                                {student.email}
+                                                                            </div>
+                                                                        )}
                                                                     </div>
-                                                                    <span className="font-semibold text-slate-700 dark:text-slate-200">
-                                                                        {
-                                                                            displayName
-                                                                        }
-                                                                    </span>
                                                                 </div>
                                                             </td>
-                                                            <td className="px-6 py-4 font-medium text-slate-600 dark:text-slate-400">
-                                                                {student.course}
+                                                            <td className="px-6 py-4">
+                                                                {student.year_level ? (
+                                                                    <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                                                                        {student.year_level}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-xs text-slate-400">
+                                                                        —
+                                                                    </span>
+                                                                )}
                                                             </td>
                                                             <td className="px-6 py-4">
-                                                                <Badge
-                                                                    variant="outline"
-                                                                    className="border-indigo-200 bg-indigo-50 text-[10px] font-black tracking-widest text-indigo-700 uppercase dark:border-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400"
-                                                                >
-                                                                    <GraduationCap className="mr-1 h-3 w-3" />
-                                                                    {
-                                                                        student.year_level
-                                                                    }
-                                                                </Badge>
+                                                                {String(student.course || student.program || '').trim() ? (
+                                                                    <span
+                                                                        className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-bold tracking-tight ${getProgramBadgeClass(
+                                                                            student.course || student.program,
+                                                                        )}`}
+                                                                    >
+                                                                        {String(student.course || student.program || '').trim()}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-xs text-slate-400">—</span>
+                                                                )}
                                                             </td>
                                                             <td
                                                                 className="px-6 py-4 text-right"
                                                                 onClick={(e) => e.stopPropagation()}
                                                                 onKeyDown={(e) => e.stopPropagation()}
                                                             >
-                                                                <SimpleTooltip content="View Student Record">
-                                                                    <Button
-                                                                        type="button"
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        onClick={() => handleViewRecord(student)}
-                                                                        className="h-8 w-8 rounded-lg text-blue-600 transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30"
-                                                                        aria-label="View Student Attendance"
-                                                                    >
-                                                                        <Eye className="h-4 w-4" />
-                                                                    </Button>
-                                                                </SimpleTooltip>
+                                                                <div className="flex items-center justify-end gap-1.5">
+                                                                    <SimpleTooltip content="View Student Details">
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            onClick={() => handleViewRecord(student)}
+                                                                            className="h-8 w-8 rounded-md text-blue-600 transition-all duration-200 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/30 dark:hover:text-blue-300"
+                                                                            aria-label="View Student Details"
+                                                                        >
+                                                                            <Eye className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </SimpleTooltip>
+                                                                </div>
                                                             </td>
                                                         </tr>
                                                     );
@@ -768,6 +787,7 @@ export default function StudentsList({ user, program, students }: Props) {
                 open={isViewOpen}
                 onOpenChange={setIsViewOpen}
                 student={viewingStudent}
+                hideInformationSheet={true}
             />
         </ProgramHeadLayout>
     );

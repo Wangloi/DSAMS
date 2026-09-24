@@ -135,11 +135,11 @@ export default function CourseStudentsDialog({
                                                                         : 'border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/40 dark:text-emerald-400')
                                                                 }
                                                             >
-                                                                {row.status || 'scanned'}
+                                                                {row.status ? row.status.charAt(0).toUpperCase() + row.status.slice(1) : 'Present'}
                                                             </span>
                                                         ) : (
-                                                            <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
-                                                                not scanned
+                                                            <span className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700 dark:border-rose-900/40 dark:bg-rose-950/40 dark:text-rose-400">
+                                                                Absent
                                                             </span>
                                                         )}
                                                     </td>

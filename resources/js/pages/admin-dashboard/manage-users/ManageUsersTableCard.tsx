@@ -70,6 +70,26 @@ export function formatLastNameFirst(user: {
     return `${lastName}, ${firstNames}`;
 }
 
+export function getProgramBadgeClass(program?: string | null): string {
+    const p = String(program ?? '').trim().toUpperCase();
+    if (p.includes('BSIT') || p === 'IT' || p.includes('INFORMATION TECH')) {
+        return 'bg-[#800000]/10 text-[#800000] border-[#800000]/25 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/50';
+    }
+    if (p.includes('BSBA') || p.includes('BUSINESS')) {
+        return 'bg-yellow-50 text-yellow-800 border-yellow-300 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-700/50';
+    }
+    if (p.includes('BEED') || p.includes('BSED') || p.includes('ELEMENTARY') || p.includes('SECONDARY') || p.includes('TEACHER') || p.includes('EDUCATION')) {
+        return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/50';
+    }
+    if (p.includes('CRIM') || p.includes('JUSTICE')) {
+        return 'bg-blue-100 text-[#1e40af] border-[#3b82f6]/30 dark:bg-blue-950/60 dark:text-blue-200 dark:border-blue-700/50';
+    }
+    if (p.includes('BSHM') || p.includes('HOSPITALITY')) {
+        return 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/50';
+    }
+    return 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
+}
+
 export function ManageUsersTableCard({
     totalUsers,
     searchQuery,
@@ -281,9 +301,6 @@ export function ManageUsersTableCard({
                                             </DropdownMenu>
                                         </div>
                                     </th>
-                                    <th className="w-12 px-2 py-4 text-[10px] font-bold tracking-wider uppercase">
-                                        #
-                                    </th>
                                     <th className="px-6 py-4 text-[10px] font-bold tracking-wider uppercase">
                                         User ID
                                     </th>
@@ -308,14 +325,14 @@ export function ManageUsersTableCard({
                                 {pagedStudents.length === 0 ? (
                                     <tr>
                                         <td
-                                            colSpan={8}
+                                            colSpan={7}
                                             className="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400"
                                         >
                                             No users found.
                                         </td>
                                     </tr>
                                 ) : (
-                                    pagedStudents.map((u, idx) => (
+                                    pagedStudents.map((u) => (
                                         <tr
                                             key={u.id}
                                             onClick={() => {
@@ -358,16 +375,6 @@ export function ManageUsersTableCard({
                                                     aria-label={`Select ${u.name}`}
                                                 />
                                             </td>
-                                            <td className="px-2 py-4 text-slate-500 dark:text-slate-400">
-                                                {(Math.min(
-                                                    Math.max(pageIndex, 1),
-                                                    totalPages,
-                                                ) -
-                                                    1) *
-                                                    pageSize +
-                                                    idx +
-                                                    1}
-                                            </td>
                                             <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">
                                                 {u.student_id}
                                             </td>
@@ -398,11 +405,19 @@ export function ManageUsersTableCard({
                                                                 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                                                                 : u.role
                                                                         ?.toLowerCase()
-                                                                        .includes(
-                                                                            'program',
-                                                                        )
-                                                                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                                                                  : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                                                        .includes('instructor')
+                                                                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                                  : u.role
+                                                                          ?.toLowerCase()
+                                                                          .includes('office')
+                                                                    ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                                                                    : u.role
+                                                                            ?.toLowerCase()
+                                                                            .includes(
+                                                                                'program',
+                                                                            )
+                                                                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                                                      : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                                                         }`}
                                                     >
                                                         {u.role ?? 'Student'}
@@ -421,21 +436,27 @@ export function ManageUsersTableCard({
                                             </td>
                                             <td className="px-6 py-4">
                                                 {u.year_level ? (
-                                                    <span className="inline-flex items-center rounded-md bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 border border-amber-200/80 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/40">
+                                                    <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
                                                         {u.year_level}
                                                     </span>
                                                 ) : (
-                                                    <span className="text-slate-400 text-xs">
+                                                    <span className="text-xs text-slate-400">
                                                         —
                                                     </span>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4 font-medium text-slate-600 dark:text-slate-400">
-                                                <div className="font-semibold text-slate-800 dark:text-slate-200">
-                                                    {String(
-                                                        u.course ?? '',
-                                                    ).trim() || '—'}
-                                                </div>
+                                            <td className="px-6 py-4">
+                                                {String(u.course ?? '').trim() ? (
+                                                    <span
+                                                        className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-bold tracking-tight ${getProgramBadgeClass(
+                                                            u.course,
+                                                        )}`}
+                                                    >
+                                                        {String(u.course ?? '').trim()}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-xs text-slate-400">—</span>
+                                                )}
                                             </td>
 
                                             <td

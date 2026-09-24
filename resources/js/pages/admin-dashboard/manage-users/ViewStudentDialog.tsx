@@ -15,11 +15,11 @@ import {
     CheckCircle2,
     Clock,
     FileText,
-    Filter,
     GraduationCap,
     Info,
     Mail,
     MapPin,
+    Printer,
     QrCode,
     RefreshCw,
     Search,
@@ -90,18 +90,40 @@ type Props = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     student: UserRow | null;
+    hideInformationSheet?: boolean;
+};
+
+const getProgramBadgeClass = (program?: string | null) => {
+    const p = String(program || '').toUpperCase();
+    if (p.includes('BSIT') || p.includes('INFORMATION TECH')) {
+        return 'bg-[#800000]/10 text-[#800000] border-[#800000]/25 dark:bg-[#800000]/25 dark:text-[#ff9999] dark:border-[#800000]/40';
+    }
+    if (p.includes('BSBA') || p.includes('BUSINESS')) {
+        return 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-700/50';
+    }
+    if (p.includes('BEED') || p.includes('BSED') || p.includes('EDUCATION')) {
+        return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/50';
+    }
+    if (p.includes('CRIM') || p.includes('BSCRIM')) {
+        return 'bg-blue-100 text-[#1e40af] border-[#3b82f6]/30 dark:bg-blue-950/60 dark:text-[#93c5fd] dark:border-blue-700/50';
+    }
+    if (p.includes('BSHM') || p.includes('HOSPITALITY') || p.includes('HM')) {
+        return 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/50';
+    }
+    return 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
 };
 
 export default function ViewStudentDialog({
     open,
     onOpenChange,
     student,
+    hideInformationSheet = false,
 }: Props) {
     const isProgramHead =
         student?.userType === 'program_head' ||
         String(student?.role ?? '').toLowerCase().includes('program');
 
-    const [activeTab, setActiveTab] = useState<'attendance' | 'info' | 'violations'>('info');
+    const [activeTab, setActiveTab] = useState<'attendance' | 'violations' | 'info'>('attendance');
     const [attendances, setAttendances] = useState<StudentAttendanceRecord[]>([]);
     const [summary, setSummary] = useState<AttendanceSummary>({
         total_attended: 0,
@@ -128,13 +150,15 @@ export default function ViewStudentDialog({
     const [violationSearch, setViolationSearch] = useState('');
     const [violationSectionFilter, setViolationSectionFilter] = useState<'all' | 'Warning' | 'Suspension' | 'Exclusion' | 'Expulsion'>('all');
 
-    // Fetch student's attendance records and reset to attendance tab when dialog opens
+    // Fetch student's attendance records and reset tab state when dialog opens
     useEffect(() => {
         if (!open || !student || isProgramHead) {
             return;
         }
 
-        setActiveTab('info');
+        // Default tab selection: attendance if information sheet is hidden or attendance is preferred
+        setActiveTab(hideInformationSheet ? 'attendance' : 'attendance');
+
         let isMounted = true;
         setIsLoadingAttendance(true);
 
@@ -173,7 +197,7 @@ export default function ViewStudentDialog({
         return () => {
             isMounted = false;
         };
-    }, [open, student?.id, student?.student_id, isProgramHead]);
+    }, [open, student?.id, student?.student_id, isProgramHead, hideInformationSheet]);
 
     // Fetch student's violation records when dialog opens
     useEffect(() => {
@@ -261,7 +285,7 @@ export default function ViewStudentDialog({
 <html>
 <head>
 <meta charset="utf-8" />
-<title>Program Head Information Profile</title>
+<title>Program Head Information Profile - ${student.name}</title>
 <style>
     body { font-family: Arial, Helvetica, sans-serif; padding: 40px; color: #0f172a; font-size: 11px; line-height: 1.5; background: #fff; }
     .header { display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 2px solid #0b2d66; padding-bottom: 12px; margin-bottom: 15px; }
@@ -372,7 +396,7 @@ export default function ViewStudentDialog({
 <html>
 <head>
 <meta charset="utf-8" />
-<title>Student Attendance & Participation Record - ${student.name}</title>
+<title>Student Attendance Record - ${student.name}</title>
 <style>
     body { font-family: Arial, Helvetica, sans-serif; padding: 40px; color: #0f172a; font-size: 11px; line-height: 1.5; background: #fff; }
     .header { display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 2px solid #0b2d66; padding-bottom: 12px; margin-bottom: 15px; }
@@ -509,6 +533,143 @@ export default function ViewStudentDialog({
 </html>`;
         }
 
+        // Printable violations sheet
+        if (activeTab === 'violations') {
+            const violationRowsHtml = violations.length === 0
+                ? `<tr><td colspan="6" style="text-align:center; padding: 20px; color:#64748b;">No disciplinary violations recorded. Clean record.</td></tr>`
+                : violations.map((vio, idx) => `
+                    <tr>
+                        <td style="text-align: center; font-weight: bold;">${idx + 1}</td>
+                        <td style="font-weight: 700; color: #991b1b;">${vio.violation_name}</td>
+                        <td>${vio.violation_code}</td>
+                        <td>${vio.incident_date || 'N/A'}</td>
+                        <td>${vio.location || 'Campus'}</td>
+                        <td style="text-align: center;">
+                            <span style="display: inline-block; padding: 2px 8px; font-weight: bold; border-radius: 4px; font-size: 9px; text-transform: uppercase; background: #fee2e2; color: #991b1b;">
+                                ${vio.violation_section}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+
+            return `<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Student Disciplinary Record - ${student.name}</title>
+<style>
+    body { font-family: Arial, Helvetica, sans-serif; padding: 40px; color: #0f172a; font-size: 11px; line-height: 1.5; background: #fff; }
+    .header { display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 2px solid #0b2d66; padding-bottom: 12px; margin-bottom: 15px; }
+    .logo-left { height: 75px; width: 75px; object-fit: contain; }
+    .logo-right { height: 75px; width: 75px; object-fit: contain; }
+    .header-text { flex: 1; text-align: center; }
+    .header-text h2 { font-size: 13px; font-weight: 900; margin: 0; color: #0b2d66; }
+    .header-text p { margin: 2px 0; color: #334155; font-size: 10px; }
+    .title { text-align: center; margin: 20px 0 15px; }
+    .title h1 { font-size: 16px; font-weight: 900; color: #0b2d66; margin: 0; letter-spacing: 1px; }
+    .title p { font-size: 10px; font-weight: 600; color: #64748b; margin: 4px 0 0; }
+    
+    .meta-box { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; border: 1px solid #bfdbfe; background: #f8fafc; padding: 10px 14px; border-radius: 6px; margin-bottom: 20px; font-size: 10.5px; }
+    .meta-item { display: flex; flex-direction: column; }
+    .meta-label { font-size: 8.5px; font-weight: bold; color: #64748b; text-transform: uppercase; }
+    .meta-val { font-weight: bold; color: #0b2d66; margin-top: 2px; }
+    
+    table.att-table { width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 25px; }
+    table.att-table th { background: #0b2d66; color: #fff; font-weight: bold; padding: 8px; text-align: left; font-size: 10px; }
+    table.att-table td { border: 1px solid #e2e8f0; padding: 8px; font-size: 10px; vertical-align: middle; }
+    table.att-table tr:nth-child(even) { background: #f8fafc; }
+    
+    .signature-block { margin-top: 40px; display: flex; justify-content: space-between; padding: 0 40px; }
+    .sig-col { text-align: center; width: 220px; }
+    .signature-line { border-bottom: 1px solid #0b2d66; margin-bottom: 4px; font-weight: bold; color: #0b2d66; text-transform: uppercase; padding-bottom: 2px; }
+    .signature-label { font-size: 8px; color: #64748b; font-weight: bold; text-transform: uppercase; }
+    
+    .footer { margin-top: 45px; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 12px; }
+    .footer h3 { font-family: Georgia, serif; font-weight: bold; color: #0b2d66; font-style: italic; margin: 0; font-size: 11px; }
+    .footer p { font-size: 8.5px; color: #64748b; font-style: italic; margin: 3px 0 0; }
+    @media print { body { padding: 0; } }
+</style>
+</head>
+<body>
+<div class="header">
+    <img src="/images/SRCB.png" class="logo-left" alt="SRCB Logo" />
+    <div class="header-text">
+        <h2>ST. RITA'S COLLEGE OF BALINGASAG, INC.</h2>
+        <p>Balingasag, Misamis Oriental</p>
+        <p>Email: ritarian@srcb.edu.ph | Website: www.srcb.edu.ph</p>
+        <p>Tel. (088)323-7159 / Mobile: +63-929-734-0012 (SMART); +63-975-637-9948 (Globe)</p>
+    </div>
+    <img src="/images/DSA.png" class="logo-right" alt="DSA Logo" />
+</div>
+
+<div class="title">
+    <h1>STUDENT DISCIPLINARY & VIOLATIONS RECORD</h1>
+    <p>Official Institutional Disciplinary History</p>
+</div>
+
+<div class="meta-box">
+    <div class="meta-item">
+        <span class="meta-label">Student Name</span>
+        <span class="meta-val">${student.name}</span>
+    </div>
+    <div class="meta-item">
+        <span class="meta-label">Student ID</span>
+        <span class="meta-val">${student.student_id || 'N/A'}</span>
+    </div>
+    <div class="meta-item">
+        <span class="meta-label">Program & Year</span>
+        <span class="meta-val">${student.course || student.program || 'N/A'} • ${student.year_level || 'N/A'}</span>
+    </div>
+    <div class="meta-item">
+        <span class="meta-label">Total Violations</span>
+        <span class="meta-val">${violations.length} recorded</span>
+    </div>
+</div>
+
+<table class="att-table">
+    <thead>
+        <tr>
+            <th style="width: 30px; text-align: center;">#</th>
+            <th>Violation / Offense</th>
+            <th style="width: 80px;">Code</th>
+            <th style="width: 100px;">Incident Date</th>
+            <th style="width: 100px;">Location</th>
+            <th style="width: 90px; text-align: center;">Section</th>
+        </tr>
+    </thead>
+    <tbody>
+        ${violationRowsHtml}
+    </tbody>
+</table>
+
+<div class="signature-block">
+    <div class="sig-col">
+        <div class="signature-line">${student.name}</div>
+        <div class="signature-label">Student Signature</div>
+    </div>
+    <div class="sig-col">
+        <div class="signature-line">OFFICE OF STUDENT AFFAIRS</div>
+        <div class="signature-label">Discipline Officer Signature</div>
+    </div>
+</div>
+
+<div class="footer">
+    <h3>Office of Student Affairs</h3>
+    <p>2nd Level, St. Rita Building, St. Rita's College of Balingasag</p>
+</div>
+
+<script>
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            window.print();
+        }, 300);
+    });
+</script>
+</body>
+</html>`;
+        }
+
+        // Student info sheet (Admin only)
         const year1 = student.year_level === '1st Year' ? '[x]' : '[ ]';
         const year2 = student.year_level === '2nd Year' ? '[x]' : '[ ]';
         const year3 = student.year_level === '3rd Year' ? '[x]' : '[ ]';
@@ -529,7 +690,7 @@ export default function ViewStudentDialog({
 <html>
 <head>
 <meta charset="utf-8" />
-<title>Student Information Sheet</title>
+<title>Student Information Sheet - ${student.name}</title>
 <style>
     body { font-family: Arial, Helvetica, sans-serif; padding: 40px; color: #0f172a; font-size: 11px; line-height: 1.5; background: #fff; }
     .header { display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 2px solid #0b2d66; padding-bottom: 12px; margin-bottom: 15px; }
@@ -550,7 +711,7 @@ export default function ViewStudentDialog({
     table.info-table td.k span.sub { font-size: 8px; font-weight: normal; color: #64748b; display: block; margin-top: 1px; }
     
     .checkbox-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-    .checkbox-item { display: flex; items-center gap: 5px; }
+    .checkbox-item { display: flex; align-items: center; gap: 5px; }
     .checkbox-item span.box { font-family: monospace; font-size: 12px; }
     
     .form-group { display: flex; align-items: flex-end; gap: 8px; margin-bottom: 10px; }
@@ -574,7 +735,6 @@ export default function ViewStudentDialog({
     .footer { margin-top: 50px; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 15px; }
     .footer h3 { font-family: Georgia, serif; font-weight: bold; color: #0b2d66; font-style: italic; margin: 0; font-size: 12px; }
     .footer p { font-size: 9px; color: #64748b; font-style: italic; margin: 3px 0 0; }
-    .footer a { color: #2563eb; text-decoration: underline; }
     
     @media print {
         body { padding: 0; }
@@ -592,7 +752,6 @@ export default function ViewStudentDialog({
         <p>Tel. (088)323-7159 / Mobile: +63-929-734-0012 (SMART); +63-975-637-9948 (Globe)</p>
         <p>PAASCU Level II Re-Accredited: Junior High School</p>
         <p>PAASCU Level I: Teacher Education Program & Business Administration Program</p>
-        <p style="font-style: italic; color: #64748b;">(Philippine Accrediting Association of Schools, Colleges, and Universities)</p>
     </div>
     <img src="/images/DSA.png" class="logo-right" alt="DSA Logo" />
 </div>
@@ -755,22 +914,6 @@ export default function ViewStudentDialog({
     </div>
 </div>
 
-<div class="form-group">
-    <span class="form-label">Name of Guardian:</span>
-    <div class="form-value">${student.guardian_name || 'N/A'}</div>
-</div>
-
-<div class="form-group double">
-    <div style="display: flex; align-items: flex-end; gap: 8px;">
-        <span class="form-label">Relation:</span>
-        <div class="form-value">${student.guardian_relation || 'N/A'}</div>
-    </div>
-    <div style="display: flex; align-items: flex-end; gap: 8px;">
-        <span class="form-label">Contact Number:</span>
-        <div class="form-value">${student.guardian_contact || 'N/A'}</div>
-    </div>
-</div>
-
 <div class="signature-block">
     <div class="signature-line">${student.name}</div>
     <div class="signature-label">Student Signature</div>
@@ -779,7 +922,6 @@ export default function ViewStudentDialog({
 <div class="footer">
     <h3>Office of Student Affairs</h3>
     <p>2nd Level, St. Rita Building, St. Rita's College of Balingasag</p>
-    <p>E-mail Address: <a href="mailto:heddsa@srcb.edu.ph">heddsa@srcb.edu.ph</a></p>
 </div>
 
 <script>
@@ -792,7 +934,7 @@ export default function ViewStudentDialog({
 
 </body>
 </html>`;
-    }, [student, isProgramHead, activeTab, attendances, summary]);
+    }, [student, isProgramHead, activeTab, attendances, summary, violations]);
 
     const print = () => {
         if (!student) return;
@@ -806,7 +948,7 @@ export default function ViewStudentDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[92vh] w-full !max-w-4xl flex-col overflow-hidden rounded-3xl border-0 bg-slate-100 p-0 shadow-2xl dark:bg-slate-900 [&>button]:hidden">
+            <DialogContent className="flex max-h-[92vh] w-full !max-w-4xl flex-col overflow-hidden rounded-3xl border-0 bg-slate-50 p-0 shadow-2xl dark:bg-slate-950 [&>button]:hidden">
                 <DialogHeader className="sr-only">
                     <DialogTitle>
                         {student ? formatLastNameFirst(student) : 'User Details'}
@@ -814,11 +956,12 @@ export default function ViewStudentDialog({
                     <DialogDescription>
                         {isProgramHead
                             ? 'Program Head Profile and Assigned Academic Department details'
-                            : 'Official Student Information Sheet and institutional background record'}
+                            : 'Student Academic Attendance and Disciplinary Record'}
                     </DialogDescription>
                 </DialogHeader>
+
                 {!student ? (
-                    <div className="p-8 text-center text-slate-500">
+                    <div className="p-12 text-center text-slate-500">
                         No record selected.
                     </div>
                 ) : isProgramHead ? (
@@ -849,7 +992,15 @@ export default function ViewStudentDialog({
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-2.5 self-end sm:self-auto">
+                                <div className="flex items-center gap-2 self-end sm:self-auto">
+                                    <Button
+                                        type="button"
+                                        onClick={print}
+                                        className="flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-3.5 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur-md transition-all hover:bg-white/20"
+                                    >
+                                        <Printer className="h-3.5 w-3.5" />
+                                        <span>Print Profile</span>
+                                    </Button>
                                     <button
                                         type="button"
                                         onClick={() => onOpenChange(false)}
@@ -863,7 +1014,6 @@ export default function ViewStudentDialog({
 
                         {/* Program Head Body Content */}
                         <div className="scrollbar-thin flex-1 space-y-6 overflow-y-auto p-6 sm:p-8">
-                            {/* Key Badges & Account Metrics Strip */}
                             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                                 <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
                                     <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Assigned Program</span>
@@ -894,9 +1044,7 @@ export default function ViewStudentDialog({
                                 </div>
                             </div>
 
-                            {/* Section Cards */}
                             <div className="grid gap-6 sm:grid-cols-2">
-                                {/* Card 1: Department Information */}
                                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
                                     <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3 dark:border-slate-800">
                                         <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-[#23509A] dark:bg-blue-950/50 dark:text-[#8CE4FF]">
@@ -932,7 +1080,6 @@ export default function ViewStudentDialog({
                                     </div>
                                 </div>
 
-                                {/* Card 2: Contact & Credentials */}
                                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
                                     <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3 dark:border-slate-800">
                                         <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400">
@@ -968,23 +1115,6 @@ export default function ViewStudentDialog({
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Section 3: Responsibilities & Scope */}
-                            <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/70 to-indigo-50/40 p-5 shadow-xs dark:border-blue-900/40 dark:from-blue-950/30 dark:to-indigo-950/20">
-                                <div className="flex items-start gap-3.5">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#23509A] text-white shadow-sm dark:bg-[#0B4DFF]">
-                                        <ShieldCheck className="h-5 w-5" />
-                                    </div>
-                                    <div className="space-y-1.5 text-xs">
-                                        <h4 className="font-bold text-slate-900 dark:text-white">
-                                            Designated Departmental Responsibilities
-                                        </h4>
-                                        <p className="leading-relaxed text-slate-600 dark:text-slate-300 text-[11.5px]">
-                                            This Program Head possesses administrative jurisdiction over students enrolled in <strong>{student.course || student.program || 'their assigned program'}</strong>. They are authorized to monitor student rosters, evaluate attendance for campus activities, and process departmental incident clearance endorsements.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
 
                         {/* Program Head Footer */}
@@ -1000,64 +1130,173 @@ export default function ViewStudentDialog({
                         </div>
                     </div>
                 ) : (
-                    <>
-                        {/* STUDENT DIALOG TOP BAR WITH TAB SWITCHER & ACTIONS */}
-                        <div className="flex flex-col border-b border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                            {/* Top Strip: Status & Print */}
-                            <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3.5 sm:px-8 border-b border-slate-100 dark:border-slate-900">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#000D6A]/10 text-[#000D6A] dark:bg-[#8CE4FF]/10 dark:text-[#8CE4FF]">
-                                        <GraduationCap className="h-5 w-5" />
+                    <div className="flex max-h-[92vh] flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
+                        {/* ── PREMIUM HERO HEADER ── */}
+                        <div className="relative overflow-hidden bg-gradient-to-r from-[#000D6A] via-[#102A83] to-[#1E3A8A] px-6 py-5 text-white shadow-md sm:px-8">
+                            <div className="pointer-events-none absolute -top-12 -right-12 h-44 w-44 rounded-full bg-cyan-400/20 blur-3xl" />
+                            <div className="pointer-events-none absolute -bottom-12 left-1/3 h-32 w-32 rounded-full bg-blue-400/15 blur-2xl" />
+
+                            <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex items-center gap-3.5">
+                                    <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-[#8CE4FF] shadow-inner ring-1 ring-white/30 backdrop-blur-md">
+                                        <User className="h-7 w-7" />
+                                        <span className={`absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full ring-2 ring-[#000D6A] ${student.is_active ? 'bg-emerald-500' : 'bg-slate-400'}`}>
+                                            <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                                        </span>
                                     </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <h3 className="text-base font-black text-slate-900 dark:text-white">
+                                    <div className="space-y-1">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <h2 className="text-lg font-black tracking-tight text-white sm:text-xl">
                                                 {formatLastNameFirst(student)}
-                                            </h3>
-                                            <Badge
-                                                className={
-                                                    student.is_active
-                                                        ? 'rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400'
-                                                        : 'rounded-full border border-slate-500/20 bg-slate-500/10 px-2.5 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-400'
-                                                }
-                                            >
-                                                {student.is_active ? 'Active Account' : 'Inactive Account'}
-                                            </Badge>
-                                            <Badge
-                                                className={
-                                                    student.status === 'approved'
-                                                        ? 'rounded-full border border-teal-500/20 bg-teal-500/10 px-2.5 py-0.5 text-[10px] font-bold text-teal-600 dark:text-teal-400'
-                                                        : student.status === 'rejected'
-                                                          ? 'rounded-full border border-rose-500/20 bg-rose-500/10 px-2.5 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-400'
-                                                          : 'rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400'
-                                                }
-                                            >
-                                                {student.status === 'approved'
-                                                    ? 'Verified'
-                                                    : student.status === 'rejected'
-                                                      ? 'Rejected'
-                                                      : 'Pending Verification'}
-                                            </Badge>
+                                            </h2>
+                                            <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-extrabold ${getProgramBadgeClass(student.course || student.program)}`}>
+                                                {student.course || student.program || 'Student'}
+                                            </span>
+                                            {student.year_level && (
+                                                <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-[10px] font-bold text-blue-100 backdrop-blur-xs">
+                                                    {student.year_level}
+                                                </span>
+                                            )}
                                         </div>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                                            ID: <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">{student.student_id || 'N/A'}</span> • {student.course || student.program || 'Student'} • {student.year_level || 'General'}
-                                        </p>
+                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-blue-100/80">
+                                            <span>ID: <strong className="font-mono text-white">{student.student_id || 'N/A'}</strong></span>
+                                            <span>&bull;</span>
+                                            <span>{student.email}</span>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 self-end sm:self-auto">
+                                    <Button
+                                        type="button"
+                                        onClick={print}
+                                        className="flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-3.5 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur-md transition-all hover:bg-white/20"
+                                    >
+                                        <Printer className="h-3.5 w-3.5" />
+                                        <span>Print Log</span>
+                                    </Button>
                                     <button
                                         type="button"
                                         onClick={() => onOpenChange(false)}
-                                        className="rounded-full bg-slate-100 p-2 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-800 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white"
+                                        className="rounded-full bg-white/10 p-2 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
                                     >
                                         <X className="h-4 w-4" />
                                     </button>
                                 </div>
                             </div>
+                        </div>
 
-                            {/* Tab Switcher Strip */}
-                            <div className="flex items-center gap-2 px-6 pt-2 sm:px-8 bg-slate-50/70 dark:bg-slate-900/60">
+                        {/* ── STATS SUMMARY RIBBON ── */}
+                        <div className="border-b border-slate-200/80 bg-white px-6 py-3 shadow-xs dark:border-slate-800 dark:bg-slate-900/90 sm:px-8">
+                            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+                                <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-2.5 dark:bg-slate-800/60">
+                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#000D6A]/10 text-[#000D6A] dark:bg-blue-500/20 dark:text-[#8CE4FF]">
+                                        <CalendarCheck2 className="h-4 w-4" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                            Events Attended
+                                        </span>
+                                        <span className="text-base font-black text-slate-900 dark:text-white">
+                                            {summary.total_attended}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-2.5 dark:bg-slate-800/60">
+                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
+                                        <CheckCircle2 className="h-4 w-4" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                            On-Time Rate
+                                        </span>
+                                        <span className="text-base font-black text-emerald-600 dark:text-emerald-400">
+                                            {summary.attendance_rate}%
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-2.5 dark:bg-slate-800/60">
+                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
+                                        <Clock className="h-4 w-4" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                            Late Check-Ins
+                                        </span>
+                                        <span className="text-base font-black text-amber-600 dark:text-amber-400">
+                                            {summary.late_count}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-2.5 dark:bg-slate-800/60">
+                                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${violations.length > 0 ? 'bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400' : 'bg-slate-200/60 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400'}`}>
+                                        <ShieldAlert className="h-4 w-4" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                            Violations
+                                        </span>
+                                        <span className={`text-base font-black ${violations.length > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                                            {violations.length}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ── TAB BAR ── */}
+                        <div className="flex items-center gap-2 border-b border-slate-200 bg-white px-6 pt-2 dark:border-slate-800 dark:bg-slate-900 sm:px-8">
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('attendance')}
+                                className={`relative flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-all ${
+                                    activeTab === 'attendance'
+                                        ? 'border-[#000D6A] text-[#000D6A] dark:border-[#8CE4FF] dark:text-[#8CE4FF]'
+                                        : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                                }`}
+                            >
+                                <CalendarCheck2 className="h-4 w-4" />
+                                Attended Events & Attendance History
+                                <span
+                                    className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
+                                        activeTab === 'attendance'
+                                            ? 'bg-[#000D6A] text-white dark:bg-[#8CE4FF] dark:text-[#000D6A]'
+                                            : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                    }`}
+                                >
+                                    {attendances.length}
+                                </span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('violations')}
+                                className={`relative flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-all ${
+                                    activeTab === 'violations'
+                                        ? 'border-[#000D6A] text-[#000D6A] dark:border-[#8CE4FF] dark:text-[#8CE4FF]'
+                                        : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                                }`}
+                            >
+                                <ShieldAlert className="h-4 w-4" />
+                                Violations & Disciplinary
+                                {violations.length > 0 && (
+                                    <span
+                                        className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
+                                            activeTab === 'violations'
+                                                ? 'bg-rose-600 text-white dark:bg-rose-500'
+                                                : 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300'
+                                        }`}
+                                    >
+                                        {violations.length}
+                                    </span>
+                                )}
+                            </button>
+
+                            {/* Show Information Sheet Tab only if NOT hidden (Admin mode) */}
+                            {!hideInformationSheet && (
                                 <button
                                     type="button"
                                     onClick={() => setActiveTab('info')}
@@ -1070,547 +1309,26 @@ export default function ViewStudentDialog({
                                     <FileText className="h-4 w-4" />
                                     Student Information Sheet
                                 </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setActiveTab('attendance')}
-                                    className={`relative flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-all ${
-                                        activeTab === 'attendance'
-                                            ? 'border-[#000D6A] text-[#000D6A] dark:border-[#8CE4FF] dark:text-[#8CE4FF]'
-                                            : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-                                    }`}
-                                >
-                                    <CalendarCheck2 className="h-4 w-4" />
-                                    Attended Events & Attendance History
-                                    <span
-                                        className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
-                                            activeTab === 'attendance'
-                                                ? 'bg-[#000D6A] text-white dark:bg-[#8CE4FF] dark:text-[#000D6A]'
-                                                : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                                        }`}
-                                    >
-                                        {attendances.length}
-                                    </span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setActiveTab('violations')}
-                                    className={`relative flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-all ${
-                                        activeTab === 'violations'
-                                            ? 'border-[#000D6A] text-[#000D6A] dark:border-[#8CE4FF] dark:text-[#8CE4FF]'
-                                            : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
-                                    }`}
-                                >
-                                    <ShieldAlert className="h-4 w-4" />
-                                    Violations
-                                    {violations.length > 0 && (
-                                        <span
-                                            className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
-                                                activeTab === 'violations'
-                                                    ? 'bg-rose-600 text-white dark:bg-rose-500'
-                                                    : 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300'
-                                            }`}
-                                        >
-                                            {violations.length}
-                                        </span>
-                                    )}
-                                </button>
-                            </div>
+                            )}
                         </div>
 
-                        {/* TAB 1: STUDENT INFORMATION SHEET */}
-                        {activeTab === 'info' && (
-                            <div className="min-h-0 flex-1 overflow-y-auto p-6 md:p-10 scrollbar-thin">
-                                <div className="mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white p-8 text-slate-800 shadow-md dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
-                                    {/* School Header branding */}
-                                    <div className="mb-6 flex items-center justify-between gap-4 border-b-2 border-[#0b2d66] pb-4">
-                                        <img
-                                            src="/images/SRCB.png"
-                                            className="h-16 w-16 shrink-0 object-contain md:h-20 md:w-20"
-                                            alt="SRCB Logo"
-                                        />
-                                        <div className="flex-1 text-center text-[10px] leading-normal md:text-xs">
-                                            <h2 className="text-xs font-black tracking-wide text-[#0b2d66] md:text-sm dark:text-blue-400">
-                                                ST. RITA'S COLLEGE OF BALINGASAG, INC.
-                                            </h2>
-                                            <p className="font-bold text-slate-700 dark:text-slate-300">
-                                                Balingasag, Misamis Oriental
-                                            </p>
-                                            <p className="text-slate-500">
-                                                Email: ritarian@srcb.edu.ph | Website: www.srcb.edu.ph
-                                            </p>
-                                            <p className="text-slate-500">
-                                                Tel. (088)323-7159 / Mobile: +63-929-734-0012 (SMART); +63-975-637-9948 (Globe)
-                                            </p>
-                                            <p className="text-slate-500">
-                                                PAASCU Level II Re-Accredited: Junior High School
-                                            </p>
-                                            <p className="text-slate-500">
-                                                PAASCU Level I: Teacher Education Program & Business Administration Program
-                                            </p>
-                                            <p className="text-slate-400 italic">
-                                                (Philippine Accrediting Association of Schools, Colleges, and Universities)
-                                            </p>
-                                        </div>
-                                        <img
-                                            src="/images/DSA.png"
-                                            className="h-16 w-16 shrink-0 object-contain md:h-20 md:w-20"
-                                            alt="DSA Logo"
-                                        />
-                                    </div>
-
-                                    {/* Form Title */}
-                                    <div className="my-5 text-center">
-                                        <h1 className="text-lg font-black tracking-wider text-[#0b2d66] md:text-xl dark:text-blue-400">
-                                            STUDENT INFORMATION SHEET
-                                        </h1>
-                                        <p className="mt-1 text-[10px] font-semibold tracking-widest text-slate-400 uppercase md:text-xs">
-                                            Academic Year 2024 &ndash; 2025
-                                        </p>
-                                    </div>
-
-                                    {/* Checkbox / Program Grid */}
-                                    <div className="mb-6 overflow-hidden rounded-xl border border-blue-200 text-xs dark:border-blue-900">
-                                        <div className="grid grid-cols-[180px_1fr] border-b border-blue-200 dark:border-blue-900">
-                                            <div className="flex flex-col justify-center border-r border-blue-200 bg-blue-50/50 p-3 font-bold text-[#0b2d66] dark:border-blue-900 dark:bg-blue-950/20 dark:text-blue-400">
-                                                <span>ENTRY STATUS</span>
-                                                <span className="text-[9px] font-normal text-slate-400 italic">
-                                                    (please check)
-                                                </span>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-2 p-3 text-slate-700 sm:grid-cols-4 dark:text-slate-300">
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="font-mono text-sm font-bold text-[#0b2d66] dark:text-blue-400">
-                                                        {student.year_level === '1st Year' ? '[x]' : '[ ]'}
-                                                    </span>
-                                                    <span>1st Year</span>
-                                                </div>
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="font-mono text-sm font-bold text-[#0b2d66] dark:text-blue-400">
-                                                        {student.year_level === '2nd Year' ? '[x]' : '[ ]'}
-                                                    </span>
-                                                    <span>2nd Year</span>
-                                                </div>
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="font-mono text-sm font-bold text-[#0b2d66] dark:text-blue-400">
-                                                        {student.year_level === '3rd Year' ? '[x]' : '[ ]'}
-                                                    </span>
-                                                    <span>3rd Year</span>
-                                                </div>
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="font-mono text-sm font-bold text-[#0b2d66] dark:text-blue-400">
-                                                        {student.year_level === '4th Year' ? '[x]' : '[ ]'}
-                                                    </span>
-                                                    <span>4th Year</span>
-                                                </div>
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="font-mono text-sm font-bold text-[#0b2d66] dark:text-blue-400">
-                                                        {student.entry_status === 'Freshman' ? '[x]' : '[ ]'}
-                                                    </span>
-                                                    <span>Freshman</span>
-                                                </div>
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="font-mono text-sm font-bold text-[#0b2d66] dark:text-blue-400">
-                                                        {student.entry_status === 'Returnee' ? '[x]' : '[ ]'}
-                                                    </span>
-                                                    <span>Returnee</span>
-                                                </div>
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="font-mono text-sm font-bold text-[#0b2d66] dark:text-blue-400">
-                                                        {student.entry_status === 'Transferee' ? '[x]' : '[ ]'}
-                                                    </span>
-                                                    <span>Transferee</span>
-                                                </div>
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="font-mono text-sm font-bold text-[#0b2d66] dark:text-blue-400">
-                                                        {student.entry_status === 'Old Student' ? '[x]' : '[ ]'}
-                                                    </span>
-                                                    <span>Old Student</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-[180px_1fr] border-b border-blue-200 dark:border-blue-900">
-                                            <div className="flex flex-col justify-center border-r border-blue-200 bg-blue-50/50 p-3 font-bold text-[#0b2d66] dark:border-blue-900 dark:bg-blue-950/20 dark:text-blue-400">
-                                                <span>PROGRAM</span>
-                                                <span className="text-[9px] font-normal text-slate-400 italic">
-                                                    (do not abbreviate)
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center p-3 font-bold text-slate-800 dark:text-slate-100">
-                                                {student.program || student.course || 'N/A'}
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-[180px_1fr]">
-                                            <div className="flex flex-col justify-center border-r border-blue-200 bg-blue-50/50 p-3 font-bold text-[#0b2d66] dark:border-blue-900 dark:bg-blue-950/20 dark:text-blue-400">
-                                                <span>MAJOR</span>
-                                                <span className="text-[9px] font-normal text-slate-400 italic">
-                                                    (if applicable & do not abbreviate)
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center p-3 font-semibold text-slate-700 dark:text-slate-200">
-                                                {student.major || 'N/A'}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Personal Info Section */}
-                                    <div className="mt-6 text-left">
-                                        <div className="border-b border-dashed border-[#0b2d66] pb-1 text-center text-xs font-bold tracking-widest text-[#0b2d66] uppercase dark:border-blue-900 dark:text-blue-400">
-                                            PERSONAL INFORMATION
-                                        </div>
-                                        <div className="mt-4 space-y-4 text-xs">
-                                            <div className="flex items-end gap-2">
-                                                <span className="shrink-0 font-bold text-[#0b2d66] dark:text-blue-400">
-                                                    Name:
-                                                </span>
-                                                <div className="grid flex-1 grid-cols-3 gap-2">
-                                                    <div className="border-b border-slate-300 pb-0.5 text-center font-black text-slate-900 uppercase dark:border-slate-700 dark:text-white">
-                                                        {student.last_name || 'N/A'}
-                                                    </div>
-                                                    <div className="border-b border-slate-300 pb-0.5 text-center font-black text-slate-900 uppercase dark:border-slate-700 dark:text-white">
-                                                        {student.first_name || 'N/A'}
-                                                    </div>
-                                                    <div className="border-b border-slate-300 pb-0.5 text-center font-black text-slate-900 uppercase dark:border-slate-700 dark:text-white">
-                                                        {student.middle_name || 'N/A'}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="-mt-2 grid grid-cols-[auto_1fr] gap-2">
-                                                <div></div>
-                                                <div className="grid grid-cols-3 text-center text-[9px] text-slate-400">
-                                                    <div>(Surname)</div>
-                                                    <div>(Given Name)</div>
-                                                    <div>(Middle Name)</div>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-end gap-2">
-                                                <span className="font-bold text-[#0b2d66] dark:text-blue-400">
-                                                    Home Address:
-                                                </span>
-                                                <div className="flex-1 border-b border-slate-300 pb-0.5 font-semibold text-slate-800 dark:border-slate-700 dark:text-slate-200">
-                                                    {student.home_address || 'N/A'}
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                                <div className="flex items-end gap-2">
-                                                    <span className="font-bold text-[#0b2d66] dark:text-blue-400">
-                                                        Birthday:
-                                                    </span>
-                                                    <div className="flex-1 border-b border-slate-300 pb-0.5 font-semibold text-slate-800 dark:border-slate-700 dark:text-slate-200">
-                                                        {student.birthday || 'N/A'}
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-end gap-2">
-                                                    <span className="font-bold text-[#0b2d66] dark:text-blue-400">
-                                                        Place of Birth:
-                                                    </span>
-                                                    <div className="flex-1 border-b border-slate-300 pb-0.5 font-semibold text-slate-800 dark:border-slate-700 dark:text-slate-200">
-                                                        {student.place_of_birth || 'N/A'}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                                                <div className="flex items-end gap-2">
-                                                    <span className="font-bold text-[#0b2d66] dark:text-blue-400">
-                                                        Religion:
-                                                    </span>
-                                                    <div className="flex-1 border-b border-slate-300 pb-0.5 font-semibold text-slate-800 dark:border-slate-700 dark:text-slate-200">
-                                                        {student.religion || 'N/A'}
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-end gap-2">
-                                                    <span className="font-bold text-[#0b2d66] dark:text-blue-400">
-                                                        Gender:
-                                                    </span>
-                                                    <div className="flex flex-1 justify-center gap-4 border-b border-slate-300 pb-0.5 font-semibold text-slate-800 dark:border-slate-700 dark:text-slate-200">
-                                                        <span className="flex items-center gap-1">
-                                                            <span className="font-mono text-sm font-bold text-[#0b2d66] dark:text-blue-400">
-                                                                {student.gender?.toLowerCase() === 'male' ? '[x]' : '[ ]'}
-                                                            </span>{' '}
-                                                            Male
-                                                        </span>
-                                                        <span className="flex items-center gap-1">
-                                                            <span className="font-mono text-sm font-bold text-[#0b2d66] dark:text-blue-400">
-                                                                {student.gender?.toLowerCase() === 'female' ? '[x]' : '[ ]'}
-                                                            </span>{' '}
-                                                            Female
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-end gap-2">
-                                                    <span className="font-bold text-[#0b2d66] dark:text-blue-400">
-                                                        Contact No.:
-                                                    </span>
-                                                    <div className="flex-1 border-b border-slate-300 pb-0.5 font-semibold text-slate-800 dark:border-slate-700 dark:text-slate-200">
-                                                        {student.contact_no || 'N/A'}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                                <div className="flex items-end gap-2">
-                                                    <span className="font-bold text-[#0b2d66] dark:text-blue-400">
-                                                        E-mail:
-                                                    </span>
-                                                    <div className="flex-1 border-b border-slate-300 pb-0.5 font-semibold text-slate-800 dark:border-slate-700 dark:text-slate-200">
-                                                        {student.email}
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-end gap-2">
-                                                    <span className="font-bold text-[#0b2d66] dark:text-blue-400">
-                                                        Nationality:
-                                                    </span>
-                                                    <div className="flex-1 border-b border-slate-300 pb-0.5 font-semibold text-slate-800 dark:border-slate-700 dark:text-slate-200">
-                                                        {student.nationality || 'Filipino'}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Academic Background Section */}
-                                    <div className="mt-8 text-left">
-                                        <div className="border-b border-dashed border-[#0b2d66] pb-1 text-center text-xs font-bold tracking-widest text-[#0b2d66] uppercase dark:border-blue-900 dark:text-blue-400">
-                                            ACADEMIC BACKGROUND
-                                        </div>
-                                        <div className="mt-4 overflow-hidden rounded-xl border border-blue-200 text-xs dark:border-blue-900">
-                                            <div className="grid grid-cols-[160px_1fr_120px] border-b border-blue-200 bg-blue-50/50 text-center font-bold text-[#0b2d66] dark:border-blue-900 dark:bg-blue-950/20 dark:text-blue-400">
-                                                <div className="border-r border-blue-200 p-2 dark:border-blue-900">LEVEL</div>
-                                                <div className="border-r border-blue-200 p-2 dark:border-blue-900">SCHOOL ATTENDED</div>
-                                                <div className="p-2">YEAR GRADUATED</div>
-                                            </div>
-                                            <div className="grid grid-cols-[160px_1fr_120px] border-b border-blue-200 dark:border-blue-900">
-                                                <div className="flex items-center border-r border-blue-200 bg-blue-50/20 p-2 font-bold text-[#0b2d66] dark:border-blue-900 dark:bg-blue-950/10 dark:text-blue-400">
-                                                    Elementary
-                                                </div>
-                                                <div className="flex items-center border-r border-blue-200 p-2 font-semibold text-slate-700 dark:border-blue-900 dark:text-slate-200">
-                                                    {student.elementary_school || 'N/A'}
-                                                </div>
-                                                <div className="flex items-center justify-center p-2 text-center font-semibold text-slate-700 dark:text-slate-200">
-                                                    {student.elementary_year_graduated || 'N/A'}
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-[160px_1fr_120px] border-b border-blue-200 dark:border-blue-900">
-                                                <div className="flex items-center border-r border-blue-200 bg-blue-50/20 p-2 font-bold text-[#0b2d66] dark:border-blue-900 dark:bg-blue-950/10 dark:text-blue-400">
-                                                    Junior High School
-                                                </div>
-                                                <div className="flex items-center border-r border-blue-200 p-2 font-semibold text-slate-700 dark:border-blue-900 dark:text-slate-200">
-                                                    {student.junior_high_school || 'N/A'}
-                                                </div>
-                                                <div className="flex items-center justify-center p-2 text-center font-semibold text-slate-700 dark:text-slate-200">
-                                                    {student.junior_high_year_graduated || 'N/A'}
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-[160px_1fr_120px]">
-                                                <div className="flex items-center border-r border-blue-200 bg-blue-50/20 p-2 font-bold text-[#0b2d66] dark:border-blue-900 dark:bg-blue-950/10 dark:text-blue-400">
-                                                    Senior High School
-                                                </div>
-                                                <div className="flex items-center border-r border-blue-200 p-2 font-semibold text-slate-700 dark:border-blue-900 dark:text-slate-200">
-                                                    {student.senior_high_school || 'N/A'}
-                                                </div>
-                                                <div className="flex items-center justify-center p-2 text-center font-semibold text-slate-700 dark:text-slate-200">
-                                                    {student.senior_high_year_graduated || 'N/A'}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Family Background Section */}
-                                    <div className="mt-8 text-left">
-                                        <div className="border-b border-dashed border-[#0b2d66] pb-1 text-center text-xs font-bold tracking-widest text-[#0b2d66] uppercase dark:border-blue-900 dark:text-blue-400">
-                                            FAMILY BACKGROUND
-                                        </div>
-                                        <div className="mt-4 space-y-4 text-xs">
-                                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                                <div className="flex items-end gap-2">
-                                                    <span className="shrink-0 font-bold text-[#0b2d66] dark:text-blue-400">
-                                                        Mother:
-                                                    </span>
-                                                    <div className="flex-1 border-b border-slate-300 pb-0.5 font-semibold text-slate-800 dark:border-slate-700 dark:text-slate-200">
-                                                        {student.mother_name || 'N/A'}
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-end gap-2">
-                                                    <span className="shrink-0 font-bold text-[#0b2d66] dark:text-blue-400">
-                                                        Contact Number:
-                                                    </span>
-                                                    <div className="flex-1 border-b border-slate-300 pb-0.5 font-semibold text-slate-800 dark:border-slate-700 dark:text-slate-200">
-                                                        {student.mother_contact || 'N/A'}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                                <div className="flex items-end gap-2">
-                                                    <span className="shrink-0 font-bold text-[#0b2d66] dark:text-blue-400">
-                                                        Father:
-                                                    </span>
-                                                    <div className="flex-1 border-b border-slate-300 pb-0.5 font-semibold text-slate-800 dark:border-slate-700 dark:text-slate-200">
-                                                        {student.father_name || 'N/A'}
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-end gap-2">
-                                                    <span className="shrink-0 font-bold text-[#0b2d66] dark:text-blue-400">
-                                                        Contact Number:
-                                                    </span>
-                                                    <div className="flex-1 border-b border-slate-300 pb-0.5 font-semibold text-slate-800 dark:border-slate-700 dark:text-slate-200">
-                                                        {student.father_contact || 'N/A'}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-end gap-2">
-                                                <span className="shrink-0 font-bold text-[#0b2d66] dark:text-blue-400">
-                                                    Name of Guardian:
-                                                </span>
-                                                <div className="flex-1 border-b border-slate-300 pb-0.5 font-semibold text-slate-800 dark:border-slate-700 dark:text-slate-200">
-                                                    {student.guardian_name || 'N/A'}
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                                <div className="flex items-end gap-2">
-                                                    <span className="shrink-0 font-bold text-[#0b2d66] dark:text-blue-400">
-                                                        Relation:
-                                                    </span>
-                                                    <div className="flex-1 border-b border-slate-300 pb-0.5 font-semibold text-slate-800 dark:border-slate-700 dark:text-slate-200">
-                                                        {student.guardian_relation || 'N/A'}
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-end gap-2">
-                                                    <span className="shrink-0 font-bold text-[#0b2d66] dark:text-blue-400">
-                                                        Contact Number:
-                                                    </span>
-                                                    <div className="flex-1 border-b border-slate-300 pb-0.5 font-semibold text-slate-800 dark:border-slate-700 dark:text-slate-200">
-                                                        {student.guardian_contact || 'N/A'}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Student Signature line */}
-                                    <div className="mt-12 text-center">
-                                        <div className="mx-auto w-64 border-b border-slate-300 pb-1 text-sm font-bold tracking-wide text-[#0b2d66] uppercase dark:border-slate-700 dark:text-blue-400">
-                                            {student.name}
-                                        </div>
-                                        <div className="mt-1 text-[9px] font-semibold text-slate-400 uppercase">
-                                            Student Signature
-                                        </div>
-                                    </div>
-
-                                    {/* Office of Student Affairs footer seal */}
-                                    <div className="mt-14 border-t border-slate-100 pt-5 text-center dark:border-slate-900">
-                                        <h3 className="font-serif text-sm font-bold text-[#0b2d66] italic dark:text-blue-400">
-                                            Office of Student Affairs
-                                        </h3>
-                                        <p className="mt-0.5 text-[10px] text-slate-500 italic">
-                                            2nd Level, St. Rita Building, St. Rita's College of Balingasag
-                                        </p>
-                                        <p className="text-[10px] text-slate-500 italic">
-                                            E-mail Address:{' '}
-                                            <a
-                                                href="mailto:heddsa@srcb.edu.ph"
-                                                className="text-blue-600 underline dark:text-blue-400"
-                                            >
-                                                heddsa@srcb.edu.ph
-                                            </a>
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* TAB 2: ATTENDED EVENTS & ATTENDANCE HISTORY */}
+                        {/* ── TAB CONTENT: ATTENDANCE ── */}
                         {activeTab === 'attendance' && (
-                            <div className="min-h-0 flex-1 overflow-y-auto p-6 md:p-8 space-y-6 scrollbar-thin">
-                                {/* Summary Metrics Strip */}
-                                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                                    <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/80 to-indigo-50/50 p-4 shadow-xs dark:border-blue-900/40 dark:from-blue-950/40 dark:to-indigo-950/30">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                                Total Attended
-                                            </span>
-                                            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#000D6A] text-white dark:bg-blue-600">
-                                                <CalendarCheck2 className="h-4 w-4" />
-                                            </div>
-                                        </div>
-                                        <div className="mt-2 text-2xl font-black text-[#000D6A] dark:text-[#8CE4FF]">
-                                            {summary.total_attended}
-                                        </div>
-                                        <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-                                            Campus events & assemblies
-                                        </p>
-                                    </div>
-
-                                    <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50/80 to-teal-50/50 p-4 shadow-xs dark:border-emerald-900/40 dark:from-emerald-950/40 dark:to-teal-950/30">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                                On-Time Present
-                                            </span>
-                                            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-600 text-white">
-                                                <CheckCircle2 className="h-4 w-4" />
-                                            </div>
-                                        </div>
-                                        <div className="mt-2 text-2xl font-black text-emerald-700 dark:text-emerald-400">
-                                            {summary.present_count}
-                                        </div>
-                                        <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-                                            Regular check-in logs
-                                        </p>
-                                    </div>
-
-                                    <div className="rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50/80 to-orange-50/50 p-4 shadow-xs dark:border-amber-900/40 dark:from-amber-950/40 dark:to-orange-950/30">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                                Late Check-Ins
-                                            </span>
-                                            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-600 text-white">
-                                                <Clock className="h-4 w-4" />
-                                            </div>
-                                        </div>
-                                        <div className="mt-2 text-2xl font-black text-amber-700 dark:text-amber-400">
-                                            {summary.late_count}
-                                        </div>
-                                        <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-                                            Past grace period
-                                        </p>
-                                    </div>
-
-                                    <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 to-violet-50/50 p-4 shadow-xs dark:border-indigo-900/40 dark:from-indigo-950/40 dark:to-violet-950/30">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                                Attendance Rate
-                                            </span>
-                                            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-600 text-white">
-                                                <Sparkles className="h-4 w-4" />
-                                            </div>
-                                        </div>
-                                        <div className="mt-2 text-2xl font-black text-indigo-700 dark:text-indigo-300">
-                                            {summary.attendance_rate}%
-                                        </div>
-                                        <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-                                            On-time punctuality
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Filters and Search Strip */}
-                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <div className="scrollbar-thin min-h-0 flex-1 space-y-4 overflow-y-auto p-6 sm:p-8">
+                                {/* Search & Filter Bar */}
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-slate-200 bg-white p-3 shadow-xs dark:border-slate-800 dark:bg-slate-900">
                                     <div className="relative flex-1">
                                         <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                                         <input
                                             type="text"
                                             value={attendanceSearch}
                                             onChange={(e) => setAttendanceSearch(e.target.value)}
-                                            placeholder="Search by event title, venue, or check-in method..."
-                                            className="w-full rounded-xl border-0 bg-slate-50 pl-10 pr-4 py-2 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-[#000D6A] dark:bg-slate-800/80 dark:text-white dark:focus:ring-blue-500"
+                                            placeholder="Search event title, venue, or check-in method..."
+                                            className="w-full rounded-xl border-0 bg-slate-50 py-2 pl-10 pr-4 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-[#000D6A] dark:bg-slate-800/80 dark:text-white dark:focus:ring-blue-500"
                                         />
                                     </div>
 
-                                    <div className="flex flex-wrap items-center gap-1.5 self-center sm:self-auto">
+                                    <div className="flex flex-wrap items-center gap-1.5">
                                         <button
                                             type="button"
                                             onClick={() => setStatusFilter('all')}
@@ -1658,24 +1376,24 @@ export default function ViewStudentDialog({
                                     </div>
                                 </div>
 
-                                {/* Attendance List / Table */}
-                                <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden dark:border-slate-800 dark:bg-slate-900">
+                                {/* Attendance List */}
+                                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
                                     {isLoadingAttendance ? (
-                                        <div className="p-12 text-center space-y-3">
-                                            <RefreshCw className="h-7 w-7 animate-spin mx-auto text-[#000D6A] dark:text-[#8CE4FF]" />
+                                        <div className="space-y-3 p-12 text-center">
+                                            <RefreshCw className="mx-auto h-7 w-7 animate-spin text-[#000D6A] dark:text-[#8CE4FF]" />
                                             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                                                Loading student attendance records...
+                                                Loading attendance records...
                                             </p>
                                         </div>
                                     ) : filteredAttendances.length === 0 ? (
-                                        <div className="p-12 text-center space-y-3">
+                                        <div className="space-y-3 p-12 text-center">
                                             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500">
                                                 <Calendar className="h-6 w-6" />
                                             </div>
                                             <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
                                                 No Attendance Records Found
                                             </h4>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                                            <p className="mx-auto max-w-sm text-xs text-slate-500 dark:text-slate-400">
                                                 {attendances.length === 0
                                                     ? 'This student has not checked in to any campus events yet.'
                                                     : 'No records matched your search or status filter.'}
@@ -1686,11 +1404,11 @@ export default function ViewStudentDialog({
                                             {filteredAttendances.map((record) => (
                                                 <div
                                                     key={record.id}
-                                                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/40"
+                                                    className="flex flex-col justify-between gap-4 p-4 transition-colors hover:bg-slate-50/80 sm:flex-row sm:items-center sm:p-5 dark:hover:bg-slate-800/40"
                                                 >
-                                                    <div className="space-y-1.5 flex-1">
+                                                    <div className="flex-1 space-y-1.5">
                                                         <div className="flex flex-wrap items-center gap-2">
-                                                            <span className="font-bold text-sm text-slate-900 dark:text-white">
+                                                            <span className="text-sm font-bold text-slate-900 dark:text-white">
                                                                 {record.event_name}
                                                             </span>
                                                             <Badge
@@ -1733,15 +1451,15 @@ export default function ViewStudentDialog({
                                                         </div>
 
                                                         {record.manual_override_reason && (
-                                                            <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">
+                                                            <p className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400">
                                                                 Note: {record.manual_override_reason}
                                                             </p>
                                                         )}
                                                     </div>
 
-                                                    <div className="flex sm:flex-col sm:items-end justify-between items-center text-xs shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800">
+                                                    <div className="flex shrink-0 items-center justify-between border-t border-slate-100 pt-2 text-xs sm:flex-col sm:items-end sm:border-t-0 sm:pt-0 dark:border-slate-800">
                                                         <div className="space-y-0.5">
-                                                            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
+                                                            <span className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                                                                 Time-In
                                                             </span>
                                                             <span className="font-bold text-slate-800 dark:text-slate-200">
@@ -1749,8 +1467,8 @@ export default function ViewStudentDialog({
                                                             </span>
                                                         </div>
                                                         {record.checked_out_at && (
-                                                            <div className="space-y-0.5 mt-1 sm:text-right">
-                                                                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
+                                                            <div className="mt-1 space-y-0.5 sm:text-right">
+                                                                <span className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                                                                     Time-Out
                                                                 </span>
                                                                 <span className="font-semibold text-slate-600 dark:text-slate-400">
@@ -1767,312 +1485,397 @@ export default function ViewStudentDialog({
                             </div>
                         )}
 
-                        {/* TAB 3: VIOLATIONS */}
+                        {/* ── TAB CONTENT: VIOLATIONS ── */}
                         {activeTab === 'violations' && (
-                            <div className="min-h-0 flex-1 overflow-y-auto p-6 scrollbar-thin">
-                                <div className="mx-auto max-w-4xl space-y-5">
-                                    {/* Violation Summary Cards */}
-                                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-                                        <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50/80 to-slate-100/50 p-4 shadow-xs dark:border-slate-800 dark:from-slate-900/40 dark:to-slate-950/30">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                                    Total
-                                                </span>
-                                                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#000D6A] text-white">
-                                                    <ShieldAlert className="h-4 w-4" />
-                                                </div>
-                                            </div>
-                                            <div className="mt-2 text-2xl font-black text-[#000D6A] dark:text-[#8CE4FF]">
-                                                {violationSummary.total}
-                                            </div>
-                                            <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-                                                All recorded violations
-                                            </p>
-                                        </div>
-
-                                        <div className="rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50/80 to-yellow-50/50 p-4 shadow-xs dark:border-amber-900/40 dark:from-amber-950/40 dark:to-yellow-950/30">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                                    Warning
-                                                </span>
-                                                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500 text-white">
-                                                    <AlertTriangle className="h-4 w-4" />
-                                                </div>
-                                            </div>
-                                            <div className="mt-2 text-2xl font-black text-amber-700 dark:text-amber-400">
-                                                {violationSummary.warning}
-                                            </div>
-                                        </div>
-
-                                        <div className="rounded-2xl border border-orange-100 bg-gradient-to-br from-orange-50/80 to-red-50/50 p-4 shadow-xs dark:border-orange-900/40 dark:from-orange-950/40 dark:to-red-950/30">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                                    Suspension
-                                                </span>
-                                                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-600 text-white">
-                                                    <Clock className="h-4 w-4" />
-                                                </div>
-                                            </div>
-                                            <div className="mt-2 text-2xl font-black text-orange-700 dark:text-orange-400">
-                                                {violationSummary.suspension}
-                                            </div>
-                                        </div>
-
-                                        <div className="rounded-2xl border border-rose-100 bg-gradient-to-br from-rose-50/80 to-pink-50/50 p-4 shadow-xs dark:border-rose-900/40 dark:from-rose-950/40 dark:to-pink-950/30">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                                    Exclusion
-                                                </span>
-                                                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-600 text-white">
-                                                    <ShieldAlert className="h-4 w-4" />
-                                                </div>
-                                            </div>
-                                            <div className="mt-2 text-2xl font-black text-rose-700 dark:text-rose-400">
-                                                {violationSummary.exclusion}
-                                            </div>
-                                        </div>
-
-                                        <div className="col-span-2 sm:col-span-1 rounded-2xl border border-red-100 bg-gradient-to-br from-red-50/80 to-rose-50/50 p-4 shadow-xs dark:border-red-900/40 dark:from-red-950/40 dark:to-rose-950/30">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                                    Expulsion
-                                                </span>
-                                                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-red-700 text-white">
-                                                    <X className="h-4 w-4" />
-                                                </div>
-                                            </div>
-                                            <div className="mt-2 text-2xl font-black text-red-700 dark:text-red-400">
-                                                {violationSummary.expulsion}
-                                            </div>
+                            <div className="scrollbar-thin min-h-0 flex-1 space-y-4 overflow-y-auto p-6 sm:p-8">
+                                {/* Severity Counters */}
+                                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
+                                    <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total</span>
+                                        <div className="mt-1 text-xl font-black text-slate-900 dark:text-white">
+                                            {violationSummary.total}
                                         </div>
                                     </div>
-
-                                    {/* Filters and Search */}
-                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-                                        <div className="relative flex-1">
-                                            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                            <input
-                                                type="text"
-                                                value={violationSearch}
-                                                onChange={(e) => setViolationSearch(e.target.value)}
-                                                placeholder="Search by violation name, code, location, or description..."
-                                                className="w-full rounded-xl border-0 bg-slate-50 pl-10 pr-4 py-2 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-[#000D6A] dark:bg-slate-800/80 dark:text-white dark:focus:ring-blue-500"
-                                            />
-                                        </div>
-
-                                        <div className="flex flex-wrap items-center gap-1.5 self-center sm:self-auto">
-                                            <button
-                                                type="button"
-                                                onClick={() => setViolationSectionFilter('all')}
-                                                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
-                                                    violationSectionFilter === 'all'
-                                                        ? 'bg-[#000D6A] text-white dark:bg-blue-600'
-                                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                                                }`}
-                                            >
-                                                All ({violations.length})
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setViolationSectionFilter('Warning')}
-                                                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
-                                                    violationSectionFilter === 'Warning'
-                                                        ? 'bg-amber-600 text-white'
-                                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                                                }`}
-                                            >
-                                                Warning
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setViolationSectionFilter('Suspension')}
-                                                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
-                                                    violationSectionFilter === 'Suspension'
-                                                        ? 'bg-orange-600 text-white'
-                                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                                                }`}
-                                            >
-                                                Suspension
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setViolationSectionFilter('Exclusion')}
-                                                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
-                                                    violationSectionFilter === 'Exclusion'
-                                                        ? 'bg-rose-600 text-white'
-                                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                                                }`}
-                                            >
-                                                Exclusion
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setViolationSectionFilter('Expulsion')}
-                                                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
-                                                    violationSectionFilter === 'Expulsion'
-                                                        ? 'bg-red-700 text-white'
-                                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                                                }`}
-                                            >
-                                                Expulsion
-                                            </button>
+                                    <div className="rounded-2xl border border-amber-200/70 bg-amber-50/50 p-3 shadow-xs dark:border-amber-900/40 dark:bg-amber-950/20">
+                                        <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider dark:text-amber-400">Warning</span>
+                                        <div className="mt-1 text-xl font-black text-amber-700 dark:text-amber-300">
+                                            {violationSummary.warning}
                                         </div>
                                     </div>
-
-                                    {/* Violations List */}
-                                    {isLoadingViolations ? (
-                                        <div className="flex flex-col items-center justify-center py-16">
-                                            <RefreshCw className="h-8 w-8 animate-spin text-[#000D6A] dark:text-[#8CE4FF]" />
-                                            <p className="mt-4 text-sm font-semibold text-slate-500 dark:text-slate-400">
-                                                Loading violation records...
-                                            </p>
+                                    <div className="rounded-2xl border border-orange-200/70 bg-orange-50/50 p-3 shadow-xs dark:border-orange-900/40 dark:bg-orange-950/20">
+                                        <span className="text-[10px] font-bold text-orange-700 uppercase tracking-wider dark:text-orange-400">Suspension</span>
+                                        <div className="mt-1 text-xl font-black text-orange-700 dark:text-orange-300">
+                                            {violationSummary.suspension}
                                         </div>
-                                    ) : filteredViolations.length === 0 ? (
-                                        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 py-16 dark:border-slate-800 dark:bg-slate-900/30">
-                                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
-                                                <ShieldCheck className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
-                                            </div>
-                                            <p className="mt-4 text-sm font-bold text-slate-800 dark:text-slate-200">
-                                                {violations.length === 0 ? 'No Violations Found' : 'No Matching Results'}
-                                            </p>
-                                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                                {violations.length === 0
-                                                    ? 'This student has a clean disciplinary record.'
-                                                    : 'Try adjusting your search or filter criteria.'}
-                                            </p>
+                                    </div>
+                                    <div className="rounded-2xl border border-rose-200/70 bg-rose-50/50 p-3 shadow-xs dark:border-rose-900/40 dark:bg-rose-950/20">
+                                        <span className="text-[10px] font-bold text-rose-700 uppercase tracking-wider dark:text-rose-400">Exclusion</span>
+                                        <div className="mt-1 text-xl font-black text-rose-700 dark:text-rose-300">
+                                            {violationSummary.exclusion}
                                         </div>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            {filteredViolations.map((record) => (
-                                                <div
-                                                    key={record.id}
-                                                    className="flex flex-col sm:flex-row sm:items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
-                                                >
-                                                    {/* Severity indicator */}
-                                                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${
-                                                        record.violation_section === 'Warning'
-                                                            ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
-                                                            : record.violation_section === 'Suspension'
-                                                              ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'
-                                                              : record.violation_section === 'Exclusion'
-                                                                ? 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400'
-                                                                : record.violation_section === 'Expulsion'
-                                                                  ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                                                  : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                                                    }`}>
-                                                        <ShieldAlert className="h-5 w-5" />
-                                                    </div>
+                                    </div>
+                                    <div className="col-span-2 rounded-2xl border border-red-200/70 bg-red-50/50 p-3 shadow-xs sm:col-span-1 dark:border-red-900/40 dark:bg-red-950/20">
+                                        <span className="text-[10px] font-bold text-red-700 uppercase tracking-wider dark:text-red-400">Expulsion</span>
+                                        <div className="mt-1 text-xl font-black text-red-700 dark:text-red-300">
+                                            {violationSummary.expulsion}
+                                        </div>
+                                    </div>
+                                </div>
 
-                                                    {/* Content */}
-                                                    <div className="flex-1 min-w-0 space-y-1.5">
-                                                        <div className="flex flex-wrap items-center gap-2">
-                                                            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                                                                {record.violation_name}
-                                                            </h4>
+                                {/* Filters and Search */}
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-slate-200 bg-white p-3 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                                    <div className="relative flex-1">
+                                        <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                        <input
+                                            type="text"
+                                            value={violationSearch}
+                                            onChange={(e) => setViolationSearch(e.target.value)}
+                                            placeholder="Search violation name, code, venue, or description..."
+                                            className="w-full rounded-xl border-0 bg-slate-50 py-2 pl-10 pr-4 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-[#000D6A] dark:bg-slate-800/80 dark:text-white dark:focus:ring-blue-500"
+                                        />
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                        <button
+                                            type="button"
+                                            onClick={() => setViolationSectionFilter('all')}
+                                            className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
+                                                violationSectionFilter === 'all'
+                                                    ? 'bg-[#000D6A] text-white dark:bg-blue-600'
+                                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                                            }`}
+                                        >
+                                            All ({violations.length})
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setViolationSectionFilter('Warning')}
+                                            className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
+                                                violationSectionFilter === 'Warning'
+                                                    ? 'bg-amber-600 text-white'
+                                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                                            }`}
+                                        >
+                                            Warning
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setViolationSectionFilter('Suspension')}
+                                            className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
+                                                violationSectionFilter === 'Suspension'
+                                                    ? 'bg-orange-600 text-white'
+                                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                                            }`}
+                                        >
+                                            Suspension
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setViolationSectionFilter('Exclusion')}
+                                            className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
+                                                violationSectionFilter === 'Exclusion'
+                                                    ? 'bg-rose-600 text-white'
+                                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                                            }`}
+                                        >
+                                            Exclusion
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setViolationSectionFilter('Expulsion')}
+                                            className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
+                                                violationSectionFilter === 'Expulsion'
+                                                    ? 'bg-red-700 text-white'
+                                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                                            }`}
+                                        >
+                                            Expulsion
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Violations List */}
+                                {isLoadingViolations ? (
+                                    <div className="flex flex-col items-center justify-center py-16">
+                                        <RefreshCw className="h-8 w-8 animate-spin text-[#000D6A] dark:text-[#8CE4FF]" />
+                                        <p className="mt-4 text-sm font-semibold text-slate-500 dark:text-slate-400">
+                                            Loading violation records...
+                                        </p>
+                                    </div>
+                                ) : filteredViolations.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-white py-16 dark:border-slate-800 dark:bg-slate-900/30">
+                                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+                                            <ShieldCheck className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+                                        </div>
+                                        <p className="mt-4 text-sm font-bold text-slate-800 dark:text-slate-200">
+                                            {violations.length === 0 ? 'Clean Disciplinary Record' : 'No Matching Results'}
+                                        </p>
+                                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                            {violations.length === 0
+                                                ? 'No institutional violations recorded for this student.'
+                                                : 'Try adjusting your search or severity filter.'}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {filteredViolations.map((record) => (
+                                            <div
+                                                key={record.id}
+                                                className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs transition-all hover:shadow-md sm:flex-row sm:items-start dark:border-slate-800 dark:bg-slate-900"
+                                            >
+                                                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${
+                                                    record.violation_section === 'Warning'
+                                                        ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
+                                                        : record.violation_section === 'Suspension'
+                                                          ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400'
+                                                          : record.violation_section === 'Exclusion'
+                                                            ? 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400'
+                                                            : record.violation_section === 'Expulsion'
+                                                              ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                                              : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                                                }`}>
+                                                    <ShieldAlert className="h-5 w-5" />
+                                                </div>
+
+                                                <div className="min-w-0 flex-1 space-y-1.5">
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                                                            {record.violation_name}
+                                                        </h4>
+                                                        <Badge
+                                                            className={
+                                                                record.violation_section === 'Warning'
+                                                                    ? 'rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400'
+                                                                    : record.violation_section === 'Suspension'
+                                                                      ? 'rounded-full border border-orange-500/20 bg-orange-500/10 px-2.5 py-0.5 text-[10px] font-bold text-orange-600 dark:text-orange-400'
+                                                                      : record.violation_section === 'Exclusion'
+                                                                        ? 'rounded-full border border-rose-500/20 bg-rose-500/10 px-2.5 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-400'
+                                                                        : record.violation_section === 'Expulsion'
+                                                                          ? 'rounded-full border border-red-500/20 bg-red-500/10 px-2.5 py-0.5 text-[10px] font-bold text-red-600 dark:text-red-400'
+                                                                          : 'rounded-full border border-slate-500/20 bg-slate-500/10 px-2.5 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-400'
+                                                            }
+                                                        >
+                                                            {record.violation_section}
+                                                        </Badge>
+                                                        <Badge className="rounded-full border border-slate-500/20 bg-slate-500/10 px-2.5 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-400">
+                                                            {record.violation_code}
+                                                        </Badge>
+                                                        {record.status && (
                                                             <Badge
                                                                 className={
-                                                                    record.violation_section === 'Warning'
-                                                                        ? 'rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400'
-                                                                        : record.violation_section === 'Suspension'
-                                                                          ? 'rounded-full border border-orange-500/20 bg-orange-500/10 px-2.5 py-0.5 text-[10px] font-bold text-orange-600 dark:text-orange-400'
-                                                                          : record.violation_section === 'Exclusion'
-                                                                            ? 'rounded-full border border-rose-500/20 bg-rose-500/10 px-2.5 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-400'
-                                                                            : record.violation_section === 'Expulsion'
-                                                                              ? 'rounded-full border border-red-500/20 bg-red-500/10 px-2.5 py-0.5 text-[10px] font-bold text-red-600 dark:text-red-400'
-                                                                              : 'rounded-full border border-slate-500/20 bg-slate-500/10 px-2.5 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-400'
+                                                                    record.status === 'resolved'
+                                                                        ? 'rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400'
+                                                                        : record.status === 'under_investigation'
+                                                                          ? 'rounded-full border border-blue-500/20 bg-blue-500/10 px-2.5 py-0.5 text-[10px] font-bold text-blue-600 dark:text-blue-400'
+                                                                          : 'rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400'
                                                                 }
                                                             >
-                                                                {record.violation_section}
+                                                                {record.status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
                                                             </Badge>
-                                                            <Badge className="rounded-full border border-slate-500/20 bg-slate-500/10 px-2.5 py-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-400">
-                                                                {record.violation_code}
-                                                            </Badge>
-                                                            {record.status && (
-                                                                <Badge
-                                                                    className={
-                                                                        record.status === 'resolved'
-                                                                            ? 'rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400'
-                                                                            : record.status === 'under_investigation'
-                                                                              ? 'rounded-full border border-blue-500/20 bg-blue-500/10 px-2.5 py-0.5 text-[10px] font-bold text-blue-600 dark:text-blue-400'
-                                                                              : 'rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400'
-                                                                    }
-                                                                >
-                                                                    {record.status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                                                                </Badge>
-                                                            )}
-                                                        </div>
-
-                                                        {record.description && (
-                                                            <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">
-                                                                {record.description}
-                                                            </p>
-                                                        )}
-
-                                                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
-                                                            {record.incident_date && (
-                                                                <span className="flex items-center gap-1.5">
-                                                                    <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                                                                    {record.incident_date} {record.incident_time ? `• ${record.incident_time}` : ''}
-                                                                </span>
-                                                            )}
-                                                            {record.location && (
-                                                                <span className="flex items-center gap-1.5">
-                                                                    <MapPin className="h-3.5 w-3.5 text-slate-400" />
-                                                                    {record.location}
-                                                                </span>
-                                                            )}
-                                                            {record.classification && (
-                                                                <span className="flex items-center gap-1.5">
-                                                                    <Info className="h-3.5 w-3.5 text-slate-400" />
-                                                                    {record.classification}
-                                                                </span>
-                                                            )}
-                                                            {record.reported_by && (
-                                                                <span className="flex items-center gap-1.5">
-                                                                    <User className="h-3.5 w-3.5 text-slate-400" />
-                                                                    Reported by: {record.reported_by}
-                                                                </span>
-                                                            )}
-                                                        </div>
-
-                                                        {record.immediate_action && (
-                                                            <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">
-                                                                Action Taken: {record.immediate_action}
-                                                            </p>
                                                         )}
                                                     </div>
 
-                                                    {/* Date filed */}
-                                                    <div className="flex sm:flex-col sm:items-end justify-between items-center text-xs shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800">
-                                                        <div className="space-y-0.5">
-                                                            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
-                                                                Filed
+                                                    {record.description && (
+                                                        <p className="line-clamp-2 text-xs text-slate-600 dark:text-slate-400">
+                                                            {record.description}
+                                                        </p>
+                                                    )}
+
+                                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                                                        {record.incident_date && (
+                                                            <span className="flex items-center gap-1.5">
+                                                                <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                                                                {record.incident_date} {record.incident_time ? `• ${record.incident_time}` : ''}
                                                             </span>
-                                                            <span className="font-bold text-slate-800 dark:text-slate-200">
-                                                                {record.created_at || 'Recorded'}
-                                                            </span>
-                                                        </div>
-                                                        {record.calling_phase && (
-                                                            <div className="space-y-0.5 mt-1 sm:text-right">
-                                                                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
-                                                                    Phase
-                                                                </span>
-                                                                <span className="font-semibold text-slate-600 dark:text-slate-400">
-                                                                    {record.calling_phase}
-                                                                </span>
-                                                            </div>
                                                         )}
+                                                        {record.location && (
+                                                            <span className="flex items-center gap-1.5">
+                                                                <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                                                                {record.location}
+                                                            </span>
+                                                        )}
+                                                        {record.reported_by && (
+                                                            <span className="flex items-center gap-1.5">
+                                                                <User className="h-3.5 w-3.5 text-slate-400" />
+                                                                Reported by: {record.reported_by}
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    {record.immediate_action && (
+                                                        <p className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400">
+                                                            Action Taken: {record.immediate_action}
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex shrink-0 items-center justify-between border-t border-slate-100 pt-2 text-xs sm:flex-col sm:items-end sm:border-t-0 sm:pt-0 dark:border-slate-800">
+                                                    <div className="space-y-0.5">
+                                                        <span className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                                                            Filed
+                                                        </span>
+                                                        <span className="font-bold text-slate-800 dark:text-slate-200">
+                                                            {record.created_at || 'Recorded'}
+                                                        </span>
                                                     </div>
                                                 </div>
-                                            ))}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* ── TAB CONTENT: STUDENT INFORMATION SHEET (Admin Only) ── */}
+                        {activeTab === 'info' && !hideInformationSheet && (
+                            <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto p-6 sm:p-8">
+                                <div className="mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-8">
+                                    {/* School Header */}
+                                    <div className="mb-6 flex items-center justify-between gap-4 border-b-2 border-[#0b2d66] pb-4">
+                                        <img
+                                            src="/images/SRCB.png"
+                                            className="h-16 w-16 shrink-0 object-contain"
+                                            alt="SRCB Logo"
+                                        />
+                                        <div className="flex-1 text-center text-xs">
+                                            <h2 className="text-sm font-black text-[#0b2d66] dark:text-blue-400">
+                                                ST. RITA'S COLLEGE OF BALINGASAG, INC.
+                                            </h2>
+                                            <p className="font-bold text-slate-700 dark:text-slate-300">
+                                                Balingasag, Misamis Oriental
+                                            </p>
+                                            <p className="text-[11px] text-slate-500">
+                                                Email: ritarian@srcb.edu.ph | Website: www.srcb.edu.ph
+                                            </p>
                                         </div>
-                                    )}
+                                        <img
+                                            src="/images/DSA.png"
+                                            className="h-16 w-16 shrink-0 object-contain"
+                                            alt="DSA Logo"
+                                        />
+                                    </div>
+
+                                    {/* Sheet Title */}
+                                    <div className="my-4 text-center">
+                                        <h1 className="text-base font-black tracking-wider text-[#0b2d66] uppercase dark:text-blue-400">
+                                            STUDENT INFORMATION SHEET
+                                        </h1>
+                                        <p className="text-[11px] font-medium text-slate-400">
+                                            Academic Year 2024 &ndash; 2025
+                                        </p>
+                                    </div>
+
+                                    {/* Personal Info Box */}
+                                    <div className="space-y-4 text-xs">
+                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase">Full Name</span>
+                                                <div className="mt-0.5 font-bold text-slate-900 dark:text-white">
+                                                    {student.name}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase">Student ID</span>
+                                                <div className="mt-0.5 font-mono font-bold text-slate-900 dark:text-white">
+                                                    {student.student_id || 'N/A'}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase">Program / Course</span>
+                                                <div className="mt-0.5 font-bold text-slate-900 dark:text-white">
+                                                    {student.course || student.program || 'N/A'}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase">Year Level & Entry Status</span>
+                                                <div className="mt-0.5 font-semibold text-slate-800 dark:text-slate-200">
+                                                    {student.year_level || 'N/A'} • {student.entry_status || 'Regular'}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase">Email</span>
+                                                <div className="mt-0.5 font-semibold text-slate-800 dark:text-slate-200">
+                                                    {student.email}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase">Contact Number</span>
+                                                <div className="mt-0.5 font-semibold text-slate-800 dark:text-slate-200">
+                                                    {student.contact_no || 'N/A'}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase">Home Address</span>
+                                                <div className="mt-0.5 font-semibold text-slate-800 dark:text-slate-200">
+                                                    {student.home_address || 'N/A'}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase">Birthday & Birthplace</span>
+                                                <div className="mt-0.5 font-semibold text-slate-800 dark:text-slate-200">
+                                                    {student.birthday || 'N/A'} {student.place_of_birth ? `(${student.place_of_birth})` : ''}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="border-t border-slate-100 pt-4 dark:border-slate-800">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase">Family Background</span>
+                                            <div className="mt-2 grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
+                                                <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60">
+                                                    <span className="text-[10px] font-bold text-slate-500">Mother:</span>
+                                                    <p className="font-semibold text-slate-800 dark:text-slate-200">
+                                                        {student.mother_name || 'N/A'}
+                                                    </p>
+                                                    <p className="text-[11px] text-slate-500">
+                                                        Contact: {student.mother_contact || 'N/A'}
+                                                    </p>
+                                                </div>
+                                                <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60">
+                                                    <span className="text-[10px] font-bold text-slate-500">Father:</span>
+                                                    <p className="font-semibold text-slate-800 dark:text-slate-200">
+                                                        {student.father_name || 'N/A'}
+                                                    </p>
+                                                    <p className="text-[11px] text-slate-500">
+                                                        Contact: {student.father_contact || 'N/A'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
-                    </>
+
+                        {/* ── MODAL FOOTER ── */}
+                        <div className="flex items-center justify-between border-t border-slate-200 bg-white px-6 py-3.5 dark:border-slate-800 dark:bg-slate-900 sm:px-8">
+                            <div className="text-xs text-slate-500 dark:text-slate-400">
+                                Showing {activeTab === 'attendance' ? `${filteredAttendances.length} event log(s)` : activeTab === 'violations' ? `${filteredViolations.length} violation(s)` : 'official record'}
+                            </div>
+
+                            <div className="flex items-center gap-2.5">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => onOpenChange(false)}
+                                    className="rounded-xl border-slate-200 px-5 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                                >
+                                    Close
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
                 )}
             </DialogContent>
         </Dialog>
     );
 }
+

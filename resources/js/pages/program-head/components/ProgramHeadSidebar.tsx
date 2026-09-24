@@ -123,6 +123,11 @@ export function ProgramHeadSidebar() {
         const path = normalizePath(href);
         if (!path) return false;
 
+        // Special handling for QR scanner page - it should activate the Attendance menu item
+        if (url.includes('/program-head/qr-scanner')) {
+            return path === '/program-head/attendance';
+        }
+
         if (path === dashboardPath && title && title !== 'Dashboard') {
             return false;
         }

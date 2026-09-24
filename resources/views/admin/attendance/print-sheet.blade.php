@@ -94,11 +94,12 @@
     td {
         height: 22px;
     }
-    .col-no { width: 5%; text-align: center; }
-    .col-name { width: 40%; }
-    .col-major { width: 21%; }
-    .col-time { width: 12%; text-align: center; }
-    .col-time-out { width: 12%; text-align: center; }
+    .col-no { width: 4%; text-align: center; }
+    .col-id { width: 14%; text-align: center; }
+    .col-name { width: 32%; }
+    .col-major { width: 20%; }
+    .col-time { width: 10%; text-align: center; }
+    .col-time-out { width: 10%; text-align: center; }
     .col-status { width: 10%; text-align: center; }
 
     .page {
@@ -211,9 +212,9 @@
         {{ $eventDateTimeLabel ?? 'March 10, 2026 | 1:00 PM | SRCB Audi-Gym' }}
     </div>
 
-    <!-- PROGRAM -->
+    <!-- PROGRAM & YEAR LEVEL -->
     <div class="program">
-        {{ $section['course'] ?? 'Program Name' }}
+        {{ $section['program_year_label'] ?? $section['course'] ?? 'Program Name' }}
     </div>
 
     <div class="line">____________________________</div>
@@ -223,8 +224,9 @@
         <thead>
             <tr>
                 <th class="col-no">No.</th>
+                <th class="col-id">Student ID</th>
                 <th class="col-name">Student's Name</th>
-                <th class="col-major">Course/Program</th>
+                <th class="col-major">Program & Year</th>
                 <th class="col-time">Time In</th>
                 <th class="col-time-out">Time Out</th>
                 <th class="col-status">Status</th>
@@ -232,32 +234,49 @@
         </thead>
         <tbody>
             @forelse($section['tableRows'] as $index => $row)
-            <tr>
+            @php
+                $statusStr = strtolower((string) ($row['status'] ?? ''));
+                $statusColor = '#000';
+                if ($statusStr === 'absent') {
+                    $statusColor = '#b91c1c';
+                } elseif ($statusStr === 'late') {
+                    $statusColor = '#b45309';
+                } elseif ($statusStr === 'present') {
+                    $statusColor = '#15803d';
+                }
+            @endphp
+            <tr style="{{ $statusStr === 'absent' ? 'background-color: #fafafa;' : '' }}">
                 <td class="col-no">{{ $index + 1 }}</td>
+                <td style="text-align: center;">{{ $row['student_id'] ?? '—' }}</td>
                 <td>{{ $row['name'] ?? '' }}</td>
-                <td>{{ $row['major'] ?? '' }}</td>
-                <td style="text-align: center;">{{ $row['checked_in_at'] ?? '' }}</td>
-                <td style="text-align: center;">{{ $row['time_out'] ?? '' }}</td>
-                <td style="text-align: center;">{{ $row['status'] ?? '' }}</td>
+                <td>{{ $row['major'] ?? '' }} {{ !empty($row['year_level']) && $row['year_level'] !== '—' && $row['year_level'] !== 'General' ? '('.$row['year_level'].')' : '' }}</td>
+                <td style="text-align: center;">{{ $row['checked_in_at'] ?? '—' }}</td>
+                <td style="text-align: center;">{{ $row['time_out'] ?? '—' }}</td>
+                <td style="text-align: center; color: {{ $statusColor }}; font-weight: bold;">{{ $row['status'] ?? '—' }}</td>
             </tr>
             @empty
             <tr>
-                <td colspan="6" class="no-attendees">No attendees for this program.</td>
+                <td colspan="7" class="no-attendees">No students registered for this program and year level.</td>
             </tr>
             @endforelse
         </tbody>
     </table>
 
     <div class="total-attendees">
-        Total Attendees ({{ $section['course'] ?? 'Program' }}): {{ count($section['tableRows']) }}
+        <span>Section Summary ({{ $section['program_year_label'] ?? $section['course'] ?? 'Program' }}):</span>&nbsp;
+        <strong>Total: {{ $section['total_count'] ?? count($section['tableRows']) }}</strong> &nbsp;|&nbsp;
+        <span style="color: #15803d; font-weight: bold;">Present/Late: {{ $section['present_count'] ?? count($section['tableRows']) }}</span> &nbsp;|&nbsp;
+        <span style="color: #b91c1c; font-weight: bold;">Absent: {{ $section['absent_count'] ?? 0 }}</span>
     </div>
 
 </div>
 @endforeach
 
-@if(isset($totalAttendees) && count($sections) > 1)
-<div class="total-attendees" style="margin-top: 20px; font-size: 14px;">
-    Overall Total Attendees: {{ $totalAttendees }}
+@if(isset($totalStudents) && count($sections) > 1)
+<div class="total-attendees" style="margin-top: 20px; font-size: 13px; border-top: 1px solid #000; padding-top: 8px;">
+    <strong>Overall Summary:</strong> {{ $totalStudents }} Students &nbsp;|&nbsp;
+    <span style="color: #15803d; font-weight: bold;">Present/Late: {{ $totalAttendees ?? 0 }}</span> &nbsp;|&nbsp;
+    <span style="color: #b91c1c; font-weight: bold;">Absent: {{ $totalAbsent ?? 0 }}</span>
 </div>
 @endif
 

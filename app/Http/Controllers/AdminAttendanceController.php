@@ -525,30 +525,33 @@ class AdminAttendanceController extends Controller
             return response()->json(['message' => 'Course is required.'], 422);
         }
 
-        // Return ONLY students that have an attendance record (scanned)
-        // for this event and selected course.
-        $studentsWithAttendance = Student::query()
-            ->where('course', $course)
-            ->whereHas('attendances', function ($q) use ($event) {
-                $q->where('event_id', $event->id)
-                    ->where(function ($qq) {
-                        $qq->whereNotNull('checked_in_at')
-                            ->orWhereNotNull('scanned_at');
-                    });
-            })
+        $eventYearLevels = is_array($event->year_levels) ? array_values(array_filter($event->year_levels, fn($y) => !\App\Services\Attendance\EventEligibilityService::isAllWildcard((string) $y))) : [];
+
+        $studentsQuery = Student::query()->where('course', $course);
+        if (!empty($eventYearLevels)) {
+            $studentsQuery->whereIn('year_level', $eventYearLevels);
+        }
+        if (Schema::hasColumn('students', 'is_archived')) {
+            $studentsQuery->where(function ($q) {
+                $q->where('is_archived', false)->orWhereNull('is_archived');
+            });
+        }
+
+        $students = $studentsQuery
             ->orderBy('year_level')
             ->orderBy('last_name')
             ->orderBy('first_name')
-            ->get(['id', 'student_id', 'name', 'course', 'year_level']);
+            ->get(['id', 'student_id', 'first_name', 'last_name', 'name', 'course', 'year_level']);
 
-        $attendanceByStudentId = Attendance::query()
-            ->where('event_id', $event->id)
-            ->whereIn('student_id', $studentsWithAttendance->pluck('id')->all())
+        $attendances = Attendance::where('event_id', $event->id)
+            ->whereIn('student_id', $students->pluck('id')->all())
             ->get(['student_id', 'checked_in_at', 'scanned_at', 'status', 'check_in_distance_m'])
             ->keyBy('student_id');
 
-        $rows = $studentsWithAttendance->map(function (Student $student) use ($attendanceByStudentId) {
-            $attendance = $attendanceByStudentId->get($student->id);
+        $rows = $students->map(function (Student $student) use ($attendances) {
+            $attendance = $attendances->get($student->id);
+            $isScanned = ($attendance !== null && ($attendance->checked_in_at !== null || $attendance->scanned_at !== null));
+            $status = $isScanned ? (string) ($attendance->status ?? 'present') : 'absent';
 
             return [
                 'id' => (string) $student->id,
@@ -556,8 +559,8 @@ class AdminAttendanceController extends Controller
                 'name' => (string) ($student->name ?? ''),
                 'course' => (string) ($student->course ?? ''),
                 'year_level' => (string) ($student->year_level ?? ''),
-                'scanned' => true,
-                'status' => $attendance ? (string) ($attendance->status ?? '') : null,
+                'scanned' => $isScanned,
+                'status' => $status,
                 'checked_in_at' => $attendance
                     ? optional($attendance->checked_in_at ?? $attendance->scanned_at)->toDateTimeString()
                     : null,
@@ -791,46 +794,136 @@ class AdminAttendanceController extends Controller
 
     public function printEvent(Request $request, Event $event): \Illuminate\Http\Response
     {
-        // Fetch only students who actually have attendance records for this event
-        $attendances = Attendance::where('event_id', $event->id)
-            ->with('student')
-            ->orderBy('checked_in_at', 'asc')
+        $eventCourses = is_array($event->courses) ? array_values(array_filter($event->courses, fn($c) => !\App\Services\Attendance\EventEligibilityService::isAllWildcard((string) $c))) : [];
+        $eventYearLevels = is_array($event->year_levels) ? array_values(array_filter($event->year_levels, fn($y) => !\App\Services\Attendance\EventEligibilityService::isAllWildcard((string) $y))) : [];
+
+        // Query eligible students for this event
+        $studentsQuery = Student::query();
+        if (Schema::hasColumn('students', 'status')) {
+            $studentsQuery->where(function ($q) {
+                $q->where('status', 'approved')->orWhereNull('status');
+            });
+        }
+        if (Schema::hasColumn('students', 'is_archived')) {
+            $studentsQuery->where(function ($q) {
+                $q->where('is_archived', false)->orWhereNull('is_archived');
+            });
+        }
+        if (!empty($eventCourses)) {
+            $studentsQuery->whereIn('course', $eventCourses);
+        }
+        if (!empty($eventYearLevels)) {
+            $studentsQuery->whereIn('year_level', $eventYearLevels);
+        }
+
+        $eligibleStudents = $studentsQuery
+            ->orderBy('year_level')
+            ->orderBy('last_name')
+            ->orderBy('first_name')
             ->get();
 
-        // Group by course/program
-        $grouped = $attendances
-            ->filter(fn ($a) => $a->student !== null)
-            ->groupBy(fn ($a) => (string) ($a->student->course ?? 'Unknown'));
+        // Fetch all attendance records for this event
+        $attendances = Attendance::where('event_id', $event->id)
+            ->with('student')
+            ->get()
+            ->keyBy('student_id');
+
+        // Combine eligible students with any attended students
+        $allStudents = $eligibleStudents;
+        if ($allStudents->isEmpty()) {
+            $allStudents = $attendances->map(fn($a) => $a->student)->filter()->values();
+        } else {
+            $attendedStudents = $attendances->map(fn($a) => $a->student)->filter();
+            $allStudents = $allStudents->merge($attendedStudents)->unique('id')->values();
+        }
+
+        // Group by course/program, then within course group by year level
+        $groupedByCourse = $allStudents
+            ->groupBy(fn ($s) => trim((string) ($s->course ?? 'Unknown Program')));
 
         $sections = [];
-        foreach ($grouped->sortKeys() as $course => $courseAttendances) {
-            $tableRows = $courseAttendances
-                ->map(function ($a) {
-                    $checkedInAt = $a->checked_in_at
-                        ? Carbon::parse($a->checked_in_at)->format('g:i A')
-                        : ($a->scanned_at ? Carbon::parse($a->scanned_at)->format('g:i A') : '');
+        $overallPresentCount = 0;
+        $overallAbsentCount = 0;
 
-                    $timeOut = $a->checked_out_at
-                        ? Carbon::parse($a->checked_out_at)->format('g:i A')
-                        : '';
+        foreach ($groupedByCourse->sortKeys() as $course => $courseStudents) {
+            $groupedByYear = $courseStudents->groupBy(function ($s) {
+                $yl = trim((string) ($s->year_level ?? ''));
+                return $yl !== '' ? $yl : 'General';
+            });
 
-                    return [
-                        'name' => (string) ($a->student->name ?? ''),
-                        'major' => (string) ($a->student->course ?? ''),
-                        'year_level' => (string) ($a->student->year_level ?? ''),
-                        'checked_in_at' => $checkedInAt,
-                        'time_out' => $timeOut,
-                        'status' => ucfirst((string) ($a->status ?? 'present')),
-                    ];
-                })
-                ->sortBy('name')
-                ->values()
-                ->toArray();
+            // Sort year levels (1st Year -> 1, 2nd Year -> 2, 3rd Year -> 3, 4th Year -> 4, etc.)
+            $sortedYears = $groupedByYear->keys()->sort(function ($a, $b) {
+                $numA = preg_match('/(\d+)/', (string) $a, $mA) ? (int) $mA[1] : 999;
+                $numB = preg_match('/(\d+)/', (string) $b, $mB) ? (int) $mB[1] : 999;
+                if ($numA === $numB) {
+                    return strcmp((string) $a, (string) $b);
+                }
+                return $numA <=> $numB;
+            });
 
-            $sections[] = [
-                'course' => (string) $course,
-                'tableRows' => $tableRows,
-            ];
+            foreach ($sortedYears as $yearLevel) {
+                $yearStudents = $groupedByYear[$yearLevel];
+
+                $sectionPresentCount = 0;
+                $sectionAbsentCount = 0;
+
+                $tableRows = $yearStudents
+                    ->map(function ($student) use ($attendances, &$sectionPresentCount, &$sectionAbsentCount, &$overallPresentCount, &$overallAbsentCount) {
+                        $att = $attendances->get($student->id);
+                        $hasScanned = ($att !== null && ($att->checked_in_at !== null || $att->scanned_at !== null));
+
+                        if ($hasScanned) {
+                            $status = ucfirst((string) ($att->status ?? 'present'));
+                            $checkedInAt = $att->checked_in_at
+                                ? Carbon::parse($att->checked_in_at)->format('g:i A')
+                                : ($att->scanned_at ? Carbon::parse($att->scanned_at)->format('g:i A') : '—');
+                            $timeOut = $att->checked_out_at
+                                ? Carbon::parse($att->checked_out_at)->format('g:i A')
+                                : '—';
+                            $sectionPresentCount++;
+                            $overallPresentCount++;
+                        } else {
+                            $status = 'Absent';
+                            $checkedInAt = '—';
+                            $timeOut = '—';
+                            $sectionAbsentCount++;
+                            $overallAbsentCount++;
+                        }
+
+                        $fullName = trim((string) ($student->name ?? ''));
+                        if (!empty($student->last_name) || !empty($student->first_name)) {
+                            $fullName = trim(($student->last_name ?? '') . ', ' . ($student->first_name ?? '') . ' ' . ($student->middle_name ?? ''));
+                        }
+
+                        return [
+                            'student_id' => (string) ($student->student_id ?? '—'),
+                            'name' => $fullName ?: (string) ($student->name ?? '—'),
+                            'major' => (string) ($student->course ?? '—'),
+                            'year_level' => (string) ($student->year_level ?? '—'),
+                            'checked_in_at' => $checkedInAt,
+                            'time_out' => $timeOut,
+                            'status' => $status,
+                            'is_absent' => !$hasScanned,
+                        ];
+                    })
+                    ->sortBy('name')
+                    ->values()
+                    ->toArray();
+
+                $programYearLabel = $yearLevel && $yearLevel !== 'General'
+                    ? "{$course} — {$yearLevel}"
+                    : (string) $course;
+
+                $sections[] = [
+                    'course' => (string) $course,
+                    'year_level' => (string) $yearLevel,
+                    'program_year_label' => $programYearLabel,
+                    'tableRows' => $tableRows,
+                    'present_count' => $sectionPresentCount,
+                    'absent_count' => $sectionAbsentCount,
+                    'total_count' => count($tableRows),
+                ];
+            }
         }
 
         $dateLabel = $event->event_date ? Carbon::parse($event->event_date)->format('F d, Y') : '';
@@ -838,14 +931,14 @@ class AdminAttendanceController extends Controller
         $locationLabel = (string) ($event->location ?? '');
         $eventDateTimeLabel = trim($dateLabel.($timeLabel ? ' | '.$timeLabel : '').($locationLabel ? ' | '.$locationLabel : ''));
 
-        $totalAttendees = $attendances->filter(fn ($a) => $a->student !== null)->count();
-
         return response()->view('admin.attendance.print-sheet', [
             'event' => $event,
             'academicYear' => now()->format('Y').' - '.(now()->addYear()->format('Y')),
             'eventDateTimeLabel' => $eventDateTimeLabel,
             'sections' => $sections,
-            'totalAttendees' => $totalAttendees,
+            'totalAttendees' => $overallPresentCount,
+            'totalAbsent' => $overallAbsentCount,
+            'totalStudents' => $overallPresentCount + $overallAbsentCount,
         ]);
     }
 

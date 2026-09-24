@@ -1,5 +1,10 @@
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { SimpleTooltip } from '@/components/ui/tooltip';
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import {
     Sidebar,
     SidebarContent,
@@ -7,8 +12,12 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarMenuSub,
+    SidebarMenuSubButton,
+    SidebarMenuSubItem,
     useSidebar,
 } from '@/components/ui/sidebar';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import { useAppearance } from '@/hooks/use-appearance';
 import { Link, usePage } from '@inertiajs/react';
 import {
@@ -16,7 +25,11 @@ import {
     Archive,
     BarChart3,
     CalendarDays,
+    ChevronDown,
     ClipboardList,
+    GraduationCap,
+    KeyRound,
+    Layers,
     LayoutGrid,
     Moon,
     NotepadText,
@@ -24,6 +37,7 @@ import {
     PanelLeftOpen,
     ShieldAlert,
     Sun,
+    UserCheck,
     UserRoundCog,
     Users,
 } from 'lucide-react';
@@ -45,17 +59,7 @@ import type { NavItem } from '@/types';
 // Admin Events route function
 const adminEvents = () => '/admin/events';
 
-const adminNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: adminDashboard(),
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Manage Users & Programs',
-        href: adminManageUsers(),
-        icon: Users,
-    },
+const middleNavItems: NavItem[] = [
     {
         title: 'Events',
         href: adminEvents(),
@@ -81,7 +85,9 @@ const adminNavItems: NavItem[] = [
         href: adminEvaluation(),
         icon: UserRoundCog,
     },
-    // Items under "Analytics & Logs"
+];
+
+const bottomNavItems: NavItem[] = [
     {
         title: 'Analytics',
         href: adminAnalytics(),
@@ -117,7 +123,7 @@ function SidebarToggle() {
                 variant="ghost"
                 size="icon"
                 onClick={toggleSidebar}
-                className="h-8 w-8 rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 cursor-pointer"
+                className="h-8 w-8 cursor-pointer rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
                 aria-label={open ? 'Collapse Sidebar' : 'Expand Sidebar'}
             >
                 {open ? (
@@ -132,6 +138,15 @@ function SidebarToggle() {
 
 export function AdminSidebar() {
     const { url } = usePage();
+
+    const isManageUsersPath = url.startsWith('/admin/manage-users');
+    const [isManageUsersOpen, setIsManageUsersOpen] = useState(isManageUsersPath);
+
+    useEffect(() => {
+        if (isManageUsersPath) {
+            setIsManageUsersOpen(true);
+        }
+    }, [isManageUsersPath]);
 
     const normalizePath = (href: NavItem['href']) => {
         const hrefString =
@@ -161,12 +176,23 @@ export function AdminSidebar() {
         );
     };
 
-    const baseButtonClassName =
-        'relative h-10 rounded-lg px-2.5 text-sm font-medium transition-all duration-200 data-[active=true]:bg-blue-600 data-[active=true]:text-white data-[active=true]:shadow-md data-[active=true]:before:absolute data-[active=true]:before:left-0 data-[active=true]:before:top-1.5 data-[active=true]:before:h-7 data-[active=true]:before:w-1 data-[active=true]:before:rounded-r-full data-[active=true]:before:bg-white dark:data-[active=true]:bg-blue-600/20 dark:data-[active=true]:text-blue-400 dark:data-[active=true]:before:bg-blue-400 dark:hover:bg-slate-800 dark:hover:text-white';
+    const isSubTabActive = (tab: 'users' | 'program-heads' | 'programs' | 'password-resets') => {
+        if (!url.startsWith('/admin/manage-users')) return false;
+        const search = url.split('?')[1] || '';
+        const params = new URLSearchParams(search);
+        const currentTab = params.get('tab');
 
-    const topNavItems = adminNavItems.slice(0, 2);
-    const middleNavItems = adminNavItems.slice(2, 7);
-    const bottomNavItems = adminNavItems.slice(7);
+        if (tab === 'users') {
+            return !currentTab || currentTab === 'users';
+        }
+        return currentTab === tab;
+    };
+
+    const baseButtonClassName =
+        'relative h-10 rounded-lg px-2.5 text-sm font-medium transition-all duration-200 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white data-[active=true]:bg-blue-600 data-[active=true]:text-white data-[active=true]:shadow-md data-[active=true]:before:absolute data-[active=true]:before:left-0 data-[active=true]:before:top-1.5 data-[active=true]:before:h-7 data-[active=true]:before:w-1 data-[active=true]:before:rounded-r-full data-[active=true]:before:bg-white dark:data-[active=true]:bg-blue-600/20 dark:data-[active=true]:text-blue-400 dark:data-[active=true]:before:bg-blue-400 data-[active=true]:hover:bg-blue-600 data-[active=true]:hover:text-white dark:data-[active=true]:hover:bg-blue-600/20 dark:data-[active=true]:hover:text-blue-400';
+
+    const subItemClassName =
+        'h-8.5 rounded-lg px-2 text-xs font-medium text-slate-600 transition-colors hover:bg-blue-50/90 hover:text-blue-700 data-[active=true]:bg-blue-100/70 data-[active=true]:font-bold data-[active=true]:text-blue-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-blue-400 dark:data-[active=true]:bg-blue-950/60 dark:data-[active=true]:text-blue-300';
 
     return (
         <Sidebar
@@ -185,39 +211,129 @@ export function AdminSidebar() {
                         <SidebarToggle />
                     </div>
                     <SidebarMenu className="gap-1">
-                        {topNavItems.map((item) => {
-                            const isAttendanceActive =
-                                item.title === 'Attendance' &&
-                                isItemActive(item.href);
+                        {/* Dashboard */}
+                        <SidebarMenuItem>
+                            <SidebarMenuButton
+                                asChild
+                                tooltip={{ children: 'Dashboard' }}
+                                isActive={isItemActive(adminDashboard())}
+                                className={`${baseButtonClassName} text-slate-600 dark:text-slate-400`}
+                            >
+                                <Link
+                                    href={adminDashboard()}
+                                    prefetch
+                                    className="flex items-center gap-2.5"
+                                >
+                                    <LayoutGrid className="h-[18px] w-[18px] flex-shrink-0" />
+                                    <span className="truncate">Dashboard</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
 
-                            return (
-                                <SidebarMenuItem key={item.title}>
+                        {/* Manage Users Dropdown Collapsible */}
+                        <Collapsible
+                            open={isManageUsersOpen}
+                            onOpenChange={setIsManageUsersOpen}
+                            className="group/collapsible"
+                        >
+                            <SidebarMenuItem>
+                                <CollapsibleTrigger asChild>
                                     <SidebarMenuButton
-                                        asChild
-                                        tooltip={{ children: item.title }}
-                                        isActive={
-                                            item.title === 'Attendance'
-                                                ? isAttendanceActive
-                                                : isItemActive(item.href)
-                                        }
-                                        className={`${baseButtonClassName} text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400`}
+                                        tooltip={{ children: 'Manage Users' }}
+                                        className={`relative flex h-10 w-full cursor-pointer items-center justify-between rounded-lg px-2.5 text-sm font-medium transition-all duration-200 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white ${
+                                            isManageUsersPath
+                                                ? 'font-semibold text-slate-900 dark:text-white'
+                                                : 'text-slate-600 dark:text-slate-400'
+                                        }`}
                                     >
-                                        <Link
-                                            href={item.href}
-                                            prefetch
-                                            className="flex items-center gap-2.5"
-                                        >
-                                            {item.icon && (
-                                                <item.icon className="h-[18px] w-[18px] flex-shrink-0" />
-                                            )}
-                                            <span className="truncate">
-                                                {item.title}
-                                            </span>
-                                        </Link>
+                                        <div className="flex items-center gap-2.5 truncate">
+                                            <Users className="h-[18px] w-[18px] flex-shrink-0" />
+                                            <span className="truncate">Manage Users</span>
+                                        </div>
+                                        <ChevronDown
+                                            className={`h-4 w-4 shrink-0 transition-transform duration-200 group-data-[collapsible=icon]:hidden ${
+                                                isManageUsersOpen ? 'rotate-180' : ''
+                                            }`}
+                                        />
                                     </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            );
-                        })}
+                                </CollapsibleTrigger>
+                                <CollapsibleContent>
+                                    <SidebarMenuSub className="my-1 ml-3 border-l-2 border-slate-200 pl-2.5 dark:border-slate-800">
+                                        {/* Students Sub-item */}
+                                        <SidebarMenuSubItem>
+                                            <SidebarMenuSubButton
+                                                asChild
+                                                isActive={isSubTabActive('users')}
+                                                className={subItemClassName}
+                                            >
+                                                <Link
+                                                    href="/admin/manage-users?tab=users"
+                                                    prefetch
+                                                    className="flex items-center gap-2"
+                                                >
+                                                    <UserCheck className="h-3.5 w-3.5 flex-shrink-0 text-blue-600 dark:text-blue-400" />
+                                                    <span>Students</span>
+                                                </Link>
+                                            </SidebarMenuSubButton>
+                                        </SidebarMenuSubItem>
+
+                                        {/* Personnels Sub-item */}
+                                        <SidebarMenuSubItem>
+                                            <SidebarMenuSubButton
+                                                asChild
+                                                isActive={isSubTabActive('program-heads')}
+                                                className={subItemClassName}
+                                            >
+                                                <Link
+                                                    href="/admin/manage-users?tab=program-heads"
+                                                    prefetch
+                                                    className="flex items-center gap-2"
+                                                >
+                                                    <GraduationCap className="h-3.5 w-3.5 flex-shrink-0 text-indigo-600 dark:text-indigo-400" />
+                                                    <span>Personnels</span>
+                                                </Link>
+                                            </SidebarMenuSubButton>
+                                        </SidebarMenuSubItem>
+
+                                        {/* Academic Programs Sub-item */}
+                                        <SidebarMenuSubItem>
+                                            <SidebarMenuSubButton
+                                                asChild
+                                                isActive={isSubTabActive('programs')}
+                                                className={subItemClassName}
+                                            >
+                                                <Link
+                                                    href="/admin/manage-users?tab=programs"
+                                                    prefetch
+                                                    className="flex items-center gap-2"
+                                                >
+                                                    <Layers className="h-3.5 w-3.5 flex-shrink-0 text-cyan-600 dark:text-cyan-400" />
+                                                    <span>Academic Programs</span>
+                                                </Link>
+                                            </SidebarMenuSubButton>
+                                        </SidebarMenuSubItem>
+
+                                        {/* Password Resets Sub-item */}
+                                        <SidebarMenuSubItem>
+                                            <SidebarMenuSubButton
+                                                asChild
+                                                isActive={isSubTabActive('password-resets')}
+                                                className={subItemClassName}
+                                            >
+                                                <Link
+                                                    href="/admin/manage-users?tab=password-resets"
+                                                    prefetch
+                                                    className="flex items-center gap-2"
+                                                >
+                                                    <KeyRound className="h-3.5 w-3.5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+                                                    <span>Password Resets</span>
+                                                </Link>
+                                            </SidebarMenuSubButton>
+                                        </SidebarMenuSubItem>
+                                    </SidebarMenuSub>
+                                </CollapsibleContent>
+                            </SidebarMenuItem>
+                        </Collapsible>
                     </SidebarMenu>
 
                     <div className="mt-6 mb-2 px-3 text-[10px] font-bold tracking-wider text-slate-400 uppercase group-data-[collapsible=icon]:hidden dark:text-slate-500">

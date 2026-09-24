@@ -11,6 +11,7 @@ import {
 import { cn } from '@/lib/utils';
 import { SimpleTooltip } from '@/components/ui/tooltip';
 import { Activity, Archive, Eye, MapPin, Printer, Search } from 'lucide-react';
+import Swal from 'sweetalert2';
 
 type AttendanceRow = {
     id: string;
@@ -69,6 +70,28 @@ export default function AttendanceTable({
     selectedEventId,
     onSelectEventRow,
 }: Props) {
+    const selectedEvent = selectedEventId
+        ? attendanceEvents.find((e) => String(e.id) === String(selectedEventId))
+        : null;
+
+    const handlePrintEvent = (eventId?: string | null) => {
+        const targetId = eventId || selectedEventId;
+        if (!targetId) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Select an Event First',
+                text: 'Please click on an event row from the table below to select it before printing the attendance sheet.',
+                confirmButtonColor: '#2563eb',
+            });
+            return;
+        }
+
+        const url = printUrlForEvent
+            ? printUrlForEvent(String(targetId))
+            : `/admin/attendance/${targetId}/print`;
+        window.open(url, '_blank');
+    };
+
     const renderStatusBadge = (status: string) => {
         switch (status) {
             case 'upcoming':
@@ -142,7 +165,13 @@ export default function AttendanceTable({
                     </CardTitle>
                     {onSelectEventRow ? (
                         <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-                            Click a row to inspect event attendance statistics
+                            {selectedEvent ? (
+                                <span className="text-blue-600 font-semibold dark:text-blue-400">
+                                    Selected: {selectedEvent.event} (Click print to generate report)
+                                </span>
+                            ) : (
+                                'Click a row to select an event to print or view statistics'
+                            )}
                         </p>
                     ) : (
                         <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -152,11 +181,29 @@ export default function AttendanceTable({
                     )}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
+                    <SimpleTooltip content={selectedEvent ? `Print attendance sheet for ${selectedEvent.event}` : 'Select an event below first to print'}>
+                        <Button
+                            type="button"
+                            variant={selectedEvent ? 'default' : 'outline'}
+                            size="sm"
+                            className={cn(
+                                'h-9 gap-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all',
+                                selectedEvent
+                                    ? 'border-transparent bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700'
+                                    : 'border-slate-200 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800',
+                            )}
+                            onClick={() => handlePrintEvent()}
+                        >
+                            <Printer className="h-3.5 w-3.5" />
+                            <span>Print Attendance Sheet</span>
+                        </Button>
+                    </SimpleTooltip>
+
                     <div className="relative">
                         <Search className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                         <Input
                             placeholder="Search events..."
-                            className="h-9 w-48 rounded-xl border-slate-200 bg-slate-50 pl-8 text-xs font-medium focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                            className="h-9 w-44 rounded-xl border-slate-200 bg-slate-50 pl-8 text-xs font-medium focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -423,16 +470,35 @@ export default function AttendanceTable({
                     </table>
                 </div>
 
-                <div className="mt-4 flex flex-col gap-4 border-t border-slate-100 px-2 pt-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
+                <div className="mt-4 flex flex-col gap-4 border-t border-slate-100 px-6 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
                     <div className="text-sm text-slate-500 dark:text-slate-400">
                         Showing{' '}
                         <span className="font-semibold text-slate-700 dark:text-slate-300">
                             {attendanceEvents.length}
                         </span>{' '}
                         events
+                        {selectedEvent && (
+                            <span className="ml-2 font-medium text-blue-600 dark:text-blue-400">
+                                • Selected: <strong>{selectedEvent.event}</strong>
+                            </span>
+                        )}
                     </div>
-                    {!hideSummaryReport && (
-                        <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                            variant={selectedEvent ? 'default' : 'outline'}
+                            size="sm"
+                            className={cn(
+                                'h-8 gap-1.5 text-xs font-semibold transition-all',
+                                selectedEvent
+                                    ? 'bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700'
+                                    : 'border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800',
+                            )}
+                            onClick={() => handlePrintEvent()}
+                        >
+                            <Printer className="h-4 w-4" />
+                            {selectedEvent ? `Print ${selectedEvent.event}` : 'Print Attendance Sheet'}
+                        </Button>
+                        {!hideSummaryReport && (
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -445,10 +511,10 @@ export default function AttendanceTable({
                                 }
                             >
                                 <Printer className="h-4 w-4" />
-                                Summary Report
+                                Monthly Summary
                             </Button>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             </CardContent>
         </Card>

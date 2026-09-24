@@ -19,9 +19,10 @@ import {
 } from 'lucide-react';
 
 interface ManageUsersHeroHeaderProps {
-    activeTab: 'users' | 'programs' | 'password-resets';
-    switchTab: (tab: 'users' | 'programs' | 'password-resets') => void;
+    activeTab: 'users' | 'program-heads' | 'programs' | 'password-resets';
+    switchTab?: (tab: 'users' | 'program-heads' | 'programs' | 'password-resets') => void;
     totalUsers: number;
+    totalProgramHeads?: number;
     totalPrograms: number;
     pendingResetsCount: number;
     openCreateModal: () => void;
@@ -33,10 +34,6 @@ interface ManageUsersHeroHeaderProps {
 
 export function ManageUsersHeroHeader({
     activeTab,
-    switchTab,
-    totalUsers,
-    totalPrograms,
-    pendingResetsCount,
     openCreateModal,
     openCreatePHModal,
     openCreateAdminModal,
@@ -53,8 +50,10 @@ export function ManageUsersHeroHeader({
                     <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/10 text-white shadow-inner ring-1 ring-white/20 backdrop-blur-sm">
                         {activeTab === 'users' ? (
                             <Users className="h-7 w-7" />
-                        ) : activeTab === 'programs' ? (
+                        ) : activeTab === 'program-heads' ? (
                             <GraduationCap className="h-7 w-7" />
+                        ) : activeTab === 'programs' ? (
+                            <Layers className="h-7 w-7" />
                         ) : (
                             <KeyRound className="h-7 w-7" />
                         )}
@@ -62,6 +61,7 @@ export function ManageUsersHeroHeader({
                     <div>
                         <h1 className="text-2xl font-black tracking-tight text-white">
                             {activeTab === 'users' && 'Manage Users'}
+                            {activeTab === 'program-heads' && 'Personnels'}
                             {activeTab === 'programs' && 'Academic Programs'}
                             {activeTab === 'password-resets' &&
                                 'Password Resets'}
@@ -69,6 +69,8 @@ export function ManageUsersHeroHeader({
                         <p className="mt-0.5 text-sm font-medium text-blue-200/80">
                             {activeTab === 'users' &&
                                 'Manage user accounts, roles, and permissions'}
+                            {activeTab === 'program-heads' &&
+                                'Manage academic department personnels and account verification'}
                             {activeTab === 'programs' &&
                                 'Manage curriculums, departments, and course offerings'}
                             {activeTab === 'password-resets' &&
@@ -77,79 +79,8 @@ export function ManageUsersHeroHeader({
                     </div>
                 </div>
 
-                {/* Right side: Tab buttons & Action buttons inside banner */}
+                {/* Right side: Action buttons inside banner */}
                 <div className="flex flex-wrap items-center gap-3 self-start lg:self-auto">
-                    {/* Tab switcher inside banner */}
-                    <div className="flex items-center rounded-xl bg-white/10 p-1 ring-1 ring-white/20 backdrop-blur-md">
-                        <button
-                            type="button"
-                            onClick={() => switchTab('users')}
-                            title="Users"
-                            aria-label="Users"
-                            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
-                                activeTab === 'users'
-                                    ? 'bg-white text-[#1e3a8a] shadow-sm'
-                                    : 'text-white/80 hover:bg-white/10 hover:text-white'
-                            }`}
-                        >
-                            <UserCheck className="h-5 w-5" />
-                            <span
-                                className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                                    activeTab === 'users'
-                                        ? 'bg-[#1e3a8a]/10 text-[#1e3a8a]'
-                                        : 'bg-white/10 text-white'
-                                }`}
-                            >
-                                {totalUsers}
-                            </span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => switchTab('programs')}
-                            title="Programs"
-                            aria-label="Programs"
-                            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
-                                activeTab === 'programs'
-                                    ? 'bg-white text-[#1e3a8a] shadow-sm'
-                                    : 'text-white/80 hover:bg-white/10 hover:text-white'
-                            }`}
-                        >
-                            <GraduationCap className="h-5 w-5" />
-                            <span
-                                className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                                    activeTab === 'programs'
-                                        ? 'bg-[#1e3a8a]/10 text-[#1e3a8a]'
-                                        : 'bg-white/10 text-white'
-                                }`}
-                            >
-                                {totalPrograms}
-                            </span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => switchTab('password-resets')}
-                            title="Password Resets"
-                            aria-label="Password Resets"
-                            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 ${
-                                activeTab === 'password-resets'
-                                    ? 'bg-white text-[#1e3a8a] shadow-sm'
-                                    : 'text-white/80 hover:bg-white/10 hover:text-white'
-                            }`}
-                        >
-                            <KeyRound className="h-5 w-5" />
-                            <span
-                                className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                                    activeTab === 'password-resets'
-                                        ? 'bg-[#1e3a8a]/10 text-[#1e3a8a]'
-                                        : 'bg-white/10 text-white'
-                                }`}
-                            >
-                                {pendingResetsCount}
-                            </span>
-                        </button>
-                    </div>
-
-                    {/* Action buttons */}
                     {activeTab === 'users' ? (
                         <div className="flex items-center gap-2">
                             <DropdownMenu>
@@ -176,7 +107,7 @@ export function ManageUsersHeroHeader({
                                         className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-900"
                                     >
                                         <GraduationCap className="h-4.5 w-4.5 text-[#1e3a8a]" />
-                                        Add Program Head
+                                        Add Personnel
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         onClick={openCreateAdminModal}
@@ -198,6 +129,14 @@ export function ManageUsersHeroHeader({
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
+                    ) : activeTab === 'program-heads' ? (
+                        <Button
+                            onClick={openCreatePHModal}
+                            className="h-11 gap-2 rounded-xl bg-white px-5 font-bold text-[#1e3a8a] shadow-md transition-all duration-200 hover:bg-blue-50"
+                        >
+                            <Plus className="h-5 w-5" />
+                            Add Personnel
+                        </Button>
                     ) : activeTab === 'programs' ? (
                         <Button
                             onClick={openCreateProgramModal}

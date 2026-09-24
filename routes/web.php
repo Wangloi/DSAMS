@@ -303,9 +303,42 @@ Route::post('/program-head/students/bulk/status/deactivate', [ProgramHeadDashboa
 Route::post('/program-head/students/bulk/year-level', [ProgramHeadDashboardController::class, 'bulkSetYearLevel'])->middleware(['auth:program_head', 'verified'])->name('program-head.students.bulk-year-level');
 
 Route::get('/program-head/attendance', [App\Http\Controllers\ProgramHeadAttendanceController::class, 'index'])->middleware(['auth:program_head', 'verified'])->name('program-head.attendance');
+Route::post('/program-head/attendance/{event}/scan', [App\Http\Controllers\ProgramHeadAttendanceController::class, 'scanAttendance'])->middleware(['web', 'auth:program_head', 'verified'])->name('program-head.attendance.scan');
+Route::post('/program-head/attendance/{event}/activate-scanner-portal', [App\Http\Controllers\ProgramHeadAttendanceController::class, 'activateScannerPortal'])->middleware(['web', 'auth:program_head', 'verified'])->name('program-head.attendance.activate-scanner-portal');
+Route::get('/program-head/attendance/{event}/dynamic-qr/token', [App\Http\Controllers\DynamicAttendanceQrController::class, 'token'])->middleware(['web', 'auth:program_head', 'verified'])->name('program-head.attendance.dynamic-qr.token');
 Route::get('/program-head/attendance/{event}/logs', [App\Http\Controllers\ProgramHeadAttendanceController::class, 'logs'])->middleware(['auth:program_head', 'verified'])->name('program-head.attendance.logs');
 Route::get('/program-head/attendance/{event}/students', [App\Http\Controllers\ProgramHeadAttendanceController::class, 'studentsByCourse'])->middleware(['auth:program_head', 'verified'])->name('program-head.attendance.students');
 Route::get('/program-head/attendance/{event}/print', [App\Http\Controllers\ProgramHeadAttendanceController::class, 'printEvent'])->middleware(['auth:program_head', 'verified'])->name('program-head.attendance.print');
+
+Route::get('/program-head/qr-scanner', function () {
+    $eventId = request()->query('event');
+    $eventPayload = null;
+
+    if ($eventId) {
+        $event = Event::query()->find($eventId);
+        if ($event) {
+            $scannerPortalActive = true;
+            if (Schema::hasColumn('events', 'scanner_portal_active')) {
+                $scannerPortalActive = (bool) $event->scanner_portal_active;
+            }
+
+            $eventPayload = [
+                'id' => (string) $event->id,
+                'name' => (string) ($event->event_name ?? ''),
+                'date' => optional($event->event_date)->format('Y-m-d') ?: '',
+                'timeIn' => (string) ($event->event_time ?? ''),
+                'timeEnd' => (string) ($event->registration_end_time ?? ''),
+                'location' => (string) ($event->location ?? ''),
+                'scannerPortalActive' => $scannerPortalActive,
+            ];
+        }
+    }
+
+    return Inertia::render('program-head/qr-scanner/index', [
+        'event' => $eventPayload,
+    ]);
+})->middleware(['auth:program_head', 'verified'])->name('program-head.qr-scanner');
+
 Route::get('/program-head/violations', [App\Http\Controllers\ProgramHeadViolationsController::class, 'index'])->middleware(['auth:program_head', 'verified'])->name('program-head.violations');
 
 // Program Head announcements page disabled.
@@ -378,6 +411,10 @@ Route::put('/admin/program-heads/{programHead}', [AdminManageUsersController::cl
 Route::post('/admin/program-heads', [AdminManageUsersController::class, 'storeProgramHead'])
     ->middleware('auth:admin')
     ->name('admin.program-heads.store');
+
+Route::delete('/admin/program-heads/{programHead}', [AdminManageUsersController::class, 'destroyProgramHead'])
+    ->middleware('auth:admin')
+    ->name('admin.program-heads.destroy');
 
 Route::post('/admin/manage-users/admin', [AdminManageUsersController::class, 'storeAdmin'])
     ->middleware('auth:admin')

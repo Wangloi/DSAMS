@@ -112,9 +112,14 @@ class AdminManageUsersController extends Controller
             return collect();
         }
 
+        $columns = ['id', 'name', 'email', 'program', 'verification_status', 'created_at', 'updated_at'];
+        if (Schema::hasColumn('program_heads', 'role')) {
+            $columns[] = 'role';
+        }
+
         return ProgramHead::query()
             ->orderByDesc('id')
-            ->get(['id', 'name', 'email', 'program', 'verification_status', 'created_at', 'updated_at'])
+            ->get($columns)
             ->map(function (ProgramHead $ph) {
                 return [
                     'id' => 1000000000 + (int) $ph->id,
@@ -127,7 +132,7 @@ class AdminManageUsersController extends Controller
                     'email' => $ph->email,
                     'course' => $ph->program ?? '',
                     'year_level' => '',
-                    'role' => 'Program Head',
+                    'role' => $ph->role ?? 'Program Head',
                     'is_active' => true,
                     'status' => $ph->verification_status ?? 'pending',
                     'qr_code_path' => null,
@@ -648,6 +653,26 @@ class AdminManageUsersController extends Controller
         )->setStatusCode(303);
     }
 
+    public function destroyProgramHead(ProgramHead $programHead): RedirectResponse
+    {
+        $name = $programHead->name;
+        $email = $programHead->email;
+        $programHead->delete();
+
+        if (Schema::hasTable('activity_logs')) {
+            $admin = auth()->guard('admin')->user();
+            ActivityLog::logForUser(
+                $admin,
+                'User Management',
+                'Deleted',
+                "Deleted program head: {$name} ({$email})",
+                request()
+            );
+        }
+
+        return redirect()->route('admin.manage-users')->with('success', 'Program Head account deleted successfully.')->setStatusCode(303);
+    }
+
     public function bulkApproveVerification(Request $request): RedirectResponse
     {
         return $this->bulkSetVerification($request, 'approved');
@@ -946,14 +971,21 @@ class AdminManageUsersController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:program_heads,email,' . $programHead->id],
             'program' => ['nullable', 'string', 'max:255'],
+            'role' => ['nullable', 'string', 'max:255'],
             'password' => ['nullable', 'string', 'min:8'],
         ]);
 
-        $programHead->fill([
+        $updateData = [
             'name' => $validated['name'],
             'email' => $validated['email'],
             'program' => $validated['program'] ?? null,
-        ]);
+        ];
+
+        if (Schema::hasColumn('program_heads', 'role')) {
+            $updateData['role'] = $validated['role'] ?? $programHead->role ?? 'Program Head';
+        }
+
+        $programHead->fill($updateData);
 
         if (!empty($validated['password'])) {
             $programHead->password = Hash::make($validated['password']);
@@ -967,14 +999,14 @@ class AdminManageUsersController extends Controller
                 $admin,
                 'User Management',
                 'Updated',
-                "Updated program head user: {$programHead->email}",
+                "Updated personnel user: {$programHead->email}",
                 $request,
                 $programHead->getOriginal(),
                 $programHead->getAttributes()
             );
         }
 
-        return redirect()->route('admin.manage-users')->with('success', 'Program Head account updated successfully.')->setStatusCode(303);
+        return redirect()->route('admin.manage-users')->with('success', 'Personnel account updated successfully.')->setStatusCode(303);
     }
 
     public function storeProgramHead(Request $request): RedirectResponse
@@ -983,16 +1015,23 @@ class AdminManageUsersController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:program_heads,email'],
             'program' => ['nullable', 'string', 'max:255'],
+            'role' => ['nullable', 'string', 'max:255'],
             'password' => ['required', 'string', 'min:8'],
         ]);
 
-        $programHead = ProgramHead::create([
+        $createData = [
             'name' => $validated['name'],
             'email' => $validated['email'],
             'program' => $validated['program'] ?? null,
             'password' => Hash::make($validated['password']),
             'verification_status' => 'approved',
-        ]);
+        ];
+
+        if (Schema::hasColumn('program_heads', 'role')) {
+            $createData['role'] = $validated['role'] ?? 'Program Head';
+        }
+
+        $programHead = ProgramHead::create($createData);
 
         if (Schema::hasTable('activity_logs')) {
             $admin = auth()->guard('admin')->user();
@@ -1000,14 +1039,14 @@ class AdminManageUsersController extends Controller
                 $admin,
                 'User Management',
                 'Created',
-                "Created program head user: {$validated['email']}",
+                "Created personnel user: {$validated['email']}",
                 $request,
                 null,
                 $programHead->getAttributes()
             );
         }
 
-        return redirect()->route('admin.manage-users')->with('success', 'Program Head account created successfully.')->setStatusCode(303);
+        return redirect()->route('admin.manage-users')->with('success', 'Personnel account created successfully.')->setStatusCode(303);
     }
 
     public function storeAdmin(Request $request): RedirectResponse

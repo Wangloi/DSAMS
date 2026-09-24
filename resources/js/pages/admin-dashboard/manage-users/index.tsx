@@ -12,6 +12,7 @@ import BulkActionsModal from './BulkActionsModal';
 import BulkAddUsersDialog from './BulkAddUsersDialog';
 import { BulkYearLevelDialog } from './BulkYearLevelDialog';
 import { ManagePasswordResetsTab } from './ManagePasswordResetsTab';
+import { ManageProgramHeadsTab } from './ManageProgramHeadsTab';
 import { ManageProgramsTab } from './ManageProgramsTab';
 import { ManageUsersHeroHeader } from './ManageUsersHeroHeader';
 import { ManageUsersStatsCards } from './ManageUsersStatsCards';
@@ -63,16 +64,17 @@ export default function AdminManageUsersPage() {
     }, [flash?.error]);
 
     // ── Tab state (persisted in URL) ──────────────────────────────────────────
+    const validTabs = ['users', 'program-heads', 'programs', 'password-resets'] as const;
+    type ActiveTabType = (typeof validTabs)[number];
+
     const urlParams = new URLSearchParams(window.location.search);
     const initialTabParam = urlParams.get('tab');
-    const initialTab = ['programs', 'users', 'password-resets'].includes(
+    const initialTab: ActiveTabType = (validTabs as readonly string[]).includes(
         initialTabParam ?? '',
     )
-        ? (initialTabParam as 'users' | 'programs' | 'password-resets')
+        ? (initialTabParam as ActiveTabType)
         : 'users';
-    const [activeTab, setActiveTab] = useState<
-        'users' | 'programs' | 'password-resets'
-    >(initialTab);
+    const [activeTab, setActiveTab] = useState<ActiveTabType>(initialTab);
     const { url } = usePage();
 
     useEffect(() => {
@@ -81,14 +83,14 @@ export default function AdminManageUsersPage() {
         const tab = params.get('tab');
         if (
             tab &&
-            ['programs', 'users', 'password-resets'].includes(tab) &&
+            (validTabs as readonly string[]).includes(tab) &&
             tab !== activeTab
         ) {
-            setActiveTab(tab as any);
+            setActiveTab(tab as ActiveTabType);
         }
     }, [url]);
 
-    const switchTab = (tab: 'users' | 'programs' | 'password-resets') => {
+    const switchTab = (tab: ActiveTabType) => {
         setActiveTab(tab);
         const currentUrl = new URL(window.location.href);
         currentUrl.searchParams.set('tab', tab);
@@ -133,6 +135,10 @@ export default function AdminManageUsersPage() {
         openEditModal,
         submit,
         submitProgramHead,
+        deleteProgramHead,
+        approveProgramHead,
+        rejectProgramHead,
+        setPendingProgramHead,
     } = useManageUsers(errors);
 
     const [activeById, setActiveById] = useState<Record<number, boolean>>({});
@@ -141,6 +147,14 @@ export default function AdminManageUsersPage() {
         String((u as any)?.userType ?? '').toLowerCase() === 'program_head';
     const isAdminRow = (u: UserRow) =>
         String((u as any)?.userType ?? '').toLowerCase() === 'admin';
+
+    const programHeads = useMemo(() => {
+        return students.filter(
+            (u) =>
+                isProgramHeadRow(u) ||
+                (u.role ?? '').toLowerCase().includes('program head'),
+        );
+    }, [students]);
 
     const [roleFilter, setRoleFilter] = useState<string>('all');
     const [statusFilter, setStatusFilter] = useState<
@@ -331,6 +345,7 @@ export default function AdminManageUsersPage() {
                         activeTab={activeTab}
                         switchTab={switchTab}
                         totalUsers={totalUsers}
+                        totalProgramHeads={programHeads.length}
                         totalPrograms={programs.length}
                         pendingResetsCount={pendingResetsCount}
                         openCreateModal={openCreateModal}
@@ -379,6 +394,26 @@ export default function AdminManageUsersPage() {
                                 isAdminRow={isAdminRow}
                             />
                         </>
+                    )}
+
+                    {/* ── PROGRAM HEADS TAB ── */}
+                    {activeTab === 'program-heads' && (
+                        <ManageProgramHeadsTab
+                            programHeads={programHeads}
+                            programs={programs}
+                            availablePrograms={availableCourses}
+                            onOpenCreatePHModal={openCreatePHModal}
+                            onViewProgramHead={(user) => {
+                                setViewStudent(user);
+                                setViewOpen(true);
+                            }}
+                            onEditProgramHead={openEditModal}
+                            onDeleteProgramHead={deleteProgramHead}
+                            onApproveProgramHead={approveProgramHead}
+                            onRejectProgramHead={rejectProgramHead}
+                            onSetPendingProgramHead={setPendingProgramHead}
+                            getInitials={getInitials}
+                        />
                     )}
 
                     {/* ── PROGRAMS TAB ── */}

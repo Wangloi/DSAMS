@@ -349,6 +349,12 @@ export default function AddEditUserDialog({
                                         <SelectItem value="Student">
                                             Student
                                         </SelectItem>
+                                        <SelectItem value="Instructor">
+                                            Instructor
+                                        </SelectItem>
+                                        <SelectItem value="Offices">
+                                            Offices
+                                        </SelectItem>
                                         <SelectItem value="President">
                                             President
                                         </SelectItem>

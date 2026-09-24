@@ -6,6 +6,9 @@ import {
     adminAttendanceActivateScannerPortal,
     adminAttendanceDynamicQrToken,
     adminAttendanceLogs,
+    programHeadAttendanceActivateScannerPortal,
+    programHeadAttendanceDynamicQrToken,
+    programHeadAttendanceLogs,
 } from '@/routes';
 import { router } from '@inertiajs/react';
 import { BrowserQRCodeReader } from '@zxing/browser';
@@ -73,6 +76,7 @@ interface RealTimeMonitoringPanelProps {
     hasBackendEvents: boolean;
     handleViewStudentsByCourse: (course: string) => void;
     setEvents: React.Dispatch<React.SetStateAction<any[]>>;
+    userRole?: 'admin' | 'program_head';
 }
 
 export default function RealTimeMonitoringPanel({
@@ -81,8 +85,23 @@ export default function RealTimeMonitoringPanel({
     hasBackendEvents,
     handleViewStudentsByCourse,
     setEvents,
+    userRole = 'admin',
 }: RealTimeMonitoringPanelProps) {
     const monitorEventId = monitoredEvent ? String(monitoredEvent.id) : '';
+    const isProgramHead = userRole === 'program_head';
+
+    const logsUrl = isProgramHead
+        ? programHeadAttendanceLogs(monitorEventId)
+        : adminAttendanceLogs(monitorEventId);
+    const scanUrl = isProgramHead
+        ? `/program-head/attendance/${monitorEventId}/scan`
+        : `/admin/attendance/${monitorEventId}/scan`;
+    const activateScannerPortalUrl = isProgramHead
+        ? programHeadAttendanceActivateScannerPortal(monitorEventId)
+        : adminAttendanceActivateScannerPortal(monitorEventId);
+    const dynamicQrTokenUrl = isProgramHead
+        ? programHeadAttendanceDynamicQrToken(monitorEventId)
+        : adminAttendanceDynamicQrToken(monitorEventId);
 
     const [attendanceMode, setAttendanceMode] = useState<'entry' | 'exit'>(
         'entry',
@@ -179,7 +198,7 @@ export default function RealTimeMonitoringPanel({
             return;
         }
         try {
-            const res = await fetch(adminAttendanceLogs(monitorEventId), {
+            const res = await fetch(logsUrl, {
                 headers: {
                     Accept: 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
@@ -258,7 +277,7 @@ export default function RealTimeMonitoringPanel({
         void refreshLogs();
         if (hasBackendEvents) {
             router.post(
-                adminAttendanceActivateScannerPortal(monitorEventId),
+                activateScannerPortalUrl,
                 {},
                 {
                     preserveScroll: true,
@@ -270,7 +289,7 @@ export default function RealTimeMonitoringPanel({
                 },
             );
         }
-    }, [monitorEventId, hasBackendEvents]);
+    }, [monitorEventId, hasBackendEvents, activateScannerPortalUrl, refreshLogs]);
 
     const renderQr = useCallback(async (payload: string) => {
         const canvas = qrCanvasRef.current;
@@ -297,7 +316,7 @@ export default function RealTimeMonitoringPanel({
         setQrError(null);
         try {
             const res = await fetch(
-                adminAttendanceDynamicQrToken(monitorEventId),
+                dynamicQrTokenUrl,
                 {
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
@@ -339,7 +358,7 @@ export default function RealTimeMonitoringPanel({
         } finally {
             setQrLoading(false);
         }
-    }, [monitorEventId, renderQr, scannerPortalActive]);
+    }, [monitorEventId, renderQr, scannerPortalActive, dynamicQrTokenUrl]);
 
     // Live sync and token updater for dynamic QR
     useEffect(() => {
@@ -384,7 +403,7 @@ export default function RealTimeMonitoringPanel({
 
         if (hasBackendEvents) {
             router.post(
-                adminAttendanceActivateScannerPortal(monitorEventId),
+                activateScannerPortalUrl,
                 {},
                 {
                     preserveScroll: true,
@@ -469,7 +488,7 @@ export default function RealTimeMonitoringPanel({
 
         try {
             const res = await fetch(
-                `/admin/attendance/${monitorEventId}/scan`,
+                scanUrl,
                 {
                     method: 'POST',
                     credentials: 'include',

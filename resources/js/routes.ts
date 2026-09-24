@@ -33,6 +33,16 @@ export const studentEvaluationSubmit = (evaluationId: number | string) =>
 export const programHeadDashboard = () => '/program-head-dashboard';
 export const programHeadStudents = () => '/program-head/students';
 export const programHeadAttendance = () => '/program-head/attendance';
+export const programHeadAttendanceScan = (eventId: number | string) =>
+    `/program-head/attendance/${eventId}/scan`;
+export const programHeadAttendanceActivateScannerPortal = (
+    eventId: number | string,
+) => `/program-head/attendance/${eventId}/activate-scanner-portal`;
+export const programHeadAttendanceDynamicQrToken = (eventId: number | string) =>
+    `/program-head/attendance/${eventId}/dynamic-qr/token`;
+export const programHeadAttendanceStudentsByCourse = (
+    eventId: number | string,
+) => `/program-head/attendance/${eventId}/students`;
 export const programHeadAttendanceLogs = (
     eventId: number | string,
     limit?: number,
@@ -42,6 +52,10 @@ export const programHeadAttendanceLogs = (
 };
 export const programHeadAttendancePrint = (eventId: number | string) =>
     `/program-head/attendance/${eventId}/print`;
+export const programHeadQrScanner = (eventId?: number | string) =>
+    eventId
+        ? `/program-head/qr-scanner?event=${eventId}`
+        : '/program-head/qr-scanner';
 export const programHeadViolations = () => '/program-head/violations';
 export const programHeadReports = () => '/program-head/reports';
 export const programHeadReportsAttendance = () => '/program-head/reports';
