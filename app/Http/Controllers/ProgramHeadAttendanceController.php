@@ -202,42 +202,89 @@ class ProgramHeadAttendanceController extends Controller
             ]);
         }
 
-        $limit = (int) $request->query('limit', 25);
-        $limit = max(1, min($limit, 100));
+        $eventYearLevels = is_array($event->year_levels) ? array_values(array_filter($event->year_levels, fn($y) => !\App\Services\Attendance\EventEligibilityService::isAllWildcard((string) $y))) : [];
 
-        $baseAttendanceQuery = Attendance::query()
-            ->where('event_id', $event->id)
-            ->whereHas('student', fn ($q) => $q->where('course', $program));
+        // Query eligible students for this event in this program
+        $studentsQuery = Student::query();
+        if ($program !== '') {
+            $studentsQuery->where('course', $program);
+        }
+        if (Schema::hasColumn('students', 'status')) {
+            $studentsQuery->where(function ($q) {
+                $q->where('status', 'approved')->orWhereNull('status');
+            });
+        }
+        if (Schema::hasColumn('students', 'is_archived')) {
+            $studentsQuery->where(function ($q) {
+                $q->where('is_archived', false)->orWhereNull('is_archived');
+            });
+        }
+        if (!empty($eventYearLevels)) {
+            $studentsQuery->whereIn('year_level', $eventYearLevels);
+        }
 
-        $rows = (clone $baseAttendanceQuery)
+        $eligibleStudents = $studentsQuery
+            ->orderBy('year_level')
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get();
+
+        // Fetch attendance records for this event
+        $attendances = Attendance::where('event_id', $event->id)
             ->with('student')
-            ->orderByDesc('checked_in_at')
-            ->limit($limit)
+            ->whereHas('student', function ($q) use ($program) {
+                if ($program !== '') {
+                    $q->where('course', $program);
+                }
+            })
             ->get()
-            ->map(function (Attendance $attendance) {
-                $student = $attendance->student;
+            ->keyBy('student_id');
+
+        $allStudents = $eligibleStudents;
+        if ($allStudents->isEmpty()) {
+            $allStudents = $attendances->map(fn($a) => $a->student)->filter()->values();
+        } else {
+            $attendedStudents = $attendances->map(fn($a) => $a->student)->filter();
+            $allStudents = $allStudents->merge($attendedStudents)->unique('id')->values();
+        }
+
+        $limit = $request->has('limit') ? (int) $request->query('limit') : 2000;
+        if ($limit < 1) $limit = 1;
+        if ($limit > 2000) $limit = 2000;
+
+        $rows = $allStudents
+            ->map(function ($student) use ($attendances) {
+                $att = $attendances->get($student->id);
+                $hasScanned = ($att !== null && ($att->checked_in_at !== null || $att->scanned_at !== null));
+                $timeCarbon = $att ? ($att->checked_in_at ?? $att->scanned_at) : null;
+
+                $fullName = trim((string) ($student->name ?? ''));
+                if (!empty($student->last_name) || !empty($student->first_name)) {
+                    $fullName = trim(($student->last_name ?? '') . ', ' . ($student->first_name ?? '') . ' ' . ($student->middle_name ?? ''));
+                }
+
+                $status = $hasScanned ? ucfirst((string) ($att->status ?? 'present')) : 'Absent';
 
                 return [
-                    'id' => (string) $attendance->id,
-                    'student_id' => (string) ($student?->student_id ?? $attendance->student_id ?? ''),
-                    'name' => (string) ($student?->name ?? ''),
-                    'program' => (string) (($student?->course ?? $student?->program ?? '') ?: '—'),
-                    'checked_in_at' => optional($attendance->checked_in_at)->toDateTimeString(),
-                    'checked_out_at' => $attendance->checked_out_at ? optional($attendance->checked_out_at)->toDateTimeString() : null,
-                    'time' => optional($attendance->checked_in_at)->format('h:i A') ?: '—',
-                    'time_out' => $attendance->checked_out_at ? optional($attendance->checked_out_at)->format('h:i A') : '—',
-                    'status' => (string) ($attendance->status ?? ''),
+                    'id' => (string) ($att?->id ?? $student->id),
+                    'student_id' => (string) ($student->student_id ?? '—'),
+                    'name' => $fullName ?: (string) ($student->name ?? '—'),
+                    'program' => (string) (($student->course ?? $student->program ?? '') ?: '—'),
+                    'year_level' => (string) ($student->year_level ?? '—'),
+                    'checked_in_at' => $timeCarbon ? optional($timeCarbon)->toDateTimeString() : null,
+                    'checked_out_at' => ($att && $att->checked_out_at) ? optional($att->checked_out_at)->toDateTimeString() : null,
+                    'time' => $timeCarbon ? optional($timeCarbon)->format('g:i A') : '—',
+                    'time_out' => ($att && $att->checked_out_at) ? optional($att->checked_out_at)->format('g:i A') : '—',
+                    'status' => $status,
+                    'is_absent' => !$hasScanned,
                 ];
             })
-            ->values();
+            ->sortBy('name')
+            ->values()
+            ->take($limit);
 
         $expected = $this->programEligibleStudentsCount($event, $program);
-        $scanned = (clone $baseAttendanceQuery)
-            ->where(function ($q) {
-                $q->whereNotNull('checked_in_at')
-                    ->orWhereNotNull('scanned_at');
-            })
-            ->count();
+        $scanned = $attendances->count();
 
         return response()->json([
             'event' => [
