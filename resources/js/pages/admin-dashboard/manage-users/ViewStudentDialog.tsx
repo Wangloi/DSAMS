@@ -409,7 +409,7 @@ export default function ViewStudentDialog({
     .title h1 { font-size: 16px; font-weight: 900; color: #0b2d66; margin: 0; letter-spacing: 1px; }
     .title p { font-size: 10px; font-weight: 600; color: #64748b; margin: 4px 0 0; }
     
-    .meta-box { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; border: 1px solid #bfdbfe; background: #f8fafc; padding: 10px 14px; border-radius: 6px; margin-bottom: 20px; font-size: 10.5px; }
+    .meta-box { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; border: 1px solid #bfdbfe; background: #f8fafc; padding: 10px 14px; border-radius: 6px; margin-bottom: 20px; font-size: 10.5px; }
     .meta-item { display: flex; flex-direction: column; }
     .meta-label { font-size: 8.5px; font-weight: bold; color: #64748b; text-transform: uppercase; }
     .meta-val { font-weight: bold; color: #0b2d66; margin-top: 2px; }
@@ -456,10 +456,6 @@ export default function ViewStudentDialog({
     <div class="meta-item">
         <span class="meta-label">Student Name</span>
         <span class="meta-val">${student.name}</span>
-    </div>
-    <div class="meta-item">
-        <span class="meta-label">Student ID</span>
-        <span class="meta-val">${student.student_id || 'N/A'}</span>
     </div>
     <div class="meta-item">
         <span class="meta-label">Program & Year</span>

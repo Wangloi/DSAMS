@@ -25,7 +25,6 @@ import {
     Award,
     CheckCircle2,
     ChevronDown,
-    Clock,
     Eye,
     GraduationCap,
     Pencil,
@@ -142,12 +141,11 @@ export function ManageProgramHeadsTab({
     const stats = useMemo(() => {
         const total = programHeads.length;
         const approved = programHeads.filter((ph) => (ph.status ?? 'pending') === 'approved').length;
-        const pending = programHeads.filter((ph) => (ph.status ?? 'pending') === 'pending').length;
         const assignedPrograms = new Set(
             programHeads.map((ph) => ph.program || ph.course).filter(Boolean),
         ).size;
 
-        return { total, approved, pending, assignedPrograms };
+        return { total, approved, assignedPrograms };
     }, [programHeads]);
 
     // Selection handlers
@@ -173,7 +171,7 @@ export function ManageProgramHeadsTab({
     return (
         <div className="flex flex-col gap-6">
             {/* ── Stats Cards in DSAMS Style ── */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
                     <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-blue-500/5" />
                     <div className="flex items-start justify-between gap-3">
@@ -220,34 +218,6 @@ export function ManageProgramHeadsTab({
                             className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500"
                             style={{
                                 width: stats.total > 0 ? `${(stats.approved / stats.total) * 100}%` : '0%',
-                            }}
-                        />
-                    </div>
-                </div>
-
-                <div className="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-[#0B192C]/60 dark:ring-slate-800">
-                    <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-amber-500/5" />
-                    <div className="flex items-start justify-between gap-3">
-                        <div>
-                            <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
-                                Pending Approval
-                            </p>
-                            <p className="mt-2 text-4xl font-black text-amber-500 dark:text-amber-400">
-                                {stats.pending}
-                            </p>
-                            <p className="mt-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
-                                Awaiting Verification
-                            </p>
-                        </div>
-                        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-500/10 text-amber-600 ring-1 ring-amber-200/50 transition-transform duration-300 group-hover:scale-110 dark:bg-amber-500/20 dark:text-amber-400 dark:ring-amber-900/30">
-                            <Clock className="h-6 w-6" />
-                        </div>
-                    </div>
-                    <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                        <div
-                            className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500"
-                            style={{
-                                width: stats.total > 0 ? `${(stats.pending / stats.total) * 100}%` : '0%',
                             }}
                         />
                     </div>
