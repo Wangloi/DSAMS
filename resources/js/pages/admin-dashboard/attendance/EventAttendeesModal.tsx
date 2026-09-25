@@ -231,7 +231,7 @@ export default function EventAttendeesModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[92vh] w-full !max-w-5xl flex-col overflow-hidden rounded-3xl border-0 bg-slate-50 p-0 shadow-2xl dark:bg-slate-950 [&>button]:hidden">
+            <DialogContent className="flex max-h-[88vh] w-full !max-w-5xl flex-col overflow-hidden rounded-3xl border-0 bg-slate-50 !p-0 !gap-0 shadow-2xl dark:bg-slate-950 [&>button]:hidden">
                 <DialogHeader className="sr-only">
                     <DialogTitle>
                         {eventName || 'Event Participants'} Attendees List
@@ -241,23 +241,23 @@ export default function EventAttendeesModal({
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="flex max-h-[92vh] flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
+                <div className="flex h-full max-h-[88vh] flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
                     {/* ── EXECUTIVE HERO HEADER ── */}
-                    <div className="relative overflow-hidden bg-gradient-to-r from-[#000D6A] via-[#102A83] to-[#1E3A8A] px-6 py-5 text-white shadow-md sm:px-8">
+                    <div className="relative shrink-0 overflow-hidden bg-gradient-to-r from-[#000D6A] via-[#102A83] to-[#1E3A8A] px-6 py-4 text-white shadow-md sm:px-8">
                         <div className="pointer-events-none absolute -top-12 -right-12 h-44 w-44 rounded-full bg-cyan-400/20 blur-3xl" />
                         <div className="pointer-events-none absolute -bottom-12 left-1/3 h-32 w-32 rounded-full bg-blue-400/15 blur-2xl" />
 
-                        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="relative z-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-center gap-3.5">
-                                <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-[#8CE4FF] shadow-inner ring-1 ring-white/30 backdrop-blur-md">
-                                    <Users className="h-7 w-7" />
-                                    <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-[#000D6A]">
-                                        <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                                <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-[#8CE4FF] shadow-inner ring-1 ring-white/30 backdrop-blur-md">
+                                    <Users className="h-6 w-6" />
+                                    <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-[#000D6A]">
+                                        <span className="h-1 w-1 rounded-full bg-white" />
                                     </span>
                                 </div>
                                 <div className="space-y-0.5">
                                     <div className="flex flex-wrap items-center gap-2">
-                                        <h2 className="text-lg font-black tracking-tight text-white sm:text-xl">
+                                        <h2 className="text-base font-black tracking-tight text-white sm:text-lg">
                                             {eventName || 'Event Attendees List'}
                                         </h2>
                                         <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-[10px] font-bold text-[#8CE4FF] backdrop-blur-xs">
@@ -306,7 +306,7 @@ export default function EventAttendeesModal({
                     </div>
 
                     {/* ── STATS SUMMARY RIBBON ── */}
-                    <div className="border-b border-slate-200/80 bg-white px-6 py-3 shadow-xs dark:border-slate-800 dark:bg-slate-900/90 sm:px-8">
+                    <div className="shrink-0 border-b border-slate-200/80 bg-white px-6 py-3 shadow-xs dark:border-slate-800 dark:bg-slate-900/90 sm:px-8">
                         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
                             <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-2.5 dark:bg-slate-800/60">
                                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#000D6A]/10 text-[#000D6A] dark:bg-blue-500/20 dark:text-[#8CE4FF]">
@@ -314,7 +314,7 @@ export default function EventAttendeesModal({
                                 </div>
                                 <div className="min-w-0">
                                     <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                        Total Attendees
+                                        Expected / Total
                                     </span>
                                     <span className="text-base font-black text-slate-900 dark:text-white">
                                         {stats.total}
