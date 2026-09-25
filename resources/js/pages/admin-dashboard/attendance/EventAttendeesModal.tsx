@@ -15,7 +15,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { adminAttendanceLogs } from '@/routes';
-import { AlertCircle, CheckCircle2, Clock, Printer, Users } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { formatLastNameFirst } from '@/lib/utils';
 type Attendee = {
@@ -157,22 +157,6 @@ export default function EventAttendeesModal({
                                     {eventName || 'Event Participants'}
                                 </DialogDescription>
                             </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-9 gap-2 border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-                                onClick={() =>
-                                    window.open(
-                                        `/admin/attendance/${eventId}/print`,
-                                        '_blank',
-                                    )
-                                }
-                            >
-                                <Printer className="h-4 w-4" />
-                                Print List
-                            </Button>
                         </div>
                     </div>
 

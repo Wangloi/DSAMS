@@ -66,13 +66,9 @@
     .program {
         text-align: center;
         margin-top: 15px;
+        margin-bottom: 12px;
         font-weight: bold;
         font-size: 13px;
-    }
-
-    .line {
-        text-align: center;
-        margin: 10px 0;
     }
 
     table {
@@ -94,13 +90,11 @@
     td {
         height: 22px;
     }
-    .col-no { width: 4%; text-align: center; }
-    .col-id { width: 14%; text-align: center; }
-    .col-name { width: 32%; }
-    .col-major { width: 20%; }
-    .col-time { width: 10%; text-align: center; }
-    .col-time-out { width: 10%; text-align: center; }
-    .col-status { width: 10%; text-align: center; }
+    .col-no { width: 6%; text-align: center; }
+    .col-name { width: 46%; }
+    .col-time { width: 16%; text-align: center; }
+    .col-time-out { width: 16%; text-align: center; }
+    .col-status { width: 16%; text-align: center; }
 
     .page {
         page-break-after: always;
@@ -217,16 +211,12 @@
         {{ $section['program_year_label'] ?? $section['course'] ?? 'Program Name' }}
     </div>
 
-    <div class="line">____________________________</div>
-
     <!-- TABLE -->
     <table>
         <thead>
             <tr>
                 <th class="col-no">No.</th>
-                <th class="col-id">Student ID</th>
                 <th class="col-name">Student's Name</th>
-                <th class="col-major">Program & Year</th>
                 <th class="col-time">Time In</th>
                 <th class="col-time-out">Time Out</th>
                 <th class="col-status">Status</th>
@@ -247,16 +237,14 @@
             @endphp
             <tr style="{{ $statusStr === 'absent' ? 'background-color: #fafafa;' : '' }}">
                 <td class="col-no">{{ $index + 1 }}</td>
-                <td style="text-align: center;">{{ $row['student_id'] ?? '—' }}</td>
                 <td>{{ $row['name'] ?? '' }}</td>
-                <td>{{ $row['major'] ?? '' }} {{ !empty($row['year_level']) && $row['year_level'] !== '—' && $row['year_level'] !== 'General' ? '('.$row['year_level'].')' : '' }}</td>
                 <td style="text-align: center;">{{ $row['checked_in_at'] ?? '—' }}</td>
                 <td style="text-align: center;">{{ $row['time_out'] ?? '—' }}</td>
                 <td style="text-align: center; color: {{ $statusColor }}; font-weight: bold;">{{ $row['status'] ?? '—' }}</td>
             </tr>
             @empty
             <tr>
-                <td colspan="7" class="no-attendees">No students registered for this program and year level.</td>
+                <td colspan="5" class="no-attendees">No students registered for this program and year level.</td>
             </tr>
             @endforelse
         </tbody>

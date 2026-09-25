@@ -11,7 +11,6 @@ import {
 import { cn } from '@/lib/utils';
 import { SimpleTooltip } from '@/components/ui/tooltip';
 import { Activity, Archive, Eye, MapPin, Printer, Search } from 'lucide-react';
-import Swal from 'sweetalert2';
 
 type AttendanceRow = {
     id: string;
@@ -73,24 +72,6 @@ export default function AttendanceTable({
     const selectedEvent = selectedEventId
         ? attendanceEvents.find((e) => String(e.id) === String(selectedEventId))
         : null;
-
-    const handlePrintEvent = (eventId?: string | null) => {
-        const targetId = eventId || selectedEventId;
-        if (!targetId) {
-            Swal.fire({
-                icon: 'info',
-                title: 'Select an Event First',
-                text: 'Please click on an event row from the table below to select it before printing the attendance sheet.',
-                confirmButtonColor: '#2563eb',
-            });
-            return;
-        }
-
-        const url = printUrlForEvent
-            ? printUrlForEvent(String(targetId))
-            : `/admin/attendance/${targetId}/print`;
-        window.open(url, '_blank');
-    };
 
     const renderStatusBadge = (status: string) => {
         switch (status) {
@@ -167,10 +148,10 @@ export default function AttendanceTable({
                         <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
                             {selectedEvent ? (
                                 <span className="text-blue-600 font-semibold dark:text-blue-400">
-                                    Selected: {selectedEvent.event} (Click print to generate report)
+                                    Selected: {selectedEvent.event}
                                 </span>
                             ) : (
-                                'Click a row to select an event to print or view statistics'
+                                'Click a row to select an event to view statistics'
                             )}
                         </p>
                     ) : (
@@ -181,24 +162,6 @@ export default function AttendanceTable({
                     )}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                    <SimpleTooltip content={selectedEvent ? `Print attendance sheet for ${selectedEvent.event}` : 'Select an event below first to print'}>
-                        <Button
-                            type="button"
-                            variant={selectedEvent ? 'default' : 'outline'}
-                            size="sm"
-                            className={cn(
-                                'h-9 gap-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all',
-                                selectedEvent
-                                    ? 'border-transparent bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700'
-                                    : 'border-slate-200 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800',
-                            )}
-                            onClick={() => handlePrintEvent()}
-                        >
-                            <Printer className="h-3.5 w-3.5" />
-                            <span>Print Attendance Sheet</span>
-                        </Button>
-                    </SimpleTooltip>
-
                     <div className="relative">
                         <Search className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                         <Input
@@ -414,27 +377,6 @@ export default function AttendanceTable({
                                                     </SimpleTooltip>
                                                 )}
 
-                                                <SimpleTooltip content="Print Attendance Sheet">
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 rounded-md text-indigo-600 transition-all duration-200 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/30"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            window.open(
-                                                                printUrlForEvent
-                                                                    ? printUrlForEvent(
-                                                                          row.id,
-                                                                      )
-                                                                    : `/admin/attendance/${row.id}/print`,
-                                                                '_blank',
-                                                            );
-                                                        }}
-                                                    >
-                                                        <Printer className="h-4 w-4" />
-                                                    </Button>
-                                                </SimpleTooltip>
                                                 {onDelete && (
                                                     <SimpleTooltip content="Archive Event">
                                                         <Button
@@ -484,20 +426,6 @@ export default function AttendanceTable({
                         )}
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                        <Button
-                            variant={selectedEvent ? 'default' : 'outline'}
-                            size="sm"
-                            className={cn(
-                                'h-8 gap-1.5 text-xs font-semibold transition-all',
-                                selectedEvent
-                                    ? 'bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-700'
-                                    : 'border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800',
-                            )}
-                            onClick={() => handlePrintEvent()}
-                        >
-                            <Printer className="h-4 w-4" />
-                            {selectedEvent ? `Print ${selectedEvent.event}` : 'Print Attendance Sheet'}
-                        </Button>
                         {!hideSummaryReport && (
                             <Button
                                 variant="outline"

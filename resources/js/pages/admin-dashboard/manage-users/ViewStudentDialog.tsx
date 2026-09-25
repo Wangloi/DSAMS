@@ -19,7 +19,6 @@ import {
     Info,
     Mail,
     MapPin,
-    Printer,
     QrCode,
     RefreshCw,
     Search,
@@ -989,14 +988,6 @@ export default function ViewStudentDialog({
                                 </div>
 
                                 <div className="flex items-center gap-2 self-end sm:self-auto">
-                                    <Button
-                                        type="button"
-                                        onClick={print}
-                                        className="flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-3.5 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur-md transition-all hover:bg-white/20"
-                                    >
-                                        <Printer className="h-3.5 w-3.5" />
-                                        <span>Print Profile</span>
-                                    </Button>
                                     <button
                                         type="button"
                                         onClick={() => onOpenChange(false)}
@@ -1163,14 +1154,6 @@ export default function ViewStudentDialog({
                                 </div>
 
                                 <div className="flex items-center gap-2 self-end sm:self-auto">
-                                    <Button
-                                        type="button"
-                                        onClick={print}
-                                        className="flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-3.5 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur-md transition-all hover:bg-white/20"
-                                    >
-                                        <Printer className="h-3.5 w-3.5" />
-                                        <span>Print Log</span>
-                                    </Button>
                                     <button
                                         type="button"
                                         onClick={() => onOpenChange(false)}

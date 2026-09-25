@@ -380,13 +380,15 @@ class ProgramHeadAttendanceController extends Controller
                 ->values()
                 ->toArray();
 
-            $programYearLabel = $yearLevel && $yearLevel !== 'General'
-                ? ($program ? "{$program} — {$yearLevel}" : "{$yearLevel}")
-                : ($program ?: 'Program');
+            $programStr = (string) ($program ?: 'Program');
+            $yearLevelStr = (string) $yearLevel;
+            $programYearLabel = ($yearLevelStr !== '' && $yearLevelStr !== 'General')
+                ? ($program ? "{$program} — {$yearLevelStr}" : $yearLevelStr)
+                : $programStr;
 
             $sections[] = [
-                'course' => (string) ($program ?: 'Program'),
-                'year_level' => (string) $yearLevel,
+                'course' => $programStr,
+                'year_level' => $yearLevelStr,
                 'program_year_label' => $programYearLabel,
                 'tableRows' => $tableRows,
                 'present_count' => $sectionPresentCount,
@@ -396,7 +398,33 @@ class ProgramHeadAttendanceController extends Controller
         }
 
         $dateLabel = $event->event_date ? Carbon::parse($event->event_date)->format('F d, Y') : '';
-        $timeLabel = (string) ($event->event_time ?? '');
+
+        $formatTime12 = function (?string $raw): string {
+            if (!$raw) return '';
+            $raw = trim($raw);
+            if ($raw === '' || $raw === '—') return '';
+            try {
+                return Carbon::parse($raw)->format('g:i A');
+            } catch (\Throwable $e) {
+                return $raw;
+            }
+        };
+
+        $timeLabel = '';
+        if (!empty($event->event_time) && !empty($event->registration_end_time)) {
+            $t1 = $formatTime12($event->event_time);
+            $t2 = $formatTime12($event->registration_end_time);
+            $timeLabel = ($t1 && $t2) ? "{$t1} - {$t2}" : ($t1 ?: $t2);
+        } elseif (!empty($event->event_time)) {
+            if (preg_match('/^(.*?)(?:\s*(?:-|to)\s*)(.*)$/i', (string) $event->event_time, $m)) {
+                $t1 = $formatTime12($m[1]);
+                $t2 = $formatTime12($m[2]);
+                $timeLabel = ($t1 && $t2) ? "{$t1} - {$t2}" : ($t1 ?: $event->event_time);
+            } else {
+                $timeLabel = $formatTime12($event->event_time);
+            }
+        }
+
         $locationLabel = (string) ($event->location ?? '');
         $eventDateTimeLabel = trim($dateLabel.($timeLabel ? ' | '.$timeLabel : '').($locationLabel ? ' | '.$locationLabel : ''));
 
