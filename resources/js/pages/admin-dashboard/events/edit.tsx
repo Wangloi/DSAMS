@@ -1,5 +1,5 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { ArrowLeft, MapPin, Save, X } from 'lucide-react';
+import { ArrowLeft, Info, MapPin, Save, X } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useMemo, useState } from 'react';
 
@@ -10,9 +10,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { adminDashboard, adminEvents, adminEventsUpdate } from '@/routes';
+import {
+    adminDashboard,
+    adminEvents,
+    adminEventsUpdate,
+    programHeadCalendarEvents,
+    programHeadDashboard,
+} from '@/routes';
 import type { BreadcrumbItem } from '@/types';
 import AdminLayout from '../admin-layout';
+import ProgramHeadLayout from '@/pages/program-head/components/ProgramHeadLayout';
 
 import {
     alignCourseIdsToCanonical,
@@ -31,21 +38,6 @@ const stepperClass = (step: number) =>
               ? 'bg-emerald-500 text-white'
               : 'bg-blue-800 text-blue-200'
     }`;
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Admin Dashboard',
-        href: adminDashboard(),
-    },
-    {
-        title: 'Events',
-        href: adminEvents(),
-    },
-    {
-        title: 'Edit Event',
-        href: '#',
-    },
-];
 
 interface FormData {
     event_name: string;
@@ -66,6 +58,44 @@ interface FormData {
 
 export default function EditEventPage() {
     const { props } = usePage();
+
+    const { auth } = props as { auth?: any };
+    const isPersonnel =
+        auth?.guard === 'program_head' ||
+        auth?.roleLabel?.toLowerCase().includes('personnel') ||
+        auth?.roleLabel?.toLowerCase().includes('program head');
+
+    const breadcrumbs: BreadcrumbItem[] = isPersonnel
+        ? [
+              {
+                  title: 'Personnel Dashboard',
+                  href: programHeadDashboard(),
+              },
+              {
+                  title: 'Event Management',
+                  href: programHeadCalendarEvents(),
+              },
+              {
+                  title: 'Edit Event',
+                  href: '#',
+              },
+          ]
+        : [
+              {
+                  title: 'Admin Dashboard',
+                  href: adminDashboard(),
+              },
+              {
+                  title: 'Events',
+                  href: adminEvents(),
+              },
+              {
+                  title: 'Edit Event',
+                  href: '#',
+              },
+          ];
+
+    const Layout = isPersonnel ? ProgramHeadLayout : AdminLayout;
 
     const event = props.event as any;
 
@@ -126,6 +156,9 @@ export default function EditEventPage() {
                 : '50',
 
         scanner_portal_active: event?.scanner_portal_active || false,
+        scanner_student_ids:
+            event?.scanner_student_ids ||
+            (event?.scanner_student_id ? [event.scanner_student_id] : []),
     });
 
     const mergedCourseChoices = useMemo(
@@ -191,7 +224,7 @@ export default function EditEventPage() {
     };
 
     return (
-        <AdminLayout breadcrumbs={breadcrumbs}>
+        <Layout breadcrumbs={breadcrumbs}>
             <Head title="Edit Event" />
 
             <div className="min-h-[calc(100vh-4rem)] bg-slate-100 dark:bg-slate-900">
@@ -200,7 +233,7 @@ export default function EditEventPage() {
                     <div className="flex items-center gap-4">
                         <Button
                             variant="outline"
-                            onClick={() => router.visit(adminEvents())}
+                            onClick={() => router.visit(isPersonnel ? programHeadCalendarEvents() : adminEvents())}
                             className="gap-2"
                         >
                             <ArrowLeft className="h-4 w-4" />
@@ -396,6 +429,11 @@ export default function EditEventPage() {
                                                     {errors.event_time}
                                                 </p>
                                             )}
+                                            {data.event_time && (
+                                                <p className="mt-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                                    Cut-off for on-time: 1 hr after start
+                                                </p>
+                                            )}
                                         </div>
 
                                         <div>
@@ -429,6 +467,30 @@ export default function EditEventPage() {
                                                     }
                                                 </p>
                                             )}
+                                            {data.registration_end_time && (
+                                                <p className="mt-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400">
+                                                    Time-out opens: 30 min before end time
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        <div className="rounded-lg border border-blue-200/80 bg-blue-50/70 p-3 text-xs sm:col-span-2 dark:border-blue-900/50 dark:bg-blue-950/30">
+                                            <div className="flex items-start gap-2.5">
+                                                <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#000D6A] dark:text-blue-400" />
+                                                <div className="space-y-1 text-slate-700 dark:text-slate-300">
+                                                    <div className="font-semibold text-slate-900 dark:text-white">
+                                                        Attendance Rules & Guidelines:
+                                                    </div>
+                                                    <ul className="list-disc space-y-0.5 pl-4 text-[11px] leading-relaxed">
+                                                        <li>
+                                                            <strong>Time-In Cut-off:</strong> Attendance check-in is considered <em>On-Time</em> within <strong>1 hour after start time</strong>. Scans after 1 hour are marked as <strong>Late</strong>.
+                                                        </li>
+                                                        <li>
+                                                            <strong>Time-Out Start:</strong> Time-out (check-out) scanning begins <strong>30 minutes before end time</strong>. Students cannot check out before this window.
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -718,6 +780,6 @@ export default function EditEventPage() {
                     </Card>
                 </div>
             </div>
-        </AdminLayout>
+        </Layout>
     );
 }

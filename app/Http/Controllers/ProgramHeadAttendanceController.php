@@ -190,7 +190,7 @@ class ProgramHeadAttendanceController extends Controller
         return response()->json(['rows' => $rows]);
     }
 
-    public function logs(Request $request, Event $event): \Illuminate\Http\JsonResponse
+    public function logs(Request $request, Event $event): JsonResponse
     {
         $program = $this->programHeadProgram();
         if ($program === '') {
@@ -230,13 +230,15 @@ class ProgramHeadAttendanceController extends Controller
             ->get();
 
         // Fetch attendance records for this event
-        $attendances = Attendance::where('event_id', $event->id)
-            ->with('student')
+        $baseAttendanceQuery = Attendance::where('event_id', $event->id)
             ->whereHas('student', function ($q) use ($program) {
                 if ($program !== '') {
                     $q->where('course', $program);
                 }
-            })
+            });
+
+        $attendances = (clone $baseAttendanceQuery)
+            ->with('student')
             ->get()
             ->keyBy('student_id');
 
@@ -365,7 +367,7 @@ class ProgramHeadAttendanceController extends Controller
         });
 
         // Sort year levels (1st Year -> 1, 2nd Year -> 2, etc.)
-        $sortedYears = $groupedByYear->keys()->sort(function ($a, $b) {
+        $sortedGroupedByYear = $groupedByYear->sortKeysUsing(function ($a, $b) {
             $numA = preg_match('/(\d+)/', (string) $a, $mA) ? (int) $mA[1] : 999;
             $numB = preg_match('/(\d+)/', (string) $b, $mB) ? (int) $mB[1] : 999;
             if ($numA === $numB) {
@@ -378,13 +380,13 @@ class ProgramHeadAttendanceController extends Controller
         $overallPresentCount = 0;
         $overallAbsentCount = 0;
 
-        foreach ($sortedYears as $yearLevel) {
-            $yearStudents = $groupedByYear[$yearLevel];
+        foreach ($sortedGroupedByYear as $yearLevel => $yearStudents) {
+            $yearStudentsList = collect($yearStudents);
 
             $sectionPresentCount = 0;
             $sectionAbsentCount = 0;
 
-            $tableRows = $yearStudents
+            $tableRows = $yearStudentsList
                 ->map(function ($student) use ($attendances, &$sectionPresentCount, &$sectionAbsentCount, &$overallPresentCount, &$overallAbsentCount) {
                     $att = $attendances->get($student->id);
                     $hasScanned = ($att !== null && ($att->checked_in_at !== null || $att->scanned_at !== null));

@@ -123,9 +123,14 @@ export function ProgramHeadSidebar() {
         const path = normalizePath(href);
         if (!path) return false;
 
-        // Special handling for QR scanner page - it should activate the Attendance menu item
-        if (url.includes('/program-head/qr-scanner')) {
+        // Special handling for Attendance routes
+        if (url.includes('/program-head/qr-scanner') || url.includes('/admin/attendance') || url.includes('/program-head/attendance')) {
             return path === '/program-head/attendance';
+        }
+
+        // Special handling for Event Management routes
+        if (url.includes('/admin/events') || url.includes('/program-head/calendar-events')) {
+            return path === '/program-head/calendar-events';
         }
 
         if (path === dashboardPath && title && title !== 'Dashboard') {

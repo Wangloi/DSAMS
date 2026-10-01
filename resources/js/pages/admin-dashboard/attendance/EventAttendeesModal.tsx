@@ -231,7 +231,7 @@ export default function EventAttendeesModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[88vh] w-full !max-w-5xl flex-col overflow-hidden rounded-3xl border-0 bg-slate-50 !p-0 !gap-0 shadow-2xl dark:bg-slate-950 [&>button]:hidden">
+            <DialogContent className="flex max-h-[85vh] h-[85vh] w-[95vw] !max-w-5xl flex-col overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-slate-50 !p-0 !gap-0 shadow-2xl dark:border-slate-800 dark:bg-slate-950 [&>button]:hidden">
                 <DialogHeader className="sr-only">
                     <DialogTitle>
                         {eventName || 'Event Participants'} Attendees List
@@ -241,63 +241,65 @@ export default function EventAttendeesModal({
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="flex h-full max-h-[88vh] flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
+                <div className="flex h-full w-full flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
                     {/* ── EXECUTIVE HERO HEADER ── */}
-                    <div className="relative shrink-0 overflow-hidden bg-gradient-to-r from-[#000D6A] via-[#102A83] to-[#1E3A8A] px-6 py-4 text-white shadow-md sm:px-8">
+                    <div className="relative shrink-0 bg-gradient-to-r from-[#000D6A] via-[#0A1B7A] to-[#1E3A8A] px-6 py-5 text-white shadow-md sm:px-8">
+                        {/* Background decorative glow elements */}
                         <div className="pointer-events-none absolute -top-12 -right-12 h-44 w-44 rounded-full bg-cyan-400/20 blur-3xl" />
-                        <div className="pointer-events-none absolute -bottom-12 left-1/3 h-32 w-32 rounded-full bg-blue-400/15 blur-2xl" />
+                        <div className="pointer-events-none absolute -bottom-10 left-1/4 h-32 w-32 rounded-full bg-blue-400/20 blur-2xl" />
 
-                        <div className="relative z-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="flex items-center gap-3.5">
-                                <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-[#8CE4FF] shadow-inner ring-1 ring-white/30 backdrop-blur-md">
-                                    <Users className="h-6 w-6" />
+                        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-center gap-3.5 min-w-0">
+                                <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#8CE4FF] shadow-inner ring-1 ring-white/30 backdrop-blur-md">
+                                    <Users className="h-5 w-5" />
                                     <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-[#000D6A]">
                                         <span className="h-1 w-1 rounded-full bg-white" />
                                     </span>
                                 </div>
-                                <div className="space-y-0.5">
+                                <div className="min-w-0 space-y-1">
                                     <div className="flex flex-wrap items-center gap-2">
-                                        <h2 className="text-base font-black tracking-tight text-white sm:text-lg">
+                                        <h2 className="truncate text-base font-black tracking-tight text-white sm:text-lg">
                                             {eventName || 'Event Attendees List'}
                                         </h2>
-                                        <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-[10px] font-bold text-[#8CE4FF] backdrop-blur-xs">
+                                        <span className="shrink-0 rounded-full bg-white/15 px-2.5 py-0.5 text-[11px] font-bold text-[#8CE4FF] backdrop-blur-xs">
                                             {attendees.length}{' '}
                                             {attendees.length === 1
                                                 ? 'Participant'
                                                 : 'Participants'}
                                         </span>
                                     </div>
-                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-blue-100/80">
+                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-blue-100/80">
                                         {eventDate && (
-                                            <span className="flex items-center gap-1">
-                                                <Calendar className="h-3 w-3" />
+                                            <span className="inline-flex items-center gap-1 font-medium">
+                                                <Calendar className="h-3.5 w-3.5 text-[#8CE4FF]/90" />
                                                 {eventDate}
                                             </span>
                                         )}
                                         {eventLocation && (
-                                            <span className="flex items-center gap-1">
-                                                <MapPin className="h-3 w-3" />
+                                            <span className="inline-flex items-center gap-1 font-medium">
+                                                <MapPin className="h-3.5 w-3.5 text-[#8CE4FF]/90" />
                                                 {eventLocation}
                                             </span>
                                         )}
-                                        <span>Attendance Logs</span>
+                                        <span className="hidden sm:inline font-medium text-blue-200/60">• Attendance Logs</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-2 self-end sm:self-auto">
+                            <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
                                 <Button
                                     type="button"
                                     onClick={handlePrint}
-                                    className="flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-3.5 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur-md transition-all hover:bg-white/20"
+                                    className="flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/15 px-3.5 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur-md transition-all hover:bg-white/25 active:scale-95"
                                 >
-                                    <Printer className="h-3.5 w-3.5" />
+                                    <Printer className="h-3.5 w-3.5 text-[#8CE4FF]" />
                                     <span>Print Sheet</span>
                                 </Button>
                                 <button
                                     type="button"
                                     onClick={() => onOpenChange(false)}
-                                    className="rounded-full bg-white/10 p-2 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+                                    className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 text-white/80 transition-all hover:bg-white/20 hover:text-white active:scale-95"
+                                    aria-label="Close modal"
                                 >
                                     <X className="h-4 w-4" />
                                 </button>
@@ -306,9 +308,9 @@ export default function EventAttendeesModal({
                     </div>
 
                     {/* ── STATS SUMMARY RIBBON ── */}
-                    <div className="shrink-0 border-b border-slate-200/80 bg-white px-6 py-3 shadow-xs dark:border-slate-800 dark:bg-slate-900/90 sm:px-8">
-                        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-                            <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-2.5 dark:bg-slate-800/60">
+                    <div className="shrink-0 border-b border-slate-200/80 bg-white px-6 py-3.5 shadow-xs dark:border-slate-800 dark:bg-slate-900/90 sm:px-8">
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                            <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/80 p-2.5 transition-colors hover:bg-slate-50 dark:border-slate-800/80 dark:bg-slate-800/50">
                                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#000D6A]/10 text-[#000D6A] dark:bg-blue-500/20 dark:text-[#8CE4FF]">
                                     <Users className="h-4 w-4" />
                                 </div>
@@ -322,8 +324,8 @@ export default function EventAttendeesModal({
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-2.5 dark:bg-slate-800/60">
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
+                            <div className="flex items-center gap-3 rounded-xl border border-emerald-100/80 bg-emerald-50/40 p-2.5 transition-colors hover:bg-emerald-50/70 dark:border-emerald-950/50 dark:bg-emerald-950/20">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
                                     <CheckCircle2 className="h-4 w-4" />
                                 </div>
                                 <div className="min-w-0">
@@ -336,8 +338,8 @@ export default function EventAttendeesModal({
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-2.5 dark:bg-slate-800/60">
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
+                            <div className="flex items-center gap-3 rounded-xl border border-amber-100/80 bg-amber-50/40 p-2.5 transition-colors hover:bg-amber-50/70 dark:border-amber-950/50 dark:bg-amber-950/20">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
                                     <Clock className="h-4 w-4" />
                                 </div>
                                 <div className="min-w-0">
@@ -350,8 +352,8 @@ export default function EventAttendeesModal({
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-2.5 dark:bg-slate-800/60">
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400">
+                            <div className="flex items-center gap-3 rounded-xl border border-rose-100/80 bg-rose-50/40 p-2.5 transition-colors hover:bg-rose-50/70 dark:border-rose-950/50 dark:bg-rose-950/20">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-rose-500/15 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400">
                                     <AlertCircle className="h-4 w-4" />
                                 </div>
                                 <div className="min-w-0">
@@ -367,12 +369,12 @@ export default function EventAttendeesModal({
                     </div>
 
                     {/* ── TOOLBAR & FILTERS ── */}
-                    <div className="flex flex-col gap-3 border-b border-slate-200/80 bg-slate-50/80 px-6 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900/50 sm:px-8">
+                    <div className="flex shrink-0 flex-col gap-3 border-b border-slate-200/80 bg-slate-50/80 px-6 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900/50 sm:px-8">
                         <div className="relative flex-1 sm:max-w-xs">
                             <Search className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                             <Input
                                 placeholder="Search by name or ID..."
-                                className="h-9 rounded-xl border-slate-200 bg-white pl-8.5 text-xs font-medium focus-visible:ring-[#000D6A] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                className="h-9 rounded-xl border-slate-200 bg-white pl-8.5 text-xs font-medium shadow-2xs focus-visible:ring-[#000D6A] dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -409,7 +411,7 @@ export default function EventAttendeesModal({
                                 value={selectedProgram}
                                 onValueChange={setSelectedProgram}
                             >
-                                <SelectTrigger className="h-9 w-44 rounded-xl border-slate-200 bg-white text-xs font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                                <SelectTrigger className="h-9 w-44 rounded-xl border-slate-200 bg-white text-xs font-medium shadow-2xs dark:border-slate-700 dark:bg-slate-800 dark:text-white">
                                     <div className="flex items-center gap-1.5 truncate">
                                         <Filter className="h-3 w-3 text-slate-400" />
                                         <SelectValue placeholder="All Programs" />

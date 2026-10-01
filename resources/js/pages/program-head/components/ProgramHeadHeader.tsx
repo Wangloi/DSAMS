@@ -193,7 +193,7 @@ export function ProgramHeadHeader() {
     const subtitleLabel = displayUser ? 'Program Head' : undefined;
 
     return (
-        <div className="fixed inset-x-0 top-0 z-50 border-b border-white/5 bg-gradient-to-r from-[#0b2d66] via-[#103875] to-[#1e40af] text-white shadow-md dark:bg-[#0B192C] dark:from-transparent dark:via-transparent dark:to-transparent">
+        <div className="fixed inset-x-0 top-0 z-40 border-b border-white/5 bg-gradient-to-r from-[#0b2d66] via-[#103875] to-[#1e40af] text-white shadow-md dark:bg-[#0B192C] dark:from-transparent dark:via-transparent dark:to-transparent">
             <div className="flex h-16 w-full items-center px-4 sm:px-6">
                 <Link
                     href="/program-head/dashboard"

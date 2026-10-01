@@ -22,7 +22,7 @@ class DynamicAttendanceQrController extends Controller
 
     public function show(Event $event): Response
     {
-        return Inertia::render('admin-dashboard/attendance/dynamic-qr', [
+        return Inertia::render('admin-dashboard/attendance/scanner-portal', [
             'event' => [
                 'id'                 => $event->id,
                 'name'               => $event->event_name,

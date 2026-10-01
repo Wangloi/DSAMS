@@ -117,7 +117,7 @@ class ProgramHeadDashboardController extends Controller
                 ->orderBy('last_name')
                 ->orderBy('first_name')
                 ->get($columns)
-                ->map(function ($student) {
+                ->map(function (Student $student) {
                     $row = $student->toArray();
                     $row['id'] = (string) $student->id;
                     $row['student_id'] = (string) ($student->student_id ?? '');
@@ -125,7 +125,7 @@ class ProgramHeadDashboardController extends Controller
                     $row['course'] = (string) ($student->course ?? '');
                     $row['year_level'] = (string) ($student->year_level ?? '');
                     $row['is_active'] = (bool) ($student->is_active ?? true);
-                    $row['status'] = (string) ($student->verification_status ?? $student->status ?? 'pending');
+                    $row['status'] = (string) ($student->verification_status ?? $student->status ?? 'approved');
                     return $row;
                 })
                 ->all();

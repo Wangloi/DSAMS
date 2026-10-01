@@ -35,25 +35,13 @@ import {
     adminEventsDestroy,
     adminEventsEdit,
     adminEventsUnarchive,
+    programHeadCalendarEvents,
+    programHeadDashboard,
 } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
 import AdminLayout from '../admin-layout';
+import ProgramHeadLayout from '@/pages/program-head/components/ProgramHeadLayout';
 import { uniqueCourseStringsForDisplay } from './mergeCourseYearOptions';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Admin Dashboard',
-        href: adminDashboard(),
-    },
-    {
-        title: 'Events',
-        href: adminEvents(),
-    },
-    {
-        title: 'Event Details',
-        href: '#',
-    },
-];
 
 interface Event {
     id: number;
@@ -90,6 +78,44 @@ export default function ShowEventPage() {
     const { props } = usePage();
     const event = props.event as Event;
     const errors = props.errors || {};
+
+    const { auth } = props as { auth?: any };
+    const isPersonnel =
+        auth?.guard === 'program_head' ||
+        auth?.roleLabel?.toLowerCase().includes('personnel') ||
+        auth?.roleLabel?.toLowerCase().includes('program head');
+
+    const breadcrumbs: BreadcrumbItem[] = isPersonnel
+        ? [
+              {
+                  title: 'Personnel Dashboard',
+                  href: programHeadDashboard(),
+              },
+              {
+                  title: 'Event Management',
+                  href: programHeadCalendarEvents(),
+              },
+              {
+                  title: event.event_name,
+                  href: '#',
+              },
+          ]
+        : [
+              {
+                  title: 'Admin Dashboard',
+                  href: adminDashboard(),
+              },
+              {
+                  title: 'Events',
+                  href: adminEvents(),
+              },
+              {
+                  title: event.event_name,
+                  href: '#',
+              },
+          ];
+
+    const Layout = isPersonnel ? ProgramHeadLayout : AdminLayout;
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -268,7 +294,7 @@ export default function ShowEventPage() {
     };
 
     return (
-        <AdminLayout breadcrumbs={breadcrumbs}>
+        <Layout breadcrumbs={breadcrumbs}>
             <Head title={event.event_name} />
             <div className="min-h-[calc(100vh-4rem)] bg-slate-100 dark:bg-slate-900">
                 <div className="flex w-full flex-col gap-6 px-6 py-6">
@@ -276,7 +302,7 @@ export default function ShowEventPage() {
                     <div className="flex items-center gap-4">
                         <Button
                             variant="outline"
-                            onClick={() => router.visit(adminEvents())}
+                            onClick={() => router.visit(isPersonnel ? programHeadCalendarEvents() : adminEvents())}
                             className="gap-2"
                         >
                             <ArrowLeft className="h-4 w-4" />
@@ -607,6 +633,6 @@ export default function ShowEventPage() {
                     </div>
                 </div>
             </div>
-        </AdminLayout>
+        </Layout>
     );
 }

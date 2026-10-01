@@ -89,7 +89,7 @@ class Event extends Model
                         $fullName = (string) ($match->name ?? $str);
                     }
                     $resolved[] = [
-                        'id' => $match->id ?? $str,
+                        'id' => (string) ($match->student_id ?? $match->id ?? $str),
                         'student_id' => (string) ($match->student_id ?? $str),
                         'name' => $fullName,
                         'course' => $match->course ?? null,
@@ -238,20 +238,23 @@ class Event extends Model
                 } catch (\Throwable) {}
             } else {
                 try {
-                    $timeOutStart = Carbon::parse($dateStr . ' ' . $rawEndTime);
-                    $timeOutEnd = $timeOutStart->copy()->addMinutes(60);
+                    $parsedEnd = Carbon::parse($dateStr . ' ' . $rawEndTime);
+                    // Start for OUT is 30 minutes before event end time
+                    $timeOutStart = $parsedEnd->copy()->subMinutes(30);
+                    $timeOutEnd = $parsedEnd->copy()->addMinutes(60);
                 } catch (\Throwable) {
                     try {
-                        $timeOutStart = Carbon::parse($rawEndTime);
-                        $timeOutEnd = $timeOutStart->copy()->addMinutes(60);
+                        $parsedEnd = Carbon::parse($rawEndTime);
+                        $timeOutStart = $parsedEnd->copy()->subMinutes(30);
+                        $timeOutEnd = $parsedEnd->copy()->addMinutes(60);
                     } catch (\Throwable) {}
                 }
             }
         }
 
-        // Safety check: ensure time_in_cutoff does not exceed time_out_start if time_out_start is defined
-        if ($timeInCutoff && $timeOutStart && $timeInCutoff->greaterThan($timeOutStart)) {
-            $timeInCutoff = $timeOutStart->copy();
+        // Safety check: ensure time_in_cutoff does not exceed time_out_end if time_out_end is defined
+        if ($timeInCutoff && $timeOutEnd && $timeInCutoff->greaterThan($timeOutEnd)) {
+            $timeInCutoff = $timeOutEnd->copy();
         }
 
         return [
@@ -304,7 +307,7 @@ class Event extends Model
                     'allowed' => false,
                     'action' => 'check_out',
                     'status' => $existingAttendance->status ?? 'present',
-                    'error_message' => "Time-out (Check-out) is not allowed yet. You are already checked in ({$statusLabel}). Time-out scanning will be open from {$outStart->format('h:i A')}" . ($outEnd ? " to {$outEnd->format('h:i A')}" : '') . '.',
+                    'error_message' => "Time-out (Check-out) is not allowed yet. You are already checked in ({$statusLabel}). Time-out scanning starts 30 minutes before event end time (at {$outStart->format('h:i A')})" . ($outEnd ? " to {$outEnd->format('h:i A')}" : '') . '.',
                     'status_code' => 400,
                 ];
             }
@@ -365,6 +368,8 @@ class Event extends Model
             'status' => $status,
             'error_message' => null,
             'status_code' => 200,
+            'time_in_cutoff' => $cutoff,
+            'time_out_start' => $outStart,
         ];
     }
 

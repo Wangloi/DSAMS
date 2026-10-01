@@ -9,24 +9,24 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { adminDashboard, adminEvents } from '@/routes';
+import {
+    adminDashboard,
+    adminEvents,
+    programHeadCalendarEvents,
+    programHeadDashboard,
+} from '@/routes';
 import type { BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { ArrowLeft, Calendar, Check, Info } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import Swal from 'sweetalert2';
+import ProgramHeadLayout from '@/pages/program-head/components/ProgramHeadLayout';
 import AdminLayout from '../admin-layout';
 import {
     dedupeCourseRows,
     mergeAndDedupeYearLevels,
     type CourseYearOption,
 } from './mergeCourseYearOptions';
-
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Admin Dashboard', href: adminDashboard() },
-    { title: 'Events', href: adminEvents() },
-    { title: 'Create Event', href: '#' },
-];
 
 interface FormData {
     event_name: string;
@@ -49,6 +49,43 @@ interface FormData {
 }
 export default function CreateEventPage() {
     const { props } = usePage();
+    const { auth } = props as { auth?: any };
+    const isPersonnel =
+        auth?.guard === 'program_head' ||
+        auth?.roleLabel?.toLowerCase().includes('personnel') ||
+        auth?.roleLabel?.toLowerCase().includes('program head');
+
+    const breadcrumbs: BreadcrumbItem[] = isPersonnel
+        ? [
+              {
+                  title: 'Personnel Dashboard',
+                  href: programHeadDashboard(),
+              },
+              {
+                  title: 'Event Management',
+                  href: programHeadCalendarEvents(),
+              },
+              {
+                  title: 'Create Event',
+                  href: '#',
+              },
+          ]
+        : [
+              {
+                  title: 'Admin Dashboard',
+                  href: adminDashboard(),
+              },
+              {
+                  title: 'Events',
+                  href: adminEvents(),
+              },
+              {
+                  title: 'Create Event',
+                  href: '#',
+              },
+          ];
+
+    const Layout = isPersonnel ? ProgramHeadLayout : AdminLayout;
     const flash = (props as any).flash as { success?: string; error?: string };
     const errors = (props.errors || {}) as Record<string, string>;
     const [successMessage, setSuccessMessage] = useState('');
@@ -430,7 +467,7 @@ export default function CreateEventPage() {
         }`;
 
     return (
-        <AdminLayout breadcrumbs={breadcrumbs}>
+        <Layout breadcrumbs={breadcrumbs}>
             <Head title="Create Event" />
             {showSuccessBanner && (flash?.success || successMessage) && (
                 <div className="relative mb-6 w-full animate-in overflow-hidden rounded-xl border border-emerald-200/50 bg-gradient-to-r from-emerald-500 to-teal-600 p-4 shadow-lg duration-500 fade-in slide-in-from-top-4">
@@ -476,7 +513,13 @@ export default function CreateEventPage() {
                     <div className="flex items-center gap-4">
                         <Button
                             variant="outline"
-                            onClick={() => router.visit(adminEvents())}
+                            onClick={() =>
+                                router.visit(
+                                    isPersonnel
+                                        ? programHeadCalendarEvents()
+                                        : adminEvents(),
+                                )
+                            }
                             className="gap-2"
                         >
                             <ArrowLeft className="h-4 w-4" />
@@ -659,13 +702,15 @@ export default function CreateEventPage() {
                                                     >
                                                         Organizer *
                                                     </Label>
-                                                    <Select
+                                                    <Input
+                                                        id="organizer"
+                                                        list="createOrganizerSuggestions"
                                                         value={
                                                             formData.organizer
                                                         }
-                                                        onValueChange={(
-                                                            value,
-                                                        ) => {
+                                                        onChange={(e) => {
+                                                            const value =
+                                                                e.target.value;
                                                             setFormData(
                                                                 (prev) => ({
                                                                     ...prev,
@@ -677,35 +722,21 @@ export default function CreateEventPage() {
                                                                 'organizer',
                                                             );
                                                         }}
-                                                    >
-                                                        <SelectTrigger
-                                                            id="organizer"
-                                                            className={`h-9 dark:border-slate-600 dark:bg-slate-800 ${validationErrors.organizer ? 'border-rose-500 focus:ring-rose-500' : ''}`}
-                                                        >
-                                                            <SelectValue placeholder="Select organizer" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="Admin Office">
-                                                                Admin Office
-                                                            </SelectItem>
-                                                            <SelectItem value="Academic Affairs">
-                                                                Academic Affairs
-                                                            </SelectItem>
-                                                            <SelectItem value="Student Affairs">
-                                                                Student Affairs
-                                                            </SelectItem>
-                                                            <SelectItem value="Sports Department">
-                                                                Sports
-                                                                Department
-                                                            </SelectItem>
-                                                            <SelectItem value="Library">
-                                                                Library
-                                                            </SelectItem>
-                                                            <SelectItem value="Guidance Office">
-                                                                Guidance Office
-                                                            </SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
+                                                        placeholder="Enter or select organizer"
+                                                        className={`h-9 dark:border-slate-600 dark:bg-slate-800 ${validationErrors.organizer ? 'border-rose-500 focus-visible:ring-rose-500' : ''}`}
+                                                        required
+                                                    />
+                                                    <datalist id="createOrganizerSuggestions">
+                                                        <option value="Office of Student Affairs" />
+                                                        <option value="Student Affairs" />
+                                                        <option value="Dean of College" />
+                                                        <option value="Academic Affairs" />
+                                                        <option value="Admin Office" />
+                                                        <option value="College Student Government (CSG)" />
+                                                        <option value="Sports Department" />
+                                                        <option value="Library" />
+                                                        <option value="Guidance Office" />
+                                                    </datalist>
                                                     {validationErrors.organizer && (
                                                         <span className="text-xs font-medium text-rose-500">
                                                             {
@@ -789,6 +820,11 @@ export default function CreateEventPage() {
                                                             }
                                                         </span>
                                                     )}
+                                                    {formData.event_time && (
+                                                        <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                                            Cut-off for on-time: 1 hr after start
+                                                        </span>
+                                                    )}
                                                 </div>
 
                                                 <div className="grid gap-2">
@@ -816,6 +852,30 @@ export default function CreateEventPage() {
                                                         }
                                                         className="h-9 dark:border-slate-600 dark:bg-slate-800"
                                                     />
+                                                    {formData.registration_end_time && (
+                                                        <span className="text-[11px] font-semibold text-blue-600 dark:text-blue-400">
+                                                            Time-out opens: 30 min before end time
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                <div className="rounded-lg border border-blue-200/80 bg-blue-50/70 p-3 text-xs sm:col-span-2 dark:border-blue-900/50 dark:bg-blue-950/30">
+                                                    <div className="flex items-start gap-2.5">
+                                                        <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#000D6A] dark:text-blue-400" />
+                                                        <div className="space-y-1 text-slate-700 dark:text-slate-300">
+                                                            <div className="font-semibold text-slate-900 dark:text-white">
+                                                                Attendance Rules & Guidelines:
+                                                            </div>
+                                                            <ul className="list-disc space-y-0.5 pl-4 text-[11px] leading-relaxed">
+                                                                <li>
+                                                                    <strong>Time-In Cut-off:</strong> Attendance check-in is considered <em>On-Time</em> within <strong>1 hour after start time</strong>. Scans after 1 hour are marked as <strong>Late</strong>.
+                                                                </li>
+                                                                <li>
+                                                                    <strong>Time-Out Start:</strong> Time-out (check-out) scanning begins <strong>30 minutes before end time</strong>. Students cannot check out before this window.
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
                                                 </div>
 
                                                 <div className="grid gap-2 sm:col-span-2">
@@ -1453,7 +1513,11 @@ export default function CreateEventPage() {
                                         variant="secondary"
                                         type="button"
                                         onClick={() =>
-                                            router.visit(adminEvents())
+                                            router.visit(
+                                                isPersonnel
+                                                    ? programHeadCalendarEvents()
+                                                    : adminEvents(),
+                                            )
                                         }
                                         className="px-4"
                                     >
@@ -1527,6 +1591,6 @@ export default function CreateEventPage() {
                         )}
                 </div>
             </div>
-        </AdminLayout>
+        </Layout>
     );
 }

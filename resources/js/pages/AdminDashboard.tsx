@@ -349,18 +349,18 @@ export default function AdminDashboard({
             <Head title="Admin Command Center | DSAMS" />
 
             <div className="min-h-screen bg-slate-50/60 pb-16 transition-colors duration-200 dark:bg-[#0B1120]">
-                <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+                <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5 px-3.5 py-4 sm:gap-6 sm:px-6 sm:py-6 lg:px-8">
                     {/* ── HANDOVER PERIOD ALERT (If active) ── */}
                     {isHandoverActive && (
-                        <div className="relative overflow-hidden rounded-2xl border border-amber-300/80 bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-transparent p-5 shadow-lg backdrop-blur-md dark:border-amber-600/50 dark:bg-amber-950/30">
+                        <div className="relative overflow-hidden rounded-2xl border border-amber-300/80 bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-transparent p-4 sm:p-5 shadow-lg backdrop-blur-md dark:border-amber-600/50 dark:bg-amber-950/30">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div className="flex items-start gap-3.5">
-                                    <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-md shadow-amber-500/20">
-                                        <Clock className="h-6 w-6 animate-pulse" />
+                                    <div className="grid h-10 w-10 sm:h-11 sm:w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 text-white shadow-md shadow-amber-500/20">
+                                        <Clock className="h-5 w-5 sm:h-6 sm:w-6 animate-pulse" />
                                     </div>
                                     <div>
-                                        <div className="flex items-center gap-2">
-                                            <h2 className="text-sm font-black tracking-wide text-amber-950 uppercase dark:text-amber-200">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <h2 className="text-xs sm:text-sm font-black tracking-wide text-amber-950 uppercase dark:text-amber-200">
                                                 Active Administrator Handover Window
                                             </h2>
                                             <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2.5 py-0.5 text-[10px] font-bold text-amber-900 ring-1 ring-amber-500/30 dark:text-amber-300">
@@ -390,24 +390,25 @@ export default function AdminDashboard({
                     )}
 
                     {/* ── HERO BANNER ── */}
-                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] p-6 shadow-xl shadow-blue-900/20">
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] p-4.5 sm:p-6 shadow-xl shadow-blue-900/20">
                         <div className="pointer-events-none absolute -top-12 -right-12 h-56 w-56 rounded-full bg-white/5" />
                         <div className="pointer-events-none absolute -top-4 -right-4 h-32 w-32 rounded-full bg-white/5" />
                         <div className="pointer-events-none absolute bottom-0 left-1/3 h-48 w-48 -translate-y-1/4 rounded-full bg-blue-400/10 blur-2xl" />
                         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/10 text-white shadow-inner ring-1 ring-white/20 backdrop-blur-sm">
-                                    <BarChart3 className="h-7 w-7" />
+                            <div className="flex items-center gap-3 sm:gap-4">
+                                <div className="grid h-11 w-11 sm:h-14 sm:w-14 shrink-0 place-items-center rounded-2xl bg-white/10 text-white shadow-inner ring-1 ring-white/20 backdrop-blur-sm">
+                                    <BarChart3 className="h-6 w-6 sm:h-7 sm:w-7" />
                                 </div>
                                 <div>
-                                    <h1 className="text-2xl font-black tracking-tight text-white">
+                                    <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
                                         Welcome Back, {currentUser?.name || 'Administrator'}!
                                     </h1>
-                                    <p className="mt-0.5 text-sm font-medium text-blue-200/80">
+                                    <p className="mt-0.5 text-xs sm:text-sm font-medium text-blue-200/80">
                                         System Command Center • Incoming Events & Performance Metrics
                                     </p>
                                 </div>
                             </div>
+
                             <div className="flex flex-wrap items-center gap-3 self-start sm:self-auto">
                                 {/* Live Date Indicator widget */}
                                 <div className="hidden items-center gap-3 rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-white ring-1 ring-white/20 backdrop-blur-md sm:flex">

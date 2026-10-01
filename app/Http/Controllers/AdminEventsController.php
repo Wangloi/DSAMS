@@ -208,7 +208,15 @@ class AdminEventsController extends Controller
             $dispatcher->scannerAccessGranted($event, $scannerStudentIds);
         }
 
-        return redirect()->route('admin.events')->with('success', 'Event created successfully!');
+        if (Schema::hasTable('activity_logs')) {
+            $actor = auth()->guard('admin')->user() ?: auth()->guard('program_head')->user() ?: auth()->user();
+            if ($actor) {
+                \App\Models\ActivityLog::logForUser($actor, 'Event Management', 'Created', 'Created event: ' . (string) $event->event_name);
+            }
+        }
+
+        $redirectRoute = auth()->guard('program_head')->check() ? 'program-head.calendar-events' : 'admin.events';
+        return redirect()->route($redirectRoute)->with('success', 'Event created successfully!');
     }
 
     public function show(Event $event)
@@ -269,11 +277,22 @@ class AdminEventsController extends Controller
         $geofenceEnabled = (bool) ($validated['geofence_enabled'] ?? false);
 
         $previousScannerStudentIds = is_array($event->scanner_student_ids) ? $event->scanner_student_ids : [];
+        if (empty($previousScannerStudentIds) && !empty($event->scanner_student_id)) {
+            $previousScannerStudentIds = [(string) $event->scanner_student_id];
+        }
 
-        $scannerStudentIdsRaw = $validated['scanner_student_ids'] ?? [];
+        $hasScannerStudentIds = array_key_exists('scanner_student_ids', $validated) || $request->has('scanner_student_ids');
+        $scannerStudentIdsRaw = $hasScannerStudentIds
+            ? ($validated['scanner_student_ids'] ?? [])
+            : $previousScannerStudentIds;
         $scannerStudentIds = array_values(array_unique(array_filter(array_map('strval', $scannerStudentIdsRaw), function ($v) {
             return trim($v) !== '';
         })));
+
+        // Safeguard: Ensure assigned scanner students are preserved during edit if not explicitly cleared or modified
+        if (empty($scannerStudentIds) && !empty($previousScannerStudentIds) && !$request->boolean('clear_scanners', false) && !$request->boolean('scanner_student_ids_modified', false)) {
+            $scannerStudentIds = $previousScannerStudentIds;
+        }
 
         $location = $validated['location'] ?? 'Campus / Unspecified';
         $conflict = Event::findScheduleConflict($validated['event_date'], $location, $validated['event_time'], $event->id);
@@ -310,7 +329,15 @@ class AdminEventsController extends Controller
             $dispatcher->scannerAccessGranted($event, $newlyGrantedScannerIds);
         }
 
-        return redirect()->route('admin.events')->with('success', 'Event updated successfully!');
+        if (Schema::hasTable('activity_logs')) {
+            $actor = auth()->guard('admin')->user() ?: auth()->guard('program_head')->user() ?: auth()->user();
+            if ($actor) {
+                \App\Models\ActivityLog::logForUser($actor, 'Event Management', 'Updated', 'Updated event: ' . (string) $event->event_name);
+            }
+        }
+
+        $redirectRoute = auth()->guard('program_head')->check() ? 'program-head.calendar-events' : 'admin.events';
+        return redirect()->route($redirectRoute)->with('success', 'Event updated successfully!');
     }
 
     public function destroy(Event $event)
@@ -320,23 +347,48 @@ class AdminEventsController extends Controller
             Storage::disk('public')->delete($event->qr_code);
         }
 
+        $eventName = (string) $event->event_name;
         $event->delete();
 
-        return redirect()->route('admin.events')->with('success', 'Event deleted successfully!');
+        if (Schema::hasTable('activity_logs')) {
+            $actor = auth()->guard('admin')->user() ?: auth()->guard('program_head')->user() ?: auth()->user();
+            if ($actor) {
+                \App\Models\ActivityLog::logForUser($actor, 'Event Management', 'Deleted', 'Deleted event: ' . $eventName);
+            }
+        }
+
+        $redirectRoute = auth()->guard('program_head')->check() ? 'program-head.calendar-events' : 'admin.events';
+        return redirect()->route($redirectRoute)->with('success', 'Event deleted successfully!');
     }
 
     public function archive(Event $event)
     {
         $event->update(['archived_at' => now()]);
 
-        return redirect()->route('admin.events')->with('success', 'Event archived successfully!');
+        if (Schema::hasTable('activity_logs')) {
+            $actor = auth()->guard('admin')->user() ?: auth()->guard('program_head')->user() ?: auth()->user();
+            if ($actor) {
+                \App\Models\ActivityLog::logForUser($actor, 'Event Management', 'Archived', 'Archived event: ' . (string) $event->event_name);
+            }
+        }
+
+        $redirectRoute = auth()->guard('program_head')->check() ? 'program-head.calendar-events' : 'admin.events';
+        return redirect()->route($redirectRoute)->with('success', 'Event archived successfully!');
     }
 
     public function unarchive(Event $event)
     {
         $event->update(['archived_at' => null]);
 
-        return redirect()->route('admin.events')->with('success', 'Event unarchived successfully!');
+        if (Schema::hasTable('activity_logs')) {
+            $actor = auth()->guard('admin')->user() ?: auth()->guard('program_head')->user() ?: auth()->user();
+            if ($actor) {
+                \App\Models\ActivityLog::logForUser($actor, 'Event Management', 'Unarchived', 'Unarchived event: ' . (string) $event->event_name);
+            }
+        }
+
+        $redirectRoute = auth()->guard('program_head')->check() ? 'program-head.calendar-events' : 'admin.events';
+        return redirect()->route($redirectRoute)->with('success', 'Event unarchived successfully!');
     }
 
     public function qrCode(Event $event)
@@ -683,6 +735,109 @@ class AdminEventsController extends Controller
         $dispatcher->eventReminder($event, $timeframe);
 
         return redirect()->back()->with('success', "Event reminder successfully dispatched to eligible students!");
+    }
+
+    public function suggestedScanners(Request $request)
+    {
+        $organizer = trim((string) $request->query('organizer', ''));
+        if ($organizer === '') {
+            return response()->json([
+                'students' => [],
+                'last_event_name' => null,
+                'organizer' => null,
+            ]);
+        }
+
+        // Find the latest event for this organizer with assigned scanner students
+        $event = Event::query()
+            ->where('organizer', $organizer)
+            ->where(function ($q) {
+                $q->whereNotNull('scanner_student_ids')
+                  ->orWhereNotNull('scanner_student_id');
+            })
+            ->orderBy('id', 'desc')
+            ->get()
+            ->first(function ($ev) {
+                $ids = is_array($ev->scanner_student_ids) ? $ev->scanner_student_ids : [];
+                if (empty($ids) && !empty($ev->scanner_student_id)) {
+                    $ids = [(string) $ev->scanner_student_id];
+                }
+                return !empty(array_filter($ids));
+            });
+
+        if (!$event) {
+            // Case-insensitive / partial fallback
+            $event = Event::query()
+                ->where('organizer', 'LIKE', "%{$organizer}%")
+                ->orderBy('id', 'desc')
+                ->get()
+                ->first(function ($ev) {
+                    $ids = is_array($ev->scanner_student_ids) ? $ev->scanner_student_ids : [];
+                    if (empty($ids) && !empty($ev->scanner_student_id)) {
+                        $ids = [(string) $ev->scanner_student_id];
+                    }
+                    return !empty(array_filter($ids));
+                });
+        }
+
+        if (!$event) {
+            return response()->json([
+                'students' => [],
+                'last_event_name' => null,
+                'organizer' => $organizer,
+            ]);
+        }
+
+        $scannerIds = is_array($event->scanner_student_ids) ? $event->scanner_student_ids : [];
+        if (empty($scannerIds) && !empty($event->scanner_student_id)) {
+            $scannerIds = [(string) $event->scanner_student_id];
+        }
+        $scannerIds = array_values(array_unique(array_filter(array_map('strval', $scannerIds))));
+
+        if (empty($scannerIds)) {
+            return response()->json([
+                'students' => [],
+                'last_event_name' => null,
+                'organizer' => $event->organizer,
+            ]);
+        }
+
+        $students = Student::query()
+            ->whereIn('student_id', $scannerIds)
+            ->orWhereIn('id', $scannerIds)
+            ->select('id', 'student_id', 'name', 'course', 'year_level')
+            ->get()
+            ->map(function ($s) {
+                return [
+                    'id' => (string) ($s->student_id ?: $s->id),
+                    'student_id' => (string) ($s->student_id ?: $s->id),
+                    'name' => (string) $s->name,
+                    'course' => (string) ($s->course ?? ''),
+                    'year_level' => (string) ($s->year_level ?? ''),
+                ];
+            })
+            ->values();
+
+        // If any scanner ID wasn't found in students table, supply fallback entry
+        $foundIds = $students->pluck('id')->all();
+        foreach ($scannerIds as $id) {
+            if (!in_array($id, $foundIds)) {
+                $students->push([
+                    'id' => $id,
+                    'student_id' => $id,
+                    'name' => $id,
+                    'course' => '',
+                    'year_level' => '',
+                ]);
+            }
+        }
+
+        return response()->json([
+            'students' => $students,
+            'last_event_name' => $event->event_name,
+            'last_event_id' => $event->id,
+            'organizer' => $event->organizer,
+        ]);
     }
 }
 

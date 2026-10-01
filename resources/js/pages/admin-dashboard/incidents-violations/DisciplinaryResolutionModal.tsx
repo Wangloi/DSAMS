@@ -33,6 +33,7 @@ import {
     type DisciplinaryPolicyItem,
 } from './disciplinaryPolicies';
 import { SimpleTooltip } from '@/components/ui/tooltip';
+import { printResolutionElement } from './printCaseSummary';
 
 interface DisciplinaryResolutionModalProps {
     open: boolean;
@@ -145,7 +146,7 @@ export default function DisciplinaryResolutionModal({
     const handlePrint = () => {
         setViewTab('preview');
         setTimeout(() => {
-            window.print();
+            printResolutionElement('decision-resolution-print-area');
         }, 200);
     };
 

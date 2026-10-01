@@ -16,6 +16,7 @@ import {
     ChevronRight,
     Clock,
     Compass,
+    Info,
     MapPin,
     Plus,
     Radio,
@@ -26,6 +27,7 @@ import {
     X,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { dedupeCourseRows } from './mergeCourseYearOptions';
 
 export type CreateEventPayload = {
@@ -40,6 +42,7 @@ export type CreateEventPayload = {
     courses: string[];
     yearLevels: string[];
     scannerStudentIds: string[];
+    scannerStudentIdsModified?: boolean;
     geofenceEnabled: boolean;
     geofenceLatitude: string;
     geofenceLongitude: string;
@@ -125,6 +128,36 @@ type Props = {
 
 const DRAFT_KEY = 'dsams_create_event_draft_v1';
 
+const getFormattedCutoff = (timeStr: string) => {
+    if (!timeStr) return '';
+    const [h, m] = timeStr.split(':').map(Number);
+    if (isNaN(h) || isNaN(m)) return '';
+    const date = new Date();
+    date.setHours(h);
+    date.setMinutes(m + 60);
+    let hh = date.getHours();
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    const ampm = hh >= 12 ? 'PM' : 'AM';
+    hh = hh % 12;
+    hh = hh ? hh : 12;
+    return `${hh}:${mm} ${ampm}`;
+};
+
+const getFormattedTimeOutStart = (timeStr: string) => {
+    if (!timeStr) return '';
+    const [h, m] = timeStr.split(':').map(Number);
+    if (isNaN(h) || isNaN(m)) return '';
+    const date = new Date();
+    date.setHours(h);
+    date.setMinutes(m - 30);
+    let hh = date.getHours();
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    const ampm = hh >= 12 ? 'PM' : 'AM';
+    hh = hh % 12;
+    hh = hh ? hh : 12;
+    return `${hh}:${mm} ${ampm}`;
+};
+
 export default function CreateEventModal({
     open,
     onOpenChange,
@@ -168,10 +201,116 @@ export default function CreateEventModal({
         [courses],
     );
 
+    const [scannerStudentQuery, setScannerStudentQuery] = useState('');
+    const [scannerSearchResults, setScannerSearchResults] = useState<
+        Array<{ id: string; name: string }>
+    >([]);
+    const [scannerStudentLoading, setScannerStudentLoading] = useState(false);
+    const [scannerStudentError, setScannerStudentError] = useState('');
+    const [selectedScannerStudents, setSelectedScannerStudents] = useState<
+        Array<{ id: string; name: string }>
+    >([]);
+    const [hasExplicitlyChangedScanners, setHasExplicitlyChangedScanners] = useState(false);
+    const [suggestedScanners, setSuggestedScanners] = useState<
+        Array<{ id: string; name: string; course?: string; year_level?: string }>
+    >([]);
+    const [suggestedEventName, setSuggestedEventName] = useState<string | null>(null);
+    const [suggestedOrganizer, setSuggestedOrganizer] = useState<string | null>(null);
+    const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
+
+    const parseScannersFromEvent = (ev: any): Array<{ id: string; name: string }> => {
+        if (!ev) return [];
+
+        const result: Array<{ id: string; name: string }> = [];
+        const seen = new Set<string>();
+
+        const addScanner = (rawId: any, rawName?: any) => {
+            const id = String(rawId || '').trim();
+            if (!id || seen.has(id)) return;
+            seen.add(id);
+            const name = String(rawName || '').trim() || id;
+            result.push({ id, name });
+        };
+
+        // 1. Array of objects (scanner_students or scannerStudents)
+        const scannerStudentsList = ev.scanner_students || ev.scannerStudents;
+        if (Array.isArray(scannerStudentsList) && scannerStudentsList.length > 0) {
+            scannerStudentsList.forEach((s: any) => {
+                if (s && typeof s === 'object') {
+                    addScanner(s.student_id || s.id, s.name);
+                } else if (s) {
+                    addScanner(s);
+                }
+            });
+        }
+
+        // 2. Array or JSON string of IDs (scanner_student_ids or scannerStudentIds)
+        let scannerIdsList = ev.scanner_student_ids || ev.scannerStudentIds;
+        if (typeof scannerIdsList === 'string') {
+            try {
+                const parsed = JSON.parse(scannerIdsList);
+                if (Array.isArray(parsed)) scannerIdsList = parsed;
+            } catch {}
+        }
+        if (Array.isArray(scannerIdsList) && scannerIdsList.length > 0) {
+            scannerIdsList.forEach((id: any) => {
+                if (id && typeof id === 'object') {
+                    addScanner(id.student_id || id.id, id.name);
+                } else if (id) {
+                    addScanner(id);
+                }
+            });
+        }
+
+        // 3. Single ID (scanner_student_id or scannerStudentId)
+        const singleScanner = ev.scanner_student_id || ev.scannerStudentId;
+        if (singleScanner) {
+            addScanner(singleScanner);
+        }
+
+        return result;
+    };
+
     // Populate form when editing or restore draft on create
     useEffect(() => {
         if (open) {
             if (mode === 'edit' && initialEvent) {
+                const initialScanners = parseScannersFromEvent(initialEvent);
+
+                setSelectedScannerStudents(initialScanners);
+                setHasExplicitlyChangedScanners(false);
+                setScannerStudentQuery('');
+                setScannerSearchResults([]);
+                setScannerStudentError('');
+
+                // Resolve any student names that fell back to raw ID
+                initialScanners.forEach((scanner) => {
+                    if (scanner.name === scanner.id) {
+                        fetch(
+                            `/admin/students/lookup?student_id=${encodeURIComponent(scanner.id)}`,
+                            {
+                                headers: {
+                                    Accept: 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                },
+                            },
+                        )
+                            .then((res) => (res.ok ? res.json() : null))
+                            .then((data) => {
+                                if (data?.name) {
+                                    setSelectedScannerStudents((prev) =>
+                                        prev.map((item) =>
+                                            item.id === scanner.id
+                                                ? { ...item, name: data.name }
+                                                : item,
+                                        ),
+                                    );
+                                }
+                            })
+                            .catch(() => {});
+                    }
+                });
+
                 setFormData({
                     eventName: initialEvent.event_name ?? '',
                     organizer: initialEvent.organizer ?? '',
@@ -186,7 +325,7 @@ export default function CreateEventModal({
                     description: initialEvent.description ?? '',
                     courses: initialEvent.courses ?? [],
                     yearLevels: initialEvent.year_levels ?? [],
-                    scannerStudentIds: [],
+                    scannerStudentIds: initialScanners.map((s) => s.id),
                     geofenceEnabled:
                         initialEvent.attendance_type === 'dynamic_qr'
                             ? (initialEvent.geofence_enabled ?? false)
@@ -207,6 +346,11 @@ export default function CreateEventModal({
                 setValidationErrors({});
                 setIsDraftRestored(false);
             } else if (mode === 'create') {
+                setSelectedScannerStudents([]);
+                setScannerStudentQuery('');
+                setScannerSearchResults([]);
+                setScannerStudentError('');
+
                 const savedDraftRaw = localStorage.getItem(DRAFT_KEY);
                 if (savedDraftRaw) {
                     try {
@@ -294,16 +438,6 @@ export default function CreateEventModal({
             window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [open, mode, formData]);
 
-    const [scannerStudentQuery, setScannerStudentQuery] = useState('');
-    const [scannerSearchResults, setScannerSearchResults] = useState<
-        Array<{ id: string; name: string }>
-    >([]);
-    const [scannerStudentLoading, setScannerStudentLoading] = useState(false);
-    const [scannerStudentError, setScannerStudentError] = useState('');
-    const [selectedScannerStudents, setSelectedScannerStudents] = useState<
-        Array<{ id: string; name: string }>
-    >([]);
-
     const [showMapSelector, setShowMapSelector] = useState(false);
     const [selectedLocationName, setSelectedLocationName] = useState('');
 
@@ -369,6 +503,57 @@ export default function CreateEventModal({
 
         return () => clearTimeout(timeoutId);
     }, [scannerStudentQuery]);
+
+    // Fetch suggested scanners based on the selected organizer (from the most recent event by that organizer)
+    useEffect(() => {
+        if (!open || mode !== 'create') {
+            setSuggestedScanners([]);
+            setSuggestedEventName(null);
+            setSuggestedOrganizer(null);
+            return;
+        }
+
+        const org = formData.organizer.trim();
+        if (!org) {
+            setSuggestedScanners([]);
+            setSuggestedEventName(null);
+            setSuggestedOrganizer(null);
+            return;
+        }
+
+        const timer = setTimeout(async () => {
+            setIsFetchingSuggestions(true);
+            try {
+                const res = await fetch(
+                    `/admin/events/suggested-scanners?organizer=${encodeURIComponent(org)}`,
+                    {
+                        headers: {
+                            Accept: 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    },
+                );
+                if (res.ok) {
+                    const data = await res.json();
+                    if (Array.isArray(data.students) && data.students.length > 0) {
+                        setSuggestedScanners(data.students);
+                        setSuggestedEventName(data.last_event_name || null);
+                        setSuggestedOrganizer(data.organizer || org);
+                    } else {
+                        setSuggestedScanners([]);
+                        setSuggestedEventName(null);
+                        setSuggestedOrganizer(null);
+                    }
+                }
+            } catch {
+                setSuggestedScanners([]);
+            } finally {
+                setIsFetchingSuggestions(false);
+            }
+        }, 250);
+
+        return () => clearTimeout(timer);
+    }, [open, mode, formData.organizer]);
 
     useEffect(() => {
         setFormData((prev) => ({
@@ -498,8 +683,20 @@ export default function CreateEventModal({
         setIsDraftRestored(false);
 
         const isGpsMode = formData.attendanceType === 'dynamic_qr';
+        const hasModifiedScanners = mode === 'edit' ? hasExplicitlyChangedScanners : true;
+        const scannerIds =
+            selectedScannerStudents.length > 0
+                ? selectedScannerStudents.map((s) => s.id)
+                : (hasModifiedScanners
+                    ? []
+                    : (formData.scannerStudentIds && formData.scannerStudentIds.length > 0
+                        ? formData.scannerStudentIds
+                        : parseScannersFromEvent(initialEvent).map((s) => s.id)));
+
         const payload: CreateEventPayload = {
             ...formData,
+            scannerStudentIds: scannerIds,
+            scannerStudentIdsModified: hasModifiedScanners,
             geofenceEnabled: isGpsMode ? true : !!formData.geofenceEnabled,
             geofenceLatitude: isGpsMode
                 ? formData.geofenceLatitude || '8.743070'
@@ -543,10 +740,15 @@ export default function CreateEventModal({
         setScannerStudentError('');
         setSelectedLocationName('');
         setShowMapSelector(false);
+        setHasExplicitlyChangedScanners(false);
+        setSuggestedScanners([]);
+        setSuggestedEventName(null);
+        setSuggestedOrganizer(null);
         onClose();
     };
 
     const addSelectedStudent = (student: { id: string; name: string }) => {
+        setHasExplicitlyChangedScanners(true);
         setSelectedScannerStudents((prev) => {
             if (prev.some((s) => s.id === student.id)) return prev;
             return [...prev, student];
@@ -555,41 +757,41 @@ export default function CreateEventModal({
         setScannerSearchResults([]);
     };
 
+    const addAllSuggestedScanners = () => {
+        setHasExplicitlyChangedScanners(true);
+        setSelectedScannerStudents((prev) => {
+            const next = [...prev];
+            suggestedScanners.forEach((student) => {
+                if (!next.some((s) => s.id === student.id)) {
+                    next.push({ id: student.id, name: student.name });
+                }
+            });
+            return next;
+        });
+    };
+
     const removeSelectedStudent = (id: string) => {
+        setHasExplicitlyChangedScanners(true);
         setSelectedScannerStudents((prev) => prev.filter((s) => s.id !== id));
     };
 
     if (!open) return null;
+    if (typeof document === 'undefined') return null;
 
     const steps = [
-        {
-            id: 1,
-            label: 'Basic Details',
-            subtitle: 'Name, Organizer & Schedule',
-        },
-        {
-            id: 2,
-            label: 'Location & Check-In',
-            subtitle: 'Venue & Geofence Settings',
-        },
-        {
-            id: 3,
-            label: 'Target Audience',
-            subtitle: 'Courses, Years & Scanners',
-        },
+        { id: 1, label: 'Basic Details' },
+        { id: 2, label: 'Location & Check-In' },
+        { id: 3, label: 'Target Audience' },
     ];
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-3 backdrop-blur-md transition-all duration-300 sm:p-5">
-            <div className="mx-auto flex max-h-[92vh] w-full max-w-5xl animate-in flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xl duration-200 zoom-in-95 dark:border-slate-800 dark:bg-slate-900">
-                {/* Header Banner */}
-                <div className="relative shrink-0 overflow-hidden border-b border-blue-900/30 bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 px-6 pt-6 pb-6 text-white sm:px-8">
-                    <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl" />
-                    <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" />
-
-                    <div className="relative flex items-center justify-between">
+    return createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-3 backdrop-blur-xs transition-all sm:p-5">
+            <div className="mx-auto flex max-h-[90vh] h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+                {/* ── MINIMAL BLUE HEADER ── */}
+                <div className="shrink-0 bg-gradient-to-r from-[#000D6A] via-[#0B1E78] to-[#1E3A8A] px-6 py-4.5 text-white shadow-md sm:px-8">
+                    <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-blue-400/30 bg-blue-500/20 text-blue-300 shadow-inner">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-[#8CE4FF] shadow-inner ring-1 ring-white/20 backdrop-blur-md">
                                 {mode === 'edit' ? (
                                     <Sparkles className="h-5 w-5" />
                                 ) : (
@@ -598,20 +800,20 @@ export default function CreateEventModal({
                             </div>
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
+                                    <h2 className="text-base font-bold text-white sm:text-lg">
                                         {mode === 'edit'
                                             ? 'Edit Event'
                                             : 'Create New Event'}
                                     </h2>
-                                    <span className="inline-flex items-center rounded-full border border-blue-400/20 bg-blue-500/20 px-2.5 py-0.5 text-xs font-medium text-blue-300">
-                                        {mode === 'edit'
-                                            ? 'Update Details'
-                                            : 'New Setup'}
+                                    <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold text-[#8CE4FF] backdrop-blur-xs">
+                                        {mode === 'edit' ? 'Edit' : 'New'}
                                     </span>
                                 </div>
-                                <p className="mt-0.5 text-xs text-slate-300/90 sm:text-sm">
-                                    Configure event parameters, check-in
-                                    methods, and target attendees.
+                                <p className="text-xs text-blue-100/80">
+                                    Step {currentStep} of 3 —{' '}
+                                    <span className="font-semibold text-white">
+                                        {steps[currentStep - 1].label}
+                                    </span>
                                 </p>
                             </div>
                         </div>
@@ -619,195 +821,151 @@ export default function CreateEventModal({
                         <button
                             type="button"
                             onClick={handleClose}
-                            className="rounded-full p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+                            className="rounded-xl bg-white/10 p-2 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+                            aria-label="Close modal"
                         >
-                            <X className="h-5 w-5" />
+                            <X className="h-4 w-4" />
                         </button>
                     </div>
 
-                    {/* Stepper Progress Bar */}
-                    <div className="relative mt-6">
-                        <div className="relative z-10 grid grid-cols-3 gap-2 sm:gap-4">
-                            {steps.map((step) => {
-                                const isActive = currentStep === step.id;
-                                const isCompleted = currentStep > step.id;
+                    {/* Minimal Progress Bar */}
+                    <div className="mt-4 flex items-center gap-2">
+                        {steps.map((step) => {
+                            const isActive = currentStep === step.id;
+                            const isCompleted = currentStep > step.id;
 
-                                return (
-                                    <button
-                                        key={step.id}
-                                        type="button"
-                                        onClick={() => {
-                                            if (isCompleted)
-                                                setCurrentStep(step.id);
-                                        }}
-                                        disabled={!isCompleted && !isActive}
-                                        className={`flex items-center gap-3 rounded-xl border p-2.5 text-left transition-all duration-200 sm:p-3 ${
+                            return (
+                                <button
+                                    key={step.id}
+                                    type="button"
+                                    onClick={() => {
+                                        if (isCompleted) setCurrentStep(step.id);
+                                    }}
+                                    disabled={!isCompleted && !isActive}
+                                    className="group flex flex-1 items-center gap-2 text-left"
+                                >
+                                    <div
+                                        className={`h-1.5 w-full rounded-full transition-all duration-300 ${
                                             isActive
-                                                ? 'border-blue-400/50 bg-blue-600/30 text-white shadow-lg ring-2 ring-blue-400/30 backdrop-blur-md'
+                                                ? 'bg-[#8CE4FF] shadow-xs shadow-cyan-400/50'
                                                 : isCompleted
-                                                  ? 'cursor-pointer border-emerald-500/30 bg-white/5 text-emerald-300 hover:bg-white/10'
-                                                  : 'cursor-not-allowed border-white/10 bg-white/5 text-slate-400 opacity-60'
+                                                  ? 'bg-emerald-400'
+                                                  : 'bg-white/20'
                                         }`}
-                                    >
-                                        <div
-                                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition-all sm:h-9 sm:w-9 sm:text-sm ${
-                                                isActive
-                                                    ? 'bg-blue-500 text-white shadow-md ring-2 ring-white/20'
-                                                    : isCompleted
-                                                      ? 'bg-emerald-500 text-white'
-                                                      : 'border border-slate-700 bg-slate-800 text-slate-400'
-                                            }`}
-                                        >
-                                            {isCompleted ? (
-                                                <Check className="h-4 w-4 stroke-[3]" />
-                                            ) : (
-                                                step.id
-                                            )}
-                                        </div>
-                                        <div className="hidden min-w-0 sm:block">
-                                            <div className="truncate text-xs leading-tight font-semibold sm:text-sm">
-                                                {step.label}
-                                            </div>
-                                            <div className="mt-0.5 truncate text-[10px] text-slate-300/70">
-                                                {step.subtitle}
-                                            </div>
-                                        </div>
-                                    </button>
-                                );
-                            })}
-                        </div>
+                                    />
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 
-                {/* Modal Body */}
-                <div className="flex-1 overflow-y-auto bg-slate-50/60 p-6 sm:p-8 dark:bg-slate-900/50">
+                {/* ── MODAL BODY ── */}
+                <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto p-6 sm:p-8">
                     {isDraftRestored && mode === 'create' && (
-                        <div className="mb-6 flex animate-in flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50/90 p-3.5 text-amber-900 shadow-sm duration-200 fade-in-50 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
-                            <div className="flex items-center gap-2.5 text-xs font-medium">
-                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-200 text-[11px] font-bold text-amber-900 dark:bg-amber-900 dark:text-amber-100">
-                                    ✓
-                                </span>
-                                <span>
-                                    Restored your unsaved event draft from your
-                                    previous session.
-                                </span>
-                            </div>
+                        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-2.5 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
+                            <span className="font-medium">
+                                Restored your unsaved draft from your previous session.
+                            </span>
                             <button
                                 type="button"
                                 onClick={discardDraft}
-                                className="text-xs font-bold text-rose-700 underline hover:text-rose-900 dark:text-rose-400 dark:hover:text-rose-200"
+                                className="font-bold text-rose-700 underline hover:text-rose-900 dark:text-rose-400 dark:hover:text-rose-200"
                             >
-                                Discard Draft & Start Clean
+                                Discard Draft
                             </button>
                         </div>
                     )}
 
                     <form onSubmit={handleSubmit} noValidate>
-                        {/* STEP 1: BASIC INFORMATION */}
+                        {/* STEP 1: BASIC DETAILS */}
                         {currentStep === 1 && (
-                            <div className="animate-in space-y-6 duration-200 fade-in-50">
+                            <div className="space-y-5 animate-in fade-in-50 duration-150">
+                                {/* Event Name */}
+                                <div className="space-y-1.5">
+                                    <Label
+                                        htmlFor="eventName"
+                                        className="text-xs font-semibold text-slate-700 dark:text-slate-300"
+                                    >
+                                        Event Name <span className="text-rose-500">*</span>
+                                    </Label>
+                                    <Input
+                                        id="eventName"
+                                        list="announcementsList"
+                                        value={formData.eventName}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setFormData((prev) => ({
+                                                ...prev,
+                                                eventName: val,
+                                            }));
+
+                                            const matched = announcements?.find(
+                                                (a) => a.title === val,
+                                            );
+                                            if (matched) {
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    eventDate:
+                                                        matched.eventDate ||
+                                                        prev.eventDate,
+                                                    eventTime:
+                                                        matched.eventTime ||
+                                                        prev.eventTime,
+                                                }));
+                                            }
+                                            if (validationErrors.eventName) {
+                                                setValidationErrors((prev) => {
+                                                    const copy = { ...prev };
+                                                    delete copy.eventName;
+                                                    return copy;
+                                                });
+                                            }
+                                        }}
+                                        placeholder="e.g. Annual Sports Fest, IT Seminar 2026"
+                                        className={`h-10 rounded-xl text-xs dark:border-slate-700 dark:bg-slate-800 ${
+                                            validationErrors.eventName
+                                                ? 'border-rose-500 focus-visible:ring-rose-500'
+                                                : ''
+                                        }`}
+                                        required
+                                    />
+                                    {validationErrors.eventName && (
+                                        <p className="text-xs font-medium text-rose-500">
+                                            {validationErrors.eventName}
+                                        </p>
+                                    )}
+                                    {announcements && announcements.length > 0 && (
+                                        <datalist id="announcementsList">
+                                            {announcements.map((a) => (
+                                                <option
+                                                    key={a.id}
+                                                    value={a.title}
+                                                />
+                                            ))}
+                                        </datalist>
+                                    )}
+                                </div>
+
                                 <div className="grid gap-5 sm:grid-cols-2">
-                                    {/* Event Name */}
-                                    <div className="space-y-1.5 sm:col-span-2">
-                                        <Label
-                                            htmlFor="eventName"
-                                            className="text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300"
-                                        >
-                                            Event Name{' '}
-                                            <span className="text-rose-500">
-                                                *
-                                            </span>
-                                        </Label>
-                                        <div className="relative">
-                                            <Input
-                                                id="eventName"
-                                                list="announcementsList"
-                                                value={formData.eventName}
-                                                onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    setFormData((prev) => ({
-                                                        ...prev,
-                                                        eventName: val,
-                                                    }));
-
-                                                    const matched =
-                                                        announcements?.find(
-                                                            (a) =>
-                                                                a.title === val,
-                                                        );
-                                                    if (matched) {
-                                                        setFormData((prev) => ({
-                                                            ...prev,
-                                                            eventDate:
-                                                                matched.eventDate ||
-                                                                prev.eventDate,
-                                                            eventTime:
-                                                                matched.eventTime ||
-                                                                prev.eventTime,
-                                                        }));
-                                                    }
-                                                    if (
-                                                        validationErrors.eventName
-                                                    ) {
-                                                        setValidationErrors(
-                                                            (prev) => {
-                                                                const copy = {
-                                                                    ...prev,
-                                                                };
-                                                                delete copy.eventName;
-                                                                return copy;
-                                                            },
-                                                        );
-                                                    }
-                                                }}
-                                                placeholder="e.g., Annual Sports Fest, IT Seminar 2026"
-                                                className={`h-10 dark:border-slate-700 dark:bg-slate-800/80 ${
-                                                    validationErrors.eventName
-                                                        ? 'border-rose-500 focus-visible:ring-rose-500'
-                                                        : ''
-                                                }`}
-                                                required
-                                            />
-                                        </div>
-                                        {validationErrors.eventName && (
-                                            <p className="text-xs font-medium text-rose-500">
-                                                {validationErrors.eventName}
-                                            </p>
-                                        )}
-                                        {announcements &&
-                                            announcements.length > 0 && (
-                                                <datalist id="announcementsList">
-                                                    {announcements.map((a) => (
-                                                        <option
-                                                            key={a.id}
-                                                            value={a.title}
-                                                        />
-                                                    ))}
-                                                </datalist>
-                                            )}
-                                    </div>
-
                                     {/* Organizer */}
                                     <div className="space-y-1.5">
                                         <Label
                                             htmlFor="organizer"
-                                            className="text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300"
+                                            className="text-xs font-semibold text-slate-700 dark:text-slate-300"
                                         >
-                                            Organizer{' '}
-                                            <span className="text-rose-500">
-                                                *
-                                            </span>
+                                            Organizer <span className="text-rose-500">*</span>
                                         </Label>
-                                        <Select
+                                        <Input
+                                            id="organizer"
+                                            list="organizerSuggestions"
                                             value={formData.organizer}
-                                            onValueChange={(value) => {
+                                            onChange={(e) => {
+                                                const val = e.target.value;
                                                 setFormData((prev) => ({
                                                     ...prev,
-                                                    organizer: value,
+                                                    organizer: val,
                                                 }));
-                                                if (
-                                                    validationErrors.organizer
-                                                ) {
+                                                if (validationErrors.organizer) {
                                                     setValidationErrors(
                                                         (prev) => {
                                                             const copy = {
@@ -819,33 +977,25 @@ export default function CreateEventModal({
                                                     );
                                                 }
                                             }}
+                                            placeholder="Enter or select organizing body"
+                                            className={`h-10 rounded-xl text-xs dark:border-slate-700 dark:bg-slate-800 ${
+                                                validationErrors.organizer
+                                                    ? 'border-rose-500 focus-visible:ring-rose-500'
+                                                    : ''
+                                            }`}
                                             required
-                                        >
-                                            <SelectTrigger
-                                                id="organizer"
-                                                className={`h-10 dark:border-slate-700 dark:bg-slate-800/80 ${
-                                                    validationErrors.organizer
-                                                        ? 'border-rose-500 focus:ring-rose-500'
-                                                        : ''
-                                                }`}
-                                            >
-                                                <SelectValue placeholder="Select organizing body" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Office Student Affairs">
-                                                    Office Student Affairs
-                                                </SelectItem>
-                                                <SelectItem value="Dean of College">
-                                                    Dean of College
-                                                </SelectItem>
-                                                <SelectItem value="HED Library">
-                                                    HED Library
-                                                </SelectItem>
-                                                <SelectItem value="Guidance Office">
-                                                    Guidance Office
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        />
+                                        <datalist id="organizerSuggestions">
+                                            <option value="Office of Student Affairs" />
+                                            <option value="Student Affairs" />
+                                            <option value="Dean of College" />
+                                            <option value="Academic Affairs" />
+                                            <option value="Admin Office" />
+                                            <option value="College Student Government (CSG)" />
+                                            <option value="Guidance Office" />
+                                            <option value="HED Library" />
+                                            <option value="Sports Department" />
+                                        </datalist>
                                         {validationErrors.organizer && (
                                             <p className="text-xs font-medium text-rose-500">
                                                 {validationErrors.organizer}
@@ -857,12 +1007,9 @@ export default function CreateEventModal({
                                     <div className="space-y-1.5">
                                         <Label
                                             htmlFor="eventDate"
-                                            className="text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300"
+                                            className="text-xs font-semibold text-slate-700 dark:text-slate-300"
                                         >
-                                            Event Date{' '}
-                                            <span className="text-rose-500">
-                                                *
-                                            </span>
+                                            Event Date <span className="text-rose-500">*</span>
                                         </Label>
                                         <Input
                                             id="eventDate"
@@ -873,9 +1020,7 @@ export default function CreateEventModal({
                                                     ...prev,
                                                     eventDate: e.target.value,
                                                 }));
-                                                if (
-                                                    validationErrors.eventDate
-                                                ) {
+                                                if (validationErrors.eventDate) {
                                                     setValidationErrors(
                                                         (prev) => {
                                                             const copy = {
@@ -887,7 +1032,7 @@ export default function CreateEventModal({
                                                     );
                                                 }
                                             }}
-                                            className={`h-10 dark:border-slate-700 dark:bg-slate-800/80 ${
+                                            className={`h-10 rounded-xl text-xs dark:border-slate-700 dark:bg-slate-800 ${
                                                 validationErrors.eventDate
                                                     ? 'border-rose-500 focus-visible:ring-rose-500'
                                                     : ''
@@ -900,251 +1045,20 @@ export default function CreateEventModal({
                                             </p>
                                         )}
                                     </div>
+                                </div>
 
-                                    {/* Time-In / Time-Out paired block */}
-                                    <div className="space-y-1.5 sm:col-span-2">
-                                        <div className="mb-2 flex items-center gap-2">
-                                            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-600/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400">
-                                                <Clock className="h-3.5 w-3.5" />
-                                            </div>
-                                            <Label className="text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300">
-                                                Event Schedule
-                                            </Label>
+                                {/* Schedule Pair: Time-In & Time-End */}
+                                <div className="space-y-2 rounded-xl border border-slate-200/90 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-800/40">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                            <Clock className="h-4 w-4 text-[#000D6A] dark:text-blue-400" />
+                                            <span>Event Schedule</span>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800/60">
-                                            {/* Time-In */}
-                                            <div className="border-r border-slate-200 p-3.5 dark:border-slate-700">
-                                                <div className="mb-2 flex items-center gap-1.5">
-                                                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">
-                                                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                                                    </span>
-                                                    <Label
-                                                        htmlFor="eventTime"
-                                                        className="text-[11px] font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400"
-                                                    >
-                                                        Time-In{' '}
-                                                        <span className="text-rose-500">
-                                                            *
-                                                        </span>
-                                                    </Label>
-                                                </div>
-                                                <Input
-                                                    id="eventTime"
-                                                    type="time"
-                                                    value={formData.eventTime}
-                                                    onChange={(e) => {
-                                                        const timeInVal =
-                                                            e.target.value;
-                                                        let calculatedTimeOut =
-                                                            formData.registrationEndTime;
-                                                        if (timeInVal) {
-                                                            const [
-                                                                hours,
-                                                                minutes,
-                                                            ] = timeInVal
-                                                                .split(':')
-                                                                .map(Number);
-                                                            const tempDate =
-                                                                new Date();
-                                                            tempDate.setHours(
-                                                                hours,
-                                                            );
-                                                            tempDate.setMinutes(
-                                                                minutes + 180,
-                                                            );
-                                                            const pad = (
-                                                                n: number,
-                                                            ) =>
-                                                                n
-                                                                    .toString()
-                                                                    .padStart(
-                                                                        2,
-                                                                        '0',
-                                                                    );
-                                                            calculatedTimeOut = `${pad(tempDate.getHours())}:${pad(tempDate.getMinutes())}`;
-                                                        }
-
-                                                        setFormData((prev) => ({
-                                                            ...prev,
-                                                            eventTime:
-                                                                timeInVal,
-                                                            registrationEndTime:
-                                                                calculatedTimeOut,
-                                                        }));
-
-                                                        setValidationErrors(
-                                                            (prev) => {
-                                                                const copy = {
-                                                                    ...prev,
-                                                                };
-                                                                if (timeInVal) {
-                                                                    delete copy.eventTime;
-                                                                }
-                                                                if (
-                                                                    calculatedTimeOut
-                                                                ) {
-                                                                    delete copy.registrationEndTime;
-                                                                }
-                                                                return copy;
-                                                            },
-                                                        );
-                                                    }}
-                                                    className={`h-10 border-0 bg-transparent focus-visible:ring-1 dark:bg-transparent ${
-                                                        validationErrors.eventTime
-                                                            ? 'ring-1 ring-rose-500'
-                                                            : ''
-                                                    }`}
-                                                    required
-                                                />
-                                                {validationErrors.eventTime && (
-                                                    <p className="mt-1 text-[11px] font-medium text-rose-500">
-                                                        {
-                                                            validationErrors.eventTime
-                                                        }
-                                                    </p>
-                                                )}
-                                                {formData.eventTime && (
-                                                    <p className="mt-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                                        Time-In Ends:{' '}
-                                                        {(() => {
-                                                            const [
-                                                                hours,
-                                                                minutes,
-                                                            ] =
-                                                                formData.eventTime
-                                                                    .split(':')
-                                                                    .map(
-                                                                        Number,
-                                                                    );
-                                                            const date =
-                                                                new Date();
-                                                            date.setHours(
-                                                                hours,
-                                                            );
-                                                            date.setMinutes(
-                                                                minutes + 90,
-                                                            );
-
-                                                            let h =
-                                                                date.getHours();
-                                                            const m = String(
-                                                                date.getMinutes(),
-                                                            ).padStart(2, '0');
-                                                            const ampm =
-                                                                h >= 12
-                                                                    ? 'pm'
-                                                                    : 'am';
-                                                            h = h % 12;
-                                                            h = h ? h : 12;
-                                                            return `${h}:${m} ${ampm}`;
-                                                        })()}
-                                                    </p>
-                                                )}
-                                            </div>
-
-                                            {/* Time-Out */}
-                                            <div className="p-3.5">
-                                                <div className="mb-2 flex items-center gap-1.5">
-                                                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-900/40">
-                                                        <span className="h-2 w-2 rounded-full bg-rose-500" />
-                                                    </span>
-                                                    <Label
-                                                        htmlFor="registrationEndTime"
-                                                        className="text-[11px] font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400"
-                                                    >
-                                                        Time-End{' '}
-                                                        <span className="text-rose-500">
-                                                            *
-                                                        </span>
-                                                    </Label>
-                                                </div>
-                                                <Input
-                                                    id="registrationEndTime"
-                                                    type="time"
-                                                    value={
-                                                        formData.registrationEndTime
-                                                    }
-                                                    onChange={(e) => {
-                                                        setFormData((prev) => ({
-                                                            ...prev,
-                                                            registrationEndTime:
-                                                                e.target.value,
-                                                        }));
-                                                        if (
-                                                            validationErrors.registrationEndTime
-                                                        ) {
-                                                            setValidationErrors(
-                                                                (prev) => {
-                                                                    const copy =
-                                                                        {
-                                                                            ...prev,
-                                                                        };
-                                                                    delete copy.registrationEndTime;
-                                                                    return copy;
-                                                                },
-                                                            );
-                                                        }
-                                                    }}
-                                                    className={`h-10 border-0 bg-transparent focus-visible:ring-1 dark:bg-transparent ${
-                                                        validationErrors.registrationEndTime
-                                                            ? 'ring-1 ring-rose-500'
-                                                            : ''
-                                                    }`}
-                                                    required
-                                                />
-                                                {validationErrors.registrationEndTime && (
-                                                    <p className="mt-1 text-[11px] font-medium text-rose-500">
-                                                        {
-                                                            validationErrors.registrationEndTime
-                                                        }
-                                                    </p>
-                                                )}
-                                                {formData.registrationEndTime && (
-                                                    <p className="mt-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                                        Time-End Ends:{' '}
-                                                        {(() => {
-                                                            const [
-                                                                hours,
-                                                                minutes,
-                                                            ] =
-                                                                formData.registrationEndTime
-                                                                    .split(':')
-                                                                    .map(
-                                                                        Number,
-                                                                    );
-                                                            const date =
-                                                                new Date();
-                                                            date.setHours(
-                                                                hours,
-                                                            );
-                                                            date.setMinutes(
-                                                                minutes + 90,
-                                                            );
-
-                                                            let h =
-                                                                date.getHours();
-                                                            const m = String(
-                                                                date.getMinutes(),
-                                                            ).padStart(2, '0');
-                                                            const ampm =
-                                                                h >= 12
-                                                                    ? 'pm'
-                                                                    : 'am';
-                                                            h = h % 12;
-                                                            h = h ? h : 12;
-                                                            return `${h}:${m} ${ampm}`;
-                                                        })()}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-                                        {/* Duration hint */}
                                         {formData.eventTime &&
                                             formData.registrationEndTime &&
                                             formData.registrationEndTime >
                                                 formData.eventTime && (
-                                                <p className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
-                                                    <Clock className="h-3 w-3" />
+                                                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-semibold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
                                                     Duration:{' '}
                                                     {(() => {
                                                         const [ih, im] =
@@ -1167,8 +1081,138 @@ export default function CreateEventModal({
                                                             ? `${h}h ${m > 0 ? `${m}m` : ''}`.trim()
                                                             : `${m}m`;
                                                     })()}
+                                                </span>
+                                            )}
+                                    </div>
+
+                                    <div className="grid gap-3 sm:grid-cols-2 pt-1">
+                                        <div className="space-y-1">
+                                            <Label
+                                                htmlFor="eventTime"
+                                                className="text-[11px] font-medium text-slate-600 dark:text-slate-400"
+                                            >
+                                                Time-In <span className="text-rose-500">*</span>
+                                            </Label>
+                                            <Input
+                                                id="eventTime"
+                                                type="time"
+                                                value={formData.eventTime}
+                                                onChange={(e) => {
+                                                    const timeInVal = e.target.value;
+                                                    let calculatedTimeOut = formData.registrationEndTime;
+                                                    if (timeInVal) {
+                                                        const [hours, minutes] = timeInVal.split(':').map(Number);
+                                                        const tempDate = new Date();
+                                                        tempDate.setHours(hours);
+                                                        tempDate.setMinutes(minutes + 180);
+                                                        const pad = (n: number) => n.toString().padStart(2, '0');
+                                                        calculatedTimeOut = `${pad(tempDate.getHours())}:${pad(tempDate.getMinutes())}`;
+                                                    }
+
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        eventTime: timeInVal,
+                                                        registrationEndTime: calculatedTimeOut,
+                                                    }));
+
+                                                    setValidationErrors((prev) => {
+                                                        const copy = { ...prev };
+                                                        if (timeInVal) delete copy.eventTime;
+                                                        if (calculatedTimeOut) delete copy.registrationEndTime;
+                                                        return copy;
+                                                    });
+                                                }}
+                                                className={`h-9 rounded-lg bg-white text-xs dark:bg-slate-900 ${
+                                                    validationErrors.eventTime
+                                                        ? 'border-rose-500'
+                                                        : ''
+                                                }`}
+                                                required
+                                            />
+                                            {validationErrors.eventTime && (
+                                                <p className="text-[10px] font-medium text-rose-500">
+                                                    {validationErrors.eventTime}
                                                 </p>
                                             )}
+                                            {formData.eventTime && (
+                                                <p className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                                                    Cut-off for on-time: <strong>{getFormattedCutoff(formData.eventTime)}</strong> (1 hr after start)
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <Label
+                                                htmlFor="registrationEndTime"
+                                                className="text-[11px] font-medium text-slate-600 dark:text-slate-400"
+                                            >
+                                                Time-End <span className="text-rose-500">*</span>
+                                            </Label>
+                                            <Input
+                                                id="registrationEndTime"
+                                                type="time"
+                                                value={formData.registrationEndTime}
+                                                onChange={(e) => {
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        registrationEndTime: e.target.value,
+                                                    }));
+                                                    if (validationErrors.registrationEndTime) {
+                                                        setValidationErrors((prev) => {
+                                                            const copy = { ...prev };
+                                                            delete copy.registrationEndTime;
+                                                            return copy;
+                                                        });
+                                                    }
+                                                }}
+                                                className={`h-9 rounded-lg bg-white text-xs dark:bg-slate-900 ${
+                                                    validationErrors.registrationEndTime
+                                                        ? 'border-rose-500'
+                                                        : ''
+                                                }`}
+                                                required
+                                            />
+                                            {validationErrors.registrationEndTime && (
+                                                <p className="text-[10px] font-medium text-rose-500">
+                                                    {validationErrors.registrationEndTime}
+                                                </p>
+                                            )}
+                                            {formData.registrationEndTime && (
+                                                <p className="text-[11px] font-medium text-blue-600 dark:text-blue-400">
+                                                    Time-Out opens: <strong>{getFormattedTimeOutStart(formData.registrationEndTime)}</strong> (30 min before end)
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Attendance Schedule Info Note */}
+                                    <div className="mt-3 rounded-lg border border-blue-200/80 bg-blue-50/70 p-3 text-xs dark:border-blue-900/50 dark:bg-blue-950/30">
+                                        <div className="flex items-start gap-2.5">
+                                            <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#000D6A] dark:text-blue-400" />
+                                            <div className="space-y-1 text-slate-700 dark:text-slate-300">
+                                                <div className="font-semibold text-slate-900 dark:text-white">
+                                                    Attendance Rules & Cut-off Guidelines:
+                                                </div>
+                                                <ul className="list-disc space-y-0.5 pl-4 text-[11px] leading-relaxed">
+                                                    <li>
+                                                        <strong>Time-In Cut-off:</strong> Check-in is considered <em>On-Time</em> within <strong>1 hour after start time</strong>
+                                                        {formData.eventTime && (
+                                                            <span className="font-medium text-emerald-700 dark:text-emerald-400">
+                                                                {' '}(cut-off at {getFormattedCutoff(formData.eventTime)})
+                                                            </span>
+                                                        )}. Scans recorded after 1 hour will be marked as <strong>Late</strong>.
+                                                    </li>
+                                                    <li>
+                                                        <strong>Time-Out (Check-Out) Window:</strong> Time-out scanning starts <strong>30 minutes before event end time</strong>
+                                                        {formData.registrationEndTime && (
+                                                            <span className="font-medium text-blue-700 dark:text-blue-400">
+                                                                {' '}(opens at {getFormattedTimeOutStart(formData.registrationEndTime)})
+                                                            </span>
+                                                        )}. Students cannot check out before this window.
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1176,235 +1220,180 @@ export default function CreateEventModal({
 
                         {/* STEP 2: LOCATION & CHECK-IN METHOD */}
                         {currentStep === 2 && (
-                            <div className="animate-in space-y-6 duration-200 fade-in-50">
-                                <div className="grid gap-6">
-                                    {/* Attendance Method Card Selector */}
-                                    <div className="space-y-2">
-                                        <Label className="text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300">
-                                            Check-In Method{' '}
-                                            <span className="text-rose-500">
-                                                *
-                                            </span>
-                                        </Label>
-                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                            {/* Option 1: QR Scanner */}
-                                            <div
-                                                onClick={() =>
-                                                    setFormData((prev) => ({
-                                                        ...prev,
-                                                        attendanceType:
-                                                            'qr_scanner',
-                                                    }))
-                                                }
-                                                className={`relative cursor-pointer rounded-xl border p-4 transition-all duration-200 ${
-                                                    formData.attendanceType ===
-                                                    'qr_scanner'
-                                                        ? 'border-blue-500 bg-blue-50/80 ring-2 ring-blue-500/20 dark:border-blue-500 dark:bg-blue-950/30'
-                                                        : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800/60'
-                                                }`}
-                                            >
-                                                <div className="flex items-start gap-3">
-                                                    <div
-                                                        className={`shrink-0 rounded-lg p-2.5 ${formData.attendanceType === 'qr_scanner' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}
-                                                    >
-                                                        <Radio className="h-5 w-5" />
-                                                    </div>
-                                                    <div>
-                                                        <div className="flex items-center justify-between text-sm font-bold text-slate-900 dark:text-white">
-                                                            <span>
-                                                                QR Scanner
-                                                                Check-in
-                                                            </span>
-                                                            {formData.attendanceType ===
-                                                                'qr_scanner' && (
-                                                                <Check className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                                            )}
-                                                        </div>
-                                                        <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                                                            Admins or authorized
-                                                            student scanners
-                                                            scan QR codes on
-                                                            attendee devices.
-                                                        </p>
-                                                    </div>
+                            <div className="space-y-5 animate-in fade-in-50 duration-150">
+                                {/* Check-In Method Selector */}
+                                <div className="space-y-2">
+                                    <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                        Check-In Method <span className="text-rose-500">*</span>
+                                    </Label>
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                        {/* Option 1: QR Scanner */}
+                                        <div
+                                            onClick={() =>
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    attendanceType: 'qr_scanner',
+                                                }))
+                                            }
+                                            className={`relative cursor-pointer rounded-xl border p-4 transition-all ${
+                                                formData.attendanceType === 'qr_scanner'
+                                                    ? 'border-[#000D6A] bg-blue-50/50 ring-1 ring-[#000D6A] dark:border-blue-500 dark:bg-blue-950/30'
+                                                    : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-800/40'
+                                            }`}
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <div
+                                                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                                                        formData.attendanceType === 'qr_scanner'
+                                                            ? 'bg-[#000D6A] text-white dark:bg-blue-600'
+                                                            : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+                                                    }`}
+                                                >
+                                                    <Radio className="h-4 w-4" />
                                                 </div>
-                                            </div>                                            {/* Option 2: GPS Location Check-in */}
-                                            <div
-                                                onClick={() =>
-                                                    setFormData((prev) => ({
-                                                        ...prev,
-                                                        attendanceType:
-                                                            'dynamic_qr',
-                                                        geofenceEnabled: true,
-                                                    }))
-                                                }
-                                                className={`relative cursor-pointer rounded-xl border p-4 transition-all duration-200 ${
-                                                    formData.attendanceType ===
-                                                    'dynamic_qr'
-                                                        ? 'border-blue-500 bg-blue-50/80 ring-2 ring-blue-500/20 dark:border-blue-500 dark:bg-blue-950/30'
-                                                        : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800/60'
-                                                }`}
-                                            >
-                                                <div className="flex items-start gap-3">
-                                                    <div
-                                                        className={`shrink-0 rounded-lg p-2.5 ${formData.attendanceType === 'dynamic_qr' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}
-                                                    >
-                                                        <MapPin className="h-5 w-5" />
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-white">
+                                                        <span>QR Scanner Check-in</span>
+                                                        {formData.attendanceType === 'qr_scanner' && (
+                                                            <Check className="h-4 w-4 text-[#000D6A] dark:text-blue-400" />
+                                                        )}
                                                     </div>
-                                                    <div>
-                                                        <div className="flex items-center justify-between text-sm font-bold text-slate-900 dark:text-white">
-                                                            <span>
-                                                                GPS Location Check-in
-                                                            </span>
-                                                            {formData.attendanceType ===
-                                                                'dynamic_qr' && (
-                                                                <Check className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                                                            )}
-                                                        </div>
-                                                        <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                                                            Students check in
-                                                            directly using their
-                                                            device's GPS location
-                                                            at the venue. No QR
-                                                            scan needed.
-                                                        </p>
+                                                    <p className="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+                                                        Authorized scanners or admins scan attendee QR codes.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Option 2: GPS Location Check-in */}
+                                        <div
+                                            onClick={() =>
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    attendanceType: 'dynamic_qr',
+                                                    geofenceEnabled: true,
+                                                }))
+                                            }
+                                            className={`relative cursor-pointer rounded-xl border p-4 transition-all ${
+                                                formData.attendanceType === 'dynamic_qr'
+                                                    ? 'border-[#000D6A] bg-blue-50/50 ring-1 ring-[#000D6A] dark:border-blue-500 dark:bg-blue-950/30'
+                                                    : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-800/40'
+                                            }`}
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <div
+                                                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                                                        formData.attendanceType === 'dynamic_qr'
+                                                            ? 'bg-indigo-600 text-white'
+                                                            : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+                                                    }`}
+                                                >
+                                                    <MapPin className="h-4 w-4" />
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-white">
+                                                        <span>GPS Location Check-in</span>
+                                                        {formData.attendanceType === 'dynamic_qr' && (
+                                                            <Check className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                                                        )}
                                                     </div>
+                                                    <p className="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+                                                        Students check in via their device's GPS at the venue.
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
+                                </div>
 
-                                    {/* Event Venue / Location */}
-                                    <div className="space-y-1.5">
-                                        <div className="flex items-center justify-between">
-                                            <Label
-                                                htmlFor="location"
-                                                className="text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300"
-                                            >
-                                                Event Venue / Location Name{' '}
-                                                <span className="text-rose-500">
-                                                    *
-                                                </span>
-                                            </Label>
-                                            {formData.attendanceType ===
-                                                'dynamic_qr' && (
-                                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
-                                                    <ShieldCheck className="h-3.5 w-3.5" />
-                                                    Whole Campus Geotagged
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        <Input
-                                            id="location"
-                                            value={formData.location}
-                                            onChange={(e) => {
-                                                const val = e.target.value;
-                                                setFormData((prev) => ({
-                                                    ...prev,
-                                                    location: val,
-                                                    geofenceLatitude:
-                                                        prev.geofenceLatitude ||
-                                                        '8.743070',
-                                                    geofenceLongitude:
-                                                        prev.geofenceLongitude ||
-                                                        '124.774500',
-                                                    geofenceRadiusM:
-                                                        prev.geofenceRadiusM ||
-                                                        '300',
-                                                }));
-
-                                                if (validationErrors.location) {
-                                                    setValidationErrors(
-                                                        (prev) => {
-                                                            const copy = {
-                                                                ...prev,
-                                                            };
-                                                            delete copy.location;
-                                                            return copy;
-                                                        },
-                                                    );
-                                                }
-                                            }}
-                                            placeholder="e.g. St. Rita's College of Balingasag Campus, Gymnasium, Grounds"
-                                            className={`h-10 dark:border-slate-700 dark:bg-slate-800/80 ${
-                                                validationErrors.location
-                                                    ? 'border-rose-500 focus-visible:ring-rose-500'
-                                                    : ''
-                                            }`}
-                                            required
-                                        />
-
-                                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                                            <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                                                Quick suggestions:
+                                {/* Event Venue */}
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <Label
+                                            htmlFor="location"
+                                            className="text-xs font-semibold text-slate-700 dark:text-slate-300"
+                                        >
+                                            Venue / Location Name <span className="text-rose-500">*</span>
+                                        </Label>
+                                        {formData.attendanceType === 'dynamic_qr' && (
+                                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                                <ShieldCheck className="h-3.5 w-3.5" />
+                                                Whole Campus Geotagged (300m)
                                             </span>
-                                            {[
-                                                'Gymnasium',
-                                                'Audio Visual Room (AVR)',
-                                                'Quadrangle / Grounds',
-                                                'Mother Ignacia Hall',
-                                                'St. Rita Building',
-                                                'Campus-Wide',
-                                            ].map((venue) => (
-                                                <button
-                                                    key={venue}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setFormData(
-                                                            (prev) => ({
-                                                                ...prev,
-                                                                location: venue,
-                                                                geofenceLatitude:
-                                                                    '8.743070',
-                                                                geofenceLongitude:
-                                                                    '124.774500',
-                                                                geofenceRadiusM:
-                                                                    '300',
-                                                            }),
-                                                        );
-                                                        if (
-                                                            validationErrors.location
-                                                        ) {
-                                                            setValidationErrors(
-                                                                (prev) => {
-                                                                    const copy =
-                                                                        {
-                                                                            ...prev,
-                                                                        };
-                                                                    delete copy.location;
-                                                                    return copy;
-                                                                },
-                                                            );
-                                                        }
-                                                    }}
-                                                    className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-                                                >
-                                                    {venue}
-                                                </button>
-                                            ))}
-                                        </div>
-
-                                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                                            Enter any venue name so students know where the activity is held. The GPS attendance geofence automatically covers the <strong>whole campus of St. Rita's College of Balingasag</strong> (300m radius).
-                                        </p>
-
-                                        {validationErrors.location && (
-                                            <p className="text-xs font-medium text-rose-500">
-                                                {validationErrors.location}
-                                            </p>
                                         )}
                                     </div>
 
-                                    {/* Whole Campus Geofence - Simple Text Only */}
-                                    {formData.attendanceType ===
-                                        'dynamic_qr' && (
-                                        <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50/60 px-3 py-2 text-xs font-medium text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
-                                            <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                                            <span>
-                                                Geofence: <strong>Whole Campus (St. Rita's College of Balingasag)</strong>
-                                            </span>
-                                        </div>
+                                    <Input
+                                        id="location"
+                                        value={formData.location}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setFormData((prev) => ({
+                                                ...prev,
+                                                location: val,
+                                                geofenceLatitude: prev.geofenceLatitude || '8.743070',
+                                                geofenceLongitude: prev.geofenceLongitude || '124.774500',
+                                                geofenceRadiusM: prev.geofenceRadiusM || '300',
+                                            }));
+
+                                            if (validationErrors.location) {
+                                                setValidationErrors((prev) => {
+                                                    const copy = { ...prev };
+                                                    delete copy.location;
+                                                    return copy;
+                                                });
+                                            }
+                                        }}
+                                        placeholder="e.g. Gymnasium, Audio Visual Room (AVR), Campus-Wide"
+                                        className={`h-10 rounded-xl text-xs dark:border-slate-700 dark:bg-slate-800 ${
+                                            validationErrors.location
+                                                ? 'border-rose-500 focus-visible:ring-rose-500'
+                                                : ''
+                                        }`}
+                                        required
+                                    />
+
+                                    {/* Quick Suggestions Chips */}
+                                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                                        <span className="text-[11px] text-slate-400">
+                                            Suggestions:
+                                        </span>
+                                        {[
+                                            'Gymnasium',
+                                            'Audio Visual Room (AVR)',
+                                            'Quadrangle / Grounds',
+                                            'Mother Ignacia Hall',
+                                            'Campus-Wide',
+                                        ].map((venue) => (
+                                            <button
+                                                key={venue}
+                                                type="button"
+                                                onClick={() => {
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        location: venue,
+                                                        geofenceLatitude: '8.743070',
+                                                        geofenceLongitude: '124.774500',
+                                                        geofenceRadiusM: '300',
+                                                    }));
+                                                    if (validationErrors.location) {
+                                                        setValidationErrors((prev) => {
+                                                            const copy = { ...prev };
+                                                            delete copy.location;
+                                                            return copy;
+                                                        });
+                                                    }
+                                                }}
+                                                className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-600 transition-colors hover:border-blue-300 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                                            >
+                                                {venue}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {validationErrors.location && (
+                                        <p className="text-xs font-medium text-rose-500">
+                                            {validationErrors.location}
+                                        </p>
                                     )}
                                 </div>
                             </div>
@@ -1412,335 +1401,293 @@ export default function CreateEventModal({
 
                         {/* STEP 3: TARGET AUDIENCE & SCANNERS */}
                         {currentStep === 3 && (
-                            <div className="animate-in space-y-6 duration-200 fade-in-50">
-                                <div className="grid gap-6">
-                                    {/* Target Courses Selector */}
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <Label className="text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300">
-                                                Target Courses
-                                            </Label>
-                                            <span className="text-xs text-slate-500 dark:text-slate-400">
-                                                {formData.courses.length === 0
-                                                    ? 'All courses included'
-                                                    : `${formData.courses.length} selected`}
-                                            </span>
-                                        </div>
+                            <div className="space-y-5 animate-in fade-in-50 duration-150">
+                                {/* Courses */}
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                            Target Courses
+                                        </Label>
+                                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                                            {formData.courses.length === 0
+                                                ? 'All courses included'
+                                                : `${formData.courses.length} selected`}
+                                        </span>
+                                    </div>
 
-                                        <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-800/40">
-                                            <button
-                                                type="button"
-                                                className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold transition-all duration-200 ${
-                                                    formData.courses.length ===
-                                                    0
-                                                        ? 'border-blue-600 bg-blue-600 text-white shadow-sm'
-                                                        : 'border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200'
-                                                }`}
-                                                onClick={() =>
-                                                    setFormData((prev) => ({
-                                                        ...prev,
-                                                        courses: [],
-                                                    }))
-                                                }
-                                            >
-                                                {formData.courses.length ===
-                                                    0 && (
-                                                    <Check className="h-3.5 w-3.5" />
-                                                )}
-                                                All Courses
-                                            </button>
-
-                                            {courseSelectOptions.map(
-                                                (course) => {
-                                                    const isSelected =
-                                                        formData.courses.includes(
-                                                            course.id,
-                                                        );
-                                                    return (
-                                                        <button
-                                                            key={course.id}
-                                                            type="button"
-                                                            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
-                                                                isSelected
-                                                                    ? 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
-                                                                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                                                            }`}
-                                                            onClick={() => {
-                                                                setFormData(
-                                                                    (prev) => {
-                                                                        const newCourses =
-                                                                            prev.courses.includes(
-                                                                                course.id,
-                                                                            )
-                                                                                ? prev.courses.filter(
-                                                                                      (
-                                                                                          id,
-                                                                                      ) =>
-                                                                                          id !==
-                                                                                          course.id,
-                                                                                  )
-                                                                                : [
-                                                                                      ...prev.courses,
-                                                                                      course.id,
-                                                                                  ];
-                                                                        return {
-                                                                            ...prev,
-                                                                            courses:
-                                                                                newCourses,
-                                                                        };
-                                                                    },
-                                                                );
-                                                            }}
-                                                        >
-                                                            {isSelected && (
-                                                                <Check className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                                                            )}
-                                                            {course.name} (
-                                                            {course.code})
-                                                        </button>
-                                                    );
-                                                },
+                                    <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-800/30">
+                                        <button
+                                            type="button"
+                                            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold transition-all ${
+                                                formData.courses.length === 0
+                                                    ? 'border-[#000D6A] bg-[#000D6A] text-white shadow-2xs dark:border-blue-600 dark:bg-blue-600'
+                                                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                            }`}
+                                            onClick={() =>
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    courses: [],
+                                                }))
+                                            }
+                                        >
+                                            {formData.courses.length === 0 && (
+                                                <Check className="h-3.5 w-3.5" />
                                             )}
-                                        </div>
+                                            All Courses
+                                        </button>
+
+                                        {courseSelectOptions.map((course) => {
+                                            const isSelected = formData.courses.includes(course.id);
+                                            return (
+                                                <button
+                                                    key={course.id}
+                                                    type="button"
+                                                    className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all ${
+                                                        isSelected
+                                                            ? 'border-blue-400 bg-blue-50 text-blue-700 font-bold dark:border-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
+                                                            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                                    }`}
+                                                    onClick={() => {
+                                                        setFormData((prev) => {
+                                                            const newCourses = prev.courses.includes(course.id)
+                                                                ? prev.courses.filter((id) => id !== course.id)
+                                                                : [...prev.courses, course.id];
+                                                            return { ...prev, courses: newCourses };
+                                                        });
+                                                    }}
+                                                >
+                                                    {isSelected && (
+                                                        <Check className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                                                    )}
+                                                    {course.name} ({course.code})
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Year Levels */}
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                            Target Year Levels
+                                        </Label>
+                                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                                            {formData.yearLevels.length === 0
+                                                ? 'All year levels included'
+                                                : `${formData.yearLevels.length} selected`}
+                                        </span>
                                     </div>
 
-                                    {/* Target Year Levels Selector */}
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <Label className="text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300">
-                                                Target Year Levels
-                                            </Label>
-                                            <span className="text-xs text-slate-500 dark:text-slate-400">
-                                                {formData.yearLevels.length ===
-                                                0
-                                                    ? 'All year levels included'
-                                                    : `${formData.yearLevels.length} selected`}
-                                            </span>
-                                        </div>
+                                    <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-800/30">
+                                        <button
+                                            type="button"
+                                            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold transition-all ${
+                                                formData.yearLevels.length === 0
+                                                    ? 'border-[#000D6A] bg-[#000D6A] text-white shadow-2xs dark:border-blue-600 dark:bg-blue-600'
+                                                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                            }`}
+                                            onClick={() =>
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    yearLevels: [],
+                                                }))
+                                            }
+                                        >
+                                            {formData.yearLevels.length === 0 && (
+                                                <Check className="h-3.5 w-3.5" />
+                                            )}
+                                            All Year Levels
+                                        </button>
 
-                                        <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-800/40">
-                                            <button
-                                                type="button"
-                                                className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold transition-all duration-200 ${
-                                                    formData.yearLevels
-                                                        .length === 0
-                                                        ? 'border-blue-600 bg-blue-600 text-white shadow-sm'
-                                                        : 'border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200'
-                                                }`}
-                                                onClick={() =>
-                                                    setFormData((prev) => ({
-                                                        ...prev,
-                                                        yearLevels: [],
-                                                    }))
-                                                }
-                                            >
-                                                {formData.yearLevels.length ===
-                                                    0 && (
-                                                    <Check className="h-3.5 w-3.5" />
-                                                )}
-                                                All Year Levels
-                                            </button>
+                                        {yearLevels.map((yearLevel) => {
+                                            const isSelected = formData.yearLevels.includes(yearLevel.id);
+                                            return (
+                                                <button
+                                                    key={yearLevel.id}
+                                                    type="button"
+                                                    className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all ${
+                                                        isSelected
+                                                            ? 'border-blue-400 bg-blue-50 text-blue-700 font-bold dark:border-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
+                                                            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                                    }`}
+                                                    onClick={() => {
+                                                        setFormData((prev) => {
+                                                            const newYearLevels = prev.yearLevels.includes(yearLevel.id)
+                                                                ? prev.yearLevels.filter((id) => id !== yearLevel.id)
+                                                                : [...prev.yearLevels, yearLevel.id];
+                                                            return { ...prev, yearLevels: newYearLevels };
+                                                        });
+                                                    }}
+                                                >
+                                                    {isSelected && (
+                                                        <Check className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                                                    )}
+                                                    {yearLevel.name}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
 
-                                            {yearLevels.map((yearLevel) => {
-                                                const isSelected =
-                                                    formData.yearLevels.includes(
-                                                        yearLevel.id,
-                                                    );
-                                                return (
-                                                    <button
-                                                        key={yearLevel.id}
-                                                        type="button"
-                                                        className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
-                                                            isSelected
-                                                                ? 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
-                                                                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                                                        }`}
-                                                        onClick={() => {
-                                                            setFormData(
-                                                                (prev) => {
-                                                                    const newYearLevels =
-                                                                        prev.yearLevels.includes(
-                                                                            yearLevel.id,
-                                                                        )
-                                                                            ? prev.yearLevels.filter(
-                                                                                  (
-                                                                                      id,
-                                                                                  ) =>
-                                                                                      id !==
-                                                                                      yearLevel.id,
-                                                                              )
-                                                                            : [
-                                                                                  ...prev.yearLevels,
-                                                                                  yearLevel.id,
-                                                                              ];
-                                                                    return {
-                                                                        ...prev,
-                                                                        yearLevels:
-                                                                            newYearLevels,
-                                                                    };
-                                                                },
-                                                            );
-                                                        }}
-                                                    >
-                                                        {isSelected && (
-                                                            <Check className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                                {/* Scanners In-Charge */}
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                            Attendance Scanner In-Charge
+                                        </Label>
+                                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                                            {selectedScannerStudents.length === 0
+                                                ? 'Optional'
+                                                : `${selectedScannerStudents.length} assigned`}
+                                        </span>
+                                    </div>
+
+                                    <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/50 p-3.5 dark:border-slate-800 dark:bg-slate-800/30">
+                                        {/* Suggested Scanners Based on Organizer */}
+                                        {mode === 'create' && suggestedScanners.length > 0 && (
+                                            <div className="rounded-xl border border-blue-200/90 bg-gradient-to-r from-blue-50/90 via-indigo-50/60 to-blue-50/90 p-3 shadow-2xs dark:border-blue-900/60 dark:bg-blue-950/30">
+                                                <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Sparkles className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                                                        <span className="text-xs font-bold text-blue-950 dark:text-blue-200">
+                                                            Suggested from last event
+                                                        </span>
+                                                        <span className="rounded-full bg-blue-100/90 px-2 py-0.5 text-[10px] font-semibold text-blue-800 dark:bg-blue-900/60 dark:text-blue-300">
+                                                            {suggestedOrganizer || formData.organizer}
+                                                        </span>
+                                                        {suggestedEventName && (
+                                                            <span className="hidden sm:inline text-[11px] text-slate-500 dark:text-slate-400">
+                                                                (in &ldquo;{suggestedEventName}&rdquo;)
+                                                            </span>
                                                         )}
-                                                        {yearLevel.name}
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-
-                                    {/* Attendance In-Charge Assignment */}
-                                    <div className="space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <UserCheck className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                                                <Label className="text-xs font-semibold tracking-wider text-slate-700 uppercase dark:text-slate-300">
-                                                    Attendance Scanner In-Charge
-                                                </Label>
-                                            </div>
-                                            <span className="text-xs text-slate-500 dark:text-slate-400">
-                                                {selectedScannerStudents.length ===
-                                                0
-                                                    ? 'No students assigned'
-                                                    : `${selectedScannerStudents.length} assigned`}
-                                            </span>
-                                        </div>
-
-                                        <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-800/40">
-                                            <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
-                                                Assign students who will be
-                                                responsible for scanning
-                                                attendance at this event. These
-                                                students will have access to the{' '}
-                                                <strong className="text-slate-700 dark:text-slate-200">
-                                                    Attendance Scanner Portal
-                                                </strong>
-                                                .
-                                            </p>
-
-                                            {/* Search Input */}
-                                            <div className="relative">
-                                                <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                                <Input
-                                                    value={scannerStudentQuery}
-                                                    onChange={(e) =>
-                                                        setScannerStudentQuery(
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    placeholder="Search student by name or ID..."
-                                                    className="h-9 pl-9 text-xs dark:border-slate-700 dark:bg-slate-800"
-                                                />
-                                                {scannerStudentLoading && (
-                                                    <div className="absolute top-1/2 right-3 -translate-y-1/2">
-                                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
                                                     </div>
-                                                )}
-                                            </div>
-
-                                            {/* Search Results Dropdown */}
-                                            {scannerSearchResults.length >
-                                                0 && (
-                                                <div className="max-h-40 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800">
-                                                    {scannerSearchResults.map(
-                                                        (student) => {
-                                                            const alreadyAdded =
-                                                                selectedScannerStudents.some(
-                                                                    (s) =>
-                                                                        s.id ===
-                                                                        student.id,
-                                                                );
-                                                            return (
-                                                                <button
-                                                                    key={
-                                                                        student.id
-                                                                    }
-                                                                    type="button"
-                                                                    disabled={
-                                                                        alreadyAdded
-                                                                    }
-                                                                    onClick={() =>
-                                                                        addSelectedStudent(
-                                                                            student,
-                                                                        )
-                                                                    }
-                                                                    className={`flex w-full items-center justify-between px-3 py-2 text-xs transition-colors ${
-                                                                        alreadyAdded
-                                                                            ? 'cursor-default bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400'
-                                                                            : 'text-slate-700 hover:bg-blue-50 dark:text-slate-200 dark:hover:bg-slate-700'
-                                                                    }`}
-                                                                >
-                                                                    <span className="font-medium">
-                                                                        {
-                                                                            student.name
-                                                                        }
-                                                                    </span>
-                                                                    {alreadyAdded ? (
-                                                                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                                                                            Already
-                                                                            added
-                                                                        </span>
-                                                                    ) : (
-                                                                        <Plus className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                                                                    )}
-                                                                </button>
-                                                            );
-                                                        },
+                                                    {!suggestedScanners.every((s) => selectedScannerStudents.some((sel) => sel.id === s.id)) && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={addAllSuggestedScanners}
+                                                            className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-2.5 py-1 text-[11px] font-semibold text-white shadow-xs hover:bg-blue-700 transition active:scale-95 cursor-pointer"
+                                                        >
+                                                            <Plus className="h-3 w-3" />
+                                                            Add All
+                                                        </button>
                                                     )}
                                                 </div>
-                                            )}
 
-                                            {scannerStudentError && (
-                                                <p className="text-[11px] text-slate-500 italic dark:text-slate-400">
-                                                    {scannerStudentError}
-                                                </p>
-                                            )}
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {suggestedScanners.map((student) => {
+                                                        const isAdded = selectedScannerStudents.some((s) => s.id === student.id);
+                                                        return (
+                                                            <button
+                                                                key={student.id}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    if (!isAdded) addSelectedStudent(student);
+                                                                }}
+                                                                disabled={isAdded}
+                                                                className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-all ${
+                                                                    isAdded
+                                                                        ? 'border-emerald-300 bg-emerald-50 text-emerald-800 opacity-90 cursor-default dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                                                        : 'border-blue-200 bg-white text-blue-900 hover:border-blue-400 hover:bg-blue-50 shadow-2xs cursor-pointer dark:border-slate-700 dark:bg-slate-800 dark:text-blue-200'
+                                                                }`}
+                                                            >
+                                                                {isAdded ? (
+                                                                    <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                                                                ) : (
+                                                                    <Plus className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                                                                )}
+                                                                <span className="font-semibold">{student.name}</span>
+                                                                {isAdded ? (
+                                                                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                                        Assigned
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                                                                        ({student.course || student.id})
+                                                                    </span>
+                                                                )}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
 
-                                            {/* Assigned Students List */}
-                                            {selectedScannerStudents.length >
-                                                0 && (
-                                                <div className="space-y-1.5 border-t border-slate-100 pt-2 dark:border-slate-700/60">
-                                                    <span className="text-[10px] font-bold tracking-wider text-slate-500 uppercase dark:text-slate-400">
-                                                        Assigned In-Charge (
-                                                        {
-                                                            selectedScannerStudents.length
-                                                        }
-                                                        )
-                                                    </span>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {selectedScannerStudents.map(
-                                                            (student) => (
-                                                                <span
-                                                                    key={
-                                                                        student.id
-                                                                    }
-                                                                    className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 dark:border-indigo-800/50 dark:bg-indigo-950/40 dark:text-indigo-300"
-                                                                >
-                                                                    <UserCheck className="h-3.5 w-3.5" />
-                                                                    {
-                                                                        student.name
-                                                                    }
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() =>
-                                                                            removeSelectedStudent(
-                                                                                student.id,
-                                                                            )
-                                                                        }
-                                                                        className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-indigo-200 dark:hover:bg-indigo-800"
-                                                                    >
-                                                                        <X className="h-3 w-3" />
-                                                                    </button>
-                                                                </span>
-                                                            ),
-                                                        )}
-                                                    </div>
+                                        <div className="relative">
+                                            <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                                            <Input
+                                                value={scannerStudentQuery}
+                                                onChange={(e) =>
+                                                    setScannerStudentQuery(e.target.value)
+                                                }
+                                                placeholder="Search student by name or ID..."
+                                                className="h-9 rounded-lg bg-white pl-8.5 text-xs dark:border-slate-700 dark:bg-slate-800"
+                                            />
+                                            {scannerStudentLoading && (
+                                                <div className="absolute top-1/2 right-3 -translate-y-1/2">
+                                                    <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
                                                 </div>
                                             )}
                                         </div>
+
+                                        {/* Search Results Dropdown */}
+                                        {scannerSearchResults.length > 0 && (
+                                            <div className="max-h-36 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-md dark:border-slate-700 dark:bg-slate-800">
+                                                {scannerSearchResults.map((student) => {
+                                                    const alreadyAdded = selectedScannerStudents.some((s) => s.id === student.id);
+                                                    return (
+                                                        <button
+                                                            key={student.id}
+                                                            type="button"
+                                                            disabled={alreadyAdded}
+                                                            onClick={() => addSelectedStudent(student)}
+                                                            className={`flex w-full items-center justify-between px-3 py-2 text-xs transition-colors ${
+                                                                alreadyAdded
+                                                                    ? 'cursor-default bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400'
+                                                                    : 'text-slate-700 hover:bg-blue-50 dark:text-slate-200 dark:hover:bg-slate-700'
+                                                            }`}
+                                                        >
+                                                            <span className="font-medium">{student.name}</span>
+                                                            {alreadyAdded ? (
+                                                                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                                    Added
+                                                                </span>
+                                                            ) : (
+                                                                <Plus className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+
+                                        {scannerStudentError && (
+                                            <p className="text-[11px] text-slate-500 italic dark:text-slate-400">
+                                                {scannerStudentError}
+                                            </p>
+                                        )}
+
+                                        {/* Assigned Badges */}
+                                        {selectedScannerStudents.length > 0 && (
+                                            <div className="flex flex-wrap gap-1.5 pt-1">
+                                                {selectedScannerStudents.map((student) => (
+                                                    <span
+                                                        key={student.id}
+                                                        className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50/80 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-300"
+                                                    >
+                                                        <UserCheck className="h-3.5 w-3.5" />
+                                                        {student.name}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeSelectedStudent(student.id)}
+                                                            className="rounded-full p-0.5 hover:bg-blue-200 dark:hover:bg-blue-800"
+                                                        >
+                                                            <X className="h-3 w-3" />
+                                                        </button>
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -1748,49 +1695,29 @@ export default function CreateEventModal({
                     </form>
                 </div>
 
-                {/* Live Event Summary Preview Strip */}
-                <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-slate-200/80 bg-slate-100/90 px-6 py-2.5 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
-                    <div className="flex items-center gap-4 truncate">
-                        <span className="truncate font-semibold text-slate-800 dark:text-slate-200">
-                            {formData.eventName || 'Untitled Event'}
+                {/* ── MINIMAL FOOTER ── */}
+                <div className="flex shrink-0 items-center justify-between border-t border-slate-200/80 bg-white px-6 py-4 dark:border-slate-800 dark:bg-slate-900 sm:px-8">
+                    <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">
+                            Expected: {formData.expectedAttendees || 0} attendees
                         </span>
-                        {formData.eventDate && (
-                            <span className="flex items-center gap-1">
-                                <Calendar className="h-3.5 w-3.5 text-blue-500" />
-                                {formData.eventDate} {formData.eventTime}
-                            </span>
-                        )}
-                        {formData.location && (
-                            <span className="flex items-center gap-1 truncate">
-                                <MapPin className="h-3.5 w-3.5 text-indigo-500" />
-                                {formData.location}
-                            </span>
-                        )}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1 rounded bg-slate-200/70 px-2 py-0.5 text-[11px] font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                        <span>•</span>
+                        <span>
                             {formData.attendanceType === 'dynamic_qr'
-                                ? 'GPS Location Check-in'
+                                ? 'GPS Check-in'
                                 : 'QR Scanner'}
                         </span>
-                        <span className="inline-flex items-center gap-1 rounded bg-blue-100 px-2 py-0.5 text-[11px] font-bold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
-                            {formData.expectedAttendees} Attendees
-                        </span>
                     </div>
-                </div>
 
-                {/* Footer Controls */}
-                <div className="flex shrink-0 items-center justify-between border-t border-slate-200 bg-white px-6 py-4 dark:border-slate-800 dark:bg-slate-900">
-                    <div>
+                    <div className="flex items-center gap-2.5">
                         {currentStep > 1 ? (
                             <Button
                                 type="button"
                                 variant="outline"
                                 onClick={handleBack}
-                                className="h-10 gap-1.5 border-slate-300 px-4 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                                className="h-9 rounded-xl border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                             >
-                                <ChevronLeft className="h-4 w-4" />
+                                <ChevronLeft className="h-3.5 w-3.5" />
                                 Back
                             </Button>
                         ) : (
@@ -1798,30 +1725,28 @@ export default function CreateEventModal({
                                 type="button"
                                 variant="ghost"
                                 onClick={handleClose}
-                                className="h-10 px-4 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                                className="h-9 rounded-xl text-xs font-medium text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
                             >
                                 Cancel
                             </Button>
                         )}
-                    </div>
 
-                    <div className="flex items-center gap-3">
                         {currentStep < 3 ? (
                             <Button
                                 type="button"
                                 onClick={handleNext}
-                                className="h-10 gap-1.5 bg-gradient-to-r from-blue-700 to-indigo-700 px-6 font-semibold text-white shadow-md hover:from-blue-800 hover:to-indigo-800"
+                                className="h-9 gap-1.5 rounded-xl bg-[#000D6A] px-5 text-xs font-semibold text-white shadow-xs hover:bg-[#102A83] dark:bg-blue-600 dark:hover:bg-blue-700"
                             >
                                 Next
-                                <ChevronRight className="h-4 w-4" />
+                                <ChevronRight className="h-3.5 w-3.5" />
                             </Button>
                         ) : (
                             <Button
                                 type="button"
                                 onClick={handleSubmit}
-                                className="h-10 gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 px-7 font-bold text-white shadow-md hover:from-emerald-700 hover:to-teal-700"
+                                className="h-9 gap-1.5 rounded-xl bg-[#000D6A] px-6 text-xs font-semibold text-white shadow-xs hover:bg-[#102A83] dark:bg-blue-600 dark:hover:bg-blue-700"
                             >
-                                <Check className="h-4 w-4 stroke-[3]" />
+                                <Check className="h-3.5 w-3.5" />
                                 {mode === 'edit'
                                     ? 'Update Event'
                                     : 'Create Event'}
@@ -1830,6 +1755,7 @@ export default function CreateEventModal({
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body,
     );
 }

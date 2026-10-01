@@ -156,9 +156,9 @@ export default function EventViewModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[92vh] w-full max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden rounded-3xl border-0 bg-slate-50 p-0 shadow-2xl sm:max-w-4xl dark:bg-slate-950 [&>button]:hidden">
+            <DialogContent className="flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden rounded-3xl border-0 bg-slate-50 p-0 shadow-2xl sm:max-w-4xl dark:bg-slate-950 [&>button]:hidden">
                 {/* Modern Hero Header */}
-                <div className="relative overflow-hidden bg-gradient-to-r from-[#000D6A] via-[#102A83] to-[#23509A] px-6 py-6 text-white shadow-md sm:px-8">
+                <div className="shrink-0 relative overflow-hidden bg-gradient-to-r from-[#000D6A] via-[#102A83] to-[#23509A] px-6 py-5 text-white shadow-md sm:px-8">
                     <div className="pointer-events-none absolute -top-12 -right-12 h-44 w-44 rounded-full bg-cyan-400/20 blur-3xl" />
                     <div className="pointer-events-none absolute -bottom-10 left-1/3 h-32 w-32 rounded-full bg-blue-500/20 blur-2xl" />
 
@@ -216,7 +216,7 @@ export default function EventViewModal({
                 </div>
 
                 {/* Unified Single-View Content (No Step-by-Step) */}
-                <div className="scrollbar-thin flex-1 space-y-6 overflow-y-auto p-6 sm:p-8">
+                <div className="scrollbar-thin min-h-0 flex-1 space-y-6 overflow-y-auto p-6 sm:p-8">
                     {/* Schedule & Timing Quick Strip */}
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                         <div className="rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
@@ -239,6 +239,9 @@ export default function EventViewModal({
                             <div className="mt-1 text-sm font-black text-slate-900 dark:text-white">
                                 {event.event_time || '—'}
                             </div>
+                            <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                                Cut-off: 1 hr after start
+                            </span>
                         </div>
 
                         <div className="rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
@@ -249,6 +252,9 @@ export default function EventViewModal({
                             <div className="mt-1 text-sm font-black text-slate-900 dark:text-white truncate" title={regEnd}>
                                 {regEnd}
                             </div>
+                            <span className="text-[10px] font-medium text-blue-600 dark:text-blue-400">
+                                Time-out opens 30m prior
+                            </span>
                         </div>
 
                         <div className="rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-xs dark:border-slate-800 dark:bg-slate-900">

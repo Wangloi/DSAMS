@@ -14,9 +14,9 @@ class EnsureStudentApproved
         if (Auth::guard('student')->check()) {
              $student = Auth::guard('student')->user();
              if ($student) {
-                 if ($student->status !== 'approved') {
+                 if ($student->status === 'rejected' || $student->verification_status === 'rejected') {
                      Auth::guard('student')->logout();
-                     return redirect()->route('student.login')->with('error', 'Your account is pending approval. Please wait for admin verification.');
+                     return redirect()->route('student.login')->with('error', 'Your registration has been rejected. Please contact the administrator.');
                  }
 
                  // Check for pending evaluations

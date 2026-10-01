@@ -61,6 +61,14 @@ export function AdminHeader() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [helpOpen, setHelpOpen] = useState(false);
 
+    useEffect(() => {
+        const handleOpenMenu = () => setMobileMenuOpen(true);
+        window.addEventListener('dsams:open-admin-mobile-menu', handleOpenMenu);
+        return () => {
+            window.removeEventListener('dsams:open-admin-mobile-menu', handleOpenMenu);
+        };
+    }, []);
+
     // Real-time notification hook powered by Node.js + Socket.IO
     const {
         notifications: realtimeList,
@@ -177,7 +185,7 @@ export function AdminHeader() {
     const subtitleLabel = displayUser ? 'Administrator' : undefined;
 
     return (
-        <div className="fixed inset-x-0 top-0 z-50 border-b border-white/5 bg-gradient-to-r from-[#0b2d66] via-[#103875] to-[#1e40af] text-white shadow-md dark:bg-[#0B192C] dark:from-transparent dark:via-transparent dark:to-transparent">
+        <div className="fixed inset-x-0 top-0 z-40 border-b border-white/5 bg-gradient-to-r from-[#0b2d66] via-[#103875] to-[#1e40af] text-white shadow-md dark:bg-[#0B192C] dark:from-transparent dark:via-transparent dark:to-transparent">
             <div className="flex h-16 w-full items-center px-4 sm:px-6">
                 {/* Mobile Menu Trigger */}
                 <div className="lg:hidden">
@@ -234,7 +242,7 @@ export function AdminHeader() {
                                     <X className="h-4 w-4" />
                                 </Button>
                             </div>
-                            <MobileNavigation />
+                            <MobileNavigation onNavigate={() => setMobileMenuOpen(false)} />
                         </SheetContent>
                     </Sheet>
                 </div>
@@ -320,7 +328,7 @@ export function AdminHeader() {
                             </DropdownMenuTrigger>
                         </SimpleTooltip>
                         <DropdownMenuContent
-                            className="z-[60] w-88 rounded-2xl border border-slate-100 shadow-xl dark:border-slate-800 dark:bg-[#0B192C]"
+                            className="z-[60] w-[calc(100vw-2rem)] max-w-sm rounded-2xl border border-slate-100 shadow-xl dark:border-slate-800 dark:bg-[#0B192C]"
                             align="end"
                         >
                             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">

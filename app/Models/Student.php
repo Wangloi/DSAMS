@@ -12,6 +12,12 @@ class Student extends Authenticatable
 {
     use HasFactory, Notifiable, TwoFactorAuthenticatable;
 
+    protected $attributes = [
+        'status' => 'approved',
+        'verification_status' => 'approved',
+        'is_active' => true,
+    ];
+
     protected $fillable = [
         'name',
         'email',

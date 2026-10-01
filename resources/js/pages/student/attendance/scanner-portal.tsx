@@ -148,7 +148,7 @@ export default function StudentAttendanceScannerPortalPage({
     const page = usePage<SharedData>();
     const eventId = String(event.id);
 
-    // Determine initial mode (Auto: 'entry' during registration window, 'exit' after registration end time)
+    // Determine initial mode (Auto: 'entry' during registration window, 'exit' starts 30 minutes before event end time)
     const initialMode = useMemo<'entry' | 'exit'>(() => {
         const date = String(event.date ?? '').trim();
         const timeEnd = String(event.timeEnd ?? '').trim();
@@ -165,7 +165,9 @@ export default function StudentAttendanceScannerPortalPage({
         if (Number.isNaN(cutoff.getTime())) return 'entry';
         cutoff.setHours(hours, minutes, 0, 0);
 
-        return new Date() >= cutoff ? 'exit' : 'entry';
+        // Time-Out scanning starts 30 minutes before event end time
+        const timeOutStart = new Date(cutoff.getTime() - 30 * 60 * 1000);
+        return new Date() >= timeOutStart ? 'exit' : 'entry';
     }, [event.date, event.timeEnd]);
 
     // Active View Tab: 'scanner' | 'dashboard' | 'split'
@@ -799,8 +801,8 @@ export default function StudentAttendanceScannerPortalPage({
                             </h1>
                             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-blue-100/90 font-medium mt-0.5">
                                 <span>{event.date || 'Today'}</span>
-                                {event.timeIn && <span>• In: {formatTime12h(event.timeIn)}</span>}
-                                {event.timeEnd && <span>• Out: {formatTime12h(event.timeEnd)}</span>}
+                                {event.timeIn && <span>• In: {formatTime12h(event.timeIn)} (Cut-off: 1h)</span>}
+                                {event.timeEnd && <span>• Out: {formatTime12h(event.timeEnd)} (Opens 30m prior)</span>}
                                 {event.location && <span>• {event.location}</span>}
                             </div>
                         </div>
@@ -909,13 +911,13 @@ export default function StudentAttendanceScannerPortalPage({
                                     {event.timeIn && (
                                         <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-3 py-1 font-semibold text-white backdrop-blur-md">
                                             <LogIn className="h-3.5 w-3.5 text-emerald-300" />
-                                            In: {formatTime12h(event.timeIn)}
+                                            In: {formatTime12h(event.timeIn)} (Cut-off: 1h)
                                         </span>
                                     )}
                                     {event.timeEnd && (
                                         <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-3 py-1 font-semibold text-white backdrop-blur-md">
                                             <LogOut className="h-3.5 w-3.5 text-rose-300" />
-                                            Out: {formatTime12h(event.timeEnd)}
+                                            Out: {formatTime12h(event.timeEnd)} (Opens 30m prior)
                                         </span>
                                     )}
                                     {event.location && (

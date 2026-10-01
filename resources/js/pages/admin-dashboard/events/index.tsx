@@ -3,12 +3,15 @@ import {
     adminEvents,
     adminEventsArchive,
     adminEventsUnarchive,
+    programHeadCalendarEvents,
+    programHeadDashboard,
 } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 import Swal from 'sweetalert2';
 import AdminLayout from '../admin-layout';
+import ProgramHeadLayout from '@/pages/program-head/components/ProgramHeadLayout';
 import EventAttendeesModal from '../attendance/EventAttendeesModal';
 import CreateEventModal, { CreateEventPayload } from './CreateEventModal';
 import EventsCalendarView from './EventsCalendarView';
@@ -19,19 +22,8 @@ import EventsViewToggleHeader from './EventsViewToggleHeader';
 import EventViewModal from './EventViewModal';
 import { Event, PageProps, getEventLifecycleStatus } from './types';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Admin Dashboard',
-        href: adminDashboard(),
-    },
-    {
-        title: 'Events',
-        href: adminEvents(),
-    },
-];
-
 export default function AdminEventsIndex() {
-    const { props } = usePage() as { props: PageProps };
+    const { props } = usePage() as { props: PageProps & { auth?: any } };
     const {
         events = [],
         allEvents = [],
@@ -42,7 +34,38 @@ export default function AdminEventsIndex() {
         totalStudents = 0,
         studentCountsByCourseYear = [],
         announcements = [],
+        auth,
     } = props;
+
+    const isPersonnel =
+        auth?.guard === 'program_head' ||
+        auth?.roleLabel?.toLowerCase().includes('personnel') ||
+        auth?.roleLabel?.toLowerCase().includes('program head');
+
+    const breadcrumbs: BreadcrumbItem[] = isPersonnel
+        ? [
+              {
+                  title: 'Personnel Dashboard',
+                  href: programHeadDashboard(),
+              },
+              {
+                  title: 'Event Management',
+                  href: programHeadCalendarEvents(),
+              },
+          ]
+        : [
+              {
+                  title: 'Admin Dashboard',
+                  href: adminDashboard(),
+              },
+              {
+                  title: 'Events',
+                  href: adminEvents(),
+              },
+          ];
+
+    const Layout = isPersonnel ? ProgramHeadLayout : AdminLayout;
+    const baseEventsUrl = isPersonnel ? programHeadCalendarEvents() : adminEvents();
 
     // Filters and pagination state
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
@@ -93,7 +116,7 @@ export default function AdminEventsIndex() {
 
         const timeoutId = setTimeout(() => {
             router.get(
-                adminEvents(),
+                baseEventsUrl,
                 {
                     search: searchTerm,
                     status: statusFilter,
@@ -114,7 +137,7 @@ export default function AdminEventsIndex() {
     const goToPage = (page: number, updatedFilters?: Record<string, any>) => {
         setPageIndex(page);
         router.get(
-            adminEvents(),
+            baseEventsUrl,
             {
                 search: searchTerm,
                 status: statusFilter,
@@ -132,7 +155,7 @@ export default function AdminEventsIndex() {
         setStatusFilter(val);
         setPageIndex(1);
         router.get(
-            adminEvents(),
+            baseEventsUrl,
             {
                 search: searchTerm,
                 status: val,
@@ -150,7 +173,7 @@ export default function AdminEventsIndex() {
         setCourseFilter(newCourse);
         setPageIndex(1);
         router.get(
-            adminEvents(),
+            baseEventsUrl,
             {
                 search: searchTerm,
                 status: statusFilter,
@@ -168,7 +191,7 @@ export default function AdminEventsIndex() {
         setYearLevelFilter(newYear);
         setPageIndex(1);
         router.get(
-            adminEvents(),
+            baseEventsUrl,
             {
                 search: searchTerm,
                 status: statusFilter,
@@ -403,7 +426,7 @@ export default function AdminEventsIndex() {
     };
 
     return (
-        <AdminLayout breadcrumbs={breadcrumbs}>
+        <Layout breadcrumbs={breadcrumbs}>
             <Head title="Events" />
             <div className="min-h-[calc(100vh-4rem)] bg-slate-100 dark:bg-[#020617]">
                 <div className="flex w-full flex-col gap-6 px-6 py-6">
@@ -597,6 +620,26 @@ export default function AdminEventsIndex() {
                                 const isGeofence =
                                     payload.attendanceType === 'dynamic_qr' ||
                                     Boolean(payload.geofenceEnabled);
+
+                                const existingScannerIds = (
+                                    Array.isArray(modalData.scanner_student_ids) && modalData.scanner_student_ids.length > 0
+                                        ? modalData.scanner_student_ids
+                                        : Array.isArray(modalData.scannerStudentIds) && modalData.scannerStudentIds.length > 0
+                                          ? modalData.scannerStudentIds
+                                          : Array.isArray(modalData.scanner_students) && modalData.scanner_students.length > 0
+                                            ? modalData.scanner_students.map((s: any) => s.student_id || s.id)
+                                            : modalData.scanner_student_id
+                                              ? [modalData.scanner_student_id]
+                                              : []
+                                ).map((id: any) => String(id).trim()).filter(Boolean);
+
+                                const finalScannerStudentIds =
+                                    payload.scannerStudentIdsModified
+                                        ? payload.scannerStudentIds
+                                        : (payload.scannerStudentIds && payload.scannerStudentIds.length > 0
+                                            ? payload.scannerStudentIds
+                                            : existingScannerIds);
+
                                 const sanitizedPayload = {
                                     event_name: payload.eventName.trim(),
                                     organizer: payload.organizer.trim(),
@@ -625,8 +668,8 @@ export default function AdminEventsIndex() {
                                             : 50,
                                     attendance_type:
                                         payload.attendanceType || 'qr_scanner',
-                                    scanner_student_ids:
-                                        payload.scannerStudentIds || [],
+                                    scanner_student_ids: finalScannerStudentIds,
+                                    scanner_student_ids_modified: Boolean(payload.scannerStudentIdsModified),
                                     scanner_portal_active:
                                         modalData.scanner_portal_active ?? true,
                                 };
@@ -699,6 +742,6 @@ export default function AdminEventsIndex() {
                 eventId={attendeesEvent ? String(attendeesEvent.id) : null}
                 eventName={attendeesEvent?.event_name}
             />
-        </AdminLayout>
+        </Layout>
     );
 }

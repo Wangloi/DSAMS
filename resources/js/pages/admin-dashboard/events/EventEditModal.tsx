@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { adminEventsUpdate } from '@/routes';
 import { useForm } from '@inertiajs/react';
-import { Calendar, Check, ShieldCheck, Users } from 'lucide-react';
+import { Calendar, Check, Info, ShieldCheck, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
     deriveEventLifecycleStatus,
@@ -160,6 +160,9 @@ export default function EventEditModal({
         if (!event) return;
         transform((curr) => ({
             ...curr,
+            scanner_student_ids:
+                (event as any)?.scanner_student_ids ||
+                ((event as any)?.scanner_student_id ? [(event as any).scanner_student_id] : []),
             geofence_latitude: curr.geofence_enabled
                 ? curr.geofence_latitude || '8.743070'
                 : curr.geofence_latitude,
@@ -185,7 +188,7 @@ export default function EventEditModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[90vh] w-full max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden rounded-xl border border-slate-200 p-0 sm:max-w-4xl dark:border-slate-700 dark:bg-slate-900">
+            <DialogContent className="flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden rounded-xl border border-slate-200 p-0 sm:max-w-4xl dark:border-slate-700 dark:bg-slate-900">
                 <DialogHeader className="shrink-0 border-b border-transparent bg-gradient-to-r from-[#0b2d66] to-[#1e40af] px-6 py-5 text-white dark:border-slate-700">
                     <DialogTitle className="flex items-center gap-2 text-xl font-bold text-white">
                         <Calendar className="h-5 w-5 text-blue-200" />
@@ -264,7 +267,7 @@ export default function EventEditModal({
                     </div>
                 </DialogHeader>
 
-                <div className="flex-1 space-y-4 overflow-x-hidden overflow-y-auto bg-slate-50/50 px-6 py-6 dark:bg-slate-900/40">
+                <div className="min-h-0 flex-1 space-y-4 overflow-x-hidden overflow-y-auto bg-slate-50/50 px-6 py-6 dark:bg-slate-900/40">
                     <form
                         onSubmit={(e) => {
                             e.preventDefault();
@@ -390,7 +393,7 @@ export default function EventEditModal({
                                         )}
                                         {data.event_time && (
                                             <span className="mt-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                                Time-In Ends:{' '}
+                                                On-time Cut-off:{' '}
                                                 {(() => {
                                                     const [hours, minutes] =
                                                         data.event_time
@@ -399,7 +402,7 @@ export default function EventEditModal({
                                                     const date = new Date();
                                                     date.setHours(hours);
                                                     date.setMinutes(
-                                                        minutes + 90,
+                                                        minutes + 60,
                                                     );
 
                                                     let h = date.getHours();
@@ -410,7 +413,7 @@ export default function EventEditModal({
                                                         h >= 12 ? 'pm' : 'am';
                                                     h = h % 12;
                                                     h = h ? h : 12;
-                                                    return `${h}:${m} ${ampm}`;
+                                                    return `${h}:${m} ${ampm} (1 hr after start)`;
                                                 })()}
                                             </span>
                                         )}
@@ -442,8 +445,8 @@ export default function EventEditModal({
                                             </span>
                                         )}
                                         {data.registration_end_time && (
-                                            <span className="mt-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                                Time-End Ends:{' '}
+                                            <span className="mt-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400">
+                                                Time-Out Opens:{' '}
                                                 {(() => {
                                                     const [hours, minutes] =
                                                         data.registration_end_time
@@ -452,7 +455,7 @@ export default function EventEditModal({
                                                     const date = new Date();
                                                     date.setHours(hours);
                                                     date.setMinutes(
-                                                        minutes + 90,
+                                                        minutes - 30,
                                                     );
 
                                                     let h = date.getHours();
@@ -463,10 +466,30 @@ export default function EventEditModal({
                                                         h >= 12 ? 'pm' : 'am';
                                                     h = h % 12;
                                                     h = h ? h : 12;
-                                                    return `${h}:${m} ${ampm}`;
+                                                    return `${h}:${m} ${ampm} (30 min before end)`;
                                                 })()}
                                             </span>
                                         )}
+                                    </div>
+
+                                    {/* Attendance Schedule Info Note */}
+                                    <div className="mt-1 sm:col-span-2 rounded-lg border border-blue-200/80 bg-blue-50/70 p-3 text-xs dark:border-blue-900/50 dark:bg-blue-950/30">
+                                        <div className="flex items-start gap-2.5">
+                                            <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#000D6A] dark:text-blue-400" />
+                                            <div className="space-y-1 text-slate-700 dark:text-slate-300">
+                                                <div className="font-semibold text-slate-900 dark:text-white">
+                                                    Attendance Rules & Cut-off Guidelines:
+                                                </div>
+                                                <ul className="list-disc space-y-0.5 pl-4 text-[11px] leading-relaxed">
+                                                    <li>
+                                                        <strong>Time-In Cut-off:</strong> Scans within <strong>1 hour after start time</strong> are recorded as <em>On-Time</em>. Scans after 1 hour will be marked as <strong>Late</strong>.
+                                                    </li>
+                                                    <li>
+                                                        <strong>Time-Out (Check-Out) Window:</strong> Time-out scanning starts <strong>30 minutes before event end time</strong>. Students cannot check out before this window.
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <div className="grid gap-2 border-t border-slate-100 pt-4 sm:col-span-2 dark:border-slate-800">

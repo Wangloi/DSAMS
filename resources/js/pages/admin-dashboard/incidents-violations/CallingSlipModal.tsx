@@ -27,6 +27,7 @@ import { router } from '@inertiajs/react';
 import { formatDate } from '@/lib/utils';
 import { SimpleTooltip } from '@/components/ui/tooltip';
 import type { IncidentRow } from './types';
+import { printCallingSlipElement } from './printCaseSummary';
 
 interface CallingSlipModalProps {
     open: boolean;
@@ -69,7 +70,7 @@ export default function CallingSlipModal({
     const alreadySentAt = incident.calling_notice_sent_at || (incident.raw as any)?.callingNoticeSentAt;
 
     const handlePrint = () => {
-        window.print();
+        printCallingSlipElement('calling-slip-print-area');
     };
 
     const handleOpenConfirm = () => {

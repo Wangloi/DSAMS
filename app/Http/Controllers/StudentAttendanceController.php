@@ -40,8 +40,8 @@ class StudentAttendanceController extends Controller
             abort(403);
         }
 
-        if ($student->status !== 'approved') {
-            abort(403, 'Your account is pending approval. Please wait for admin verification.');
+        if ($student->status === 'rejected' || $student->verification_status === 'rejected') {
+            abort(403, 'Your account has been rejected. Please contact admin.');
         }
 
         if (! $this->scannerService->isAssignedScanner($student, $event)) {
@@ -99,8 +99,8 @@ class StudentAttendanceController extends Controller
             abort(403);
         }
 
-        if ($scanner->status !== 'approved') {
-            abort(403, 'Your account is pending approval.');
+        if ($scanner->status === 'rejected' || $scanner->verification_status === 'rejected') {
+            abort(403, 'Your account has been rejected.');
         }
 
         if (! $this->scannerService->isAssignedScanner($scanner, $event)) {
@@ -129,8 +129,8 @@ class StudentAttendanceController extends Controller
             return response()->json(['message' => 'Unauthorized student account.'], 403);
         }
 
-        if ($student->status !== 'approved') {
-            return response()->json(['message' => 'Your account is pending approval.'], 403);
+        if ($student->status === 'rejected' || $student->verification_status === 'rejected') {
+            return response()->json(['message' => 'Your account has been rejected.'], 403);
         }
 
         if (! $this->isStudentEligible($student, $event)) {
@@ -256,8 +256,8 @@ class StudentAttendanceController extends Controller
             return response()->json(['message' => 'Unauthorized student account.'], 403);
         }
 
-        if ($student->status !== 'approved') {
-            return response()->json(['message' => 'Your account is pending approval.'], 403);
+        if ($student->status === 'rejected' || $student->verification_status === 'rejected') {
+            return response()->json(['message' => 'Your account has been rejected.'], 403);
         }
 
         if (! $this->isStudentEligible($student, $event)) {

@@ -36,13 +36,10 @@ class UnifiedLoginController extends Controller
         // Try student guard first with student_id, then with email
         if (Auth::guard('student')->attempt(['student_id' => $identifier, 'password' => $password], $remember)) {
             $user = Auth::guard('student')->user();
-            if ($user->verification_status !== 'approved' && $user->status !== 'approved') {
+            if ($user->verification_status === 'rejected' || $user->status === 'rejected') {
                 Auth::guard('student')->logout();
-                $msg = ($user->verification_status === 'rejected' || $user->status === 'rejected')
-                    ? 'Your registration has been rejected. Please contact the administrator.'
-                    : 'Your account is pending approval. Please wait for verification.';
                 throw ValidationException::withMessages([
-                    'identifier' => $msg,
+                    'identifier' => 'Your registration has been rejected. Please contact the administrator.',
                 ]);
             }
             // Check for two-factor authentication
@@ -56,13 +53,10 @@ class UnifiedLoginController extends Controller
         }
         if (Auth::guard('student')->attempt(['email' => $identifier, 'password' => $password], $remember)) {
             $user = Auth::guard('student')->user();
-            if ($user->verification_status !== 'approved' && $user->status !== 'approved') {
+            if ($user->verification_status === 'rejected' || $user->status === 'rejected') {
                 Auth::guard('student')->logout();
-                $msg = ($user->verification_status === 'rejected' || $user->status === 'rejected')
-                    ? 'Your registration has been rejected. Please contact the administrator.'
-                    : 'Your account is pending approval. Please wait for verification.';
                 throw ValidationException::withMessages([
-                    'identifier' => $msg,
+                    'identifier' => 'Your registration has been rejected. Please contact the administrator.',
                 ]);
             }
             // Check for two-factor authentication

@@ -37,6 +37,10 @@ import type {
     StudentDisciplinaryStats,
     Violation,
 } from './types';
+import {
+    generateCaseRecordHtml,
+    printHtmlViaWindowOrIframe,
+} from './printCaseSummary';
 
 interface ShowPageProps {
     incident: IncidentRow;
@@ -237,7 +241,20 @@ export default function DisciplinaryCaseDetailPage({
                                         type="button"
                                         size="sm"
                                         className="h-10 gap-2 rounded-xl bg-white px-4 font-bold text-[#0b1c5c] shadow-md transition-all hover:bg-blue-50 cursor-pointer"
-                                        onClick={() => window.print()}
+                                        onClick={() => {
+                                            const html = generateCaseRecordHtml({
+                                                incident,
+                                                studentDetails,
+                                                disciplinaryActions,
+                                                violations,
+                                                studentDisciplinaryStats,
+                                                studentDisciplinaryHistory: processedDisciplinaryHistory,
+                                            });
+                                            printHtmlViaWindowOrIframe(
+                                                html,
+                                                `Case_${incident.caseId || incident.id}_Summary`,
+                                            );
+                                        }}
                                     >
                                         <Printer className="h-4 w-4" />
                                         <span>Export PDF</span>

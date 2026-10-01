@@ -48,7 +48,7 @@ export default function IncidentTableHeader({ onNewIncident }: Props) {
 
                     <Button
                         type="button"
-                        className="h-11 gap-2 self-start rounded-xl bg-white px-5 font-bold text-[#1e3a8a] shadow-md transition-all duration-200 hover:bg-blue-50 hover:shadow-lg sm:self-auto"
+                        className="h-11 gap-2 self-start rounded-xl bg-white px-5 font-bold text-[#1e3a8a] shadow-md transition-all duration-200 hover:bg-blue-50 hover:shadow-lg sm:self-auto cursor-pointer"
                         onClick={onNewIncident}
                     >
                         <PlusCircle className="h-5 w-5" />

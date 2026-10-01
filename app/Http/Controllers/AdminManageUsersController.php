@@ -87,7 +87,7 @@ class AdminManageUsersController extends Controller
                 $row = $student->toArray();
                 $row['userType'] = 'student';
                 if (Schema::hasColumn('students', 'verification_status')) {
-                    $row['status'] = $student->verification_status ?? $row['status'] ?? 'pending';
+                    $row['status'] = $student->verification_status ?? $row['status'] ?? 'approved';
                 }
                 return $row;
             });
@@ -344,7 +344,7 @@ class AdminManageUsersController extends Controller
             'program' => $validated['program'] ?? null,
             'role' => $validated['role'] ?? 'Student',
             'is_active' => $validated['is_active'] ?? true,
-            'status' => 'pending',
+            'status' => 'approved',
             'qr_code_path' => $qrCodePath,
             'officer_features' => $validated['officer_features'] ?? null,
         ];
@@ -354,7 +354,7 @@ class AdminManageUsersController extends Controller
         }
 
         if (Schema::hasColumn('students', 'verification_status')) {
-            $studentData['verification_status'] = 'pending';
+            $studentData['verification_status'] = 'approved';
         }
 
         $student = Student::create($studentData);

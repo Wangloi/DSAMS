@@ -198,14 +198,14 @@ Route::post('/student/attendance/{event}/geofence-checkin', [StudentAttendanceCo
     ->name('student.attendance.geofence-checkin');
 
 
-// Admin: display rotating QR code for projector / monitor
+// Admin & Personnel: display rotating QR code for projector / monitor
 Route::get('/admin/attendance/{event}/dynamic-qr', [DynamicAttendanceQrController::class, 'show'])
-    ->middleware(['web', 'auth:admin'])
+    ->middleware(['web', 'auth.active:admin,program_head'])
     ->name('admin.attendance.dynamic-qr');
 
-// Admin API: generate a fresh short-lived token (polled every 30 s by the QR display page)
+// Admin & Personnel API: generate a fresh short-lived token (polled every 30 s by the QR display page)
 Route::get('/admin/attendance/{event}/dynamic-qr/token', [DynamicAttendanceQrController::class, 'token'])
-    ->middleware(['web', 'auth:admin'])
+    ->middleware(['web', 'auth.active:admin,program_head'])
     ->name('admin.attendance.dynamic-qr.token');
 
 Route::get('/student/evaluation/{evaluation}', [StudentEvaluationController::class, 'show'])
@@ -302,13 +302,19 @@ Route::post('/program-head/students/bulk/status/activate', [ProgramHeadDashboard
 Route::post('/program-head/students/bulk/status/deactivate', [ProgramHeadDashboardController::class, 'bulkDeactivate'])->middleware(['auth:program_head', 'verified'])->name('program-head.students.bulk-status-deactivate');
 Route::post('/program-head/students/bulk/year-level', [ProgramHeadDashboardController::class, 'bulkSetYearLevel'])->middleware(['auth:program_head', 'verified'])->name('program-head.students.bulk-year-level');
 
-Route::get('/program-head/attendance', [App\Http\Controllers\ProgramHeadAttendanceController::class, 'index'])->middleware(['auth:program_head', 'verified'])->name('program-head.attendance');
-Route::post('/program-head/attendance/{event}/scan', [App\Http\Controllers\ProgramHeadAttendanceController::class, 'scanAttendance'])->middleware(['web', 'auth:program_head', 'verified'])->name('program-head.attendance.scan');
-Route::post('/program-head/attendance/{event}/activate-scanner-portal', [App\Http\Controllers\ProgramHeadAttendanceController::class, 'activateScannerPortal'])->middleware(['web', 'auth:program_head', 'verified'])->name('program-head.attendance.activate-scanner-portal');
-Route::get('/program-head/attendance/{event}/dynamic-qr/token', [App\Http\Controllers\DynamicAttendanceQrController::class, 'token'])->middleware(['web', 'auth:program_head', 'verified'])->name('program-head.attendance.dynamic-qr.token');
-Route::get('/program-head/attendance/{event}/logs', [App\Http\Controllers\ProgramHeadAttendanceController::class, 'logs'])->middleware(['auth:program_head', 'verified'])->name('program-head.attendance.logs');
-Route::get('/program-head/attendance/{event}/students', [App\Http\Controllers\ProgramHeadAttendanceController::class, 'studentsByCourse'])->middleware(['auth:program_head', 'verified'])->name('program-head.attendance.students');
-Route::get('/program-head/attendance/{event}/print', [App\Http\Controllers\ProgramHeadAttendanceController::class, 'printEvent'])->middleware(['auth:program_head', 'verified'])->name('program-head.attendance.print');
+Route::get('/program-head/attendance', [AdminAttendanceController::class, 'index'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance');
+Route::post('/program-head/attendance', [AdminAttendanceController::class, 'store'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance.store');
+Route::post('/program-head/attendance/{event}/scan', [AdminAttendanceController::class, 'scanAttendance'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance.scan');
+Route::post('/program-head/attendance/{event}/activate-scanner-portal', [AdminAttendanceController::class, 'activateScannerPortal'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance.activate-scanner-portal');
+Route::get('/program-head/attendance/{event}/dynamic-qr/token', [DynamicAttendanceQrController::class, 'token'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance.dynamic-qr.token');
+Route::get('/program-head/attendance/{event}/dynamic-qr', [DynamicAttendanceQrController::class, 'show'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance.dynamic-qr');
+Route::get('/program-head/attendance/{event}/logs', [AdminAttendanceController::class, 'logs'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance.logs');
+Route::get('/program-head/attendance/{event}/students', [AdminAttendanceController::class, 'studentsByCourse'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance.students');
+Route::get('/program-head/attendance/{event}/print', [AdminAttendanceController::class, 'printEvent'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance.print');
+Route::match(['put', 'post'], '/program-head/attendance/{event}', [AdminAttendanceController::class, 'update'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance.update');
+Route::delete('/program-head/attendance/{event}', [AdminAttendanceController::class, 'destroy'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance.destroy');
+Route::put('/program-head/attendance/{event}/archive', [AdminAttendanceController::class, 'archive'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance.archive');
+Route::put('/program-head/attendance/{event}/unarchive', [AdminAttendanceController::class, 'unarchive'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance.unarchive');
 
 Route::get('/program-head/qr-scanner', function () {
     $eventId = request()->query('event');
@@ -355,8 +361,8 @@ Route::get('/program-head/reports/violations', function () {
     return redirect()->route('program-head.reports');
 });
 
-Route::get('/program-head/calendar-events', [ProgramHeadEventsController::class, 'index'])->middleware(['auth:program_head', 'verified'])->name('program-head.calendar-events');
-Route::post('/program-head/calendar-events', [ProgramHeadEventsController::class, 'store'])->middleware(['auth:program_head', 'verified'])->name('program-head.calendar-events.store');
+Route::get('/program-head/calendar-events', [\App\Http\Controllers\AdminEventsController::class, 'index'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.calendar-events');
+Route::post('/program-head/calendar-events', [\App\Http\Controllers\AdminEventsController::class, 'store'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.calendar-events.store');
 
 Route::get('/program-head/activity-log', function () {
     return Inertia::render('program-head/ActivityLog');
@@ -431,23 +437,24 @@ Route::delete('/admin/programs/{program}', [AdminProgramsController::class, 'des
 Route::put('/admin/programs/{program}/archive', [AdminProgramsController::class, 'archive'])->middleware('auth:admin')->name('admin.programs.archive');
 Route::put('/admin/programs/{program}/unarchive', [AdminProgramsController::class, 'unarchive'])->middleware('auth:admin')->name('admin.programs.unarchive');
 
-// Events Routes
-Route::get('/admin/events', [\App\Http\Controllers\AdminEventsController::class, 'index'])->middleware('auth:admin')->name('admin.events');
-Route::post('/admin/events', [\App\Http\Controllers\AdminEventsController::class, 'store'])->middleware('auth:admin')->name('admin.events.store');
-Route::get('/admin/events/create', [\App\Http\Controllers\AdminEventsController::class, 'create'])->middleware('auth:admin')->name('admin.events.create');
-Route::get('/admin/events/{event}', [\App\Http\Controllers\AdminEventsController::class, 'show'])->middleware('auth:admin')->name('admin.events.show');
-Route::get('/admin/events/{event}/edit', [\App\Http\Controllers\AdminEventsController::class, 'edit'])->middleware('auth:admin')->name('admin.events.edit');
-Route::put('/admin/events/{event}', [\App\Http\Controllers\AdminEventsController::class, 'update'])->middleware('auth:admin')->name('admin.events.update');
-Route::delete('/admin/events/{event}', [\App\Http\Controllers\AdminEventsController::class, 'destroy'])->middleware('auth:admin')->name('admin.events.destroy');
-Route::put('/admin/events/{event}/archive', [\App\Http\Controllers\AdminEventsController::class, 'archive'])->middleware('auth:admin')->name('admin.events.archive');
-Route::put('/admin/events/{event}/unarchive', [\App\Http\Controllers\AdminEventsController::class, 'unarchive'])->middleware('auth:admin')->name('admin.events.unarchive');
-Route::get('/admin/events/{event}/qr-code', [\App\Http\Controllers\AdminEventsController::class, 'qrCode'])->middleware('auth:admin')->name('admin.events.qr-code');
-Route::get('/admin/events/{event}/participant-monitoring', [\App\Http\Controllers\AdminEventsController::class, 'participantMonitoring'])->middleware('auth:admin')->name('admin.events.participant-monitoring');
-Route::get('/admin/events/{event}/attendance-assignment', [\App\Http\Controllers\AdminEventsController::class, 'attendanceAssignment'])->middleware('auth:admin')->name('admin.events.attendance-assignment');
-Route::post('/admin/events/{event}/attendance-assignment', [\App\Http\Controllers\AdminEventsController::class, 'storeAttendanceAssignment'])->middleware('auth:admin')->name('admin.events.attendance-assignment.store');
-Route::post('/admin/events/{event}/send-reminder', [\App\Http\Controllers\AdminEventsController::class, 'sendReminder'])->middleware('auth:admin')->name('admin.events.send-reminder');
-Route::post('/admin/events/{event}/approve-schedule', [\App\Http\Controllers\AdminEventsController::class, 'approveSchedule'])->middleware('auth:admin')->name('admin.events.approve-schedule');
-Route::post('/admin/events/{event}/reject-schedule', [\App\Http\Controllers\AdminEventsController::class, 'rejectSchedule'])->middleware('auth:admin')->name('admin.events.reject-schedule');
+// Events Routes (Accessible to Admin & Personnel)
+Route::get('/admin/events', [\App\Http\Controllers\AdminEventsController::class, 'index'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.events');
+Route::post('/admin/events', [\App\Http\Controllers\AdminEventsController::class, 'store'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.events.store');
+Route::get('/admin/events/create', [\App\Http\Controllers\AdminEventsController::class, 'create'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.events.create');
+Route::get('/admin/events/suggested-scanners', [\App\Http\Controllers\AdminEventsController::class, 'suggestedScanners'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.events.suggested-scanners');
+Route::get('/admin/events/{event}', [\App\Http\Controllers\AdminEventsController::class, 'show'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.events.show');
+Route::get('/admin/events/{event}/edit', [\App\Http\Controllers\AdminEventsController::class, 'edit'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.events.edit');
+Route::put('/admin/events/{event}', [\App\Http\Controllers\AdminEventsController::class, 'update'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.events.update');
+Route::delete('/admin/events/{event}', [\App\Http\Controllers\AdminEventsController::class, 'destroy'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.events.destroy');
+Route::put('/admin/events/{event}/archive', [\App\Http\Controllers\AdminEventsController::class, 'archive'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.events.archive');
+Route::put('/admin/events/{event}/unarchive', [\App\Http\Controllers\AdminEventsController::class, 'unarchive'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.events.unarchive');
+Route::get('/admin/events/{event}/qr-code', [\App\Http\Controllers\AdminEventsController::class, 'qrCode'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.events.qr-code');
+Route::get('/admin/events/{event}/participant-monitoring', [\App\Http\Controllers\AdminEventsController::class, 'participantMonitoring'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.events.participant-monitoring');
+Route::get('/admin/events/{event}/attendance-assignment', [\App\Http\Controllers\AdminEventsController::class, 'attendanceAssignment'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.events.attendance-assignment');
+Route::post('/admin/events/{event}/attendance-assignment', [\App\Http\Controllers\AdminEventsController::class, 'storeAttendanceAssignment'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.events.attendance-assignment.store');
+Route::post('/admin/events/{event}/send-reminder', [\App\Http\Controllers\AdminEventsController::class, 'sendReminder'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.events.send-reminder');
+Route::post('/admin/events/{event}/approve-schedule', [\App\Http\Controllers\AdminEventsController::class, 'approveSchedule'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.events.approve-schedule');
+Route::post('/admin/events/{event}/reject-schedule', [\App\Http\Controllers\AdminEventsController::class, 'rejectSchedule'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.events.reject-schedule');
 
 Route::get('/admin/admission-slip', [AdminAdmissionSlipController::class, 'index'])->middleware('auth:admin')->name('admin.admission-slip');
 Route::post('/admin/admission-slip', [AdminAdmissionSlipController::class, 'store'])->middleware('auth:admin')->name('admin.admission-slip.store');
@@ -482,8 +489,10 @@ Route::middleware(['auth:admin,dsa,web'])->group(function () {
 });
 
 Route::get('/admin/students/lookup', function (Request $request) {
-    // Authenticate admin or web (dsa) user
-    $user = Auth::guard('admin')->user() ?: Auth::guard('web')->user();
+    // Authenticate admin, program_head (personnel), or web (dsa) user
+    $user = Auth::guard('admin')->user()
+        ?: Auth::guard('program_head')->user()
+        ?: Auth::guard('web')->user();
     if (!$user) {
         abort(403, 'Unauthorized');
     }
@@ -510,7 +519,7 @@ Route::get('/admin/students/lookup', function (Request $request) {
         'course' => $student->course,
         'year_level' => $student->year_level,
     ]);
-})->middleware('auth:admin,web')->name('admin.students.lookup');
+})->middleware('auth:admin,program_head,web')->name('admin.students.lookup');
 
 Route::get('/students/{student}/attendance-history', function (Request $request, $student = null) {
     $user = Auth::guard('admin')->user()
@@ -718,8 +727,10 @@ Route::get('/students/{student}/violations', function (Request $request, $studen
 })->middleware(['web'])->name('students.violations');
 
 Route::get('/admin/students/search', function (Request $request) {
-    // Authenticate admin or web (dsa) user
-    $user = Auth::guard('admin')->user() ?: Auth::guard('web')->user();
+    // Authenticate admin, program_head (personnel), or web (dsa) user
+    $user = Auth::guard('admin')->user()
+        ?: Auth::guard('program_head')->user()
+        ?: Auth::guard('web')->user();
     if (!$user) {
         abort(403, 'Unauthorized');
     }
@@ -750,7 +761,7 @@ Route::get('/admin/students/search', function (Request $request) {
         });
 
     return response()->json(['students' => $students]);
-})->middleware('auth:admin,web')->name('admin.students.search');
+})->middleware('auth:admin,program_head,web')->name('admin.students.search');
 
 Route::get('/admin/incidents-violations', [AdminIncidentsViolationsController::class, 'index'])->middleware('auth:admin')->name('admin.incidents-violations');
 Route::get('/admin/incidents-violations/{incident}', [AdminIncidentsViolationsController::class, 'show'])->middleware('auth:admin')->name('admin.incidents-violations.show');
@@ -772,15 +783,15 @@ Route::post('/admin/disciplinary-action/{action}/review', [AdminIncidentsViolati
 
 // Put specific routes with parameters first
 Route::post('/admin/attendance/{event}/activate-scanner-portal', [AdminAttendanceController::class, 'activateScannerPortal'])
-    ->middleware(['web', 'auth:admin'])
+    ->middleware(['web', 'auth.active:admin,program_head'])
     ->name('admin.attendance.activate-scanner-portal');
 
 Route::get('/admin/attendance/{event}/logs', [AdminAttendanceController::class, 'logs'])
-    ->middleware(['web', 'auth:admin'])
+    ->middleware(['web', 'auth.active:admin,program_head'])
     ->name('admin.attendance.logs');
 
 Route::get('/admin/attendance/{event}/students-by-course', [AdminAttendanceController::class, 'studentsByCourse'])
-    ->middleware(['web', 'auth:admin'])
+    ->middleware(['web', 'auth.active:admin,program_head'])
     ->name('admin.attendance.students-by-course');
 
 // Route::get('/admin/attendance/{event}/manual-override', [AdminManualOverrideController::class, 'index'])
@@ -792,16 +803,16 @@ Route::get('/admin/attendance/{event}/students-by-course', [AdminAttendanceContr
 //     ->name('admin.attendance.manual-override.store');
 
 Route::post('/admin/attendance/{event}/scan', [AdminAttendanceController::class, 'scanAttendance'])
-    ->middleware(['web', 'auth:admin'])
+    ->middleware(['web', 'auth.active:admin,program_head'])
     ->name('admin.attendance.scan');
-Route::match(['put', 'post'], '/admin/attendance/{event}', [AdminAttendanceController::class, 'update'])->middleware(['web', 'auth:admin'])->name('admin.attendance.update');
-Route::delete('/admin/attendance/{event}', [AdminAttendanceController::class, 'destroy'])->middleware(['web', 'auth:admin'])->name('admin.attendance.destroy');
-Route::put('/admin/attendance/{event}/archive', [AdminAttendanceController::class, 'archive'])->middleware(['web', 'auth:admin'])->name('admin.attendance.archive');
-Route::put('/admin/attendance/{event}/unarchive', [AdminAttendanceController::class, 'unarchive'])->middleware(['web', 'auth:admin'])->name('admin.attendance.unarchive');
+Route::match(['put', 'post'], '/admin/attendance/{event}', [AdminAttendanceController::class, 'update'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.attendance.update');
+Route::delete('/admin/attendance/{event}', [AdminAttendanceController::class, 'destroy'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.attendance.destroy');
+Route::put('/admin/attendance/{event}/archive', [AdminAttendanceController::class, 'archive'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.attendance.archive');
+Route::put('/admin/attendance/{event}/unarchive', [AdminAttendanceController::class, 'unarchive'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.attendance.unarchive');
 
 // Then put general routes without parameters
-Route::get('/admin/attendance', [AdminAttendanceController::class, 'index'])->middleware(['web', 'auth:admin'])->name('admin.attendance');
-Route::post('/admin/attendance', [AdminAttendanceController::class, 'store'])->middleware(['web', 'auth:admin'])->name('admin.attendance.store');
+Route::get('/admin/attendance', [AdminAttendanceController::class, 'index'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.attendance');
+Route::post('/admin/attendance', [AdminAttendanceController::class, 'store'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.attendance.store');
 
 // Debug route to check what's being called
 Route::match(['get', 'post', 'put', 'delete'], '/admin/attendance/debug', function (Request $request) {
@@ -839,7 +850,7 @@ Route::get('/admin/help', function () {
     return Inertia::render('admin-dashboard/help/index');
 })->middleware('auth:admin')->name('admin.help');
 
-Route::get('/admin/attendance/{event}/print', [AdminAttendanceController::class, 'printEvent'])->middleware('auth:admin')->name('admin.attendance.print-event');
+Route::get('/admin/attendance/{event}/print', [AdminAttendanceController::class, 'printEvent'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.attendance.print-event');
 
 // Lost & Found (disabled for admin UI)
 // Route::get('/admin/lost-found', [AdminLostFoundController::class, 'index'])->middleware('auth:admin')->name('admin.lost-found');

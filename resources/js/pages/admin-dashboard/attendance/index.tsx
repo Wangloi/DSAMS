@@ -3,12 +3,15 @@ import {
     adminAttendanceDestroy,
     adminAttendanceStudentsByCourse,
     adminDashboard,
+    programHeadAttendance,
+    programHeadDashboard,
 } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 import Swal from 'sweetalert2';
 import AdminLayout from '../admin-layout';
+import ProgramHeadLayout from '@/pages/program-head/components/ProgramHeadLayout';
 import EventEditModal from '../events/EventEditModal';
 import type { EventViewRecord } from '../events/EventViewModal';
 import type { CourseYearOption } from '../events/mergeCourseYearOptions';
@@ -20,19 +23,38 @@ import EventAttendeesModal from './EventAttendeesModal';
 import RealTimeMonitoringPanel from './RealTimeMonitoringPanel';
 import type { AttendanceRow, StudentByCourseRow } from './types';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Admin Dashboard',
-        href: adminDashboard(),
-    },
-    {
-        title: 'Attendance',
-        href: adminAttendance(),
-    },
-];
-
 export default function AdminAttendancePage() {
     const page = usePage().props as Record<string, unknown>;
+
+    const { auth } = page as { auth?: any };
+    const isPersonnel =
+        auth?.guard === 'program_head' ||
+        auth?.roleLabel?.toLowerCase().includes('personnel') ||
+        auth?.roleLabel?.toLowerCase().includes('program head');
+
+    const breadcrumbs: BreadcrumbItem[] = isPersonnel
+        ? [
+              {
+                  title: 'Personnel Dashboard',
+                  href: programHeadDashboard(),
+              },
+              {
+                  title: 'Attendance',
+                  href: programHeadAttendance(),
+              },
+          ]
+        : [
+              {
+                  title: 'Admin Dashboard',
+                  href: adminDashboard(),
+              },
+              {
+                  title: 'Attendance',
+                  href: adminAttendance(),
+              },
+          ];
+
+    const Layout = isPersonnel ? ProgramHeadLayout : AdminLayout;
 
     if (page.error) {
         console.error('Backend Error:', page.error);
@@ -352,7 +374,7 @@ export default function AdminAttendancePage() {
     const monitoredEvent = events.find((e) => String(e.id) === monitorEventId);
 
     return (
-        <AdminLayout breadcrumbs={breadcrumbs}>
+        <Layout breadcrumbs={breadcrumbs}>
             <Head title="Attendance" />
             <div className="min-h-[calc(100vh-4rem)] bg-slate-100 dark:bg-slate-900">
                 <div className="flex w-full flex-col gap-6 px-6 py-6">
@@ -367,6 +389,7 @@ export default function AdminAttendancePage() {
                                 handleViewStudentsByCourse
                             }
                             setEvents={setEvents}
+                            userRole={isPersonnel ? 'program_head' : 'admin'}
                         />
                     ) : (
                         <>
@@ -431,6 +454,6 @@ export default function AdminAttendancePage() {
                 courseOptions={formattedCourseOptions}
                 yearLevelOptions={formattedYearLevelOptions}
             />
-        </AdminLayout>
+        </Layout>
     );
 }

@@ -228,8 +228,13 @@ class AttendanceScannerService
             ActivityLog::logForUser($scanner, 'Attendance', $isTimeOut ? 'Checked Out' : 'Checked In', "Recorded attendance for event #{$event->id} (status: {$status}, action: " . ($isTimeOut ? 'Time Out' : 'Time In') . ")", $request);
         }
 
+        $cutoff = $scanEval['time_in_cutoff'] ?? null;
+        $cutoffStr = ($cutoff instanceof \Carbon\CarbonInterface)
+            ? ' (cut-off was ' . $cutoff->format('h:i A') . ', 1 hr after start)'
+            : ' (cut-off was 1 hr after start)';
+
         $checkInLabel = $status === 'late'
-            ? 'Time-in (Check-in) recorded as LATE.'
+            ? 'Time-in (Check-in) recorded as LATE' . $cutoffStr . '.'
             : 'Time-in (Check-in) recorded successfully (On-Time).';
 
         return response()->json([

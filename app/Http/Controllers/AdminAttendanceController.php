@@ -261,7 +261,10 @@ class AdminAttendanceController extends Controller
         ]);
     }
 
-    private function getLogsAttendanceRows(Event $event, int $limit): array
+    /**
+     * @return array{allStudents: \Illuminate\Support\Collection, attendances: \Illuminate\Support\Collection}
+     */
+    private function getEventStudentsAndAttendances(Event $event): array
     {
         $eventCourses = is_array($event->courses) ? array_values(array_filter($event->courses, fn($c) => !\App\Services\Attendance\EventEligibilityService::isAllWildcard((string) $c))) : [];
         $eventYearLevels = is_array($event->year_levels) ? array_values(array_filter($event->year_levels, fn($y) => !\App\Services\Attendance\EventEligibilityService::isAllWildcard((string) $y))) : [];
@@ -303,6 +306,18 @@ class AdminAttendanceController extends Controller
             $attendedStudents = $attendances->map(fn($a) => $a->student)->filter();
             $allStudents = $allStudents->merge($attendedStudents)->unique('id')->values();
         }
+
+        return [
+            'allStudents' => $allStudents,
+            'attendances' => $attendances,
+        ];
+    }
+
+    private function getLogsAttendanceRows(Event $event, int $limit): array
+    {
+        $data = $this->getEventStudentsAndAttendances($event);
+        $allStudents = $data['allStudents'];
+        $attendances = $data['attendances'];
 
         return $allStudents
             ->map(function ($student) use ($attendances) {
@@ -691,8 +706,10 @@ class AdminAttendanceController extends Controller
             $dispatcher->scannerAccessGranted($event, $scannerStudentIds);
 
             if (Schema::hasTable('activity_logs')) {
-                $admin = auth()->guard('admin')->user();
-                ActivityLog::logForUser($admin, 'Attendance', 'Created', 'Created event: '.(string) $event->event_name);
+                $actor = auth()->guard('admin')->user() ?: auth()->guard('program_head')->user() ?: auth()->user();
+                if ($actor) {
+                    ActivityLog::logForUser($actor, 'Attendance', 'Created', 'Created event: '.(string) $event->event_name);
+                }
             }
 
             // Return a proper Inertia redirect response
@@ -754,7 +771,13 @@ class AdminAttendanceController extends Controller
                 return trim($v) !== '';
             })));
 
-            $scannerStudentIdsRaw = $validated['scannerStudentIds'] ?? [];
+            $hasScannerStudentIds = array_key_exists('scannerStudentIds', $validated)
+                || array_key_exists('scanner_student_ids', $validated)
+                || $request->has('scannerStudentIds')
+                || $request->has('scanner_student_ids');
+            $scannerStudentIdsRaw = $hasScannerStudentIds
+                ? ($validated['scannerStudentIds'] ?? ($validated['scanner_student_ids'] ?? []))
+                : (is_array($event->scanner_student_ids) ? $event->scanner_student_ids : []);
             $scannerStudentIds = array_values(array_unique(array_filter(array_map('strval', $scannerStudentIdsRaw), function ($v) {
                 return trim($v) !== '';
             })));
@@ -787,8 +810,10 @@ class AdminAttendanceController extends Controller
             $dispatcher->scannerAccessGranted($event, $newlyGrantedScannerIds);
 
             if (Schema::hasTable('activity_logs')) {
-                $admin = auth()->guard('admin')->user();
-                ActivityLog::logForUser($admin, 'Attendance', 'Updated', 'Updated event: '.(string) $event->event_name);
+                $actor = auth()->guard('admin')->user() ?: auth()->guard('program_head')->user() ?: auth()->user();
+                if ($actor) {
+                    ActivityLog::logForUser($actor, 'Attendance', 'Updated', 'Updated event: '.(string) $event->event_name);
+                }
             }
 
             return redirect()->back()->with('success', 'Event updated successfully');
@@ -810,8 +835,10 @@ class AdminAttendanceController extends Controller
             $event->archive(); // Archive instead of delete
 
             if (Schema::hasTable('activity_logs')) {
-                $admin = auth()->guard('admin')->user();
-                ActivityLog::logForUser($admin, 'Attendance', 'Archived', 'Archived event: '.(string) $event->event_name);
+                $actor = auth()->guard('admin')->user() ?: auth()->guard('program_head')->user() ?: auth()->user();
+                if ($actor) {
+                    ActivityLog::logForUser($actor, 'Attendance', 'Archived', 'Archived event: '.(string) $event->event_name);
+                }
             }
 
             // Debug: Log the archiving
@@ -828,48 +855,9 @@ class AdminAttendanceController extends Controller
 
     public function printEvent(Request $request, Event $event): \Illuminate\Http\Response
     {
-        $eventCourses = is_array($event->courses) ? array_values(array_filter($event->courses, fn($c) => !\App\Services\Attendance\EventEligibilityService::isAllWildcard((string) $c))) : [];
-        $eventYearLevels = is_array($event->year_levels) ? array_values(array_filter($event->year_levels, fn($y) => !\App\Services\Attendance\EventEligibilityService::isAllWildcard((string) $y))) : [];
-
-        // Query eligible students for this event
-        $studentsQuery = Student::query();
-        if (Schema::hasColumn('students', 'status')) {
-            $studentsQuery->where(function ($q) {
-                $q->where('status', 'approved')->orWhereNull('status');
-            });
-        }
-        if (Schema::hasColumn('students', 'is_archived')) {
-            $studentsQuery->where(function ($q) {
-                $q->where('is_archived', false)->orWhereNull('is_archived');
-            });
-        }
-        if (!empty($eventCourses)) {
-            $studentsQuery->whereIn('course', $eventCourses);
-        }
-        if (!empty($eventYearLevels)) {
-            $studentsQuery->whereIn('year_level', $eventYearLevels);
-        }
-
-        $eligibleStudents = $studentsQuery
-            ->orderBy('year_level')
-            ->orderBy('last_name')
-            ->orderBy('first_name')
-            ->get();
-
-        // Fetch all attendance records for this event
-        $attendances = Attendance::where('event_id', $event->id)
-            ->with('student')
-            ->get()
-            ->keyBy('student_id');
-
-        // Combine eligible students with any attended students
-        $allStudents = $eligibleStudents;
-        if ($allStudents->isEmpty()) {
-            $allStudents = $attendances->map(fn($a) => $a->student)->filter()->values();
-        } else {
-            $attendedStudents = $attendances->map(fn($a) => $a->student)->filter();
-            $allStudents = $allStudents->merge($attendedStudents)->unique('id')->values();
-        }
+        $data = $this->getEventStudentsAndAttendances($event);
+        $allStudents = $data['allStudents'];
+        $attendances = $data['attendances'];
 
         // Group by course/program, then within course group by year level
         $groupedByCourse = $allStudents
@@ -886,7 +874,7 @@ class AdminAttendanceController extends Controller
             });
 
             // Sort year levels (1st Year -> 1, 2nd Year -> 2, 3rd Year -> 3, 4th Year -> 4, etc.)
-            $sortedYears = $groupedByYear->keys()->sort(function ($a, $b) {
+            $sortedGroupedByYear = $groupedByYear->sortKeysUsing(function ($a, $b) {
                 $numA = preg_match('/(\d+)/', (string) $a, $mA) ? (int) $mA[1] : 999;
                 $numB = preg_match('/(\d+)/', (string) $b, $mB) ? (int) $mB[1] : 999;
                 if ($numA === $numB) {
@@ -895,13 +883,13 @@ class AdminAttendanceController extends Controller
                 return $numA <=> $numB;
             });
 
-            foreach ($sortedYears as $yearLevel) {
-                $yearStudents = $groupedByYear[$yearLevel];
+            foreach ($sortedGroupedByYear as $yearLevel => $yearStudents) {
+                $yearStudentsList = collect($yearStudents);
 
                 $sectionPresentCount = 0;
                 $sectionAbsentCount = 0;
 
-                $tableRows = $yearStudents
+                $tableRows = $yearStudentsList
                     ->map(function ($student) use ($attendances, &$sectionPresentCount, &$sectionAbsentCount, &$overallPresentCount, &$overallAbsentCount) {
                         $att = $attendances->get($student->id);
                         $hasScanned = ($att !== null && ($att->checked_in_at !== null || $att->scanned_at !== null));

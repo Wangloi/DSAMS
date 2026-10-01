@@ -54,7 +54,9 @@ class StudentRegistrationController extends Controller
                 'course'       => $request->program,
                 'year_level'   => $this->mapEntryStatusToYearLevel($request->entry_status),
                 'role'         => 'student',
-                'is_active'    => false, // Admin needs to activate
+                'is_active'    => true,
+                'status'       => 'approved',
+                'verification_status' => 'approved',
                 'entry_status' => $request->entry_status,
                 'program'      => $request->program,
                 'major'        => $request->major ?? null,
@@ -67,7 +69,7 @@ class StudentRegistrationController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Registration completed successfully! Your account is pending activation by the administrator.',
+                'message' => 'Registration completed successfully! You can now log in.',
             ]);
 
         } catch (\Exception $e) {

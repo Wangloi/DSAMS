@@ -124,9 +124,9 @@ export default function RealTimeMonitoringPanel({
     const liveItemsPerPage = 5;
 
     const [timeInStart, setTimeInStart] = useState('08:00');
-    const [timeInEnd, setTimeInEnd] = useState('09:30');
-    const [timeOutStart, setTimeOutStart] = useState('11:00');
-    const [timeOutEnd, setTimeOutEnd] = useState('12:30');
+    const [timeInEnd, setTimeInEnd] = useState('09:00');
+    const [timeOutStart, setTimeOutStart] = useState('10:30');
+    const [timeOutEnd, setTimeOutEnd] = useState('12:00');
 
     // Camera scanner references
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -170,7 +170,8 @@ export default function RealTimeMonitoringPanel({
             if (monitoredEvent.event_time) {
                 setTimeInStart(monitoredEvent.event_time.substring(0, 5));
                 const [h, m] = monitoredEvent.event_time.split(':').map(Number);
-                const endMinutes = h * 60 + m + 90;
+                // Cut-off for IN is 1 hour after start
+                const endMinutes = h * 60 + m + 60;
                 const endH = Math.floor(endMinutes / 60) % 24;
                 const endM = endMinutes % 60;
                 setTimeInEnd(
@@ -181,9 +182,16 @@ export default function RealTimeMonitoringPanel({
                 monitoredEvent.registration_end_time ||
                 monitoredEvent.registrationEndTime;
             if (endTimeSource) {
-                setTimeOutStart(endTimeSource.substring(0, 5));
                 const [h, m] = endTimeSource.split(':').map(Number);
-                const endMinutes = h * 60 + m + 90;
+                // Start for OUT is 30 minutes before end time
+                const startOutMinutes = Math.max(0, h * 60 + m - 30);
+                const startOutH = Math.floor(startOutMinutes / 60) % 24;
+                const startOutM = startOutMinutes % 60;
+                setTimeOutStart(
+                    `${String(startOutH).padStart(2, '0')}:${String(startOutM).padStart(2, '0')}`,
+                );
+                // Out window extends up to 60 minutes after end time
+                const endMinutes = h * 60 + m + 60;
                 const endH = Math.floor(endMinutes / 60) % 24;
                 const endM = endMinutes % 60;
                 setTimeOutEnd(
@@ -826,11 +834,11 @@ export default function RealTimeMonitoringPanel({
                         <div className="flex items-center gap-2 rounded-lg border border-emerald-400/40 bg-emerald-500/15 px-3 py-1.5 shadow-sm">
                             <LogIn className="h-4 w-4 text-emerald-300" />
                             <span className="text-[11px] font-extrabold tracking-wider text-emerald-200 uppercase">
-                                Time-In:
+                                Time-In (Cut-off 1hr):
                             </span>
                             <span className="text-xs font-black tracking-wide text-white">
-                                {timeInStart === '08:00' && timeInEnd === '09:30'
-                                    ? '08:00 AM - 09:30 AM'
+                                {timeInStart === '08:00' && timeInEnd === '09:00'
+                                    ? '08:00 AM - 09:00 AM'
                                     : `${timeInStart} - ${timeInEnd}`}
                             </span>
                         </div>
@@ -838,11 +846,11 @@ export default function RealTimeMonitoringPanel({
                         <div className="flex items-center gap-2 rounded-lg border border-rose-400/40 bg-rose-500/15 px-3 py-1.5 shadow-sm">
                             <LogOut className="h-4 w-4 text-rose-300" />
                             <span className="text-[11px] font-extrabold tracking-wider text-rose-200 uppercase">
-                                Time-Out:
+                                Time-Out (Starts 30m prior):
                             </span>
                             <span className="text-xs font-black tracking-wide text-white">
-                                {timeOutStart === '11:00' && timeOutEnd === '12:30'
-                                    ? '11:00 AM - 12:30 PM'
+                                {timeOutStart === '10:30' && timeOutEnd === '12:00'
+                                    ? '10:30 AM - 12:00 PM'
                                     : `${timeOutStart} - ${timeOutEnd}`}
                             </span>
                         </div>

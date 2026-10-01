@@ -4,9 +4,11 @@ import {
     adminAttendanceDynamicQrToken,
     adminAttendanceLogs,
     adminDashboard,
+    programHeadAttendance,
+    programHeadDashboard,
 } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
     CheckCircle2,
@@ -20,6 +22,7 @@ import {
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import ProgramHeadLayout from '@/pages/program-head/components/ProgramHeadLayout';
 import AdminLayout from '../admin-layout';
 
 type Props = {
@@ -43,20 +46,44 @@ export default function AdminAttendanceScannerPortalPage({
     event,
     tokenLifetimeSeconds,
 }: Props) {
-    const breadcrumbs: BreadcrumbItem[] = [
-        {
-            title: 'Admin Dashboard',
-            href: adminDashboard(),
-        },
-        {
-            title: 'Attendance',
-            href: adminAttendance(),
-        },
-        {
-            title: 'Attendance Scanner Portal',
-            href: adminAttendance(),
-        },
-    ];
+    const { props } = usePage();
+    const { auth } = props as { auth?: any };
+    const isPersonnel =
+        auth?.guard === 'program_head' ||
+        auth?.roleLabel?.toLowerCase().includes('personnel') ||
+        auth?.roleLabel?.toLowerCase().includes('program head');
+
+    const breadcrumbs: BreadcrumbItem[] = isPersonnel
+        ? [
+              {
+                  title: 'Personnel Dashboard',
+                  href: programHeadDashboard(),
+              },
+              {
+                  title: 'Attendance',
+                  href: programHeadAttendance(),
+              },
+              {
+                  title: 'Attendance Scanner Portal',
+                  href: '#',
+              },
+          ]
+        : [
+              {
+                  title: 'Admin Dashboard',
+                  href: adminDashboard(),
+              },
+              {
+                  title: 'Attendance',
+                  href: adminAttendance(),
+              },
+              {
+                  title: 'Attendance Scanner Portal',
+                  href: '#',
+              },
+          ];
+
+    const Layout = isPersonnel ? ProgramHeadLayout : AdminLayout;
 
     // ─── Dynamic QR mode state ──────────────────────────────────────────────────
     const qrCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -200,7 +227,7 @@ export default function AdminAttendanceScannerPortalPage({
     }, [fetchToken, fetchCounts, tokenLifetimeSeconds]);
 
     return (
-        <AdminLayout breadcrumbs={breadcrumbs}>
+        <Layout breadcrumbs={breadcrumbs}>
             <Head title="Attendance Scanner Portal" />
 
             <div className="min-h-[calc(100vh-4rem)] bg-slate-50/50 dark:bg-slate-900">
@@ -213,7 +240,7 @@ export default function AdminAttendanceScannerPortalPage({
                                 className="mr-2 h-12 w-12 rounded-2xl bg-slate-100 p-0 text-slate-600 transition-all duration-300 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400"
                                 asChild
                             >
-                                <Link href={adminAttendance()}>
+                                <Link href={isPersonnel ? programHeadAttendance() : adminAttendance()}>
                                     <ArrowLeft className="h-6 w-6" />
                                 </Link>
                             </Button>
@@ -477,6 +504,6 @@ export default function AdminAttendanceScannerPortalPage({
                     </div>
                 </div>
             </div>
-        </AdminLayout>
+        </Layout>
     );
 }
