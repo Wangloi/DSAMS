@@ -146,12 +146,17 @@ export function useManageUsers(errors: Record<string, string> = {}) {
     };
 
     const createUser = (qrCodeDataUrl: QrCodeDataUrl) => {
+        const payload: Record<string, any> = {
+            ...form,
+            qr_code_data_url: qrCodeDataUrl,
+        };
+        if (!payload.email || !String(payload.email).trim()) {
+            delete payload.email;
+        }
+
         router.post(
             '/admin/manage-users',
-            {
-                ...form,
-                qr_code_data_url: qrCodeDataUrl,
-            },
+            payload,
             {
                 preserveScroll: true,
                 onSuccess: () => {
@@ -184,13 +189,18 @@ export function useManageUsers(errors: Record<string, string> = {}) {
             return;
         }
 
+        const payload: Record<string, any> = {
+            id,
+            ...form,
+            qr_code_data_url: qrCodeDataUrl,
+        };
+        if (!payload.email || !String(payload.email).trim()) {
+            delete payload.email;
+        }
+
         router.put(
             `/admin/manage-users/${id}`,
-            {
-                id,
-                ...form,
-                qr_code_data_url: qrCodeDataUrl,
-            },
+            payload,
             {
                 preserveScroll: true,
                 onSuccess: () => {

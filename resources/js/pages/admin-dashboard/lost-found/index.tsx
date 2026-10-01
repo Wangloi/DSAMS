@@ -339,31 +339,31 @@ export default function AdminLostFoundPage() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-4">
                         {kpis.map((kpi) => (
                             <Card
                                 key={kpi.title}
-                                className="overflow-hidden border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-[#0B192C]/50"
+                                className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm sm:rounded-2xl dark:border-slate-800 dark:bg-[#0B192C]/50"
                             >
-                                <CardContent className="relative py-4">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div>
-                                            <div className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                                <CardContent className="relative p-2.5 sm:py-4 sm:px-5">
+                                    <div className="flex items-start justify-between gap-1.5 sm:gap-3">
+                                        <div className="min-w-0 flex-1">
+                                            <div className="truncate text-[9px] font-medium text-slate-600 sm:text-xs dark:text-slate-400">
                                                 {kpi.title}
                                             </div>
-                                            <div className="mt-1 flex items-end gap-2">
-                                                <div className="text-2xl leading-none font-semibold text-slate-900 dark:text-white">
+                                            <div className="mt-1 flex items-end gap-1.5 sm:gap-2">
+                                                <div className="text-lg leading-none font-black text-slate-900 sm:text-2xl sm:font-semibold dark:text-white">
                                                     {kpi.value}
                                                 </div>
                                                 {kpi.change ? (
-                                                    <div className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                                                    <div className="text-[10px] font-semibold text-emerald-700 sm:text-sm dark:text-emerald-400">
                                                         {kpi.change}
                                                     </div>
                                                 ) : null}
                                             </div>
                                         </div>
-                                        <div className="grid h-8 w-8 place-items-center rounded-lg bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                                            <CheckCircle2 className="h-4 w-4" />
+                                        <div className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-700 sm:h-8 sm:w-8 dark:bg-slate-800 dark:text-slate-300">
+                                            <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                         </div>
                                     </div>
                                 </CardContent>

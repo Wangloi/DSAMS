@@ -3,20 +3,20 @@ import { Calendar, CalendarDays } from 'lucide-react';
 
 export default function AttendanceHeader() {
     return (
-        <div className="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] p-6 shadow-xl shadow-blue-900/20">
+        <div className="relative mb-4 sm:mb-6 overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] p-4 sm:p-6 shadow-xl shadow-blue-900/20">
             <div className="pointer-events-none absolute -top-12 -right-12 h-56 w-56 rounded-full bg-white/5" />
             <div className="pointer-events-none absolute -top-4 -right-4 h-32 w-32 rounded-full bg-white/5" />
             <div className="pointer-events-none absolute bottom-0 left-1/3 h-48 w-48 -translate-y-1/4 rounded-full bg-blue-400/10 blur-2xl" />
-            <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-4">
-                    <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/10 text-white shadow-inner ring-1 ring-white/20 backdrop-blur-sm">
-                        <Calendar className="h-7 w-7" />
+            <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="grid h-10 w-10 sm:h-14 sm:w-14 shrink-0 place-items-center rounded-xl sm:rounded-2xl bg-white/10 text-white shadow-inner ring-1 ring-white/20 backdrop-blur-sm">
+                        <Calendar className="h-5 w-5 sm:h-7 sm:w-7" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-black tracking-tight text-white">
+                        <h1 className="text-lg sm:text-2xl font-black tracking-tight text-white">
                             Attendance Management
                         </h1>
-                        <p className="mt-0.5 text-sm font-medium text-blue-200/80">
+                        <p className="mt-0.5 text-xs sm:text-sm font-medium text-blue-200/80 line-clamp-2 sm:line-clamp-none">
                             Monitor attendance logs, active event scans, and
                             student participation metrics
                         </p>

@@ -45,7 +45,7 @@ export default function CourseStudentsDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-h-[85vh] w-[96vw] !max-w-6xl overflow-hidden bg-white p-0 dark:bg-slate-900">
-                <DialogHeader className="border-b border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-800 dark:bg-slate-800/50">
+                <DialogHeader className="border-b border-slate-200 bg-slate-50 p-3.5 sm:px-6 sm:py-4 dark:border-slate-800 dark:bg-slate-800/50">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <DialogTitle className="text-base font-semibold text-slate-800 dark:text-white">
@@ -53,17 +53,17 @@ export default function CourseStudentsDialog({
                                     ? `Students - ${selectedCourse}`
                                     : 'Students'}
                             </DialogTitle>
-                            <div className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                            <div className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
                                 All students in this course for the selected event.
                             </div>
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
-                            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                                 <span className="h-2 w-2 rounded-full bg-[#23509A]" />
                                 {rows.length.toLocaleString()} Students
                             </div>
-                            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                                 <span className="h-2 w-2 rounded-full bg-emerald-600" />
                                 {scannedCount.toLocaleString()} Scanned
                             </div>
@@ -71,7 +71,7 @@ export default function CourseStudentsDialog({
                     </div>
                 </DialogHeader>
 
-                <div className="max-h-[calc(85vh-64px)] overflow-y-auto px-6 py-6">
+                <div className="max-h-[calc(85vh-64px)] overflow-y-auto p-3 sm:px-6 sm:py-6">
                     <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                             Year Level
@@ -103,10 +103,10 @@ export default function CourseStudentsDialog({
                                 <table className="w-full min-w-max text-left text-sm">
                                     <thead className="bg-slate-50 text-slate-700 dark:bg-slate-800/50 dark:text-slate-300">
                                         <tr>
-                                            <th className="px-5 py-3 font-medium">Student ID</th>
-                                            <th className="px-5 py-3 font-medium">Name</th>
-                                            <th className="px-5 py-3 font-medium">Year</th>
-                                            <th className="px-5 py-3 text-right font-medium">Status</th>
+                                            <th className="px-3 sm:px-5 py-2.5 sm:py-3 font-medium">Student ID</th>
+                                            <th className="px-3 sm:px-5 py-2.5 sm:py-3 font-medium">Name</th>
+                                            <th className="px-3 sm:px-5 py-2.5 sm:py-3 font-medium">Year</th>
+                                            <th className="px-3 sm:px-5 py-2.5 sm:py-3 text-right font-medium">Status</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-200 dark:divide-slate-800">

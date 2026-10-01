@@ -377,7 +377,7 @@ export default function AdminAttendancePage() {
         <Layout breadcrumbs={breadcrumbs}>
             <Head title="Attendance" />
             <div className="min-h-[calc(100vh-4rem)] bg-slate-100 dark:bg-slate-900">
-                <div className="flex w-full flex-col gap-6 px-6 py-6">
+                <div className="flex w-full flex-col gap-4 sm:gap-6 px-3 py-4 sm:px-6 sm:py-6">
                     {showRealTimeMonitoring ? (
                         <RealTimeMonitoringPanel
                             monitoredEvent={monitoredEvent}

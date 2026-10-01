@@ -195,86 +195,86 @@ export default function AdminProgramsPage() {
                         </Button>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
                         {/* Total Programs */}
-                        <Card className="group overflow-hidden border border-blue-100 bg-blue-50/50 shadow-sm dark:border-blue-500/20 dark:bg-blue-500/10">
-                            <CardContent className="p-5">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                        <div className="text-[10px] font-bold tracking-wider text-blue-700 uppercase opacity-70 dark:text-blue-400">
+                        <Card className="group overflow-hidden rounded-xl border border-blue-100 bg-blue-50/50 shadow-sm sm:rounded-2xl dark:border-blue-500/20 dark:bg-blue-500/10">
+                            <CardContent className="p-2.5 sm:p-5">
+                                <div className="flex items-start justify-between gap-1.5 sm:gap-3">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="truncate text-[9px] font-bold tracking-wider text-blue-700 uppercase opacity-70 sm:text-[10px] dark:text-blue-400">
                                             Total Programs
                                         </div>
-                                        <div className="mt-2 flex items-baseline gap-2">
-                                            <div className="text-3xl font-black text-slate-900 dark:text-white">
+                                        <div className="mt-1 flex items-baseline gap-2 sm:mt-2">
+                                            <div className="text-lg font-black text-slate-900 sm:text-3xl dark:text-white">
                                                 {stats.total}
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-500/10 text-blue-600 shadow-inner transition-transform duration-300 group-hover:scale-110 dark:bg-blue-500/20 dark:text-blue-400">
-                                        <BookOpen className="h-6 w-6" />
+                                    <div className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-blue-500/10 text-blue-600 shadow-inner transition-transform duration-300 group-hover:scale-110 sm:h-12 sm:w-12 sm:rounded-2xl dark:bg-blue-500/20 dark:text-blue-400">
+                                        <BookOpen className="h-3.5 w-3.5 sm:h-6 sm:w-6" />
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
                         {/* Active Programs */}
-                        <Card className="group overflow-hidden border border-emerald-100 bg-emerald-50/50 shadow-sm dark:border-emerald-500/20 dark:bg-emerald-500/10">
-                            <CardContent className="p-5">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                        <div className="text-[10px] font-bold tracking-wider text-emerald-700 uppercase opacity-70 dark:text-emerald-400">
+                        <Card className="group overflow-hidden rounded-xl border border-emerald-100 bg-emerald-50/50 shadow-sm sm:rounded-2xl dark:border-emerald-500/20 dark:bg-emerald-500/10">
+                            <CardContent className="p-2.5 sm:p-5">
+                                <div className="flex items-start justify-between gap-1.5 sm:gap-3">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="truncate text-[9px] font-bold tracking-wider text-emerald-700 uppercase opacity-70 sm:text-[10px] dark:text-emerald-400">
                                             Active
                                         </div>
-                                        <div className="mt-2 flex items-baseline gap-2">
-                                            <div className="text-3xl font-black text-slate-900 dark:text-white">
+                                        <div className="mt-1 flex items-baseline gap-2 sm:mt-2">
+                                            <div className="text-lg font-black text-slate-900 sm:text-3xl dark:text-white">
                                                 {stats.active}
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-600 shadow-inner transition-transform duration-300 group-hover:scale-110 dark:bg-emerald-500/20 dark:text-emerald-400">
-                                        <Users className="h-6 w-6" />
+                                    <div className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-emerald-500/10 text-emerald-600 shadow-inner transition-transform duration-300 group-hover:scale-110 sm:h-12 sm:w-12 sm:rounded-2xl dark:bg-emerald-500/20 dark:text-emerald-400">
+                                        <Users className="h-3.5 w-3.5 sm:h-6 sm:w-6" />
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
                         {/* Inactive Programs */}
-                        <Card className="group overflow-hidden border border-amber-100 bg-amber-50/50 shadow-sm dark:border-amber-500/20 dark:bg-amber-500/10">
-                            <CardContent className="p-5">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                        <div className="text-[10px] font-bold tracking-wider text-amber-700 uppercase opacity-70 dark:text-amber-400">
+                        <Card className="group overflow-hidden rounded-xl border border-amber-100 bg-amber-50/50 shadow-sm sm:rounded-2xl dark:border-amber-500/20 dark:bg-amber-500/10">
+                            <CardContent className="p-2.5 sm:p-5">
+                                <div className="flex items-start justify-between gap-1.5 sm:gap-3">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="truncate text-[9px] font-bold tracking-wider text-amber-700 uppercase opacity-70 sm:text-[10px] dark:text-amber-400">
                                             Inactive
                                         </div>
-                                        <div className="mt-2 flex items-baseline gap-2">
-                                            <div className="text-3xl font-black text-slate-900 dark:text-white">
+                                        <div className="mt-1 flex items-baseline gap-2 sm:mt-2">
+                                            <div className="text-lg font-black text-slate-900 sm:text-3xl dark:text-white">
                                                 {stats.inactive}
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-amber-500/10 text-amber-600 shadow-inner transition-transform duration-300 group-hover:scale-110 dark:bg-amber-500/20 dark:text-amber-400">
-                                        <BookOpen className="h-6 w-6" />
+                                    <div className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-amber-500/10 text-amber-600 shadow-inner transition-transform duration-300 group-hover:scale-110 sm:h-12 sm:w-12 sm:rounded-2xl dark:bg-amber-500/20 dark:text-amber-400">
+                                        <BookOpen className="h-3.5 w-3.5 sm:h-6 sm:w-6" />
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
                         {/* Departments */}
-                        <Card className="group overflow-hidden border border-purple-100 bg-purple-50/50 shadow-sm dark:border-purple-500/20 dark:bg-purple-500/10">
-                            <CardContent className="p-5">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                        <div className="text-[10px] font-bold tracking-wider text-purple-700 uppercase opacity-70 dark:text-purple-400">
+                        <Card className="group overflow-hidden rounded-xl border border-purple-100 bg-purple-50/50 shadow-sm sm:rounded-2xl dark:border-purple-500/20 dark:bg-purple-500/10">
+                            <CardContent className="p-2.5 sm:p-5">
+                                <div className="flex items-start justify-between gap-1.5 sm:gap-3">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="truncate text-[9px] font-bold tracking-wider text-purple-700 uppercase opacity-70 sm:text-[10px] dark:text-purple-400">
                                             Departments
                                         </div>
-                                        <div className="mt-2 flex items-baseline gap-2">
-                                            <div className="text-3xl font-black text-slate-900 dark:text-white">
+                                        <div className="mt-1 flex items-baseline gap-2 sm:mt-2">
+                                            <div className="text-lg font-black text-slate-900 sm:text-3xl dark:text-white">
                                                 {stats.departments}
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-purple-500/10 text-purple-600 shadow-inner transition-transform duration-300 group-hover:scale-110 dark:bg-purple-500/20 dark:text-purple-400">
-                                        <Users className="h-6 w-6" />
+                                    <div className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-purple-500/10 text-purple-600 shadow-inner transition-transform duration-300 group-hover:scale-110 sm:h-12 sm:w-12 sm:rounded-2xl dark:bg-purple-500/20 dark:text-purple-400">
+                                        <Users className="h-3.5 w-3.5 sm:h-6 sm:w-6" />
                                     </div>
                                 </div>
                             </CardContent>

@@ -527,7 +527,7 @@ class AdminManageUsersController extends Controller
     {
         $validated = $request->validate([
             'student_id' => ['required', 'string', 'max:255', 'unique:students,student_id,' . $student->id],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:students,email,' . $student->id],
+            'email' => ['nullable', 'string', 'email', 'max:255', 'unique:students,email,' . $student->id],
             'password' => ['nullable', 'string', 'min:8'],
             'first_name' => ['required', 'string', 'max:255'],
             'middle_name' => ['nullable', 'string', 'max:255'],
@@ -553,7 +553,7 @@ class AdminManageUsersController extends Controller
 
         $student->fill([
             'student_id' => $validated['student_id'],
-            'email' => $validated['email'],
+            'email' => !empty($validated['email']) ? $validated['email'] : ($student->email ?: null),
             'first_name' => $validated['first_name'],
             'middle_name' => $validated['middle_name'] ?? null,
             'last_name' => $validated['last_name'],

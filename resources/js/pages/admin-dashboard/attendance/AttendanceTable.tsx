@@ -137,8 +137,8 @@ export default function AttendanceTable({
     };
 
     return (
-        <Card className="overflow-hidden rounded-2xl border-0 bg-white shadow-sm ring-1 ring-slate-200 dark:bg-[#0B192C]/60 dark:ring-slate-800">
-            <CardHeader className="flex flex-col gap-4 border-b border-slate-100 bg-slate-50/50 px-6 py-5 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-800/30">
+        <Card className="overflow-hidden rounded-xl border-0 bg-white shadow-sm ring-1 ring-slate-200 sm:rounded-2xl dark:bg-[#0B192C]/60 dark:ring-slate-800">
+            <CardHeader className="flex flex-col gap-4 border-b border-slate-100 bg-slate-50/50 p-3.5 sm:px-6 sm:py-5 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-800/30">
                 <div>
                     <CardTitle className="flex items-center gap-2 text-sm font-black tracking-wider text-slate-900 uppercase dark:text-white">
                         <span className="h-2 w-2 animate-pulse rounded-full bg-blue-600" />
@@ -147,11 +147,11 @@ export default function AttendanceTable({
                     {onSelectEventRow ? (
                         <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
                             {selectedEvent ? (
-                                <span className="text-blue-600 font-semibold dark:text-blue-400">
+                                <span className="font-semibold text-blue-600 dark:text-blue-400">
                                     Selected: {selectedEvent.event}
                                 </span>
                             ) : (
-                                'Click a row to select an event to view statistics'
+                                'Tap or click an event to view statistics'
                             )}
                         </p>
                     ) : (
@@ -161,12 +161,12 @@ export default function AttendanceTable({
                         </p>
                     )}
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                    <div className="relative">
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                    <div className="relative w-full sm:w-52">
                         <Search className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                         <Input
                             placeholder="Search events..."
-                            className="h-9 w-44 rounded-xl border-slate-200 bg-slate-50 pl-8 text-xs font-medium focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                            className="h-9 w-full rounded-xl border-slate-200 bg-slate-50 pl-8 text-xs font-medium focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -178,7 +178,7 @@ export default function AttendanceTable({
                                 setStatusFilter(val === 'all' ? '' : val)
                             }
                         >
-                            <SelectTrigger className="h-9 w-32 rounded-xl border-slate-200 bg-slate-50 text-xs font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                            <SelectTrigger className="h-9 w-full rounded-xl border-slate-200 bg-slate-50 text-xs font-medium sm:w-32 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
                                 <SelectValue placeholder="All Status" />
                             </SelectTrigger>
                             <SelectContent>
@@ -195,7 +195,196 @@ export default function AttendanceTable({
             </CardHeader>
 
             <CardContent className="p-0">
-                <div className="overflow-x-auto">
+                {/* ── MOBILE CARDS VIEW (< md) ── */}
+                <div className="flex flex-col divide-y divide-slate-100 p-2.5 md:hidden dark:divide-slate-800">
+                    {attendanceEvents.map((row) => {
+                        const { numerator, denominator } =
+                            attendanceFraction(row);
+                        const pct =
+                            denominator > 0
+                                ? Math.min(
+                                      100,
+                                      Math.round(
+                                          (numerator / denominator) * 100,
+                                      ),
+                                  )
+                                : 0;
+
+                        const rowId = String(row.id);
+                        const isSelected =
+                            selectedEventId != null &&
+                            selectedEventId !== '' &&
+                            selectedEventId === rowId;
+                        const initials = (row.organizer || 'EV')
+                            .split(' ')
+                            .map((n) => n[0])
+                            .join('')
+                            .slice(0, 2)
+                            .toUpperCase();
+
+                        return (
+                            <div
+                                key={row.id}
+                                onClick={() => {
+                                    if (onSelectEventRow) {
+                                        onSelectEventRow(
+                                            isSelected ? null : rowId,
+                                        );
+                                    }
+                                    if (onViewStudents) {
+                                        onViewStudents(rowId);
+                                    }
+                                }}
+                                className={cn(
+                                    'my-1 flex flex-col gap-2.5 rounded-xl border p-3 transition-all duration-150',
+                                    (onSelectEventRow || onViewStudents) &&
+                                        'cursor-pointer active:scale-[0.99]',
+                                    isSelected
+                                        ? 'border-blue-400 bg-blue-50/80 shadow-xs ring-2 ring-blue-500/20 dark:border-blue-700 dark:bg-blue-950/30'
+                                        : 'border-slate-200/80 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-[#0B192C]/40',
+                                )}
+                            >
+                                {/* Header: Initials, Event Title, Status Badge */}
+                                <div className="flex items-start justify-between gap-2.5">
+                                    <div className="flex min-w-0 flex-1 items-start gap-2.5">
+                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 text-xs font-bold text-[#1e40af] shadow-xs dark:from-blue-500/20 dark:to-indigo-500/20 dark:text-blue-300">
+                                            {initials}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <h4 className="text-sm font-bold leading-snug text-slate-900 break-words dark:text-white">
+                                                {row.event}
+                                            </h4>
+                                            <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                                                {row.organizer}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="shrink-0">
+                                        {renderStatusBadge(row.status)}
+                                    </div>
+                                </div>
+
+                                {/* Date & Location */}
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                                    <span className="font-medium text-slate-700 dark:text-slate-300">
+                                        {row.dateTime}
+                                    </span>
+                                    <span className="inline-flex items-center gap-0.5 rounded border border-slate-100 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+                                        <MapPin className="h-2.5 w-2.5" />
+                                        {row.location}
+                                    </span>
+                                </div>
+
+                                {/* Attendance Progress Indicator */}
+                                <div className="rounded-lg bg-slate-50 p-2.5 dark:bg-slate-800/40">
+                                    <div className="mb-1.5 flex items-center justify-between text-xs">
+                                        <span className="font-semibold text-slate-600 dark:text-slate-300">
+                                            Attendance Turnout
+                                        </span>
+                                        {row.status === 'upcoming' ? (
+                                            <span className="text-[11px] font-medium text-slate-400 italic">
+                                                Not Started
+                                            </span>
+                                        ) : (
+                                            <span className="font-bold text-slate-900 tabular-nums dark:text-white">
+                                                {numerator} / {denominator}{' '}
+                                                <span className="text-blue-600 dark:text-blue-400">
+                                                    ({pct}%)
+                                                </span>
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200/60 dark:bg-slate-700">
+                                        <div
+                                            className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 transition-all duration-300"
+                                            style={{
+                                                width:
+                                                    row.status === 'upcoming'
+                                                        ? '0%'
+                                                        : `${pct}%`,
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Action Buttons Toolbar */}
+                                <div
+                                    className="flex items-center justify-between pt-1 gap-1.5"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <div className="text-[10px]">
+                                        {isSelected ? (
+                                            <span className="font-bold text-blue-600 dark:text-blue-400">
+                                                ● Filter Active
+                                            </span>
+                                        ) : (
+                                            <span className="text-slate-400">
+                                                Tap card to filter
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        {onViewStudents && (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-8 gap-1 rounded-lg border-blue-200 bg-blue-50/70 px-2.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-900/40 dark:bg-blue-950/40 dark:text-blue-300"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onViewStudents(row.id);
+                                                }}
+                                            >
+                                                <Eye className="h-3.5 w-3.5" />
+                                                <span>Students</span>
+                                            </Button>
+                                        )}
+                                        {onOpenRealTimeMonitoring && (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-8 gap-1 rounded-lg border-cyan-200 bg-cyan-50/70 px-2.5 text-xs font-semibold text-cyan-700 hover:bg-cyan-100 dark:border-cyan-900/40 dark:bg-cyan-950/40 dark:text-cyan-300"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onOpenRealTimeMonitoring(
+                                                        row.id,
+                                                        'dashboard',
+                                                    );
+                                                }}
+                                            >
+                                                <Activity className="h-3.5 w-3.5" />
+                                                <span>Live</span>
+                                            </Button>
+                                        )}
+                                        {onDelete && (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-8 rounded-lg border-orange-200 bg-orange-50/70 px-2 text-xs text-orange-700 hover:bg-orange-100 dark:border-orange-900/40 dark:bg-orange-950/40 dark:text-orange-300"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onDelete(row.id);
+                                                }}
+                                            >
+                                                <Archive className="h-3.5 w-3.5" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                    {attendanceEvents.length === 0 && (
+                        <div className="py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                            No events found.
+                        </div>
+                    )}
+                </div>
+
+                {/* ── DESKTOP TABLE VIEW (>= md) ── */}
+                <div className="hidden overflow-x-auto md:block">
                     <table className="w-full min-w-max border-collapse text-left text-sm">
                         <thead className="border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-400 uppercase dark:border-slate-800 dark:bg-slate-900/30 dark:text-slate-400">
                             <tr>
@@ -412,15 +601,15 @@ export default function AttendanceTable({
                     </table>
                 </div>
 
-                <div className="mt-4 flex flex-col gap-4 border-t border-slate-100 px-6 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
-                    <div className="text-sm text-slate-500 dark:text-slate-400">
+                <div className="flex flex-col gap-3 border-t border-slate-100 p-3.5 sm:px-6 sm:py-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
+                    <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                         Showing{' '}
                         <span className="font-semibold text-slate-700 dark:text-slate-300">
                             {attendanceEvents.length}
                         </span>{' '}
                         events
                         {selectedEvent && (
-                            <span className="ml-2 font-medium text-blue-600 dark:text-blue-400">
+                            <span className="block mt-0.5 sm:mt-0 sm:inline sm:ml-2 font-medium text-blue-600 dark:text-blue-400">
                                 • Selected: <strong>{selectedEvent.event}</strong>
                             </span>
                         )}
@@ -430,7 +619,7 @@ export default function AttendanceTable({
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-8 gap-1.5 border-slate-200 text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                                className="h-8 w-full sm:w-auto gap-1.5 border-slate-200 text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                                 onClick={() =>
                                     window.open(
                                         '/admin/reports/print?type=attendance&range=monthly',
