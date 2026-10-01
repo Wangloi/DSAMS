@@ -433,132 +433,132 @@ export default function AdminDashboard({
                     </div>
 
                     {/* ── TOP KPI METRIC CARDS ── */}
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
                         {/* Card 1: Today's Attendance */}
                         <div
                             onClick={() => router.visit(adminAttendance())}
-                            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-300 hover:shadow-xl dark:border-slate-800 dark:bg-slate-900/90 dark:hover:border-blue-500/40"
+                            className="group relative cursor-pointer overflow-hidden rounded-xl sm:rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900/90 dark:hover:border-blue-500/40"
                         >
-                            <div className="pointer-events-none absolute -top-8 -right-8 h-28 w-28 rounded-full bg-blue-500/10 blur-xl group-hover:bg-blue-500/20 transition-all" />
-                            <div className="flex items-start justify-between">
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[11px] font-black tracking-wider text-slate-400 uppercase dark:text-slate-400">
-                                            Today's Attendance
+                            <div className="pointer-events-none absolute -top-8 -right-8 h-20 w-20 sm:h-28 sm:w-28 rounded-full bg-blue-500/10 blur-xl group-hover:bg-blue-500/20 transition-all" />
+                            <div className="flex items-start justify-between gap-1.5 sm:gap-3">
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                                        <span className="truncate text-[9px] sm:text-[11px] font-black tracking-wider text-slate-400 uppercase dark:text-slate-400">
+                                            Attendance
                                         </span>
                                         {hasTodayEvent ? (
-                                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] font-extrabold text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
-                                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                            <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-1.5 py-0.2 text-[8px] sm:text-[9px] font-extrabold text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
+                                                <span className="h-1 w-1 sm:h-1.5 sm:w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                                 Active
                                             </span>
                                         ) : (
-                                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                                                No Event
+                                            <span className="rounded-full bg-slate-100 px-1.5 py-0.2 text-[8px] sm:text-[9px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                                None
                                             </span>
                                         )}
                                     </div>
-                                    <p className="mt-3 text-3xl font-black text-slate-900 tracking-tight dark:text-white sm:text-4xl">
+                                    <p className="mt-1 sm:mt-3 text-xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight dark:text-white">
                                         {getKpiVal("Today's Attendance").toLocaleString()}
                                     </p>
-                                    <p className="mt-1 text-xs font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                                        <TrendingUp className="h-3.5 w-3.5" />
-                                        QR Scans Logged Today
+                                    <p className="mt-0.5 sm:mt-1 truncate text-[10px] sm:text-xs font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                                        <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                                        <span className="truncate">Today's Scans</span>
                                     </p>
                                 </div>
-                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/25 transition-transform duration-300 group-hover:scale-110">
-                                    <UserCheck className="h-6 w-6" />
+                                <div className="grid h-7 w-7 sm:h-12 sm:w-12 shrink-0 place-items-center rounded-lg sm:rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/25 transition-transform duration-300 group-hover:scale-110">
+                                    <UserCheck className="h-3.5 w-3.5 sm:h-6 sm:w-6" />
                                 </div>
                             </div>
-                            <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-[11px] font-bold text-slate-500 dark:border-slate-800 dark:text-slate-400">
-                                <span>Manage Attendance Sessions</span>
-                                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1 text-blue-600 dark:text-blue-400" />
+                            <div className="mt-2 sm:mt-4 flex items-center justify-between border-t border-slate-100 pt-1.5 sm:pt-3 text-[10px] sm:text-[11px] font-bold text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                                <span className="truncate">Attendance</span>
+                                <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 transition-transform group-hover:translate-x-1 text-blue-600 dark:text-blue-400 shrink-0" />
                             </div>
                         </div>
 
                         {/* Card 2: Admission Slips */}
                         <div
                             onClick={() => router.visit(adminAdmissionSlip())}
-                            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-emerald-300 hover:shadow-xl dark:border-slate-800 dark:bg-slate-900/90 dark:hover:border-emerald-500/40"
+                            className="group relative cursor-pointer overflow-hidden rounded-xl sm:rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900/90 dark:hover:border-emerald-500/40"
                         >
-                            <div className="pointer-events-none absolute -top-8 -right-8 h-28 w-28 rounded-full bg-emerald-500/10 blur-xl group-hover:bg-emerald-500/20 transition-all" />
-                            <div className="flex items-start justify-between">
-                                <div>
-                                    <span className="text-[11px] font-black tracking-wider text-slate-400 uppercase dark:text-slate-400">
+                            <div className="pointer-events-none absolute -top-8 -right-8 h-20 w-20 sm:h-28 sm:w-28 rounded-full bg-emerald-500/10 blur-xl group-hover:bg-emerald-500/20 transition-all" />
+                            <div className="flex items-start justify-between gap-1.5 sm:gap-3">
+                                <div className="min-w-0 flex-1">
+                                    <span className="truncate text-[9px] sm:text-[11px] font-black tracking-wider text-slate-400 uppercase dark:text-slate-400">
                                         Admission Slips
                                     </span>
-                                    <p className="mt-3 text-3xl font-black text-slate-900 tracking-tight dark:text-white sm:text-4xl">
+                                    <p className="mt-1 sm:mt-3 text-xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight dark:text-white">
                                         {getKpiVal('Admission Slips').toLocaleString()}
                                     </p>
-                                    <p className="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                                        <Ticket className="h-3.5 w-3.5" />
-                                        Total Slips Issued
+                                    <p className="mt-0.5 sm:mt-1 truncate text-[10px] sm:text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                        <Ticket className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                                        <span className="truncate">Total Slips</span>
                                     </p>
                                 </div>
-                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/25 transition-transform duration-300 group-hover:scale-110">
-                                    <Ticket className="h-6 w-6" />
+                                <div className="grid h-7 w-7 sm:h-12 sm:w-12 shrink-0 place-items-center rounded-lg sm:rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/25 transition-transform duration-300 group-hover:scale-110">
+                                    <Ticket className="h-3.5 w-3.5 sm:h-6 sm:w-6" />
                                 </div>
                             </div>
-                            <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-[11px] font-bold text-slate-500 dark:border-slate-800 dark:text-slate-400">
-                                <span>Issue & Review Slips</span>
-                                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1 text-emerald-600 dark:text-emerald-400" />
+                            <div className="mt-2 sm:mt-4 flex items-center justify-between border-t border-slate-100 pt-1.5 sm:pt-3 text-[10px] sm:text-[11px] font-bold text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                                <span className="truncate">Slips</span>
+                                <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 transition-transform group-hover:translate-x-1 text-emerald-600 dark:text-emerald-400 shrink-0" />
                             </div>
                         </div>
 
                         {/* Card 3: Active Disciplinary Cases */}
                         <div
                             onClick={() => router.visit(adminIncidentsViolations())}
-                            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-rose-300 hover:shadow-xl dark:border-slate-800 dark:bg-slate-900/90 dark:hover:border-rose-500/40"
+                            className="group relative cursor-pointer overflow-hidden rounded-xl sm:rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-rose-300 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900/90 dark:hover:border-rose-500/40"
                         >
-                            <div className="pointer-events-none absolute -top-8 -right-8 h-28 w-28 rounded-full bg-rose-500/10 blur-xl group-hover:bg-rose-500/20 transition-all" />
-                            <div className="flex items-start justify-between">
-                                <div>
-                                    <span className="text-[11px] font-black tracking-wider text-slate-400 uppercase dark:text-slate-400">
-                                        Active Conduct Cases
+                            <div className="pointer-events-none absolute -top-8 -right-8 h-20 w-20 sm:h-28 sm:w-28 rounded-full bg-rose-500/10 blur-xl group-hover:bg-rose-500/20 transition-all" />
+                            <div className="flex items-start justify-between gap-1.5 sm:gap-3">
+                                <div className="min-w-0 flex-1">
+                                    <span className="truncate text-[9px] sm:text-[11px] font-black tracking-wider text-slate-400 uppercase dark:text-slate-400">
+                                        Conduct Cases
                                     </span>
-                                    <p className="mt-3 text-3xl font-black text-slate-900 tracking-tight dark:text-white sm:text-4xl">
+                                    <p className="mt-1 sm:mt-3 text-xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight dark:text-white">
                                         {getKpiVal('Active Cases').toLocaleString()}
                                     </p>
-                                    <p className="mt-1 text-xs font-semibold text-rose-600 dark:text-rose-400 flex items-center gap-1">
-                                        <AlertCircle className="h-3.5 w-3.5" />
-                                        Pending Hearings / Action
+                                    <p className="mt-0.5 sm:mt-1 truncate text-[10px] sm:text-xs font-semibold text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                                        <AlertCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                                        <span className="truncate">Active Cases</span>
                                     </p>
                                 </div>
-                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-md shadow-rose-500/25 transition-transform duration-300 group-hover:scale-110">
-                                    <Briefcase className="h-6 w-6" />
+                                <div className="grid h-7 w-7 sm:h-12 sm:w-12 shrink-0 place-items-center rounded-lg sm:rounded-2xl bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-md shadow-rose-500/25 transition-transform duration-300 group-hover:scale-110">
+                                    <Briefcase className="h-3.5 w-3.5 sm:h-6 sm:w-6" />
                                 </div>
                             </div>
-                            <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-[11px] font-bold text-slate-500 dark:border-slate-800 dark:text-slate-400">
-                                <span>Track Incident Status</span>
-                                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1 text-rose-600 dark:text-rose-400" />
+                            <div className="mt-2 sm:mt-4 flex items-center justify-between border-t border-slate-100 pt-1.5 sm:pt-3 text-[10px] sm:text-[11px] font-bold text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                                <span className="truncate">Incidents</span>
+                                <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 transition-transform group-hover:translate-x-1 text-rose-600 dark:text-rose-400 shrink-0" />
                             </div>
                         </div>
 
                         {/* Card 4: Evaluation Surveys */}
                         <div
                             onClick={() => router.visit(adminEvaluation())}
-                            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-300 hover:shadow-xl dark:border-slate-800 dark:bg-slate-900/90 dark:hover:border-amber-500/40"
+                            className="group relative cursor-pointer overflow-hidden rounded-xl sm:rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900/90 dark:hover:border-amber-500/40"
                         >
-                            <div className="pointer-events-none absolute -top-8 -right-8 h-28 w-28 rounded-full bg-amber-500/10 blur-xl group-hover:bg-amber-500/20 transition-all" />
-                            <div className="flex items-start justify-between">
-                                <div>
-                                    <span className="text-[11px] font-black tracking-wider text-slate-400 uppercase dark:text-slate-400">
-                                        Evaluation Surveys
+                            <div className="pointer-events-none absolute -top-8 -right-8 h-20 w-20 sm:h-28 sm:w-28 rounded-full bg-amber-500/10 blur-xl group-hover:bg-amber-500/20 transition-all" />
+                            <div className="flex items-start justify-between gap-1.5 sm:gap-3">
+                                <div className="min-w-0 flex-1">
+                                    <span className="truncate text-[9px] sm:text-[11px] font-black tracking-wider text-slate-400 uppercase dark:text-slate-400">
+                                        Surveys
                                     </span>
-                                    <p className="mt-3 text-3xl font-black text-slate-900 tracking-tight dark:text-white sm:text-4xl">
+                                    <p className="mt-1 sm:mt-3 text-xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight dark:text-white">
                                         {getKpiVal('Evaluation Surveys').toLocaleString()}
                                     </p>
-                                    <p className="mt-1 text-xs font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                                        <Star className="h-3.5 w-3.5" />
-                                        Active Feedback Forms
+                                    <p className="mt-0.5 sm:mt-1 truncate text-[10px] sm:text-xs font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                                        <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                                        <span className="truncate">Active Forms</span>
                                     </p>
                                 </div>
-                                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-md shadow-amber-500/25 transition-transform duration-300 group-hover:scale-110">
-                                    <FileText className="h-6 w-6" />
+                                <div className="grid h-7 w-7 sm:h-12 sm:w-12 shrink-0 place-items-center rounded-lg sm:rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-md shadow-amber-500/25 transition-transform duration-300 group-hover:scale-110">
+                                    <FileText className="h-3.5 w-3.5 sm:h-6 sm:w-6" />
                                 </div>
                             </div>
-                            <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-[11px] font-bold text-slate-500 dark:border-slate-800 dark:text-slate-400">
-                                <span>Analyze Feedback Metrics</span>
-                                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1 text-amber-600 dark:text-amber-400" />
+                            <div className="mt-2 sm:mt-4 flex items-center justify-between border-t border-slate-100 pt-1.5 sm:pt-3 text-[10px] sm:text-[11px] font-bold text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                                <span className="truncate">Surveys</span>
+                                <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 transition-transform group-hover:translate-x-1 text-amber-600 dark:text-amber-400 shrink-0" />
                             </div>
                         </div>
                     </div>

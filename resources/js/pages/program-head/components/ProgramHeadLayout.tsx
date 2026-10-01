@@ -4,6 +4,7 @@ import { SidebarInset, useSidebar } from '@/components/ui/sidebar';
 import type { AppLayoutProps } from '@/types';
 import { ProgramHeadHeader } from './ProgramHeadHeader';
 import { ProgramHeadSidebar } from './ProgramHeadSidebar';
+import { ProgramHeadBottomNavBar } from './ProgramHeadBottomNavBar';
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
     const { open } = useSidebar();
@@ -18,7 +19,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     return open ? (
         <SidebarInset>
             <ProgramHeadHeader />
-            <AppContent variant="sidebar" className="overflow-x-hidden pt-16">
+            <AppContent variant="sidebar" className="overflow-x-hidden pt-16 pb-24 lg:pb-8">
                 {decorative}
                 <div className="relative z-10">{children}</div>
             </AppContent>
@@ -28,7 +29,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
             <ProgramHeadHeader />
             <AppContent
                 variant="sidebar"
-                className="mx-0 max-w-full overflow-x-hidden pt-16"
+                className="mx-0 max-w-full overflow-x-hidden pt-16 pb-24 lg:pb-8"
             >
                 {decorative}
                 <div className="relative z-10">{children}</div>
@@ -43,8 +44,14 @@ export default function ProgramHeadLayout({
 }: AppLayoutProps) {
     return (
         <AppShell variant="sidebar">
-            <ProgramHeadSidebar />
+            {/* Desktop Sidebar: Only visible on lg screens and up */}
+            <div className="hidden lg:block">
+                <ProgramHeadSidebar />
+            </div>
             <LayoutContent>{children}</LayoutContent>
+
+            {/* Mobile Bottom Navigation Bar for rapid thumb access */}
+            <ProgramHeadBottomNavBar />
         </AppShell>
     );
 }

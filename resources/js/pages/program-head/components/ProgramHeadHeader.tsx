@@ -62,6 +62,14 @@ export function ProgramHeadHeader() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [helpOpen, setHelpOpen] = useState(false);
 
+    useEffect(() => {
+        const handleOpenMenu = () => setMobileMenuOpen(true);
+        window.addEventListener('dsams:open-program-head-mobile-menu', handleOpenMenu);
+        return () => {
+            window.removeEventListener('dsams:open-program-head-mobile-menu', handleOpenMenu);
+        };
+    }, []);
+
     // Real-time notification hook powered by Node.js + Socket.IO
     const {
         notifications: realtimeList,
@@ -195,75 +203,69 @@ export function ProgramHeadHeader() {
     return (
         <div className="fixed inset-x-0 top-0 z-40 border-b border-white/5 bg-gradient-to-r from-[#0b2d66] via-[#103875] to-[#1e40af] text-white shadow-md dark:bg-[#0B192C] dark:from-transparent dark:via-transparent dark:to-transparent">
             <div className="flex h-16 w-full items-center px-4 sm:px-6">
-                <Link
-                    href="/program-head/dashboard"
-                    prefetch
-                    className="flex items-center gap-2 sm:gap-3 lg:ml-0"
-                >
-                    {/* Mobile Menu Trigger */}
-                    <div className="lg:hidden">
-                        <Sheet
-                            open={mobileMenuOpen}
-                            onOpenChange={setMobileMenuOpen}
+                {/* Mobile Menu Trigger */}
+                <div className="lg:hidden">
+                    <Sheet
+                        open={mobileMenuOpen}
+                        onOpenChange={setMobileMenuOpen}
+                    >
+                        <SimpleTooltip content="Open Navigation Menu" side="bottom">
+                            <SheetTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-10 w-10 rounded-xl text-white hover:bg-white/10 cursor-pointer"
+                                >
+                                    <Menu className="h-5 w-5" />
+                                </Button>
+                            </SheetTrigger>
+                        </SimpleTooltip>
+                        <SheetContent
+                            side="left"
+                            className="w-72 border-r border-slate-200 bg-white p-0 dark:border-white/10 dark:bg-[#0B192C] [&>button]:hidden"
                         >
-                            <SimpleTooltip content="Open Navigation Menu" side="bottom">
-                                <SheetTrigger asChild>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-10 w-10 rounded-xl text-white hover:bg-white/10 cursor-pointer"
-                                    >
-                                        <Menu className="h-5 w-5" />
-                                    </Button>
-                                </SheetTrigger>
-                            </SimpleTooltip>
-                            <SheetContent
-                                side="left"
-                                className="w-72 border-r border-slate-200 bg-white p-0 dark:border-white/10 dark:bg-[#0B192C] [&>button]:hidden"
-                            >
-                                <SheetHeader className="sr-only">
-                                    <SheetTitle>Navigation Menu</SheetTitle>
-                                    <SheetDescription>
-                                        Main navigation menu for accessing
-                                        Program Head dashboard features
-                                    </SheetDescription>
-                                </SheetHeader>
-                                <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 p-5 dark:border-white/10 dark:bg-white/5">
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex -space-x-2">
-                                            <img
-                                                src="/images/SRCB.png"
-                                                alt="SRCB Logo"
-                                                className="h-9 w-9 rounded-full bg-white object-cover ring-2 ring-white"
-                                            />
-                                            <img
-                                                src="/images/DSA.png"
-                                                alt="DSA Logo"
-                                                className="h-9 w-9 rounded-full bg-white object-cover ring-2 ring-white"
-                                            />
-                                        </div>
-                                        <span className="font-bold text-slate-900 dark:text-white">
-                                            DSAMS
-                                        </span>
+                            <SheetHeader className="sr-only">
+                                <SheetTitle>Navigation Menu</SheetTitle>
+                                <SheetDescription>
+                                    Main navigation menu for accessing
+                                    Program Head dashboard features
+                                </SheetDescription>
+                            </SheetHeader>
+                            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 p-5 dark:border-white/10 dark:bg-white/5">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex -space-x-2">
+                                        <img
+                                            src="/images/SRCB.png"
+                                            alt="SRCB Logo"
+                                            className="h-9 w-9 rounded-full bg-white object-cover ring-2 ring-white"
+                                        />
+                                        <img
+                                            src="/images/DSA.png"
+                                            alt="DSA Logo"
+                                            className="h-9 w-9 rounded-full bg-white object-cover ring-2 ring-white"
+                                        />
                                     </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => setMobileMenuOpen(false)}
-                                        className="h-8 w-8 rounded-full text-slate-500 hover:bg-slate-200 dark:text-white dark:hover:bg-white/10"
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
+                                    <span className="font-bold text-slate-900 dark:text-white">
+                                        DSAMS
+                                    </span>
                                 </div>
-                                <MobileNavigation />
-                            </SheetContent>
-                        </Sheet>
-                    </div>
-                </Link>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="h-8 w-8 rounded-full text-slate-500 hover:bg-slate-200 dark:text-white dark:hover:bg-white/10"
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <MobileNavigation onNavigate={() => setMobileMenuOpen(false)} />
+                        </SheetContent>
+                    </Sheet>
+                </div>
 
                 {/* Logo and Title */}
                 <Link
-                    href="/"
+                    href={programHeadDashboard()}
                     prefetch
                     className="flex items-center gap-2 sm:gap-3 lg:ml-0"
                 >
@@ -340,7 +342,7 @@ export function ProgramHeadHeader() {
                             </DropdownMenuTrigger>
                         </SimpleTooltip>
                         <DropdownMenuContent
-                            className="z-[60] w-88 rounded-2xl border border-slate-100 shadow-xl dark:border-slate-800 dark:bg-[#0B192C]"
+                            className="z-[60] w-[calc(100vw-2rem)] max-w-sm rounded-2xl border border-slate-100 shadow-xl dark:border-slate-800 dark:bg-[#0B192C]"
                             align="end"
                         >
                             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">

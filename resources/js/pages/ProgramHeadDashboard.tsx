@@ -207,22 +207,22 @@ export default function ProgramHeadDashboard({ user }: Props) {
         <ProgramHeadLayout>
             <Head title="Program Head Dashboard" />
 
-            <div className="relative z-10 flex w-full flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+            <div className="relative z-10 flex w-full flex-col gap-5 px-3.5 py-4 sm:gap-6 sm:px-6 sm:py-8 lg:px-8">
                 {/* ── Hero Header ─────────────────────────────────────────────── */}
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] p-6 shadow-xl shadow-blue-900/20">
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] p-4.5 sm:p-6 shadow-xl shadow-blue-900/20">
                     {/* Background decorations */}
                     <div className="pointer-events-none absolute -top-12 -right-12 h-56 w-56 rounded-full bg-white/5" />
                     <div className="pointer-events-none absolute -top-4 -right-4 h-32 w-32 rounded-full bg-white/5" />
                     <div className="pointer-events-none absolute bottom-0 left-1/3 h-48 w-48 -translate-y-1/4 rounded-full bg-blue-400/10 blur-2xl" />
 
                     <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
-                            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/10 text-white shadow-inner ring-1 ring-white/20 backdrop-blur-sm">
-                                <Activity className="h-7 w-7 text-blue-200" />
+                        <div className="flex items-center gap-3.5 text-left sm:gap-4">
+                            <div className="grid h-11 w-11 sm:h-14 sm:w-14 shrink-0 place-items-center rounded-2xl bg-white/10 text-white shadow-inner ring-1 ring-white/20 backdrop-blur-sm">
+                                <Activity className="h-6 w-6 sm:h-7 sm:w-7 text-blue-200" />
                             </div>
 
                             <div>
-                                <h1 className="text-2xl leading-tight font-black tracking-tight text-white">
+                                <h1 className="text-xl sm:text-2xl leading-tight font-black tracking-tight text-white">
                                     Welcome Back, {user?.name || 'Program Head'}
                                     !
                                 </h1>
@@ -260,34 +260,34 @@ export default function ProgramHeadDashboard({ user }: Props) {
                 </div>
 
                 {/* ── KPI Cards ───────────────────────────────────────────────── */}
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+                <div className="grid grid-cols-3 gap-2 sm:gap-5">
                     {/* Total Students */}
                     <div
                         onClick={() => router.visit('/program-head/students')}
-                        className="group relative cursor-pointer overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200/80 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-slate-800/90 dark:ring-1 dark:ring-slate-700/80 dark:shadow-md dark:hover:bg-slate-800"
+                        className="group relative cursor-pointer overflow-hidden rounded-xl sm:rounded-2xl bg-white p-2.5 sm:p-5 shadow-sm ring-1 ring-slate-200/80 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-slate-800/90 dark:ring-1 dark:ring-slate-700/80 dark:shadow-md dark:hover:bg-slate-800"
                     >
-                        <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-indigo-500/5" />
-                        <div className="flex items-start justify-between gap-3">
-                            <div>
-                                <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-400">
-                                    Total Students
+                        <div className="pointer-events-none absolute -top-4 -right-4 h-16 w-16 sm:h-24 sm:w-24 rounded-full bg-indigo-500/5" />
+                        <div className="flex items-start justify-between gap-1.5 sm:gap-3">
+                            <div className="min-w-0 flex-1">
+                                <p className="truncate text-[8px] sm:text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-400">
+                                    Students
                                 </p>
-                                <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
+                                <p className="mt-1 sm:mt-2 text-lg sm:text-4xl font-black text-slate-900 dark:text-white">
                                     {counts.total}
                                 </p>
-                                <p className="mt-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-                                    Enrolled Students
+                                <p className="mt-0.5 sm:mt-1 truncate text-[9px] sm:text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                                    Enrolled
                                 </p>
                             </div>
-                            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-indigo-500/10 text-indigo-600 ring-1 ring-indigo-200/50 transition-transform duration-300 group-hover:scale-110 dark:bg-indigo-500/20 dark:text-indigo-400 dark:ring-indigo-900/30">
-                                <Users className="h-5 w-5" />
+                            <div className="grid h-7 w-7 sm:h-12 sm:w-12 shrink-0 place-items-center rounded-lg sm:rounded-2xl bg-indigo-500/10 text-indigo-600 ring-1 ring-indigo-200/50 transition-transform duration-300 group-hover:scale-110 dark:bg-indigo-500/20 dark:text-indigo-400 dark:ring-indigo-900/30">
+                                <Users className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
                             </div>
                         </div>
-                        <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700/60">
+                        <div className="mt-2 sm:mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700/60">
                             <div className="h-full w-full rounded-full bg-gradient-to-r from-indigo-400 to-indigo-600" />
                         </div>
-                        <div className="mt-3 flex items-center gap-1.5 text-[11px] font-black tracking-wider text-indigo-600 uppercase transition-all duration-200 group-hover:text-indigo-700 dark:text-indigo-400 dark:group-hover:text-indigo-300">
-                            <span>View Student Records</span>
+                        <div className="hidden sm:flex mt-3 items-center gap-1.5 text-[11px] font-black tracking-wider text-indigo-600 uppercase transition-all duration-200 group-hover:text-indigo-700 dark:text-indigo-400 dark:group-hover:text-indigo-300">
+                            <span>View Records</span>
                             <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
                         </div>
                     </div>
@@ -295,30 +295,30 @@ export default function ProgramHeadDashboard({ user }: Props) {
                     {/* Present Today */}
                     <div
                         onClick={() => router.visit('/program-head/attendance')}
-                        className="group relative cursor-pointer overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200/80 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-slate-800/90 dark:ring-1 dark:ring-slate-700/80 dark:shadow-md dark:hover:bg-slate-800"
+                        className="group relative cursor-pointer overflow-hidden rounded-xl sm:rounded-2xl bg-white p-2.5 sm:p-5 shadow-sm ring-1 ring-slate-200/80 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-slate-800/90 dark:ring-1 dark:ring-slate-700/80 dark:shadow-md dark:hover:bg-slate-800"
                     >
-                        <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-emerald-500/5" />
-                        <div className="flex items-start justify-between gap-3">
-                            <div>
-                                <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-400">
-                                    Present Today
+                        <div className="pointer-events-none absolute -top-4 -right-4 h-16 w-16 sm:h-24 sm:w-24 rounded-full bg-emerald-500/5" />
+                        <div className="flex items-start justify-between gap-1.5 sm:gap-3">
+                            <div className="min-w-0 flex-1">
+                                <p className="truncate text-[8px] sm:text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-400">
+                                    Attendance
                                 </p>
-                                <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
+                                <p className="mt-1 sm:mt-2 text-lg sm:text-4xl font-black text-slate-900 dark:text-white">
                                     {counts.present}
                                 </p>
-                                <p className="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                                    {counts.pct}% Attendance Rate
+                                <p className="mt-0.5 sm:mt-1 truncate text-[9px] sm:text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                                    {counts.pct}% Rate
                                 </p>
                             </div>
-                            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-200/50 transition-transform duration-300 group-hover:scale-110 dark:bg-emerald-500/20 dark:text-emerald-400 dark:ring-emerald-900/30">
-                                <CalendarCheck className="h-5 w-5" />
+                            <div className="grid h-7 w-7 sm:h-12 sm:w-12 shrink-0 place-items-center rounded-lg sm:rounded-2xl bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-200/50 transition-transform duration-300 group-hover:scale-110 dark:bg-emerald-500/20 dark:text-emerald-400 dark:ring-emerald-900/30">
+                                <CalendarCheck className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
                             </div>
                         </div>
-                        <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700/60">
+                        <div className="mt-2 sm:mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700/60">
                             <div className="h-full w-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600" />
                         </div>
-                        <div className="mt-3 flex items-center gap-1.5 text-[11px] font-black tracking-wider text-emerald-600 uppercase transition-all duration-200 group-hover:text-emerald-700 dark:text-emerald-400 dark:group-hover:text-emerald-300">
-                            <span>View Attendance Logs</span>
+                        <div className="hidden sm:flex mt-3 items-center gap-1.5 text-[11px] font-black tracking-wider text-emerald-600 uppercase transition-all duration-200 group-hover:text-emerald-700 dark:text-emerald-400 dark:group-hover:text-emerald-300">
+                            <span>View Logs</span>
                             <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
                         </div>
                     </div>
@@ -326,30 +326,30 @@ export default function ProgramHeadDashboard({ user }: Props) {
                     {/* Incident Records */}
                     <div
                         onClick={() => router.visit('/program-head/violations')}
-                        className="group relative cursor-pointer overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200/80 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-slate-800/90 dark:ring-1 dark:ring-slate-700/80 dark:shadow-md dark:hover:bg-slate-800"
+                        className="group relative cursor-pointer overflow-hidden rounded-xl sm:rounded-2xl bg-white p-2.5 sm:p-5 shadow-sm ring-1 ring-slate-200/80 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-slate-800/90 dark:ring-1 dark:ring-slate-700/80 dark:shadow-md dark:hover:bg-slate-800"
                     >
-                        <div className="pointer-events-none absolute -top-4 -right-4 h-24 w-24 rounded-full bg-rose-500/5" />
-                        <div className="flex items-start justify-between gap-3">
-                            <div>
-                                <p className="text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-400">
-                                    Incident Records
+                        <div className="pointer-events-none absolute -top-4 -right-4 h-16 w-16 sm:h-24 sm:w-24 rounded-full bg-rose-500/5" />
+                        <div className="flex items-start justify-between gap-1.5 sm:gap-3">
+                            <div className="min-w-0 flex-1">
+                                <p className="truncate text-[8px] sm:text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-400">
+                                    Incidents
                                 </p>
-                                <p className="mt-2 text-4xl font-black text-slate-900 dark:text-white">
+                                <p className="mt-1 sm:mt-2 text-lg sm:text-4xl font-black text-slate-900 dark:text-white">
                                     {totalViolationsCount}
                                 </p>
-                                <p className="mt-1 text-xs font-semibold text-rose-600 dark:text-rose-400">
-                                    Flagged Cases
+                                <p className="mt-0.5 sm:mt-1 truncate text-[9px] sm:text-xs font-semibold text-rose-600 dark:text-rose-400">
+                                    Flagged
                                 </p>
                             </div>
-                            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-rose-500/10 text-rose-600 ring-1 ring-rose-200/50 transition-transform duration-300 group-hover:scale-110 dark:bg-rose-500/20 dark:text-rose-400 dark:ring-rose-900/30">
-                                <ShieldAlert className="h-5 w-5" />
+                            <div className="grid h-7 w-7 sm:h-12 sm:w-12 shrink-0 place-items-center rounded-lg sm:rounded-2xl bg-rose-500/10 text-rose-600 ring-1 ring-rose-200/50 transition-transform duration-300 group-hover:scale-110 dark:bg-rose-500/20 dark:text-rose-400 dark:ring-rose-900/30">
+                                <ShieldAlert className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
                             </div>
                         </div>
-                        <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700/60">
+                        <div className="mt-2 sm:mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700/60">
                             <div className="h-full w-full rounded-full bg-gradient-to-r from-rose-400 to-rose-600" />
                         </div>
-                        <div className="mt-3 flex items-center gap-1.5 text-[11px] font-black tracking-wider text-rose-600 uppercase transition-all duration-200 group-hover:text-rose-700 dark:text-rose-400 dark:group-hover:text-rose-300">
-                            <span>View Incident Records</span>
+                        <div className="hidden sm:flex mt-3 items-center gap-1.5 text-[11px] font-black tracking-wider text-rose-600 uppercase transition-all duration-200 group-hover:text-rose-700 dark:text-rose-400 dark:group-hover:text-rose-300">
+                            <span>View Records</span>
                             <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
                         </div>
                     </div>
