@@ -31,7 +31,7 @@ import type { SharedData } from '@/types';
 import { cn, formatTimeAgo } from '@/lib/utils';
 import { Link, router, usePage } from '@inertiajs/react';
 import axios from 'axios';
-import { programHeadHelp, programHeadNotifications } from '@/routes';
+import { programHeadDashboard, programHeadHelp, programHeadNotifications } from '@/routes';
 import {
     ArrowRight,
     Bell,
@@ -198,7 +198,9 @@ export function ProgramHeadHeader() {
         propsAny?.user;
     const defaultUser = { name: 'Admin User', avatar: null };
     const displayUser = user || defaultUser;
-    const subtitleLabel = displayUser ? 'Program Head' : undefined;
+    const subtitleLabel = displayUser
+        ? (displayUser.office || (displayUser.role === 'Offices' ? 'Office Personnel' : displayUser.role === 'Instructor' ? 'Instructor' : 'Program Head'))
+        : undefined;
 
     return (
         <div className="fixed inset-x-0 top-0 z-40 border-b border-white/5 bg-gradient-to-r from-[#0b2d66] via-[#103875] to-[#1e40af] text-white shadow-md dark:bg-[#0B192C] dark:from-transparent dark:via-transparent dark:to-transparent">
@@ -222,7 +224,7 @@ export function ProgramHeadHeader() {
                         </SimpleTooltip>
                         <SheetContent
                             side="left"
-                            className="w-72 border-r border-slate-200 bg-white p-0 dark:border-white/10 dark:bg-[#0B192C] [&>button]:hidden"
+                            className="w-72 border-r border-slate-200 bg-white p-0 gap-0 dark:border-white/10 dark:bg-[#0B192C] [&>button]:hidden"
                         >
                             <SheetHeader className="sr-only">
                                 <SheetTitle>Navigation Menu</SheetTitle>
@@ -246,7 +248,7 @@ export function ProgramHeadHeader() {
                                         />
                                     </div>
                                     <span className="font-bold text-slate-900 dark:text-white">
-                                        DSAMS
+                                        OSAMS
                                     </span>
                                 </div>
                                 <Button
@@ -284,13 +286,13 @@ export function ProgramHeadHeader() {
                     <div className="hidden leading-tight sm:block">
                         <div className="flex flex-wrap items-center gap-1 sm:gap-2">
                             <div className="text-base font-bold tracking-wide sm:text-lg">
-                                DSAMS
+                                OSAMS
                             </div>
                             <div className="hidden text-white/50 md:block">
                                 /
                             </div>
                             <div className="hidden text-xs font-semibold text-white/90 lg:block">
-                                Dean of Student Affairs Management System
+                                Office of Student Affairs Management System
                             </div>
                         </div>
                         <div className="hidden text-[10px] font-semibold text-white/80 sm:block sm:text-[11px]">
@@ -300,7 +302,7 @@ export function ProgramHeadHeader() {
                     {/* Mobile-only title */}
                     <div className="leading-tight sm:hidden">
                         <div className="text-base font-bold tracking-wide">
-                            DSAMS
+                            OSAMS
                         </div>
                     </div>
                 </Link>

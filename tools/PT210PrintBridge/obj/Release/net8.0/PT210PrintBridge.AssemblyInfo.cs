@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PT210PrintBridge")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+31a471075d6a49f65dc786615379e1f1b1f71b71")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+53a891e04d54bef2689b6b54fe1744e06cd031dc")]
 [assembly: System.Reflection.AssemblyProductAttribute("PT210PrintBridge")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PT210PrintBridge")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

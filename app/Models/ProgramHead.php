@@ -18,6 +18,7 @@ class ProgramHead extends Authenticatable
         'password',
         'program',
         'role',
+        'office',
         'verification_status',
     ];
 

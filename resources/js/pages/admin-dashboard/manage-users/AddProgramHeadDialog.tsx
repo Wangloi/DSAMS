@@ -110,6 +110,18 @@ const DEFAULT_PROGRAM_CARDS: DefaultProgramInfo[] = [
     },
 ];
 
+const CAMPUS_OFFICE_PRESETS = [
+    'Office of Student Affairs',
+    'Student Affairs',
+    'Dean of College',
+    'Academic Affairs',
+    'Admin Office',
+    'College Student Government (CSG)',
+    'Guidance Office',
+    'HED Library',
+    'Sports Department',
+];
+
 const HONORIFICS = ['Dr.', 'Prof.', 'Dean', 'Engr.', 'Atty.', 'Mr.', 'Ms.'];
 
 const ROLE_OPTIONS = [
@@ -163,13 +175,31 @@ export default function AddProgramHeadDialog({
     // Default role fallback to Program Head if not specified
     const activeRole = form.role || 'Program Head';
 
-    // Merge system programs with default cards
+    // Merge system programs with default cards and add dynamic ALL programs card
     const programCards = useMemo(() => {
-        if (!programs || programs.length === 0) {
-            return DEFAULT_PROGRAM_CARDS;
-        }
-
         const map = new Map<string, DefaultProgramInfo>();
+
+        // Adaptive ALL card based on active role
+        const allCard: DefaultProgramInfo = {
+            code: 'ALL',
+            name:
+                activeRole === 'Offices'
+                    ? 'All Programs (Campus-wide)'
+                    : activeRole === 'Instructor'
+                      ? 'All Programs (GenEd)'
+                      : 'All Programs (Dean)',
+            department:
+                activeRole === 'Offices'
+                    ? 'Campus-wide Administration'
+                    : activeRole === 'Instructor'
+                      ? 'General Education / Cross-Dept'
+                      : 'Institutional Deanship',
+            icon: Building2,
+            gradient: 'from-blue-600 to-indigo-600',
+            accent: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/50',
+        };
+        map.set('ALL', allCard);
+
         DEFAULT_PROGRAM_CARDS.forEach((card) => map.set(card.code.toUpperCase(), card));
 
         // Add any additional dynamic programs from DB
@@ -188,7 +218,7 @@ export default function AddProgramHeadDialog({
         });
 
         return Array.from(map.values());
-    }, [programs]);
+    }, [programs, activeRole]);
 
     const handleGeneratePassword = () => {
         const charset = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%';
@@ -313,6 +343,10 @@ export default function AddProgramHeadDialog({
                                             setForm((prev) => ({
                                                 ...prev,
                                                 role: opt.id,
+                                                program:
+                                                    opt.id === 'Offices' && (!prev.program || prev.program === '')
+                                                        ? 'ALL'
+                                                        : prev.program,
                                             }))
                                         }
                                         className={`group relative flex flex-col justify-between rounded-2xl border p-3.5 text-left transition-all duration-200 ${
@@ -358,12 +392,85 @@ export default function AddProgramHeadDialog({
                         <InputError message={(errors as any).role} />
                     </div>
 
-                    {/* Section 2: Department / Academic Program Assignment */}
+                    {/* Section 2 (When Offices): Designated Campus Office Unit */}
+                    {activeRole === 'Offices' && (
+                        <div className="space-y-3 rounded-2xl border border-purple-200/90 bg-purple-50/50 p-4 shadow-xs dark:border-purple-900/40 dark:bg-purple-950/20">
+                            <div className="flex items-center justify-between">
+                                <Label className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-purple-900 uppercase dark:text-purple-300">
+                                    <Building2 className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                                    <span>2. Designated Campus Office Unit *</span>
+                                </Label>
+                                {form.office && (
+                                    <span className="flex items-center gap-1 text-xs font-semibold text-purple-700 dark:text-purple-300">
+                                        <CheckCircle2 className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                                        Unit: {form.office}
+                                    </span>
+                                )}
+                            </div>
+
+                            <p className="text-[11.5px] text-slate-600 dark:text-slate-400">
+                                Select an official campus department or office for this personnel:
+                            </p>
+
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                {CAMPUS_OFFICE_PRESETS.map((preset) => {
+                                    const isSelected = form.office === preset;
+                                    return (
+                                        <button
+                                            key={preset}
+                                            type="button"
+                                            onClick={() => {
+                                                setForm((prev) => ({
+                                                    ...prev,
+                                                    office: preset,
+                                                    program: prev.program || 'ALL',
+                                                }));
+                                            }}
+                                            className={`flex items-center justify-between rounded-xl border px-3 py-2 text-left text-xs font-semibold transition-all ${
+                                                isSelected
+                                                    ? 'border-purple-500 bg-purple-100/90 text-purple-900 shadow-xs ring-1 ring-purple-400 dark:border-purple-500 dark:bg-purple-900/60 dark:text-purple-200'
+                                                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-850'
+                                            }`}
+                                        >
+                                            <span className="truncate">{preset}</span>
+                                            {isSelected && (
+                                                <Check className="h-3.5 w-3.5 shrink-0 text-purple-700 dark:text-purple-300" />
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="pt-1 space-y-1.5">
+                                <Label
+                                    htmlFor="custom_office"
+                                    className="text-[11px] font-semibold text-slate-600 dark:text-slate-400"
+                                >
+                                    Or Custom Office / Unit Name:
+                                </Label>
+                                <Input
+                                    id="custom_office"
+                                    placeholder="e.g. Campus Ministry, NSTP / ROTC Office, Supreme Student Council"
+                                    value={form.office || ''}
+                                    onChange={(e) =>
+                                        setForm((prev) => ({
+                                            ...prev,
+                                            office: e.target.value,
+                                        }))
+                                    }
+                                    className="h-9.5 rounded-xl border-purple-200 bg-white text-xs font-medium dark:border-slate-700 dark:bg-slate-900"
+                                />
+                            </div>
+                            <InputError message={(errors as any).office} />
+                        </div>
+                    )}
+
+                    {/* Department / Academic Program Assignment */}
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
                             <Label className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-slate-700 uppercase dark:text-slate-300">
                                 <Building2 className="h-3.5 w-3.5 text-[#23509A] dark:text-[#8CE4FF]" />
-                                <span>2. Assigned Department or Program *</span>
+                                <span>{activeRole === 'Offices' ? '3' : '2'}. Assigned Program or Department Scope *</span>
                             </Label>
                             {selectedProgram && (
                                 <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
@@ -430,11 +537,11 @@ export default function AddProgramHeadDialog({
                         <InputError message={(errors as any).program} />
                     </div>
 
-                    {/* Section 3: Personnel Profile & Contact Information */}
+                    {/* Section: Personnel Profile & Contact Information */}
                     <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-slate-50/40 p-4.5 dark:border-slate-800 dark:bg-slate-900/40 sm:p-5">
                         <Label className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-slate-700 uppercase dark:text-slate-300">
                             <User className="h-3.5 w-3.5 text-[#23509A] dark:text-[#8CE4FF]" />
-                            <span>3. Personal Profile & Credentials</span>
+                            <span>{activeRole === 'Offices' ? '4' : '3'}. Personal Profile & Credentials</span>
                         </Label>
 
                         {/* Full Name with Honorific Quick Buttons */}
@@ -561,7 +668,7 @@ export default function AddProgramHeadDialog({
                         </div>
                     </div>
 
-                    {/* Section 4: Dynamic Role Authority & Capability Information Card */}
+                    {/* Dynamic Role Authority & Capability Information Card */}
                     <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/70 to-indigo-50/40 p-4 shadow-xs dark:border-blue-900/30 dark:bg-gradient-to-br dark:from-blue-950/30 dark:to-indigo-950/20">
                         <div className="flex items-start gap-3">
                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#23509A] text-white shadow-sm dark:bg-[#0B4DFF]">
@@ -569,22 +676,22 @@ export default function AddProgramHeadDialog({
                             </div>
                             <div className="space-y-1 text-xs">
                                 <div className="font-bold text-slate-900 dark:text-white">
-                                    {activeRole} Capabilities & Privileges
+                                    {activeRole} Portal Capabilities & Privileges
                                 </div>
                                 <p className="text-[11.5px] leading-relaxed text-slate-600 dark:text-slate-300">
                                     {activeRole === 'Program Head' && (
                                         <>
-                                            Once activated, this personnel can log into the <strong>Personnel Portal</strong> to oversee student rosters, review and approve academic clearances, manage violations, and verify departmental attendance for the <strong>{form.program || 'selected program'}</strong> department.
+                                            Once activated, this personnel can log into the <strong>Personnel Portal</strong> to oversee student rosters, review and approve academic clearances, manage violations, and verify departmental attendance for <strong>{form.program === 'ALL' ? 'all campus programs' : form.program || 'the selected program'}</strong>.
                                         </>
                                     )}
                                     {activeRole === 'Instructor' && (
                                         <>
-                                            Instructors have access to monitor class attendance logs, view student profile rosters, and record or flag session attendance for students under the <strong>{form.program || 'selected program'}</strong> department.
+                                            Once activated, this instructor can log into the <strong>Personnel Portal</strong> to monitor event attendance, track student rosters, and record attendance logs for <strong>{form.program === 'ALL' ? 'all enrolled students (General Education)' : form.program || 'the assigned program'}</strong>.
                                         </>
                                     )}
                                     {activeRole === 'Offices' && (
                                         <>
-                                            Office personnel can sign off on institutional requirements, issue and verify student service clearances, and process official campus requirements for <strong>{form.program || 'the assigned unit'}</strong>.
+                                            Once activated, this <strong>{form.office || 'Office'}</strong> personnel logs into the <strong>Personnel Portal</strong> with tailored privileges to verify attendance, review student records, and manage clearance and violation records across <strong>{form.program === 'ALL' ? 'all campus programs' : form.program || 'the assigned department'}</strong>.
                                         </>
                                     )}
                                 </p>

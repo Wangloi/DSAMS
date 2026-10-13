@@ -95,7 +95,7 @@ export default function CallingSlipModal({
                 onSuccess: () => {
                     setIsSending(false);
                     setConfirmOpen(false);
-                    setSentSuccessMsg(`Calling notice successfully delivered to ${studentName}'s DSAMS account.`);
+                    setSentSuccessMsg(`Calling notice successfully delivered to ${studentName}'s OSAMS account.`);
                     setTimeout(() => {
                         setSentSuccessMsg(null);
                     }, 5000);
@@ -145,7 +145,7 @@ export default function CallingSlipModal({
                             <div className="mt-4 space-y-2.5 text-xs text-slate-700 dark:text-slate-300">
                                 <p>
                                     An official <strong>Notice to Appear (Calling Notice)</strong> will be delivered directly to{' '}
-                                    <strong className="text-slate-900 dark:text-white">{studentName}</strong>'s DSAMS account dashboard and notification center.
+                                    <strong className="text-slate-900 dark:text-white">{studentName}</strong>'s OSAMS account dashboard and notification center.
                                 </p>
                                 <div className="space-y-1.5 rounded-xl border border-indigo-200 bg-indigo-50/70 p-3 text-[11px] dark:border-indigo-900/60 dark:bg-indigo-950/40">
                                     <p><strong className="text-slate-900 dark:text-white">Student:</strong> {studentName} ({studentId})</p>
@@ -224,7 +224,7 @@ export default function CallingSlipModal({
                         )}
                     </div>
                     <div className="flex items-center gap-2">
-                        <SimpleTooltip content="Dispatch official calling notice alert directly to the student's DSAMS account">
+                        <SimpleTooltip content="Dispatch official calling notice alert directly to the student's OSAMS account">
                             <Button
                                 type="button"
                                 disabled={isSending}
@@ -420,7 +420,7 @@ export default function CallingSlipModal({
 
                         {/* Footer */}
                         <div className="mt-8 border-t border-slate-200 pt-2 text-center text-[9px] text-slate-400">
-                            St. Rita's College of Balingasag — Student Affairs Management System (DSAMS) | Official Summon Form
+                            St. Rita's College of Balingasag — Office of Student Affairs Management System (OSAMS) | Official Summon Form
                         </div>
                     </div>
                 </div>

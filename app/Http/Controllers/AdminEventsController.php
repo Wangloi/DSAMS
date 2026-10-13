@@ -133,6 +133,32 @@ class AdminEventsController extends Controller
             ]);
         }
 
+        // Support both snake_case and camelCase input for scanner student IDs
+        $scannersInput = $request->input('scanner_student_ids')
+            ?? $request->input('scannerStudentIds')
+            ?? [];
+        if (!is_array($scannersInput) && !empty($scannersInput)) {
+            $scannersInput = [$scannersInput];
+        }
+        $singleScanner = $request->input('scanner_student_id') ?? $request->input('scannerStudentId');
+        if (!empty($singleScanner) && !in_array($singleScanner, $scannersInput)) {
+            $scannersInput[] = $singleScanner;
+        }
+        $normalizedScanners = array_values(array_unique(array_filter(array_map('strval', (array) $scannersInput), function ($v) {
+            return trim($v) !== '';
+        })));
+        $request->merge(['scanner_student_ids' => $normalizedScanners]);
+
+        if (!$request->has('attendance_type') && $request->has('attendanceType')) {
+            $request->merge(['attendance_type' => $request->input('attendanceType')]);
+        }
+
+        if (!$request->filled('organizer')) {
+            $actor = auth()->guard('admin')->user() ?: auth()->guard('program_head')->user() ?: auth()->user();
+            $defaultOrg = $actor ? ($actor->office ?? ($actor->program ? $actor->program . ' Department' : null)) : null;
+            $request->merge(['organizer' => $defaultOrg ?: 'Office of Student Affairs']);
+        }
+
         $validated = $request->validate([
             'event_name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -154,8 +180,8 @@ class AdminEventsController extends Controller
             'scanner_student_ids.*' => 'string',
         ]);
 
-        $scannerStudentIdsRaw = $validated['scanner_student_ids'] ?? [];
-        $scannerStudentIds = array_values(array_unique(array_filter(array_map('strval', $scannerStudentIdsRaw), function ($v) {
+        $scannerStudentIdsRaw = $validated['scanner_student_ids'] ?? $normalizedScanners;
+        $scannerStudentIds = array_values(array_unique(array_filter(array_map('strval', (array) $scannerStudentIdsRaw), function ($v) {
             return trim($v) !== '';
         })));
 
@@ -247,6 +273,23 @@ class AdminEventsController extends Controller
             ]);
         }
 
+        // Support both snake_case and camelCase input for scanner student IDs
+        $scannersInput = $request->input('scanner_student_ids')
+            ?? $request->input('scannerStudentIds');
+        if ($scannersInput !== null) {
+            if (!is_array($scannersInput)) {
+                $scannersInput = [$scannersInput];
+            }
+            $singleScanner = $request->input('scanner_student_id') ?? $request->input('scannerStudentId');
+            if (!empty($singleScanner) && !in_array($singleScanner, $scannersInput)) {
+                $scannersInput[] = $singleScanner;
+            }
+            $normalizedScanners = array_values(array_unique(array_filter(array_map('strval', (array) $scannersInput), function ($v) {
+                return trim($v) !== '';
+            })));
+            $request->merge(['scanner_student_ids' => $normalizedScanners]);
+        }
+
         $validated = $request->validate([
             'event_name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -281,11 +324,13 @@ class AdminEventsController extends Controller
             $previousScannerStudentIds = [(string) $event->scanner_student_id];
         }
 
-        $hasScannerStudentIds = array_key_exists('scanner_student_ids', $validated) || $request->has('scanner_student_ids');
+        $hasScannerStudentIds = array_key_exists('scanner_student_ids', $validated)
+            || $request->has('scanner_student_ids')
+            || $request->has('scannerStudentIds');
         $scannerStudentIdsRaw = $hasScannerStudentIds
-            ? ($validated['scanner_student_ids'] ?? [])
+            ? ($validated['scanner_student_ids'] ?? $request->input('scannerStudentIds') ?? [])
             : $previousScannerStudentIds;
-        $scannerStudentIds = array_values(array_unique(array_filter(array_map('strval', $scannerStudentIdsRaw), function ($v) {
+        $scannerStudentIds = array_values(array_unique(array_filter(array_map('strval', (array) $scannerStudentIdsRaw), function ($v) {
             return trim($v) !== '';
         })));
 

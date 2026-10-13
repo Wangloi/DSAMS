@@ -120,6 +120,14 @@ type Props = {
     securityAlerts?: SecurityAlert[];
     studentsByProgram?: Record<string, number>;
     scannerBlockedUntil?: string | null;
+    conflictingEvents?: Array<{
+        id: number | string;
+        name: string;
+        date?: string;
+        timeIn?: string | null;
+        timeEnd?: string | null;
+        location?: string | null;
+    }>;
 };
 
 const formatTime12h = (raw?: string | null) => {
@@ -144,6 +152,7 @@ export default function StudentAttendanceScannerPortalPage({
     securityAlerts: initialSecurityAlerts = [],
     studentsByProgram = {},
     scannerBlockedUntil,
+    conflictingEvents = [],
 }: Props) {
     const page = usePage<SharedData>();
     const eventId = String(event.id);
@@ -215,6 +224,7 @@ export default function StudentAttendanceScannerPortalPage({
         studentName?: string;
         studentId?: string;
         timestamp?: string;
+        conflicted_events?: any[];
     } | null>(null);
     const [manualIdInput, setManualIdInput] = useState('');
     const [isSubmittingManual, setIsSubmittingManual] = useState(false);
@@ -490,6 +500,7 @@ export default function StudentAttendanceScannerPortalPage({
                 message: payload?.message || (actionType === 'check_out' ? 'Time-Out (Check-out) recorded' : `Time-In recorded (${isLate ? 'Late' : 'On-Time'})`),
                 studentName,
                 studentId: studentIdNumber,
+                conflicted_events: payload?.conflicted_events_scanned || [],
                 timestamp: new Date().toLocaleTimeString('en-US', {
                     hour: 'numeric',
                     minute: '2-digit',
@@ -728,7 +739,7 @@ export default function StudentAttendanceScannerPortalPage({
         <AppShell>
             <Head title={`Attendance Scanner — ${event.name}`} />
 
-            <div className="relative min-h-screen overflow-x-hidden bg-slate-50 font-sans text-slate-900 transition-colors duration-500 pb-20 dark:bg-[#020617] dark:text-white">
+            <div className="relative min-h-[100dvh] overflow-x-hidden bg-slate-50 font-sans text-slate-900 transition-colors duration-500 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] dark:bg-[#020617] dark:text-white">
                 {/* Background Ambient Mesh Highlights */}
                 <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
                     <div className="absolute top-[-10%] left-[-10%] h-[50%] w-[50%] rounded-full bg-blue-600/10 mix-blend-multiply blur-[130px] dark:bg-blue-600/5 dark:mix-blend-soft-light" />
@@ -736,7 +747,7 @@ export default function StudentAttendanceScannerPortalPage({
                     <div className="absolute top-[30%] right-[15%] h-[30%] w-[30%] rounded-full bg-emerald-600/5 blur-[100px]" />
                 </div>
 
-                <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-6 px-3 pt-3 sm:px-6 sm:pt-6 lg:px-8 pb-24 sm:pb-12">
+                <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-6 px-3 pt-[max(0.75rem,env(safe-area-inset-top,0px))] sm:px-6 sm:pt-6 lg:px-8 pb-12">
                     
                     {/* ══════════════════════════════════════════════════════════════
                         MOBILE COMPACT HEADER (Visible on small screens < sm)
@@ -806,6 +817,28 @@ export default function StudentAttendanceScannerPortalPage({
                                 {event.location && <span>• {event.location}</span>}
                             </div>
                         </div>
+
+                        {conflictingEvents && conflictingEvents.length > 0 && (
+                            <div className="rounded-xl border border-amber-400/40 bg-amber-500/20 p-2.5 backdrop-blur-md text-amber-200 shadow-md">
+                                <div className="flex items-center gap-2">
+                                    <AlertCircle className="h-4 w-4 shrink-0 text-amber-300" />
+                                    <div className="text-[11px] font-bold text-amber-100">
+                                        Conflicting Schedule Active: <span className="text-white underline">{conflictingEvents.map((c) => c.name).join(', ')}</span>. Scans will also be credited to conflicting schedule!
+                                    </div>
+                                </div>
+                                <div className="mt-1.5 flex flex-wrap gap-1">
+                                    {conflictingEvents.map((c) => (
+                                        <a
+                                            key={c.id}
+                                            href={`/student/attendance/scanner-portal/${c.id}`}
+                                            className="inline-flex items-center gap-1 rounded-md border border-amber-300/40 bg-amber-500/30 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-amber-500/50"
+                                        >
+                                            Switch to {c.name}
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Mobile Full-Width Segmented Mode Switch */}
                         <div className="grid grid-cols-2 gap-1 rounded-xl border border-white/20 bg-black/30 p-1 backdrop-blur-xl">
@@ -1023,6 +1056,41 @@ export default function StudentAttendanceScannerPortalPage({
                         )}
                     </div>
 
+                    {/* Conflicting Schedule Banner (Desktop) */}
+                    {conflictingEvents && conflictingEvents.length > 0 && (
+                        <div className="rounded-2xl border border-amber-400/40 bg-gradient-to-r from-amber-950/40 via-amber-900/30 to-amber-950/40 p-4 text-amber-100 shadow-lg backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/25 border border-amber-400/40 text-amber-300">
+                                    <AlertCircle className="h-5 w-5" />
+                                </span>
+                                <div>
+                                    <div className="text-xs font-black uppercase tracking-wider text-amber-300">
+                                        Conflicting Schedule Active
+                                    </div>
+                                    <div className="text-xs text-amber-100/90 font-medium">
+                                        This event has a conflicting schedule with{' '}
+                                        <strong className="text-white underline">
+                                            {conflictingEvents.map((c) => c.name).join(', ')}
+                                        </strong>
+                                        . Attendees will also be automatically scanned into conflicting events if eligible!
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 self-end sm:self-auto">
+                                {conflictingEvents.map((c) => (
+                                    <a
+                                        key={c.id}
+                                        href={`/student/attendance/scanner-portal/${c.id}`}
+                                        className="inline-flex items-center gap-1.5 rounded-xl border border-amber-400/50 bg-amber-500/20 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-amber-500/40 transition"
+                                    >
+                                        <RefreshCw className="h-3.5 w-3.5" />
+                                        Switch to {c.name}
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* ══════════════════════════════════════════════════════════════
                         MOBILE KPI CHIPS STRIP (Visible on < sm)
                     ══════════════════════════════════════════════════════════════ */}
@@ -1126,41 +1194,41 @@ export default function StudentAttendanceScannerPortalPage({
                     </div>
 
                     {/* ══════════════════════════════════════════════════════════════
-                        TAB NAVIGATION BAR (Desktop & Tablet)
+                        TAB NAVIGATION BAR (Responsive: Mobile + Desktop)
                     ══════════════════════════════════════════════════════════════ */}
-                    <div className="hidden sm:flex flex-wrap items-center justify-between gap-3">
-                        <div className="inline-flex rounded-2xl border border-slate-200/80 bg-white p-1.5 shadow-sm backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/90">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="grid grid-cols-2 sm:flex w-full sm:w-auto rounded-2xl border border-slate-200/80 bg-white p-1.5 shadow-sm backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/90">
                             <button
                                 type="button"
                                 onClick={() => setActiveTab('scanner')}
                                 className={cn(
-                                    'flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-black tracking-wider uppercase transition-all duration-300',
+                                    'flex items-center justify-center gap-2 rounded-xl px-3 sm:px-5 py-2.5 text-xs font-black tracking-wider uppercase transition-all duration-300',
                                     activeTab === 'scanner'
                                         ? 'bg-[#0b2d66] text-white shadow-md shadow-blue-950/20 dark:bg-blue-600'
                                         : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800',
                                 )}
                             >
                                 <Camera className="h-4 w-4" />
-                                Camera Scanner
+                                <span>Scanner</span>
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setActiveTab('dashboard')}
                                 className={cn(
-                                    'flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-black tracking-wider uppercase transition-all duration-300',
+                                    'flex items-center justify-center gap-2 rounded-xl px-3 sm:px-5 py-2.5 text-xs font-black tracking-wider uppercase transition-all duration-300',
                                     activeTab === 'dashboard'
                                         ? 'bg-[#0b2d66] text-white shadow-md shadow-blue-950/20 dark:bg-blue-600'
                                         : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800',
                                 )}
                             >
                                 <BarChart3 className="h-4 w-4" />
-                                Logs & Overview
+                                <span>Logs ({liveCounts.total})</span>
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setActiveTab('split')}
                                 className={cn(
-                                    'hidden md:flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-black tracking-wider uppercase transition-all duration-300',
+                                    'hidden lg:flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-black tracking-wider uppercase transition-all duration-300',
                                     activeTab === 'split'
                                         ? 'bg-[#0b2d66] text-white shadow-md shadow-blue-950/20 dark:bg-blue-600'
                                         : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800',
@@ -1394,6 +1462,12 @@ export default function StudentAttendanceScannerPortalPage({
                                                     <p className="text-[11px] sm:text-xs font-medium text-white/90 mt-0.5 truncate">
                                                         {lastScanned.message} • {lastScanned.timestamp}
                                                     </p>
+                                                    {lastScanned.conflicted_events && lastScanned.conflicted_events.length > 0 && (
+                                                        <div className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-black/40 px-3 py-0.5 text-[10px] font-bold text-amber-200 border border-amber-300/40">
+                                                            <Sparkles className="h-3 w-3 text-amber-300 shrink-0" />
+                                                            <span>Also Scanned: {lastScanned.conflicted_events.map((c: any) => c.event_name).join(', ')}</span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ) : (
                                                 <div className="absolute inset-x-0 bottom-0 bg-black/75 px-4 py-2 sm:px-6 sm:py-3 text-center text-[11px] sm:text-xs font-semibold text-slate-300 backdrop-blur-md">
@@ -1402,9 +1476,9 @@ export default function StudentAttendanceScannerPortalPage({
                                             )}
                                         </div>
 
-                                        {/* Camera Action Buttons (Desktop) */}
-                                        <div className="hidden sm:flex flex-wrap items-center justify-between gap-3 pt-2">
-                                            <div className="flex items-center gap-2">
+                                        {/* Camera Action Buttons (Mobile + Desktop) */}
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
+                                            <div className="grid grid-cols-2 sm:flex items-center gap-2">
                                                 <Button
                                                     type="button"
                                                     size="sm"
@@ -1418,7 +1492,7 @@ export default function StudentAttendanceScannerPortalPage({
                                                     }
                                                 >
                                                     <Camera className="h-4 w-4" />
-                                                    {scanState.status === 'running' ? 'Camera Active' : 'Start Camera'}
+                                                    <span>{scanState.status === 'running' ? 'Active' : 'Start Camera'}</span>
                                                 </Button>
 
                                                 <Button
@@ -1433,9 +1507,21 @@ export default function StudentAttendanceScannerPortalPage({
                                                 </Button>
                                             </div>
 
-                                            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                                                <Volume2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                                                <span>Audio cues {soundEnabled ? 'enabled' : 'muted'}</span>
+                                            <div className="flex items-center justify-between sm:justify-end gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                                <div className="flex items-center gap-1.5">
+                                                    <Volume2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                                    <span>Audio {soundEnabled ? 'on' : 'muted'}</span>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={toggleCameraFacing}
+                                                    className="h-8 gap-1.5 rounded-lg text-xs font-bold text-blue-600 dark:text-blue-400 sm:hidden"
+                                                >
+                                                    <SwitchCamera className="h-3.5 w-3.5" />
+                                                    <span>Flip Camera</span>
+                                                </Button>
                                             </div>
                                         </div>
 
@@ -1931,7 +2017,7 @@ export default function StudentAttendanceScannerPortalPage({
                 {/* ══════════════════════════════════════════════════════════════
                     MOBILE STICKY BOTTOM NAVIGATION DOCK (Phones only < sm)
                 ══════════════════════════════════════════════════════════════ */}
-                <div className="sm:hidden fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/80 bg-white/95 px-4 py-2 backdrop-blur-xl shadow-2xl dark:border-slate-800 dark:bg-[#0B192C]/95">
+                <div className="sm:hidden fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/80 bg-white/95 px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] backdrop-blur-xl shadow-2xl dark:border-slate-800 dark:bg-[#0B192C]/95">
                     <div className="grid grid-cols-3 gap-2">
                         <button
                             type="button"
@@ -1976,7 +2062,7 @@ export default function StudentAttendanceScannerPortalPage({
                     MANUAL ID ENTRY MODAL (Quick mobile or desktop entry)
                 ══════════════════════════════════════════════════════════════ */}
                 <Dialog open={showManualModal} onOpenChange={setShowManualModal}>
-                    <DialogContent className="sm:max-w-md rounded-3xl border-slate-200 dark:border-slate-800 dark:bg-[#0B192C]">
+                    <DialogContent className="w-[92vw] max-w-md max-h-[85vh] overflow-y-auto rounded-3xl border-slate-200 dark:border-slate-800 dark:bg-[#0B192C]">
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2 text-lg font-black text-slate-900 dark:text-white">
                                 <QrCode className="h-5 w-5 text-blue-600 dark:text-blue-400" />

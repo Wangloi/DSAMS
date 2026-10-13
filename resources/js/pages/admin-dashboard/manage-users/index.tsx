@@ -339,7 +339,7 @@ export default function AdminManageUsersPage() {
         <AdminLayout breadcrumbs={breadcrumbs}>
             <Head title="Manage Users & Programs" />
             <div className="min-h-[calc(100vh-4rem)] bg-slate-100 dark:bg-slate-900">
-                <div className="flex w-full flex-col gap-6 px-6 py-6">
+                <div className="flex w-full flex-col gap-4 sm:gap-6 px-3 sm:px-6 py-4 sm:py-6">
                     {/* ── Hero Header ── */}
                     <ManageUsersHeroHeader
                         activeTab={activeTab}

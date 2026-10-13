@@ -116,6 +116,9 @@ class AdminManageUsersController extends Controller
         if (Schema::hasColumn('program_heads', 'role')) {
             $columns[] = 'role';
         }
+        if (Schema::hasColumn('program_heads', 'office')) {
+            $columns[] = 'office';
+        }
 
         return ProgramHead::query()
             ->orderByDesc('id')
@@ -133,6 +136,7 @@ class AdminManageUsersController extends Controller
                     'course' => $ph->program ?? '',
                     'year_level' => '',
                     'role' => $ph->role ?? 'Program Head',
+                    'office' => $ph->office ?? null,
                     'is_active' => true,
                     'status' => $ph->verification_status ?? 'pending',
                     'qr_code_path' => null,
@@ -972,6 +976,7 @@ class AdminManageUsersController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:program_heads,email,' . $programHead->id],
             'program' => ['nullable', 'string', 'max:255'],
             'role' => ['nullable', 'string', 'max:255'],
+            'office' => ['nullable', 'string', 'max:255'],
             'password' => ['nullable', 'string', 'min:8'],
         ]);
 
@@ -983,6 +988,10 @@ class AdminManageUsersController extends Controller
 
         if (Schema::hasColumn('program_heads', 'role')) {
             $updateData['role'] = $validated['role'] ?? $programHead->role ?? 'Program Head';
+        }
+
+        if (Schema::hasColumn('program_heads', 'office')) {
+            $updateData['office'] = $validated['office'] ?? $programHead->office ?? null;
         }
 
         $programHead->fill($updateData);
@@ -1016,6 +1025,7 @@ class AdminManageUsersController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:program_heads,email'],
             'program' => ['nullable', 'string', 'max:255'],
             'role' => ['nullable', 'string', 'max:255'],
+            'office' => ['nullable', 'string', 'max:255'],
             'password' => ['required', 'string', 'min:8'],
         ]);
 
@@ -1029,6 +1039,10 @@ class AdminManageUsersController extends Controller
 
         if (Schema::hasColumn('program_heads', 'role')) {
             $createData['role'] = $validated['role'] ?? 'Program Head';
+        }
+
+        if (Schema::hasColumn('program_heads', 'office')) {
+            $createData['office'] = $validated['office'] ?? null;
         }
 
         $programHead = ProgramHead::create($createData);

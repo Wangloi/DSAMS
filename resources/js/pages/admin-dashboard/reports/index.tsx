@@ -197,8 +197,8 @@ export default function AdminReportsPage(props: Props) {
                                     {v === 'semester'
                                         ? 'By Semester'
                                         : v === 'custom'
-                                          ? 'Custom Range'
-                                          : v}
+                                            ? 'Custom Range'
+                                            : v}
                                 </button>
                             ))}
                         </div>
@@ -335,7 +335,7 @@ export default function AdminReportsPage(props: Props) {
                                                 </Button>
                                                 <Button
                                                     type="button"
-                                                    className="h-9 gap-2 bg-blue-600 text-xs font-bold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700"
+                                                    className="h-9 gap-2 bg-blue-600 text-xs font-bold text-white shadow-md shadow-blue-500/20 transition-all hover:bg-blue-700 active:scale-95 dark:bg-blue-600 dark:hover:bg-blue-500 dark:text-white dark:shadow-blue-950/40"
                                                     onClick={() =>
                                                         window.open(
                                                             printUrl(r.key),

@@ -29,10 +29,17 @@ A lightweight .NET 8 background service that allows web applications (like DSAMS
 4. Enter PIN if prompted (usually `0000` or `1234`).
 5. Windows will create an outgoing Bluetooth Serial Port (e.g. COM4, COM5, COM7).
 
-### Step 2: Start the Print Bridge
-1. Open the folder `c:\laragon\www\DSAMS\tools\PT210PrintBridge`.
-2. Double-click **`start-bridge.bat`** (or run `dotnet run -c Release` in terminal).
-3. The bridge will start at `http://127.0.0.1:9101` and automatically detect the active Bluetooth port.
+### Step 2: Set Up Automatic Startup (Recommended)
+Double-click **`install-autostart.bat`**. This will:
+1. Create a shortcut in Windows **Startup** (`shell:startup`).
+2. Run the bridge **silently in the background** without any annoying black console windows.
+3. Automatically start the bridge every time the computer boots up.
+
+*Alternative controls:*
+- **`start-bridge-silent.vbs`**: Starts the bridge silently right now.
+- **`stop-bridge.bat`**: Stops the running bridge process.
+- **`uninstall-autostart.bat`**: Removes the bridge from Windows Startup.
+- **`start-bridge.bat`**: Starts the bridge with a visible console window (useful for debugging).
 
 ### Step 3: Test from DSAMS
 1. Open DSAMS in your browser (e.g. Admin or DSA Admission Slip page).

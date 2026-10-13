@@ -59,7 +59,10 @@ class ProgramHeadDashboardController extends Controller
 
         $students = [];
         if ($program !== '' && Schema::hasTable('students')) {
-            $studentsQuery = Student::where('course', $program);
+            $studentsQuery = Student::query();
+            if (strtoupper($program) !== 'ALL') {
+                $studentsQuery->where('course', $program);
+            }
             
             if (Schema::hasColumn('students', 'is_archived')) {
                 $studentsQuery->where(function ($q) {
@@ -171,8 +174,11 @@ class ProgramHeadDashboardController extends Controller
         }
 
         if (!empty($updateData)) {
-            Student::where('course', $program)
-                ->whereIn('id', $validated['ids'])
+            $studentsQuery = Student::query();
+            if (strtoupper($program) !== 'ALL') {
+                $studentsQuery->where('course', $program);
+            }
+            $studentsQuery->whereIn('id', $validated['ids'])
                 ->update($updateData);
         }
 
@@ -215,8 +221,11 @@ class ProgramHeadDashboardController extends Controller
             return redirect()->back()->with('error', 'No program assigned to you.');
         }
 
-        Student::where('course', $program)
-            ->whereIn('id', $validated['ids'])
+        $studentsQuery = Student::query();
+        if (strtoupper($program) !== 'ALL') {
+            $studentsQuery->where('course', $program);
+        }
+        $studentsQuery->whereIn('id', $validated['ids'])
             ->update(['is_active' => $isActive]);
 
         if (Schema::hasTable('activity_logs')) {
@@ -249,8 +258,11 @@ class ProgramHeadDashboardController extends Controller
             return redirect()->back()->with('error', 'No program assigned to you.');
         }
 
-        Student::where('course', $program)
-            ->whereIn('id', $validated['ids'])
+        $studentsQuery = Student::query();
+        if (strtoupper($program) !== 'ALL') {
+            $studentsQuery->where('course', $program);
+        }
+        $studentsQuery->whereIn('id', $validated['ids'])
             ->update(['year_level' => $validated['year_level']]);
 
         if (Schema::hasTable('activity_logs')) {
@@ -281,13 +293,13 @@ class ProgramHeadDashboardController extends Controller
             $eventsQuery->whereNull('archived_at');
         }
 
-        $programStudents = [];
         $programStudentIds = [];
         if ($program !== '' && Schema::hasTable('students')) {
-            $programStudents = Student::where('course', $program)
-                ->where('is_archived', false)
-                ->get(['id']);
-            $programStudentIds = $programStudents->pluck('id')->toArray();
+            $studentsQuery = Student::query()->where('is_archived', false);
+            if (strtoupper($program) !== 'ALL') {
+                $studentsQuery->where('course', $program);
+            }
+            $programStudentIds = $studentsQuery->pluck('id')->toArray();
         }
         $totalStudents = count($programStudentIds);
 
@@ -339,13 +351,13 @@ class ProgramHeadDashboardController extends Controller
             $eventsQuery->whereNull('archived_at');
         }
 
-        $programStudents = [];
         $programStudentIds = [];
         if ($program !== '' && Schema::hasTable('students')) {
-            $programStudents = Student::where('course', $program)
-                ->where('is_archived', false)
-                ->get(['id']);
-            $programStudentIds = $programStudents->pluck('id')->toArray();
+            $studentsQuery = Student::query()->where('is_archived', false);
+            if (strtoupper($program) !== 'ALL') {
+                $studentsQuery->where('course', $program);
+            }
+            $programStudentIds = $studentsQuery->pluck('id')->toArray();
         }
         $totalStudents = count($programStudentIds);
 
@@ -396,7 +408,10 @@ class ProgramHeadDashboardController extends Controller
             return [];
         }
 
-        $studentsQuery = Student::query()->where('course', $program);
+        $studentsQuery = Student::query();
+        if (strtoupper($program) !== 'ALL') {
+            $studentsQuery->where('course', $program);
+        }
 
         if (Schema::hasColumn('students', 'is_archived')) {
             $studentsQuery->where(function ($q) {
@@ -452,7 +467,11 @@ class ProgramHeadDashboardController extends Controller
         $totalViolationsCount = 0;
 
         if ($program !== '' && Schema::hasTable('incidents')) {
-            $programStudents = Student::where('course', $program)->get(['student_id', 'year_level']);
+            $query = Student::query();
+            if (strtoupper($program) !== 'ALL') {
+                $query->where('course', $program);
+            }
+            $programStudents = $query->get(['student_id', 'year_level']);
             $programStudentIds = $programStudents->pluck('student_id')->toArray();
             $yearLevelByStudentId = $programStudents->pluck('year_level', 'student_id')->toArray();
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dsams-cache-v2';
+const CACHE_NAME = 'dsams-cache-v3';
 const STATIC_ASSETS = [
     '/',
     '/manifest.json',

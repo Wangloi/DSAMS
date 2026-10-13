@@ -62,6 +62,7 @@ export function useManageUsers(errors: Record<string, string> = {}) {
                 program: user.program ?? user.course ?? '',
                 password: '',
                 role: user.role ?? 'Program Head',
+                office: (user as any).office ?? '',
                 officer_features: user.officer_features ?? [],
             });
             setPhOpen(true);
@@ -222,6 +223,7 @@ export function useManageUsers(errors: Record<string, string> = {}) {
             email: string;
             program?: string;
             role?: string;
+            office?: string;
             password?: string;
         },
     ) => {
@@ -252,6 +254,7 @@ export function useManageUsers(errors: Record<string, string> = {}) {
                 email: form.email,
                 program: form.program,
                 role: form.role || 'Program Head',
+                office: form.office ? String(form.office).trim() : null,
                 password: form.password,
             },
             {
@@ -307,6 +310,7 @@ export function useManageUsers(errors: Record<string, string> = {}) {
                 email,
                 program: String(form.program ?? '').trim() || undefined,
                 role: form.role || 'Program Head',
+                office: form.office ? String(form.office).trim() : undefined,
                 password: String(form.password ?? '').trim() || undefined,
             });
         } else {

@@ -206,7 +206,7 @@ export function AdminHeader() {
                         </SimpleTooltip>
                         <SheetContent
                             side="left"
-                            className="w-72 border-r border-slate-200 bg-white p-0 dark:border-white/10 dark:bg-[#0B192C] [&>button]:hidden"
+                            className="w-72 border-r border-slate-200 bg-white p-0 gap-0 dark:border-white/10 dark:bg-[#0B192C] [&>button]:hidden"
                         >
                             <SheetHeader className="sr-only">
                                 <SheetTitle>Navigation Menu</SheetTitle>
@@ -274,7 +274,7 @@ export function AdminHeader() {
                                 /
                             </div>
                             <div className="hidden text-xs font-semibold text-white/90 lg:block">
-                                Office of the Student Affairs Management System
+                                Office of Student Affairs Management System
                             </div>
                         </div>
                         <div className="hidden text-[10px] font-semibold text-white/80 sm:block sm:text-[11px]">
@@ -284,7 +284,7 @@ export function AdminHeader() {
                     {/* Mobile-only title */}
                     <div className="leading-tight sm:hidden">
                         <div className="text-base font-bold tracking-wide">
-                            DSAMS
+                            OSAMS
                         </div>
                     </div>
                 </Link>

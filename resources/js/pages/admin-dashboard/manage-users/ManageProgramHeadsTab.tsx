@@ -4,14 +4,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -24,7 +16,6 @@ import { SimpleTooltip } from '@/components/ui/tooltip';
 import {
     Award,
     CheckCircle2,
-    ChevronDown,
     Eye,
     GraduationCap,
     Pencil,
@@ -33,6 +24,7 @@ import {
     Trash2,
     XCircle,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { ProgramRow, UserRow } from './types';
 import { getProgramBadgeClass } from './ManageUsersTableCard';
 
@@ -91,25 +83,27 @@ export function ManageProgramHeadsTab({
     const filteredProgramHeads = useMemo(() => {
         const q = searchQuery.trim().toLowerCase();
 
-        return programHeads.filter((ph) => {
-            const matchesSearch =
-                !q ||
-                [ph.name, ph.email, ph.program, ph.course, ph.student_id]
-                    .filter(Boolean)
-                    .join(' ')
-                    .toLowerCase()
-                    .includes(q);
+        return programHeads
+            .filter((ph) => {
+                const matchesSearch =
+                    !q ||
+                    [ph.name, ph.email, ph.program, ph.course, ph.student_id]
+                        .filter(Boolean)
+                        .join(' ')
+                        .toLowerCase()
+                        .includes(q);
 
-            const phProg = String(ph.program || ph.course || '').trim().toLowerCase();
-            const matchesProgram =
-                programFilter === 'all' || phProg === programFilter.trim().toLowerCase();
+                const phProg = String(ph.program || ph.course || '').trim().toLowerCase();
+                const matchesProgram =
+                    programFilter === 'all' || phProg === programFilter.trim().toLowerCase();
 
-            return matchesSearch && matchesProgram;
-        }).sort((a, b) => {
-            const nameA = (a.last_name || a.name || '').trim().toLowerCase();
-            const nameB = (b.last_name || b.name || '').trim().toLowerCase();
-            return nameA.localeCompare(nameB);
-        });
+                return matchesSearch && matchesProgram;
+            })
+            .sort((a, b) => {
+                const nameA = (a.last_name || a.name || '').trim().toLowerCase();
+                const nameB = (b.last_name || b.name || '').trim().toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
     }, [programHeads, searchQuery, programFilter]);
 
     // Pagination
@@ -149,6 +143,10 @@ export function ManageProgramHeadsTab({
     }, [programHeads]);
 
     // Selection handlers
+    const isAllCurrentPageSelected =
+        pagedProgramHeads.length > 0 &&
+        pagedProgramHeads.every((u) => selectedUserIds.includes(Number(u.id)));
+
     const handleSelectAll = (checked: boolean) => {
         const pageIds = pagedProgramHeads
             .map((u) => Number(u.id))
@@ -176,13 +174,13 @@ export function ManageProgramHeadsTab({
                     <div className="pointer-events-none absolute -top-4 -right-4 h-16 w-16 rounded-full bg-blue-500/5 sm:h-24 sm:w-24" />
                     <div className="flex items-start justify-between gap-1.5 sm:gap-3">
                         <div className="min-w-0 flex-1">
-                            <p className="truncate text-[9px] font-black tracking-wider text-slate-400 uppercase sm:text-[10px] sm:tracking-widest dark:text-slate-500">
+                            <p className="truncate text-[8px] font-black tracking-widest text-slate-400 uppercase sm:text-[10px] dark:text-slate-500">
                                 Total Personnels
                             </p>
                             <p className="mt-1 text-lg font-black text-slate-900 sm:mt-2 sm:text-4xl dark:text-white">
                                 {stats.total}
                             </p>
-                            <p className="mt-0.5 truncate text-[10px] font-semibold text-blue-600 sm:mt-1 sm:text-xs dark:text-blue-400">
+                            <p className="mt-0.5 truncate text-[9px] font-semibold text-blue-600 sm:mt-1 sm:text-xs dark:text-blue-400">
                                 Academic Leaders
                             </p>
                         </div>
@@ -199,13 +197,13 @@ export function ManageProgramHeadsTab({
                     <div className="pointer-events-none absolute -top-4 -right-4 h-16 w-16 rounded-full bg-emerald-500/5 sm:h-24 sm:w-24" />
                     <div className="flex items-start justify-between gap-1.5 sm:gap-3">
                         <div className="min-w-0 flex-1">
-                            <p className="truncate text-[9px] font-black tracking-wider text-slate-400 uppercase sm:text-[10px] sm:tracking-widest dark:text-slate-500">
+                            <p className="truncate text-[8px] font-black tracking-widest text-slate-400 uppercase sm:text-[10px] dark:text-slate-500">
                                 Verified / Approved
                             </p>
                             <p className="mt-1 text-lg font-black text-emerald-600 sm:mt-2 sm:text-4xl dark:text-emerald-400">
                                 {stats.approved}
                             </p>
-                            <p className="mt-0.5 truncate text-[10px] font-semibold text-emerald-600 sm:mt-1 sm:text-xs dark:text-emerald-400">
+                            <p className="mt-0.5 truncate text-[9px] font-semibold text-emerald-600 sm:mt-1 sm:text-xs dark:text-emerald-400">
                                 Active Leadership
                             </p>
                         </div>
@@ -227,13 +225,13 @@ export function ManageProgramHeadsTab({
                     <div className="pointer-events-none absolute -top-4 -right-4 h-16 w-16 rounded-full bg-indigo-500/5 sm:h-24 sm:w-24" />
                     <div className="flex items-start justify-between gap-1.5 sm:gap-3">
                         <div className="min-w-0 flex-1">
-                            <p className="truncate text-[9px] font-black tracking-wider text-slate-400 uppercase sm:text-[10px] sm:tracking-widest dark:text-slate-500">
+                            <p className="truncate text-[8px] font-black tracking-widest text-slate-400 uppercase sm:text-[10px] dark:text-slate-500">
                                 Programs Covered
                             </p>
                             <p className="mt-1 text-lg font-black text-indigo-600 sm:mt-2 sm:text-4xl dark:text-indigo-400">
                                 {stats.assignedPrograms}
                             </p>
-                            <p className="mt-0.5 truncate text-[10px] font-semibold text-indigo-600 sm:mt-1 sm:text-xs dark:text-indigo-400">
+                            <p className="mt-0.5 truncate text-[9px] font-semibold text-indigo-600 sm:mt-1 sm:text-xs dark:text-indigo-400">
                                 Representation
                             </p>
                         </div>
@@ -249,10 +247,10 @@ export function ManageProgramHeadsTab({
 
             {/* ── Table Card matching ManageUsersTableCard structure ── */}
             <Card className="border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#0B192C]/50">
-                <CardHeader className="p-2.5 px-4">
+                <CardHeader className="p-3 sm:p-4">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <CardTitle className="text-lg font-bold text-slate-800 dark:text-white">
+                            <CardTitle className="text-base sm:text-lg font-bold text-slate-800 dark:text-white">
                                 Personnels List
                             </CardTitle>
                             <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
@@ -260,19 +258,18 @@ export function ManageProgramHeadsTab({
                             </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-1.5">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-1.5">
                             {/* Search */}
-                            <div className="relative min-w-[180px] sm:w-[220px]">
+                            <div className="relative w-full sm:w-[200px] md:w-[220px]">
                                 <Search className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                                 <Input
                                     placeholder="Search personnel..."
-                                    className="h-8.5 border border-slate-200 bg-white pl-8 text-xs text-slate-900 placeholder:text-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
+                                    className="h-9 sm:h-8.5 w-full border border-slate-200 bg-white pl-8 text-xs text-slate-900 placeholder:text-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
                                     type="search"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
                             </div>
-
 
                             {/* Program Filter */}
                             <Select
@@ -282,7 +279,7 @@ export function ManageProgramHeadsTab({
                                     setPageIndex(1);
                                 }}
                             >
-                                <SelectTrigger className="h-8.5 w-[140px] border border-slate-200 bg-white text-xs text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
+                                <SelectTrigger className="h-9 sm:h-8.5 w-full sm:w-[140px] border border-slate-200 bg-white text-xs text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
                                     <SelectValue placeholder="All Programs" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -298,7 +295,7 @@ export function ManageProgramHeadsTab({
                             {/* Add Personnel Button */}
                             <Button
                                 type="button"
-                                className="h-8.5 gap-1.5 bg-[#1e3a8a] text-xs font-bold text-white shadow-sm hover:bg-blue-900"
+                                className="h-9 sm:h-8.5 w-full sm:w-auto gap-1.5 bg-[#1e3a8a] text-xs font-bold text-white shadow-sm hover:bg-blue-900 justify-center cursor-pointer"
                                 onClick={onOpenCreatePHModal}
                             >
                                 <Plus className="h-4 w-4" />
@@ -309,8 +306,8 @@ export function ManageProgramHeadsTab({
                 </CardHeader>
 
                 {selectedUserIds.length > 0 && (
-                    <div className="flex items-center justify-between border-y border-emerald-200 bg-emerald-50/50 px-6 py-3 transition-all dark:border-emerald-800/30 dark:bg-emerald-900/10">
-                        <div className="text-sm font-semibold text-emerald-800 dark:text-emerald-400">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-y border-emerald-200 bg-emerald-50/50 px-4 sm:px-6 py-2.5 sm:py-3 transition-all dark:border-emerald-800/30 dark:bg-emerald-900/10">
+                        <div className="text-xs sm:text-sm font-semibold text-emerald-800 dark:text-emerald-400">
                             {selectedUserIds.length} personnel(s) selected
                         </div>
                         <div>
@@ -318,7 +315,7 @@ export function ManageProgramHeadsTab({
                                 type="button"
                                 size="sm"
                                 variant="outline"
-                                className="text-xs"
+                                className="h-8 text-xs cursor-pointer"
                                 onClick={() => setSelectedUserIds([])}
                             >
                                 Clear Selection
@@ -327,20 +324,229 @@ export function ManageProgramHeadsTab({
                     </div>
                 )}
 
-                <CardContent className={selectedUserIds.length > 0 ? 'pt-4' : ''}>
-                    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#0B192C]/50">
-                        <div className="overflow-x-auto">
+                <CardContent className="p-0 sm:p-4">
+                    <div className="overflow-hidden rounded-none sm:rounded-lg border-0 sm:border border-slate-200 bg-white shadow-none sm:shadow-sm dark:border-slate-700 dark:bg-[#0B192C]/50">
+                        {/* ══════════════════════════════════════════════════════
+                            MOBILE CARD / LIST VIEW (Visible on screens < md)
+                        ══════════════════════════════════════════════════════ */}
+                        <div className="block md:hidden">
+                            {/* Mobile Select All Bar */}
+                            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-3.5 py-2.5 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-400">
+                                <div className="flex items-center gap-2">
+                                    <Checkbox
+                                        checked={isAllCurrentPageSelected}
+                                        onCheckedChange={(checked) =>
+                                            handleSelectAll(checked as boolean)
+                                        }
+                                        aria-label="Select all current page"
+                                    />
+                                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                        Select Page ({pagedProgramHeads.length})
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Mobile Personnel Cards List */}
+                            <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                                {pagedProgramHeads.length === 0 ? (
+                                    <div className="px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                                        No personnels found.
+                                    </div>
+                                ) : (
+                                    pagedProgramHeads.map((u) => {
+                                        const rawPhId = Number((u as any)?.program_head_id || u.id);
+                                        const phId = rawPhId >= 1000000000 ? rawPhId - 1000000000 : rawPhId;
+                                        const status = (u.status ?? 'pending').toLowerCase();
+                                        const assignedProg = u.program || u.course || '—';
+                                        const isSelected = selectedUserIds.includes(Number(u.id));
+
+                                        return (
+                                            <div
+                                                key={u.id}
+                                                onClick={() => onViewProgramHead(u)}
+                                                className={cn(
+                                                    'p-3.5 transition-colors duration-150 cursor-pointer active:bg-slate-100 dark:active:bg-slate-800/60',
+                                                    isSelected
+                                                        ? 'bg-blue-50/70 dark:bg-blue-950/40'
+                                                        : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/40',
+                                                )}
+                                            >
+                                                <div className="flex items-start gap-3">
+                                                    {/* Checkbox */}
+                                                    <div
+                                                        className="pt-1"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <Checkbox
+                                                            checked={isSelected}
+                                                            onCheckedChange={(checked) =>
+                                                                handleSelectRow(Number(u.id), checked as boolean)
+                                                            }
+                                                            aria-label={`Select ${u.name}`}
+                                                        />
+                                                    </div>
+
+                                                    {/* Avatar */}
+                                                    <Avatar className="size-10 shrink-0 ring-2 ring-white dark:ring-slate-800">
+                                                        <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-blue-600 text-xs font-bold text-white shadow-inner">
+                                                            {getInitials(u.name)}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+
+                                                    {/* Personnel Info */}
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="flex items-start justify-between gap-1">
+                                                            <div className="min-w-0 flex-1 pr-1">
+                                                                <div className="truncate text-sm font-bold text-slate-900 dark:text-white">
+                                                                    {formatLastNameFirst(u)}
+                                                                </div>
+                                                                <div className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+                                                                    {u.email}
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Quick Actions */}
+                                                            <div
+                                                                className="flex items-center gap-0.5 shrink-0"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                {status === 'pending' && (
+                                                                    <>
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            className="h-8 w-8 rounded-lg text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30 cursor-pointer"
+                                                                            onClick={() => onApproveProgramHead(phId)}
+                                                                            aria-label="Approve"
+                                                                        >
+                                                                            <CheckCircle2 className="h-4 w-4" />
+                                                                        </Button>
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            className="h-8 w-8 rounded-lg text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-950/30 cursor-pointer"
+                                                                            onClick={() => onRejectProgramHead(phId)}
+                                                                            aria-label="Reject"
+                                                                        >
+                                                                            <XCircle className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </>
+                                                                )}
+                                                                {status === 'rejected' && (
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="h-8 w-8 rounded-lg text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30 cursor-pointer"
+                                                                        onClick={() => onApproveProgramHead(phId)}
+                                                                        aria-label="Re-approve"
+                                                                    >
+                                                                        <CheckCircle2 className="h-4 w-4" />
+                                                                    </Button>
+                                                                )}
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 rounded-lg text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/30 cursor-pointer"
+                                                                    onClick={() => onViewProgramHead(u)}
+                                                                    aria-label="View"
+                                                                >
+                                                                    <Eye className="h-4 w-4" />
+                                                                </Button>
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 rounded-lg text-amber-600 hover:bg-amber-50 hover:text-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/30 cursor-pointer"
+                                                                    onClick={() => onEditProgramHead(u)}
+                                                                    aria-label="Edit"
+                                                                >
+                                                                    <Pencil className="h-4 w-4" />
+                                                                </Button>
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-950/30 cursor-pointer"
+                                                                    onClick={() => onDeleteProgramHead(u)}
+                                                                    aria-label="Delete"
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Meta Badges */}
+                                                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                                                            {/* User ID */}
+                                                            <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                                                {u.student_id || `PH-${phId}`}
+                                                            </span>
+
+                                                            {/* Role Badge */}
+                                                            {u.role === 'Instructor' ? (
+                                                                <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold tracking-tight text-emerald-700 uppercase dark:bg-emerald-950/50 dark:text-emerald-300">
+                                                                    Instructor
+                                                                </span>
+                                                            ) : u.role === 'Offices' ? (
+                                                                <span className="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-[10px] font-bold tracking-tight text-purple-700 uppercase dark:bg-purple-950/50 dark:text-purple-300">
+                                                                    Offices {u.office ? `(${u.office})` : ''}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold tracking-tight text-amber-700 uppercase dark:bg-amber-900/30 dark:text-amber-400">
+                                                                    {u.role ?? 'Program Head'}
+                                                                </span>
+                                                            )}
+
+                                                            {/* Program Badge */}
+                                                            {assignedProg !== '—' && (
+                                                                <span
+                                                                    className={cn(
+                                                                        'inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-bold tracking-tight',
+                                                                        getProgramBadgeClass(assignedProg),
+                                                                    )}
+                                                                >
+                                                                    {assignedProg === 'ALL' ? 'All Programs' : assignedProg}
+                                                                </span>
+                                                            )}
+
+                                                            {/* Status Badge */}
+                                                            {status === 'approved' ? (
+                                                                <span className="inline-flex items-center rounded-md bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                                                                    Approved
+                                                                </span>
+                                                            ) : status === 'rejected' ? (
+                                                                <span className="inline-flex items-center rounded-md bg-rose-100 px-1.5 py-0.5 text-[9px] font-bold text-rose-800 dark:bg-rose-950/60 dark:text-rose-300">
+                                                                    Rejected
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center rounded-md bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                                                                    Pending
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        </div>
+
+                        {/* ══════════════════════════════════════════════════════
+                            DESKTOP DATA TABLE VIEW (Visible on screens >= md)
+                        ══════════════════════════════════════════════════════ */}
+                        <div className="hidden md:block overflow-x-auto">
                             <table className="w-full min-w-max border-collapse text-left text-sm">
                                 <thead className="border-b border-slate-100 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
                                     <tr>
                                         <th className="w-16 px-4 py-4">
                                             <Checkbox
-                                                checked={
-                                                    pagedProgramHeads.length > 0 &&
-                                                    pagedProgramHeads.every((u) =>
-                                                        selectedUserIds.includes(Number(u.id)),
-                                                    )
-                                                }
+                                                checked={isAllCurrentPageSelected}
                                                 onCheckedChange={(checked) =>
                                                     handleSelectAll(checked as boolean)
                                                 }
@@ -435,9 +641,16 @@ export function ManageProgramHeadsTab({
                                                                 Instructor
                                                             </span>
                                                         ) : u.role === 'Offices' ? (
-                                                            <span className="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-[10px] font-bold tracking-tight text-purple-700 uppercase dark:bg-purple-950/50 dark:text-purple-300">
-                                                                Offices
-                                                            </span>
+                                                            <div className="flex flex-col gap-0.5">
+                                                                <span className="inline-flex w-fit items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-[10px] font-bold tracking-tight text-purple-700 uppercase dark:bg-purple-950/50 dark:text-purple-300">
+                                                                    Offices
+                                                                </span>
+                                                                {u.office && (
+                                                                    <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                                                                        {u.office}
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         ) : (
                                                             <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold tracking-tight text-amber-700 uppercase dark:bg-amber-900/30 dark:text-amber-400">
                                                                 {u.role ?? 'Program Head'}
@@ -447,11 +660,12 @@ export function ManageProgramHeadsTab({
                                                     <td className="px-6 py-4">
                                                         {assignedProg !== '—' ? (
                                                             <span
-                                                                className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-bold tracking-tight ${getProgramBadgeClass(
-                                                                    assignedProg,
-                                                                )}`}
+                                                                className={cn(
+                                                                    'inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-bold tracking-tight',
+                                                                    getProgramBadgeClass(assignedProg),
+                                                                )}
                                                             >
-                                                                {assignedProg}
+                                                                {assignedProg === 'ALL' ? 'All Programs' : assignedProg}
                                                             </span>
                                                         ) : (
                                                             <span className="text-xs text-slate-400">—</span>
@@ -472,7 +686,7 @@ export function ManageProgramHeadsTab({
                                                                             type="button"
                                                                             variant="ghost"
                                                                             size="icon"
-                                                                            className="h-8 w-8 rounded-md text-emerald-600 transition-all duration-200 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+                                                                            className="h-8 w-8 rounded-md text-emerald-600 transition-all duration-200 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30 cursor-pointer"
                                                                             onClick={() => onApproveProgramHead(phId)}
                                                                             aria-label="Approve"
                                                                         >
@@ -484,7 +698,7 @@ export function ManageProgramHeadsTab({
                                                                             type="button"
                                                                             variant="ghost"
                                                                             size="icon"
-                                                                            className="h-8 w-8 rounded-md text-rose-600 transition-all duration-200 hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-950/30"
+                                                                            className="h-8 w-8 rounded-md text-rose-600 transition-all duration-200 hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-950/30 cursor-pointer"
                                                                             onClick={() => onRejectProgramHead(phId)}
                                                                             aria-label="Reject"
                                                                         >
@@ -500,7 +714,7 @@ export function ManageProgramHeadsTab({
                                                                         type="button"
                                                                         variant="ghost"
                                                                         size="icon"
-                                                                        className="h-8 w-8 rounded-md text-emerald-600 transition-all duration-200 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+                                                                        className="h-8 w-8 rounded-md text-emerald-600 transition-all duration-200 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30 cursor-pointer"
                                                                         onClick={() => onApproveProgramHead(phId)}
                                                                         aria-label="Re-approve"
                                                                     >
@@ -515,7 +729,7 @@ export function ManageProgramHeadsTab({
                                                                     type="button"
                                                                     variant="ghost"
                                                                     size="icon"
-                                                                    className="h-8 w-8 rounded-md text-blue-600 transition-all duration-200 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/30 dark:hover:text-blue-300"
+                                                                    className="h-8 w-8 rounded-md text-blue-600 transition-all duration-200 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/30 dark:hover:text-blue-300 cursor-pointer"
                                                                     onClick={() => onViewProgramHead(u)}
                                                                     aria-label="View"
                                                                 >
@@ -529,7 +743,7 @@ export function ManageProgramHeadsTab({
                                                                     type="button"
                                                                     variant="ghost"
                                                                     size="icon"
-                                                                    className="h-8 w-8 rounded-md text-amber-600 transition-all duration-200 hover:bg-amber-50 hover:text-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/30 dark:hover:text-amber-300"
+                                                                    className="h-8 w-8 rounded-md text-amber-600 transition-all duration-200 hover:bg-amber-50 hover:text-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/30 dark:hover:text-amber-300 cursor-pointer"
                                                                     onClick={() => onEditProgramHead(u)}
                                                                     aria-label="Edit"
                                                                 >
@@ -543,7 +757,7 @@ export function ManageProgramHeadsTab({
                                                                     type="button"
                                                                     variant="ghost"
                                                                     size="icon"
-                                                                    className="h-8 w-8 rounded-md text-rose-500 transition-all duration-200 hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-950/30"
+                                                                    className="h-8 w-8 rounded-md text-rose-500 transition-all duration-200 hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-950/30 cursor-pointer"
                                                                     onClick={() => onDeleteProgramHead(u)}
                                                                     aria-label="Delete"
                                                                 >
@@ -561,11 +775,11 @@ export function ManageProgramHeadsTab({
                         </div>
                     </div>
 
-                    {/* Pagination matching Student table */}
-                    <div className="mt-4 flex flex-col gap-2 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between dark:text-slate-400">
-                        <div className="flex items-center gap-3">
+                    {/* ── Responsive Pagination Footer ── */}
+                    <div className="mt-4 flex flex-col gap-3 px-3 sm:px-0 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between dark:text-slate-400">
+                        <div className="flex flex-wrap items-center justify-between sm:justify-start gap-2.5">
                             <div className="flex items-center gap-1.5">
-                                <span>Rows per page:</span>
+                                <span className="text-[11px] sm:text-xs">Rows:</span>
                                 <select
                                     value={pageSize}
                                     onChange={(e) => {
@@ -581,8 +795,8 @@ export function ManageProgramHeadsTab({
                                     ))}
                                 </select>
                             </div>
-                            <span className="text-slate-400 dark:text-slate-600">|</span>
-                            <span>
+                            <span className="hidden sm:inline text-slate-400 dark:text-slate-600">|</span>
+                            <span className="text-[11px] sm:text-xs">
                                 Showing{' '}
                                 {filteredProgramHeads.length === 0
                                     ? 0
@@ -595,10 +809,10 @@ export function ManageProgramHeadsTab({
                                 of {filteredProgramHeads.length} entries
                             </span>
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center justify-center sm:justify-end gap-1">
                             <button
                                 type="button"
-                                className="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-800"
+                                className="rounded-md px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800 cursor-pointer"
                                 onClick={() => setPageIndex((p) => Math.max(1, p - 1))}
                                 disabled={pageIndex <= 1}
                             >
@@ -619,12 +833,12 @@ export function ManageProgramHeadsTab({
                                         key={num}
                                         type="button"
                                         onClick={() => setPageIndex(num)}
-                                        className={
-                                            'rounded-md px-2 py-1 ' +
-                                            (pageIndex === num
-                                                ? 'bg-[#23509A] text-white dark:bg-blue-600'
-                                                : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800')
-                                        }
+                                        className={cn(
+                                            'rounded-md px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer',
+                                            pageIndex === num
+                                                ? 'bg-[#23509A] text-white dark:bg-blue-600 font-bold'
+                                                : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800',
+                                        )}
                                     >
                                         {num}
                                     </button>
@@ -632,7 +846,7 @@ export function ManageProgramHeadsTab({
                             })()}
                             <button
                                 type="button"
-                                className="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100 disabled:opacity-50 dark:text-slate-400 dark:hover:bg-slate-800"
+                                className="rounded-md px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800 cursor-pointer"
                                 onClick={() => setPageIndex((p) => Math.min(totalPages, p + 1))}
                                 disabled={pageIndex >= totalPages}
                             >
@@ -645,3 +859,5 @@ export function ManageProgramHeadsTab({
         </div>
     );
 }
+
+export default ManageProgramHeadsTab;

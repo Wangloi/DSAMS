@@ -337,30 +337,30 @@ export default function StudentAdmissionSlipIndex({ slips = [] }: Props) {
                         </div>
 
                         {/* TAB TOGGLES */}
-                        <div className="flex rounded-2xl border border-white/20 bg-black/20 p-1 backdrop-blur-md">
+                        <div className="grid w-full grid-cols-2 rounded-2xl border border-white/20 bg-black/20 p-1 backdrop-blur-md sm:flex sm:w-auto">
                             <button
                                 type="button"
                                 onClick={() => setActiveTab('form')}
-                                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-black tracking-wider uppercase transition-all ${
+                                className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-black tracking-wider uppercase transition-all sm:px-4 ${
                                     activeTab === 'form'
                                         ? 'bg-white text-blue-950 shadow-md'
                                         : 'text-white/80 hover:text-white'
                                 }`}
                             >
                                 <PlusCircle className="h-4 w-4" />
-                                New Request
+                                <span>New Request</span>
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setActiveTab('history')}
-                                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-black tracking-wider uppercase transition-all ${
+                                className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-black tracking-wider uppercase transition-all sm:px-4 ${
                                     activeTab === 'history'
                                         ? 'bg-white text-blue-950 shadow-md'
                                         : 'text-white/80 hover:text-white'
                                 }`}
                             >
                                 <History className="h-4 w-4" />
-                                My History ({slips.length})
+                                <span>My History ({slips.length})</span>
                             </button>
                         </div>
                     </div>

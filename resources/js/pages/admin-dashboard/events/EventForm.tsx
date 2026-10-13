@@ -100,12 +100,24 @@ export default function EventForm({
                         <Input
                             id="organizer"
                             value={data.organizer}
+                            list="eventFormOrganizerSuggestions"
                             onChange={(e) =>
                                 setData('organizer', e.target.value)
                             }
-                            placeholder="Enter organizer name"
+                            placeholder="Enter or select organizing body"
                             className={errors.organizer ? 'border-red-500' : ''}
                         />
+                        <datalist id="eventFormOrganizerSuggestions">
+                            <option value="Office of Student Affairs" />
+                            <option value="Student Affairs" />
+                            <option value="Dean of College" />
+                            <option value="Academic Affairs" />
+                            <option value="Admin Office" />
+                            <option value="College Student Government (CSG)" />
+                            <option value="Guidance Office" />
+                            <option value="HED Library" />
+                            <option value="Sports Department" />
+                        </datalist>
                         {errors.organizer && (
                             <p className="mt-1 text-sm text-red-500">
                                 {errors.organizer}
@@ -136,7 +148,7 @@ export default function EventForm({
                                 type="button"
                                 variant="outline"
                                 onClick={() =>
-                                    setShowMapSelector((prev) => !prev)
+                                    setShowMapSelector(!showMapSelector)
                                 }
                                 className="h-9 text-sm font-semibold"
                             >

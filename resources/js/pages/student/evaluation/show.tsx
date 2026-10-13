@@ -549,7 +549,7 @@ export default function StudentEvaluationShow() {
 
                 {/* Fixed Bottom Floating Submit Bar */}
                 {!alreadySubmitted && questions.length > 0 && (
-                    <div className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/80 bg-white/95 p-3.5 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] backdrop-blur-xl sm:p-4 dark:border-slate-800 dark:bg-[#0B192C]/95">
+                    <div className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/80 bg-white/95 p-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom,0px))] shadow-[0_-10px_30px_rgba(0,0,0,0.1)] backdrop-blur-xl sm:p-4 dark:border-slate-800 dark:bg-[#0B192C]/95">
                         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
                             <div className="flex flex-col">
                                 <span className="text-xs font-black tracking-wider text-slate-900 uppercase dark:text-white">

@@ -106,17 +106,22 @@ export function generateCaseRecordHtml(data: CaseSummaryPrintData): string {
         disciplinaryActions.length === 0
             ? `<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 12px;">No formal disciplinary action orders or sanctions recorded yet for this case.</td></tr>`
             : disciplinaryActions
-                  .map(
-                      (action, idx) => `
+                  .map((action, idx) => {
+                      const actionType = action.action_type || action.final_action || action.recommended_action || 'Disciplinary Action';
+                      const description = action.description || action.remarks || action.final_action_reason || action.recommendation_reason || '—';
+                      const effectiveDate = action.effective_date || action.reviewed_at?.slice(0, 10) || action.created_at?.slice(0, 10) || 'Immediate';
+                      const servedByName = action.served_by_name || (typeof action.reviewed_by === 'string' ? action.reviewed_by : undefined) || 'Prefect of Discipline';
+
+                      return `
                 <tr>
                     <td style="text-align: center; font-weight: bold;">${idx + 1}</td>
-                    <td style="font-weight: bold; color: #0b2d66;">${escapeHtml(action.action_type)}</td>
-                    <td>${escapeHtml(action.description)}</td>
-                    <td>${escapeHtml(action.effective_date || action.created_at?.slice(0, 10) || 'Immediate')}</td>
-                    <td>${escapeHtml(action.served_by_name || 'Prefect of Discipline')}</td>
+                    <td style="font-weight: bold; color: #0b2d66;">${escapeHtml(actionType)}</td>
+                    <td>${escapeHtml(description)}</td>
+                    <td>${escapeHtml(effectiveDate)}</td>
+                    <td>${escapeHtml(servedByName)}</td>
                 </tr>
-            `,
-                  )
+            `;
+                  })
                   .join('');
 
     const printDate = new Date().toLocaleDateString('en-US', {
@@ -455,7 +460,7 @@ export function generateCaseRecordHtml(data: CaseSummaryPrintData): string {
 
   <!-- Footer -->
   <div class="footer">
-    <div>Document Control: DSAMS-OSA-DISC-${escapeHtml(caseId)} &bull; Confidential Student Disciplinary Record</div>
+    <div>Document Control: OSAMS-OSA-DISC-${escapeHtml(caseId)} &bull; Confidential Student Disciplinary Record</div>
     <div>Generated: ${escapeHtml(printDate)} &bull; Valid only with official institutional stamp</div>
   </div>
 

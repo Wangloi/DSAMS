@@ -484,9 +484,8 @@ html.swal2-shown {
         touch-action: manipulation;
     }
 
-    /* Support iPhone / Android notch & gesture bar safe area insets */
+    /* Support iPhone / Android notch & gesture bar horizontal insets (e.g. landscape) */
     body {
-        padding-top: env(safe-area-inset-top, 0px);
         padding-left: env(safe-area-inset-left, 0px);
         padding-right: env(safe-area-inset-right, 0px);
     }

@@ -11,6 +11,7 @@ export type UserRow = {
     course: string;
     year_level: string;
     role?: string | null;
+    office?: string | null;
     is_active?: boolean;
     status?: 'pending' | 'approved' | 'rejected';
     qr_code_path?: string | null;
@@ -92,5 +93,6 @@ export type UserForm = {
     course: string;
     year_level: string;
     role: string;
+    office?: string;
     officer_features?: string[];
 };

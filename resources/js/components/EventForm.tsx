@@ -189,17 +189,32 @@ export default function EventForm({
                                 <SelectValue placeholder="Select organizer" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="Office Student Affairs">
-                                    Office Student Affairs
+                                <SelectItem value="Office of Student Affairs">
+                                    Office of Student Affairs
+                                </SelectItem>
+                                <SelectItem value="Student Affairs">
+                                    Student Affairs
                                 </SelectItem>
                                 <SelectItem value="Dean of College">
                                     Dean of College
                                 </SelectItem>
-                                <SelectItem value="HED Library">
-                                    HED Library
+                                <SelectItem value="Academic Affairs">
+                                    Academic Affairs
+                                </SelectItem>
+                                <SelectItem value="Admin Office">
+                                    Admin Office
+                                </SelectItem>
+                                <SelectItem value="College Student Government (CSG)">
+                                    College Student Government (CSG)
                                 </SelectItem>
                                 <SelectItem value="Guidance Office">
                                     Guidance Office
+                                </SelectItem>
+                                <SelectItem value="HED Library">
+                                    HED Library
+                                </SelectItem>
+                                <SelectItem value="Sports Department">
+                                    Sports Department
                                 </SelectItem>
                             </SelectContent>
                         </Select>

@@ -73,7 +73,7 @@ export default function InvestigationDialog({
 
     const [studentHistoryNotes, setStudentHistoryNotes] = useState<string>(
         existingDetails?.student_history_notes ??
-            `Student ${incident.student} (${studentDetails?.course || 'Collegiate Dept'}, ${studentDetails?.yearLevel || 'Undergraduate'}) verified against DSAMS master records. Past violation record: No previous major suspensions.`,
+            `Student ${incident.student} (${studentDetails?.course || 'Collegiate Dept'}, ${studentDetails?.yearLevel || 'Undergraduate'}) verified against OSAMS master records. Past violation record: No previous major suspensions.`,
     );
 
     const [interviewNotes, setInterviewNotes] = useState<string>(
@@ -246,7 +246,7 @@ export default function InvestigationDialog({
                                     }`}
                                 >
                                     <CheckCircle2 className="h-3.5 w-3.5" />
-                                    <span>{identityVerified ? '✓ Verified in DSAMS' : 'Mark as Verified'}</span>
+                                    <span>{identityVerified ? '✓ Verified in OSAMS' : 'Mark as Verified'}</span>
                                 </button>
                             </div>
 
@@ -276,7 +276,7 @@ export default function InvestigationDialog({
                                 <Input
                                     value={studentHistoryNotes}
                                     onChange={(e) => setStudentHistoryNotes(e.target.value)}
-                                    placeholder="Enter verification notes from DSAMS directory / past violations log..."
+                                    placeholder="Enter verification notes from OSAMS directory / past violations log..."
                                     className="text-xs"
                                 />
                             </div>

@@ -2,20 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Student;
 use App\Models\Attendance;
 use App\Models\Event;
+use App\Models\Student;
+use App\Services\Attendance\EventEligibilityService;
 use App\Services\StudentNotificationDispatcher;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class ProgramHeadAttendanceController extends Controller
 {
-    public function index(Request $request): \Inertia\Response
+    public function index(Request $request): Response
     {
         $programHead = auth()->guard('program_head')->user() ?: auth()->user();
         $program = is_object($programHead) ? (string) ($programHead->program ?? '') : '';
@@ -25,7 +29,7 @@ class ProgramHeadAttendanceController extends Controller
             $eventModels = Event::query()
                 ->withCount('attendances')
                 ->when(method_exists(Event::class, 'scopeActive'), fn ($query) => $query->active())
-                ->when($program !== '' && Schema::hasColumn('events', 'courses'), function ($query) use ($program) {
+                ->when($program !== '' && strtoupper($program) !== 'ALL' && Schema::hasColumn('events', 'courses'), function ($query) use ($program) {
                     $query->where(function ($sub) use ($program) {
                         $sub->whereJsonContains('courses', $program)
                             ->orWhereNull('courses')
@@ -43,11 +47,16 @@ class ProgramHeadAttendanceController extends Controller
             $eventIds = $eventModels->pluck('id')->all();
 
             $lateByEventId = collect();
-            if ($program !== '' && !empty($eventIds) && Schema::hasTable('attendances')) {
-                $lateByEventId = Attendance::query()
+            if ($program !== '' && ! empty($eventIds) && Schema::hasTable('attendances')) {
+                $lateQuery = Attendance::query()
                     ->whereIn('event_id', $eventIds)
-                    ->where('status', 'late')
-                    ->whereHas('student', fn ($q) => $q->where('course', $program))
+                    ->where('status', 'late');
+
+                if (strtoupper($program) !== 'ALL') {
+                    $lateQuery->whereHas('student', fn ($q) => $q->where('course', $program));
+                }
+
+                $lateByEventId = $lateQuery
                     ->groupBy('event_id')
                     ->selectRaw('event_id, COUNT(*) as late_count')
                     ->pluck('late_count', 'event_id');
@@ -83,7 +92,7 @@ class ProgramHeadAttendanceController extends Controller
         }
     }
 
-    private function formatEventsList(\Illuminate\Support\Collection $eventModels, string $program, \Illuminate\Support\Collection $lateByEventId): \Illuminate\Support\Collection
+    private function formatEventsList(Collection $eventModels, string $program, Collection $lateByEventId): Collection
     {
         return $eventModels->map(function (Event $event) use ($program, $lateByEventId) {
             if ($event->total_attendees !== $event->attendances_count) {
@@ -111,11 +120,20 @@ class ProgramHeadAttendanceController extends Controller
                 'registration_end_time' => $event->registration_end_time,
                 'registrationEndTime' => $event->registration_end_time,
                 'scannerPortalActive' => Schema::hasColumn('events', 'scanner_portal_active') ? (bool) $event->scanner_portal_active : true,
+                'conflicting_events' => $event->getConflictingEvents()->map(fn (Event $ce) => [
+                    'id' => $ce->id,
+                    'event' => $ce->event_name,
+                    'name' => $ce->event_name,
+                    'dateTime' => $ce->date_time,
+                    'location' => $ce->location,
+                    'event_time' => $ce->event_time,
+                    'registration_end_time' => $ce->registration_end_time,
+                ])->all(),
             ];
         });
     }
 
-    private function calculateStats(\Illuminate\Support\Collection $events, \Illuminate\Support\Collection $lateByEventId, string $program): array
+    private function calculateStats(Collection $events, Collection $lateByEventId, string $program): array
     {
         $totalEvents = $events->count();
         $totalAttendees = (int) $events->sum('scannedCount');
@@ -123,6 +141,7 @@ class ProgramHeadAttendanceController extends Controller
             ? (int) round($events->sum(function (array $event) {
                 $cap = (int) ($event['attendanceDenominator'] ?? 0);
                 $scanned = (int) ($event['scannedCount'] ?? 0);
+
                 return $cap > 0 ? ($scanned / $cap) * 100 : 0;
             }) / $totalEvents)
             : 0;
@@ -143,14 +162,14 @@ class ProgramHeadAttendanceController extends Controller
         $programHead = auth()->guard('program_head')->user() ?: auth()->user();
         $program = is_object($programHead) ? (string) ($programHead->program ?? '') : '';
 
-        if (!$program) {
+        if (! $program) {
             return response()->json(['rows' => []]);
         }
 
-        $eventYearLevels = is_array($event->year_levels) ? array_values(array_filter($event->year_levels, fn($y) => !\App\Services\Attendance\EventEligibilityService::isAllWildcard((string) $y))) : [];
+        $eventYearLevels = is_array($event->year_levels) ? array_values(array_filter($event->year_levels, fn ($y) => ! EventEligibilityService::isAllWildcard((string) $y))) : [];
 
         $studentsQuery = Student::query()->where('course', $program);
-        if (!empty($eventYearLevels)) {
+        if (! empty($eventYearLevels)) {
             $studentsQuery->whereIn('year_level', $eventYearLevels);
         }
         if (Schema::hasColumn('students', 'is_archived')) {
@@ -202,67 +221,25 @@ class ProgramHeadAttendanceController extends Controller
             ]);
         }
 
-        $eventYearLevels = is_array($event->year_levels) ? array_values(array_filter($event->year_levels, fn($y) => !\App\Services\Attendance\EventEligibilityService::isAllWildcard((string) $y))) : [];
-
-        // Query eligible students for this event in this program
-        $studentsQuery = Student::query();
-        if ($program !== '') {
-            $studentsQuery->where('course', $program);
-        }
-        if (Schema::hasColumn('students', 'status')) {
-            $studentsQuery->where(function ($q) {
-                $q->where('status', 'approved')->orWhereNull('status');
-            });
-        }
-        if (Schema::hasColumn('students', 'is_archived')) {
-            $studentsQuery->where(function ($q) {
-                $q->where('is_archived', false)->orWhereNull('is_archived');
-            });
-        }
-        if (!empty($eventYearLevels)) {
-            $studentsQuery->whereIn('year_level', $eventYearLevels);
-        }
-
-        $eligibleStudents = $studentsQuery
-            ->orderBy('year_level')
-            ->orderBy('last_name')
-            ->orderBy('first_name')
-            ->get();
-
-        // Fetch attendance records for this event
-        $baseAttendanceQuery = Attendance::where('event_id', $event->id)
-            ->whereHas('student', function ($q) use ($program) {
-                if ($program !== '') {
-                    $q->where('course', $program);
-                }
-            });
-
-        $attendances = (clone $baseAttendanceQuery)
-            ->with('student')
-            ->get()
-            ->keyBy('student_id');
-
-        $allStudents = $eligibleStudents;
-        if ($allStudents->isEmpty()) {
-            $allStudents = $attendances->map(fn($a) => $a->student)->filter()->values();
-        } else {
-            $attendedStudents = $attendances->map(fn($a) => $a->student)->filter();
-            $allStudents = $allStudents->merge($attendedStudents)->unique('id')->values();
-        }
+        [$allStudents, $attendances, $baseAttendanceQuery] = $this->resolveEventStudentsAndAttendances($event, $program);
 
         $limit = $request->has('limit') ? (int) $request->query('limit') : 2000;
-        if ($limit < 1) $limit = 1;
-        if ($limit > 2000) $limit = 2000;
+        if ($limit < 1) {
+            $limit = 1;
+        }
+        if ($limit > 2000) {
+            $limit = 2000;
+        }
 
         $rows = $allStudents
-            ->map(function ($student) use ($attendances) {
+            ->map(function (Student $student) use ($attendances) {
                 $att = $attendances->get($student->id);
                 $hasScanned = ($att !== null && ($att->checked_in_at !== null || $att->scanned_at !== null));
                 $timeCarbon = $att ? ($att->checked_in_at ?? $att->scanned_at) : null;
 
                 $fullName = trim((string) ($student->name ?? ''));
-                if (!empty($student->last_name) || !empty($student->first_name)) {
-                    $fullName = trim(($student->last_name ?? '') . ', ' . ($student->first_name ?? '') . ' ' . ($student->middle_name ?? ''));
+                if (! empty($student->last_name) || ! empty($student->first_name)) {
+                    $fullName = trim(($student->last_name ?? '').', '.($student->first_name ?? '').' '.($student->middle_name ?? ''));
                 }
 
                 $status = $hasScanned ? ucfirst((string) ($att->status ?? 'present')) : 'Absent';
@@ -278,7 +255,7 @@ class ProgramHeadAttendanceController extends Controller
                     'time' => $timeCarbon ? optional($timeCarbon)->format('g:i A') : '—',
                     'time_out' => ($att && $att->checked_out_at) ? optional($att->checked_out_at)->format('g:i A') : '—',
                     'status' => $status,
-                    'is_absent' => !$hasScanned,
+                    'is_absent' => ! $hasScanned,
                 ];
             })
             ->sortBy('name')
@@ -314,7 +291,49 @@ class ProgramHeadAttendanceController extends Controller
     public function printEvent(Request $request, Event $event): \Illuminate\Http\Response
     {
         $program = $this->programHeadProgram();
-        $eventYearLevels = is_array($event->year_levels) ? array_values(array_filter($event->year_levels, fn($y) => !\App\Services\Attendance\EventEligibilityService::isAllWildcard((string) $y))) : [];
+        [$allStudents, $attendances] = $this->resolveEventStudentsAndAttendances($event, $program);
+
+        $printData = $this->buildPrintSections($allStudents, $attendances, $program);
+
+        $dateLabel = $event->event_date ? Carbon::parse($event->event_date)->format('F d, Y') : '';
+
+        $timeLabel = '';
+        if (! empty($event->event_time) && ! empty($event->registration_end_time)) {
+            $t1 = $this->formatTime12($event->event_time);
+            $t2 = $this->formatTime12($event->registration_end_time);
+            $timeLabel = ($t1 && $t2) ? "{$t1} - {$t2}" : ($t1 ?: $t2);
+        } elseif (! empty($event->event_time)) {
+            if (preg_match('/^(.*?)(?:\s*(?:-|to)\s*)(.*)$/i', (string) $event->event_time, $m)) {
+                $t1 = $this->formatTime12($m[1]);
+                $t2 = $this->formatTime12($m[2]);
+                $timeLabel = ($t1 && $t2) ? "{$t1} - {$t2}" : ($t1 ?: $event->event_time);
+            } else {
+                $timeLabel = $this->formatTime12($event->event_time);
+            }
+        }
+
+        $locationLabel = (string) ($event->location ?? '');
+        $eventDateTimeLabel = trim($dateLabel.($timeLabel ? ' | '.$timeLabel : '').($locationLabel ? ' | '.$locationLabel : ''));
+
+        return response()->view('admin.attendance.print-sheet', [
+            'event' => $event,
+            'academicYear' => now()->format('Y').' - '.(now()->addYear()->format('Y')),
+            'eventDateTimeLabel' => $eventDateTimeLabel,
+            'sections' => $printData['sections'],
+            'totalAttendees' => $printData['totalAttendees'],
+            'totalAbsent' => $printData['totalAbsent'],
+            'totalStudents' => $printData['totalAttendees'] + $printData['totalAbsent'],
+        ]);
+    }
+
+    /**
+     * @return array{0: Collection<int, Student>, 1: Collection<string|int, Attendance>, 2: Builder}
+     */
+    private function resolveEventStudentsAndAttendances(Event $event, string $program): array
+    {
+        $eventYearLevels = is_array($event->year_levels)
+            ? array_values(array_filter($event->year_levels, fn ($y) => ! EventEligibilityService::isAllWildcard((string) $y)))
+            : [];
 
         // Query eligible students for this event in this program
         $studentsQuery = Student::query();
@@ -331,7 +350,7 @@ class ProgramHeadAttendanceController extends Controller
                 $q->where('is_archived', false)->orWhereNull('is_archived');
             });
         }
-        if (!empty($eventYearLevels)) {
+        if (! empty($eventYearLevels)) {
             $studentsQuery->whereIn('year_level', $eventYearLevels);
         }
 
@@ -342,27 +361,40 @@ class ProgramHeadAttendanceController extends Controller
             ->get();
 
         // Fetch attendance records for this event
-        $attendances = Attendance::where('event_id', $event->id)
-            ->with('student')
+        $baseAttendanceQuery = Attendance::where('event_id', $event->id)
             ->whereHas('student', function ($q) use ($program) {
                 if ($program !== '') {
                     $q->where('course', $program);
                 }
-            })
+            });
+
+        $attendances = (clone $baseAttendanceQuery)
+            ->with('student')
             ->get()
             ->keyBy('student_id');
 
         $allStudents = $eligibleStudents;
         if ($allStudents->isEmpty()) {
-            $allStudents = $attendances->map(fn($a) => $a->student)->filter()->values();
+            $allStudents = $attendances->map(fn ($a) => $a->student)->filter()->values();
         } else {
-            $attendedStudents = $attendances->map(fn($a) => $a->student)->filter();
+            $attendedStudents = $attendances->map(fn ($a) => $a->student)->filter();
             $allStudents = $allStudents->merge($attendedStudents)->unique('id')->values();
         }
 
+        return [$allStudents, $attendances, $baseAttendanceQuery];
+    }
+
+    /**
+     * @param  Collection<int, Student>  $allStudents
+     * @param  Collection<string|int, Attendance>  $attendances
+     * @return array{sections: array<int, array<string, mixed>>, totalAttendees: int, totalAbsent: int}
+     */
+    private function buildPrintSections($allStudents, $attendances, string $program): array
+    {
         // Group by year level
         $groupedByYear = $allStudents->groupBy(function ($s) {
             $yl = trim((string) ($s->year_level ?? ''));
+
             return $yl !== '' ? $yl : 'General';
         });
 
@@ -373,6 +405,7 @@ class ProgramHeadAttendanceController extends Controller
             if ($numA === $numB) {
                 return strcmp((string) $a, (string) $b);
             }
+
             return $numA <=> $numB;
         });
 
@@ -410,8 +443,8 @@ class ProgramHeadAttendanceController extends Controller
                     }
 
                     $fullName = trim((string) ($student->name ?? ''));
-                    if (!empty($student->last_name) || !empty($student->first_name)) {
-                        $fullName = trim(($student->last_name ?? '') . ', ' . ($student->first_name ?? '') . ' ' . ($student->middle_name ?? ''));
+                    if (! empty($student->last_name) || ! empty($student->first_name)) {
+                        $fullName = trim(($student->last_name ?? '').', '.($student->first_name ?? '').' '.($student->middle_name ?? ''));
                     }
 
                     return [
@@ -422,7 +455,7 @@ class ProgramHeadAttendanceController extends Controller
                         'checked_in_at' => $checkedInAt,
                         'time_out' => $timeOut,
                         'status' => $status,
-                        'is_absent' => !$hasScanned,
+                        'is_absent' => ! $hasScanned,
                     ];
                 })
                 ->sortBy('name')
@@ -446,46 +479,27 @@ class ProgramHeadAttendanceController extends Controller
             ];
         }
 
-        $dateLabel = $event->event_date ? Carbon::parse($event->event_date)->format('F d, Y') : '';
-
-        $formatTime12 = function (?string $raw): string {
-            if (!$raw) return '';
-            $raw = trim($raw);
-            if ($raw === '' || $raw === '—') return '';
-            try {
-                return Carbon::parse($raw)->format('g:i A');
-            } catch (\Throwable $e) {
-                return $raw;
-            }
-        };
-
-        $timeLabel = '';
-        if (!empty($event->event_time) && !empty($event->registration_end_time)) {
-            $t1 = $formatTime12($event->event_time);
-            $t2 = $formatTime12($event->registration_end_time);
-            $timeLabel = ($t1 && $t2) ? "{$t1} - {$t2}" : ($t1 ?: $t2);
-        } elseif (!empty($event->event_time)) {
-            if (preg_match('/^(.*?)(?:\s*(?:-|to)\s*)(.*)$/i', (string) $event->event_time, $m)) {
-                $t1 = $formatTime12($m[1]);
-                $t2 = $formatTime12($m[2]);
-                $timeLabel = ($t1 && $t2) ? "{$t1} - {$t2}" : ($t1 ?: $event->event_time);
-            } else {
-                $timeLabel = $formatTime12($event->event_time);
-            }
-        }
-
-        $locationLabel = (string) ($event->location ?? '');
-        $eventDateTimeLabel = trim($dateLabel.($timeLabel ? ' | '.$timeLabel : '').($locationLabel ? ' | '.$locationLabel : ''));
-
-        return response()->view('admin.attendance.print-sheet', [
-            'event' => $event,
-            'academicYear' => now()->format('Y').' - '.(now()->addYear()->format('Y')),
-            'eventDateTimeLabel' => $eventDateTimeLabel,
+        return [
             'sections' => $sections,
             'totalAttendees' => $overallPresentCount,
             'totalAbsent' => $overallAbsentCount,
-            'totalStudents' => $overallPresentCount + $overallAbsentCount,
-        ]);
+        ];
+    }
+
+    private function formatTime12(?string $raw): string
+    {
+        if (! $raw) {
+            return '';
+        }
+        $raw = trim($raw);
+        if ($raw === '' || $raw === '—') {
+            return '';
+        }
+        try {
+            return Carbon::parse($raw)->format('g:i A');
+        } catch (\Throwable $e) {
+            return $raw;
+        }
     }
 
     private function programHeadProgram(): string
@@ -502,7 +516,7 @@ class ProgramHeadAttendanceController extends Controller
         }
 
         return Student::query()
-            ->where('course', $program)
+            ->when(strtoupper($program) !== 'ALL', fn ($q) => $q->where('course', $program))
             ->when(! empty($event->year_levels), function ($q) use ($event) {
                 $q->whereIn('year_level', is_array($event->year_levels) ? $event->year_levels : []);
             })
@@ -517,7 +531,7 @@ class ProgramHeadAttendanceController extends Controller
 
         return Attendance::query()
             ->where('event_id', $event->id)
-            ->whereHas('student', fn ($q) => $q->where('course', $program))
+            ->when(strtoupper($program) !== 'ALL', fn ($q) => $q->whereHas('student', fn ($sq) => $sq->where('course', $program)))
             ->when($status !== null, fn ($q) => $q->where('status', $status))
             ->count();
     }
@@ -660,15 +674,15 @@ class ProgramHeadAttendanceController extends Controller
 
         if (! $existingAttendance) {
             $attendance = Attendance::create([
-                'event_id'      => $event->id,
-                'student_id'    => $student->id,
-                'scanned_at'    => $now,
+                'event_id' => $event->id,
+                'student_id' => $student->id,
+                'scanned_at' => $now,
                 'checked_in_at' => $now,
-                'status'        => $status,
+                'status' => $status,
             ]);
         } else {
             $existingAttendance->update([
-                'scanned_at'     => $now,
+                'scanned_at' => $now,
                 'checked_out_at' => $now,
             ]);
             $attendance = $existingAttendance;
@@ -682,18 +696,18 @@ class ProgramHeadAttendanceController extends Controller
             : 'Time-in (Check-in) recorded successfully (On-Time).';
 
         return response()->json([
-            'attendance_id'  => $attendance->id,
-            'status'         => $attendance->status,
-            'action'         => $isTimeOut ? 'check_out' : 'check_in',
-            'message'        => $isTimeOut ? 'Time-out (Check-out) recorded successfully.' : $checkInLabel,
-            'scanned_at'     => $now->toDateTimeString(),
-            'checked_in_at'  => optional($attendance->checked_in_at)->toDateTimeString(),
+            'attendance_id' => $attendance->id,
+            'status' => $attendance->status,
+            'action' => $isTimeOut ? 'check_out' : 'check_in',
+            'message' => $isTimeOut ? 'Time-out (Check-out) recorded successfully.' : $checkInLabel,
+            'scanned_at' => $now->toDateTimeString(),
+            'checked_in_at' => optional($attendance->checked_in_at)->toDateTimeString(),
             'checked_out_at' => $attendance->checked_out_at ? optional($attendance->checked_out_at)->toDateTimeString() : null,
             'student' => [
-                'id'         => $student->id,
+                'id' => $student->id,
                 'student_id' => $student->student_id,
-                'name'       => $student->name,
-                'program'    => (string) ($student->course ?? $student->program ?? ''),
+                'name' => $student->name,
+                'program' => (string) ($student->course ?? $student->program ?? ''),
             ],
         ]);
     }

@@ -329,7 +329,7 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
         <AppShell>
             <Head title={`Scan Attendance — ${event.name}`} />
 
-            <div className="relative min-h-screen overflow-x-hidden bg-slate-950 font-sans text-slate-100 selection:bg-blue-600 selection:text-white pb-16">
+            <div className="relative min-h-[100dvh] overflow-x-hidden bg-slate-950 font-sans text-slate-100 selection:bg-blue-600 selection:text-white pb-[calc(4rem+env(safe-area-inset-bottom,0px))]">
                 {/* Background ambient lighting */}
                 <div className="pointer-events-none fixed inset-0 z-0">
                     <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b12_1px,transparent_1px),linear-gradient(to_bottom,#1e293b12_1px,transparent_1px)] bg-[size:32px_32px]" />
@@ -337,7 +337,7 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
                     <div className="absolute bottom-0 right-10 h-[350px] w-[350px] rounded-full bg-indigo-600/10 blur-[130px]" />
                 </div>
 
-                <div className="relative z-10 mx-auto flex w-full max-w-xl flex-col gap-6 px-4 py-8 sm:px-6">
+                <div className="relative z-10 mx-auto flex w-full max-w-xl flex-col gap-6 px-4 pt-[max(1.5rem,env(safe-area-inset-top,0px))] pb-8 sm:px-6">
                     {/* Header Banner */}
                     <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#07193b] via-[#0d285b] to-[#153f8a] p-6 shadow-2xl backdrop-blur-2xl">
                         <div className="flex items-center justify-between gap-3 mb-4">
@@ -413,6 +413,7 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
                             <video
                                 ref={videoRef}
                                 className="absolute inset-0 h-full w-full object-cover"
+                                autoPlay
                                 playsInline
                                 muted
                             />

@@ -17,7 +17,7 @@ import {
 } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
-import { ArrowLeft, Calendar, Check, Info } from 'lucide-react';
+import { ArrowLeft, Calendar, Check, Info, Plus, Search, UserCheck, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import Swal from 'sweetalert2';
 import ProgramHeadLayout from '@/pages/program-head/components/ProgramHeadLayout';
@@ -253,6 +253,19 @@ export default function CreateEventPage() {
         }));
     }, [selectedScannerStudents]);
 
+    const addSelectedStudent = (student: { id: string; name: string }) => {
+        setSelectedScannerStudents((prev) => {
+            if (prev.some((s) => s.id === student.id)) return prev;
+            return [...prev, student];
+        });
+        setScannerStudentQuery('');
+        setScannerSearchResults([]);
+    };
+
+    const removeSelectedStudent = (id: string) => {
+        setSelectedScannerStudents((prev) => prev.filter((s) => s.id !== id));
+    };
+
     const isStepOneValid = (): boolean => {
         const next: Record<string, string> = {};
         if (!formData.event_name.trim()) {
@@ -369,6 +382,14 @@ export default function CreateEventPage() {
     };
 
     const confirmSubmit = () => {
+        const finalScannerIds = (
+            selectedScannerStudents.length > 0
+                ? selectedScannerStudents.map((s) => s.id)
+                : formData.scannerStudentIds || []
+        )
+            .map((id) => String(id).trim())
+            .filter(Boolean);
+
         router.post(
             adminEvents(),
             {
@@ -386,6 +407,8 @@ export default function CreateEventPage() {
                 geofence_longitude: formData.geofence_longitude,
                 geofence_radius_m: formData.geofence_radius_m,
                 scanner_portal_active: formData.scanner_portal_active,
+                scanner_student_ids: finalScannerIds,
+                attendance_type: 'qr_scanner',
             },
             {
                 preserveState: true,
@@ -442,19 +465,6 @@ export default function CreateEventPage() {
                 return copy;
             });
         }
-    };
-
-    const addSelectedStudent = (student: { id: string; name: string }) => {
-        setSelectedScannerStudents((prev) => {
-            if (prev.some((s) => s.id === student.id)) return prev;
-            return [...prev, student];
-        });
-        setScannerStudentQuery('');
-        setScannerSearchResults([]);
-    };
-
-    const removeSelectedStudent = (id: string) => {
-        setSelectedScannerStudents((prev) => prev.filter((s) => s.id !== id));
     };
 
     const stepperClass = (step: number) =>
@@ -733,9 +743,9 @@ export default function CreateEventPage() {
                                                         <option value="Academic Affairs" />
                                                         <option value="Admin Office" />
                                                         <option value="College Student Government (CSG)" />
-                                                        <option value="Sports Department" />
-                                                        <option value="Library" />
                                                         <option value="Guidance Office" />
+                                                        <option value="HED Library" />
+                                                        <option value="Sports Department" />
                                                     </datalist>
                                                     {validationErrors.organizer && (
                                                         <span className="text-xs font-medium text-rose-500">
@@ -1424,40 +1434,93 @@ export default function CreateEventPage() {
                                                 </div>
 
                                                 <div className="grid gap-2 border-t border-slate-100 pt-4 sm:col-span-2 dark:border-slate-800">
-                                                    <div className="rounded-lg border border-blue-200/50 bg-blue-50/50 p-3.5 dark:border-blue-900/30 dark:bg-blue-950/20">
-                                                        <div className="flex gap-2.5">
-                                                            <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
-                                                            <div>
-                                                                <h4 className="text-xs font-semibold text-blue-950 dark:text-blue-200">
-                                                                    Automatic
-                                                                    Scanner
-                                                                    Access
-                                                                    Enabled
-                                                                </h4>
-                                                                <p className="mt-1 text-xs leading-relaxed text-blue-800/80 dark:text-blue-300/80">
-                                                                    All students
-                                                                    belonging to
-                                                                    the selected
-                                                                    Target
-                                                                    Courses and
-                                                                    Target Year
-                                                                    Levels are
-                                                                    automatically
-                                                                    authorized
-                                                                    to act as
-                                                                    attendance
-                                                                    scanners
-                                                                    from their
-                                                                    student
-                                                                    accounts.
-                                                                    There is no
-                                                                    need to
-                                                                    manually
-                                                                    assign
-                                                                    scanner IDs.
-                                                                </p>
-                                                            </div>
+                                                    <div className="flex items-center justify-between">
+                                                        <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                                            Attendance Scanner In-Charge
+                                                        </Label>
+                                                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                                                            {selectedScannerStudents.length === 0
+                                                                ? 'Optional'
+                                                                : `${selectedScannerStudents.length} assigned`}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/50 p-3.5 dark:border-slate-800 dark:bg-slate-800/30">
+                                                        <div className="relative">
+                                                            <Search className="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                                                            <Input
+                                                                value={scannerStudentQuery}
+                                                                onChange={(e) =>
+                                                                    setScannerStudentQuery(e.target.value)
+                                                                }
+                                                                placeholder="Search student by name or ID..."
+                                                                className="h-9 rounded-lg bg-white pl-8.5 text-xs dark:border-slate-700 dark:bg-slate-800"
+                                                            />
+                                                            {scannerStudentLoading && (
+                                                                <div className="absolute top-1/2 right-3 -translate-y-1/2">
+                                                                    <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                                                                </div>
+                                                            )}
                                                         </div>
+
+                                                        {/* Search Results Dropdown */}
+                                                        {scannerSearchResults.length > 0 && (
+                                                            <div className="max-h-36 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-md dark:border-slate-700 dark:bg-slate-800">
+                                                                {scannerSearchResults.map((student) => {
+                                                                    const alreadyAdded = selectedScannerStudents.some((s) => s.id === student.id);
+                                                                    return (
+                                                                        <button
+                                                                            key={student.id}
+                                                                            type="button"
+                                                                            disabled={alreadyAdded}
+                                                                            onClick={() => addSelectedStudent(student)}
+                                                                            className={`flex w-full items-center justify-between px-3 py-2 text-xs transition-colors ${
+                                                                                alreadyAdded
+                                                                                    ? 'cursor-default bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400'
+                                                                                    : 'text-slate-700 hover:bg-blue-50 dark:text-slate-200 dark:hover:bg-slate-700'
+                                                                            }`}
+                                                                        >
+                                                                            <span className="font-medium">{student.name}</span>
+                                                                            {alreadyAdded ? (
+                                                                                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                                                    Added
+                                                                                </span>
+                                                                            ) : (
+                                                                                <Plus className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                                                                            )}
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
+
+                                                        {scannerStudentError && (
+                                                            <p className="text-[11px] text-slate-500 italic dark:text-slate-400">
+                                                                {scannerStudentError}
+                                                            </p>
+                                                        )}
+
+                                                        {/* Assigned Badges */}
+                                                        {selectedScannerStudents.length > 0 && (
+                                                            <div className="flex flex-wrap gap-1.5 pt-1">
+                                                                {selectedScannerStudents.map((student) => (
+                                                                    <span
+                                                                        key={student.id}
+                                                                        className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50/80 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-300"
+                                                                    >
+                                                                        <UserCheck className="h-3.5 w-3.5" />
+                                                                        {student.name}
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => removeSelectedStudent(student.id)}
+                                                                            className="rounded-full p-0.5 hover:bg-blue-200 dark:hover:bg-blue-800"
+                                                                        >
+                                                                            <X className="h-3 w-3" />
+                                                                        </button>
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
 

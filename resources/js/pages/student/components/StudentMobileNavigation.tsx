@@ -12,6 +12,7 @@ import {
 import type { NavItem, SharedData } from '@/types';
 import { Link, router, usePage } from '@inertiajs/react';
 import {
+    AlertTriangle,
     Award,
     Bell,
     ClipboardList,
@@ -209,6 +210,33 @@ export function StudentMobileNavigation({
                         })}
                     </div>
 
+                    {/* Quick Services Section */}
+                    <div className="space-y-1.5">
+                        <div className="mb-2 px-3 text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
+                            Quick Services
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                onItemClick?.();
+                                if (window.location.pathname === '/student-dashboard') {
+                                    window.dispatchEvent(new CustomEvent('open-student-report-incident'));
+                                } else {
+                                    router.visit('/student-dashboard#report-incident');
+                                }
+                            }}
+                            className={`${baseButtonClassName} w-full text-slate-700 hover:bg-rose-50 hover:text-rose-700 dark:text-slate-300 dark:hover:bg-rose-950/30 dark:hover:text-rose-400 text-left`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <AlertTriangle className="h-5 w-5 text-rose-500 transition-transform duration-200 group-hover:scale-110" />
+                                <span>Report Incident</span>
+                            </div>
+                            <span className="rounded-md bg-rose-100 px-1.5 py-0.5 text-[9px] font-black text-rose-600 uppercase dark:bg-rose-950 dark:text-rose-400">
+                                Safety
+                            </span>
+                        </button>
+                    </div>
+
                     {/* Support & Resources Section */}
                     <div className="space-y-1.5">
                         <div className="mb-2 px-3 text-[10px] font-black tracking-widest text-slate-400 uppercase dark:text-slate-500">
@@ -230,7 +258,7 @@ export function StudentMobileNavigation({
             </div>
 
             {/* Bottom Footer / Actions */}
-            <div className="border-t border-slate-100 bg-slate-50/80 p-4 dark:border-white/10 dark:bg-white/5">
+            <div className="border-t border-slate-100 bg-slate-50/80 p-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] dark:border-white/10 dark:bg-white/5">
                 <div className="space-y-2">
                     <Link
                         href="/settings/profile"

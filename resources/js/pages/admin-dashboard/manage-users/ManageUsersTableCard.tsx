@@ -21,6 +21,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { ChevronDown, Eye, Layers, Pencil, Search } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { UserRow } from './types';
 
 interface ManageUsersTableCardProps {
@@ -87,6 +88,9 @@ export function getProgramBadgeClass(program?: string | null): string {
     if (p.includes('BSHM') || p.includes('HOSPITALITY')) {
         return 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/50';
     }
+    if (p === 'ALL' || p.includes('ALL PROGRAM')) {
+        return 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/50';
+    }
     return 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
 }
 
@@ -118,20 +122,25 @@ export function ManageUsersTableCard({
     isProgramHeadRow,
     isAdminRow,
 }: ManageUsersTableCardProps) {
+    const isAllCurrentPageSelected =
+        pagedStudents.length > 0 &&
+        pagedStudents.every((u) => selectedUserIds.includes(Number((u as any).id)));
+
     return (
         <Card className="border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#0B192C]/50">
-            <CardHeader className="p-2.5 px-4">
+            {/* ── Filters and Controls Header ── */}
+            <CardHeader className="p-3 sm:p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <CardTitle className="text-lg font-bold text-slate-800 dark:text-white">
+                        <CardTitle className="text-base sm:text-lg font-bold text-slate-800 dark:text-white">
                             User List
                         </CardTitle>
                         <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                             Total: {totalUsers} users
                         </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                        <div className="relative min-w-[180px] sm:w-[220px]">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-1.5">
+                        <div className="relative w-full sm:w-[200px] md:w-[220px]">
                             <Search className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                             <input
                                 type="text"
@@ -149,7 +158,7 @@ export function ManageUsersTableCard({
                             />
                             <Input
                                 placeholder="Search user..."
-                                className="h-8.5 border border-slate-200 bg-white pl-8 text-xs text-slate-900 placeholder:text-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
+                                className="h-9 sm:h-8.5 w-full border border-slate-200 bg-white pl-8 text-xs text-slate-900 placeholder:text-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
                                 name="manage_users_search"
                                 type="search"
                                 autoComplete="new-password"
@@ -160,53 +169,53 @@ export function ManageUsersTableCard({
                             />
                         </div>
 
-                        <Select
-                            value={roleFilter}
-                            onValueChange={(v) => {
-                                setRoleFilter(v);
-                                setPageIndex(1);
-                            }}
-                        >
-                            <SelectTrigger className="h-8.5 w-[140px] border border-slate-200 bg-white text-xs text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
-                                <SelectValue placeholder="All Users" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Users</SelectItem>
-                                <SelectItem value="students">Students</SelectItem>
-                                <SelectItem value="program">
-                                    Program Heads
-                                </SelectItem>
-                                <SelectItem value="1st Year">1st Year</SelectItem>
-                                <SelectItem value="2nd Year">2nd Year</SelectItem>
-                                <SelectItem value="3rd Year">3rd Year</SelectItem>
-                                <SelectItem value="4th Year">4th Year</SelectItem>
-                                <SelectItem value="Irregular">Irregular</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <div className="grid grid-cols-2 gap-1.5 sm:flex sm:items-center sm:gap-1.5">
+                            <Select
+                                value={roleFilter}
+                                onValueChange={(v) => {
+                                    setRoleFilter(v);
+                                    setPageIndex(1);
+                                }}
+                            >
+                                <SelectTrigger className="h-9 sm:h-8.5 w-full sm:w-[130px] border border-slate-200 bg-white text-xs text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
+                                    <SelectValue placeholder="All Users" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Users</SelectItem>
+                                    <SelectItem value="students">Students</SelectItem>
+                                    <SelectItem value="program">Program Heads</SelectItem>
+                                    <SelectItem value="1st Year">1st Year</SelectItem>
+                                    <SelectItem value="2nd Year">2nd Year</SelectItem>
+                                    <SelectItem value="3rd Year">3rd Year</SelectItem>
+                                    <SelectItem value="4th Year">4th Year</SelectItem>
+                                    <SelectItem value="Irregular">Irregular</SelectItem>
+                                </SelectContent>
+                            </Select>
 
-                        <Select
-                            value={courseFilter}
-                            onValueChange={(v) => {
-                                setCourseFilter(v);
-                                setPageIndex(1);
-                            }}
-                        >
-                            <SelectTrigger className="h-8.5 w-[130px] border border-slate-200 bg-white text-xs text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
-                                <SelectValue placeholder="All Courses" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Courses</SelectItem>
-                                {availableCourses.map((c) => (
-                                    <SelectItem key={c} value={c}>
-                                        {c}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            <Select
+                                value={courseFilter}
+                                onValueChange={(v) => {
+                                    setCourseFilter(v);
+                                    setPageIndex(1);
+                                }}
+                            >
+                                <SelectTrigger className="h-9 sm:h-8.5 w-full sm:w-[130px] border border-slate-200 bg-white text-xs text-slate-900 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
+                                    <SelectValue placeholder="All Courses" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Courses</SelectItem>
+                                    {availableCourses.map((c) => (
+                                        <SelectItem key={c} value={c}>
+                                            {c}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
 
                         <Button
                             type="button"
-                            className="h-8.5 bg-[#1e3a8a] text-white hover:bg-blue-900 font-bold text-xs shadow-sm gap-1.5"
+                            className="h-9 sm:h-8.5 w-full sm:w-auto bg-[#1e3a8a] text-white hover:bg-blue-900 font-bold text-xs shadow-sm gap-1.5 justify-center cursor-pointer"
                             onClick={onOpenBulkModal}
                         >
                             <Layers className="h-4 w-4" />
@@ -216,45 +225,263 @@ export function ManageUsersTableCard({
                 </div>
             </CardHeader>
 
+            {/* ── Selection Action Bar ── */}
             {selectedUserIds.length > 0 && (
-                <div className="flex items-center justify-between border-y border-emerald-200 bg-emerald-50/50 px-6 py-3 transition-all dark:border-emerald-800/30 dark:bg-emerald-900/10">
-                    <div className="text-sm font-semibold text-emerald-800 dark:text-emerald-400">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-y border-emerald-200 bg-emerald-50/50 px-4 sm:px-6 py-2.5 sm:py-3 transition-all dark:border-emerald-800/30 dark:bg-emerald-900/10">
+                    <div className="text-xs sm:text-sm font-semibold text-emerald-800 dark:text-emerald-400">
                         {selectedUserIds.length} user(s) selected
                     </div>
-                    <div>
+                    <div className="flex items-center gap-2">
                         <Button
                             type="button"
-                            className="bg-gradient-to-r from-[#0B192C] via-[#1E3E62] to-[#1e3a8a] text-white hover:opacity-95 font-bold shadow-md shadow-slate-950/20 text-xs px-4"
+                            className="h-8 w-full sm:w-auto bg-gradient-to-r from-[#0B192C] via-[#1E3E62] to-[#1e3a8a] text-white hover:opacity-95 font-bold shadow-md shadow-slate-950/20 text-xs px-3 sm:px-4 cursor-pointer"
                             onClick={onOpenBulkModal}
                         >
-                            <Layers className="mr-2 h-4 w-4 text-amber-400" />
+                            <Layers className="mr-1.5 h-3.5 w-3.5 text-amber-400" />
                             Bulk Actions
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-xs text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
+                            onClick={() => setSelectedUserIds([])}
+                        >
+                            Clear
                         </Button>
                     </div>
                 </div>
             )}
 
-            <CardContent className={selectedUserIds.length > 0 ? 'pt-4' : ''}>
-                <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-[#0B192C]/50">
-                    <div className="overflow-x-auto">
+            <CardContent className="p-0 sm:p-4">
+                <div className="overflow-hidden rounded-none sm:rounded-lg border-0 sm:border border-slate-200 bg-white shadow-none sm:shadow-sm dark:border-slate-700 dark:bg-[#0B192C]/50">
+                    {/* ══════════════════════════════════════════════════════
+                        MOBILE CARD / LIST VIEW (Visible on screens < md)
+                    ══════════════════════════════════════════════════════ */}
+                    <div className="block md:hidden">
+                        {/* Mobile Select All Bar */}
+                        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-3.5 py-2.5 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-400">
+                            <div className="flex items-center gap-2">
+                                <Checkbox
+                                    checked={isAllCurrentPageSelected}
+                                    onCheckedChange={(checked) =>
+                                        handleSelectAll(checked as boolean)
+                                    }
+                                    aria-label="Select all current page"
+                                />
+                                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                    Select Page ({pagedStudents.length})
+                                </span>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button className="flex items-center gap-0.5 rounded p-0.5 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300">
+                                            <ChevronDown className="h-3.5 w-3.5" />
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start">
+                                        <DropdownMenuLabel className="text-xs text-slate-500 uppercase">
+                                            Select By Year
+                                        </DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        {[
+                                            '1st Year',
+                                            '2nd Year',
+                                            '3rd Year',
+                                            '4th Year',
+                                            'Irregular',
+                                        ].map((level) => (
+                                            <DropdownMenuItem
+                                                key={level}
+                                                onClick={() => handleSelectByYear(level)}
+                                                className="cursor-pointer text-xs"
+                                            >
+                                                {level}
+                                            </DropdownMenuItem>
+                                        ))}
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            onClick={() => setSelectedUserIds([])}
+                                            className="cursor-pointer text-xs text-red-600 focus:text-red-700"
+                                        >
+                                            Clear Selection
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        </div>
+
+                        {/* Mobile Cards List */}
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                            {pagedStudents.length === 0 ? (
+                                <div className="px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                                    No users found.
+                                </div>
+                            ) : (
+                                pagedStudents.map((u) => {
+                                    const isSelected = selectedUserIds.includes(Number((u as any).id));
+                                    const isAdmin = isAdminRow(u);
+
+                                    return (
+                                        <div
+                                            key={u.id}
+                                            onClick={() => {
+                                                if (!isAdmin) onViewUser(u);
+                                            }}
+                                            className={cn(
+                                                'p-3.5 transition-colors duration-150',
+                                                isSelected
+                                                    ? 'bg-blue-50/70 dark:bg-blue-950/40'
+                                                    : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/40',
+                                                !isAdmin && 'cursor-pointer active:bg-slate-100 dark:active:bg-slate-800/60',
+                                            )}
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                {/* Checkbox */}
+                                                <div
+                                                    className="pt-1"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <Checkbox
+                                                        checked={isSelected}
+                                                        onCheckedChange={(checked) =>
+                                                            handleSelectRow(
+                                                                Number((u as any).id),
+                                                                checked as boolean,
+                                                            )
+                                                        }
+                                                        aria-label={`Select ${u.name}`}
+                                                    />
+                                                </div>
+
+                                                {/* Avatar */}
+                                                <Avatar className="size-10 shrink-0 ring-2 ring-white dark:ring-slate-800">
+                                                    <AvatarFallback className="bg-slate-100 text-xs font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                                                        {getInitials(u.name)}
+                                                    </AvatarFallback>
+                                                </Avatar>
+
+                                                {/* User Info */}
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-start justify-between gap-1">
+                                                        <div className="min-w-0 flex-1 pr-1">
+                                                            <div className="truncate text-sm font-bold text-slate-900 dark:text-white">
+                                                                {formatLastNameFirst(u)}
+                                                            </div>
+                                                            <div className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+                                                                {u.email}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Action Buttons */}
+                                                        <div
+                                                            className="flex items-center gap-1 shrink-0"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 rounded-lg text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/30 cursor-pointer"
+                                                                onClick={() => {
+                                                                    if (!isAdmin) onViewUser(u);
+                                                                }}
+                                                                aria-label="View user details"
+                                                            >
+                                                                <Eye className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 rounded-lg text-amber-600 hover:bg-amber-50 hover:text-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/30 cursor-pointer"
+                                                                onClick={() => {
+                                                                    if (!isAdmin) onEditUser(u);
+                                                                }}
+                                                                aria-label="Edit user"
+                                                            >
+                                                                <Pencil className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Meta Badges */}
+                                                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                                                        {/* User ID */}
+                                                        <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                                            ID: {u.student_id}
+                                                        </span>
+
+                                                        {/* Role */}
+                                                        <span
+                                                            className={cn(
+                                                                'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold tracking-tight uppercase',
+                                                                u.role?.toLowerCase().includes('admin')
+                                                                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                                                    : u.role?.toLowerCase().includes('instructor')
+                                                                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                                      : u.role?.toLowerCase().includes('office')
+                                                                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                                                                        : u.role?.toLowerCase().includes('program')
+                                                                          ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                                                          : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                                                            )}
+                                                        >
+                                                            {u.role ?? 'Student'}
+                                                        </span>
+
+                                                        {/* Year Level */}
+                                                        {u.year_level && (
+                                                            <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                                                                {u.year_level}
+                                                            </span>
+                                                        )}
+
+                                                        {/* Program / Course */}
+                                                        {String(u.course ?? '').trim() && (
+                                                            <span
+                                                                className={cn(
+                                                                    'inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-bold tracking-tight',
+                                                                    getProgramBadgeClass(u.course),
+                                                                )}
+                                                            >
+                                                                {String(u.course ?? '').trim()}
+                                                            </span>
+                                                        )}
+
+                                                        {/* Handover status */}
+                                                        {u.is_handover_active && (
+                                                            <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-800 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800">
+                                                                ⏳ Expires {u.handover_expires_at_formatted}
+                                                            </span>
+                                                        )}
+                                                        {u.is_handover_expired && (
+                                                            <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold text-slate-600 border border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700">
+                                                                Deactivated / Expired
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </div>
+
+                    {/* ══════════════════════════════════════════════════════
+                        DESKTOP DATA TABLE VIEW (Visible on screens >= md)
+                    ══════════════════════════════════════════════════════ */}
+                    <div className="hidden md:block overflow-x-auto">
                         <table className="w-full min-w-max border-collapse text-left text-sm">
                             <thead className="border-b border-slate-100 bg-slate-50 text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
                                 <tr>
                                     <th className="w-20 px-6 py-4">
                                         <div className="flex items-center gap-1">
                                             <Checkbox
-                                                checked={
-                                                    pagedStudents.length > 0 &&
-                                                    pagedStudents.every((u) =>
-                                                        selectedUserIds.includes(
-                                                            Number((u as any).id),
-                                                        ),
-                                                    )
-                                                }
+                                                checked={isAllCurrentPageSelected}
                                                 onCheckedChange={(checked) =>
-                                                    handleSelectAll(
-                                                        checked as boolean,
-                                                    )
+                                                    handleSelectAll(checked as boolean)
                                                 }
                                                 aria-label="Select all"
                                             />
@@ -278,11 +505,7 @@ export function ManageUsersTableCard({
                                                     ].map((level) => (
                                                         <DropdownMenuItem
                                                             key={level}
-                                                            onClick={() =>
-                                                                handleSelectByYear(
-                                                                    level,
-                                                                )
-                                                            }
+                                                            onClick={() => handleSelectByYear(level)}
                                                             className="cursor-pointer"
                                                         >
                                                             {level}
@@ -290,9 +513,7 @@ export function ManageUsersTableCard({
                                                     ))}
                                                     <DropdownMenuSeparator />
                                                     <DropdownMenuItem
-                                                        onClick={() =>
-                                                            setSelectedUserIds([])
-                                                        }
+                                                        onClick={() => setSelectedUserIds([])}
                                                         className="cursor-pointer text-red-600 focus:text-red-700"
                                                     >
                                                         Clear Selection
@@ -366,9 +587,7 @@ export function ManageUsersTableCard({
                                                     )}
                                                     onCheckedChange={(checked) =>
                                                         handleSelectRow(
-                                                            Number(
-                                                                (u as any).id,
-                                                            ),
+                                                            Number((u as any).id),
                                                             checked as boolean,
                                                         )
                                                     }
@@ -398,27 +617,18 @@ export function ManageUsersTableCard({
                                             <td className="px-6 py-4">
                                                 <div className="flex flex-col gap-1 items-start">
                                                     <span
-                                                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold tracking-tight uppercase ${
-                                                            u.role
-                                                                ?.toLowerCase()
-                                                                .includes('admin')
+                                                        className={cn(
+                                                            'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold tracking-tight uppercase',
+                                                            u.role?.toLowerCase().includes('admin')
                                                                 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                                                : u.role
-                                                                        ?.toLowerCase()
-                                                                        .includes('instructor')
+                                                                : u.role?.toLowerCase().includes('instructor')
                                                                   ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                                                  : u.role
-                                                                          ?.toLowerCase()
-                                                                          .includes('office')
+                                                                  : u.role?.toLowerCase().includes('office')
                                                                     ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
-                                                                    : u.role
-                                                                            ?.toLowerCase()
-                                                                            .includes(
-                                                                                'program',
-                                                                            )
+                                                                    : u.role?.toLowerCase().includes('program')
                                                                       ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                                                                      : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                                                        }`}
+                                                                      : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                                                        )}
                                                     >
                                                         {u.role ?? 'Student'}
                                                     </span>
@@ -440,17 +650,16 @@ export function ManageUsersTableCard({
                                                         {u.year_level}
                                                     </span>
                                                 ) : (
-                                                    <span className="text-xs text-slate-400">
-                                                        —
-                                                    </span>
+                                                    <span className="text-xs text-slate-400">—</span>
                                                 )}
                                             </td>
                                             <td className="px-6 py-4">
                                                 {String(u.course ?? '').trim() ? (
                                                     <span
-                                                        className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-bold tracking-tight ${getProgramBadgeClass(
-                                                            u.course,
-                                                        )}`}
+                                                        className={cn(
+                                                            'inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-bold tracking-tight',
+                                                            getProgramBadgeClass(u.course),
+                                                        )}
                                                     >
                                                         {String(u.course ?? '').trim()}
                                                     </span>
@@ -470,11 +679,9 @@ export function ManageUsersTableCard({
                                                             type="button"
                                                             variant="ghost"
                                                             size="icon"
-                                                            className="h-8 w-8 rounded-md text-blue-600 transition-all duration-200 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/30 dark:hover:text-blue-300"
+                                                            className="h-8 w-8 rounded-md text-blue-600 transition-all duration-200 hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/30 dark:hover:text-blue-300 cursor-pointer"
                                                             onClick={() => {
-                                                                if (isAdminRow(u)) {
-                                                                    return;
-                                                                }
+                                                                if (isAdminRow(u)) return;
                                                                 onViewUser(u);
                                                             }}
                                                             aria-label="View"
@@ -487,11 +694,9 @@ export function ManageUsersTableCard({
                                                             type="button"
                                                             variant="ghost"
                                                             size="icon"
-                                                            className="h-8 w-8 rounded-md text-amber-600 transition-all duration-200 hover:bg-amber-50 hover:text-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/30 dark:hover:text-amber-300"
+                                                            className="h-8 w-8 rounded-md text-amber-600 transition-all duration-200 hover:bg-amber-50 hover:text-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/30 dark:hover:text-amber-300 cursor-pointer"
                                                             onClick={() => {
-                                                                if (isAdminRow(u)) {
-                                                                    return;
-                                                                }
+                                                                if (isAdminRow(u)) return;
                                                                 onEditUser(u);
                                                             }}
                                                             aria-label="Edit"
@@ -509,10 +714,11 @@ export function ManageUsersTableCard({
                     </div>
                 </div>
 
-                <div className="mt-4 flex flex-col gap-2 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between dark:text-slate-400">
-                    <div className="flex items-center gap-3">
+                {/* ── Responsive Pagination Footer ── */}
+                <div className="mt-4 flex flex-col gap-3 px-3 sm:px-0 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between dark:text-slate-400">
+                    <div className="flex flex-wrap items-center justify-between sm:justify-start gap-2.5">
                         <div className="flex items-center gap-1.5">
-                            <span>Rows per page:</span>
+                            <span className="text-[11px] sm:text-xs">Rows:</span>
                             <select
                                 value={pageSize}
                                 onChange={(e) => {
@@ -528,33 +734,26 @@ export function ManageUsersTableCard({
                                 ))}
                             </select>
                         </div>
-                        <span className="text-slate-400 dark:text-slate-600">
-                            |
-                        </span>
-                        <span>
+                        <span className="hidden sm:inline text-slate-400 dark:text-slate-600">|</span>
+                        <span className="text-[11px] sm:text-xs">
                             Showing{' '}
                             {filteredStudents.length === 0
                                 ? 0
-                                : (Math.min(Math.max(pageIndex, 1), totalPages) -
-                                      1) *
-                                      pageSize +
-                                  1}{' '}
+                                : (Math.min(Math.max(pageIndex, 1), totalPages) - 1) * pageSize + 1}{' '}
                             to{' '}
                             {Math.min(
-                                Math.min(Math.max(pageIndex, 1), totalPages) *
-                                    pageSize,
+                                Math.min(Math.max(pageIndex, 1), totalPages) * pageSize,
                                 filteredStudents.length,
                             )}{' '}
                             of {filteredStudents.length} entries
                         </span>
                     </div>
-                    <div className="flex items-center gap-1">
+
+                    <div className="flex items-center justify-center sm:justify-end gap-1">
                         <button
                             type="button"
-                            className="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100 disabled:opacity-50"
-                            onClick={() =>
-                                setPageIndex((p) => Math.max(1, p - 1))
-                            }
+                            className="rounded-md px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800 cursor-pointer"
+                            onClick={() => setPageIndex((p) => Math.max(1, p - 1))}
                             disabled={pageIndex <= 1}
                         >
                             Prev
@@ -574,12 +773,12 @@ export function ManageUsersTableCard({
                                     key={num}
                                     type="button"
                                     onClick={() => setPageIndex(num)}
-                                    className={
-                                        'rounded-md px-2 py-1 ' +
-                                        (pageIndex === num
-                                            ? 'bg-[#23509A] text-white dark:bg-blue-600'
-                                            : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800')
-                                    }
+                                    className={cn(
+                                        'rounded-md px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer',
+                                        pageIndex === num
+                                            ? 'bg-[#23509A] text-white dark:bg-blue-600 font-bold'
+                                            : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800',
+                                    )}
                                 >
                                     {num}
                                 </button>
@@ -587,10 +786,8 @@ export function ManageUsersTableCard({
                         })()}
                         <button
                             type="button"
-                            className="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100 disabled:opacity-50"
-                            onClick={() =>
-                                setPageIndex((p) => Math.min(totalPages, p + 1))
-                            }
+                            className="rounded-md px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800 cursor-pointer"
+                            onClick={() => setPageIndex((p) => Math.min(totalPages, p + 1))}
                             disabled={pageIndex >= totalPages}
                         >
                             Next

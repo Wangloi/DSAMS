@@ -22,7 +22,7 @@ export default function AdminLayout({
                 <div className="flex flex-1 flex-col overflow-hidden bg-white dark:bg-[#020617] dark:text-white">
                     <AppContent
                         variant="sidebar"
-                        className="overflow-x-hidden bg-white pt-16 pb-24 lg:pb-8 dark:bg-[#020617] dark:text-white"
+                        className="overflow-x-hidden bg-white pt-16 pb-28 lg:pb-8 dark:bg-[#020617] dark:text-white"
                     >
                         {children}
                     </AppContent>

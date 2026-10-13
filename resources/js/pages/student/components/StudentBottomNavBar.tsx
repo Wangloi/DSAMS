@@ -70,12 +70,12 @@ export function StudentBottomNavBar() {
     };
 
     return (
-        <div className="fixed inset-x-0 bottom-0 z-40 block lg:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-40 block lg:hidden pb-[max(0.5rem,env(safe-area-inset-bottom,0px))]">
             {/* Safe floating wrapper with subtle backdrop blur & shadow */}
-            <div className="mx-auto max-w-lg px-3 pb-2 sm:pb-3">
+            <div className="mx-auto max-w-lg px-3">
                 <nav
                     aria-label="Student Mobile Navigation"
-                    className="relative flex h-16 items-center justify-around rounded-2xl border border-slate-200/80 bg-white/95 px-2 shadow-[0_-4px_25px_rgba(0,0,0,0.08)] backdrop-blur-xl transition-all duration-300 dark:border-white/10 dark:bg-[#0B192C]/95 dark:shadow-[0_-4px_25px_rgba(0,0,0,0.4)]"
+                    className="relative flex h-16 items-center justify-around rounded-2xl border border-slate-200/80 bg-white/95 px-1.5 shadow-[0_-4px_25px_rgba(0,0,0,0.08)] backdrop-blur-xl transition-all duration-300 dark:border-white/10 dark:bg-[#0B192C]/95 dark:shadow-[0_-4px_25px_rgba(0,0,0,0.4)]"
                 >
                     {navItems.map((item) => {
                         const active = isItemActive(item.href);
@@ -89,19 +89,26 @@ export function StudentBottomNavBar() {
                                 href={item.href}
                                 prefetch
                                 className={cn(
-                                    'relative flex items-center justify-center transition-all duration-200 select-none',
+                                    'relative flex flex-1 flex-col items-center justify-center py-1 transition-all duration-200 select-none rounded-xl',
                                     active
-                                        ? 'gap-1.5 rounded-full bg-blue-600/10 px-3.5 py-1.5 font-bold text-blue-600 dark:bg-blue-500/20 dark:text-blue-400'
-                                        : 'flex-col gap-1 py-1.5 px-3 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white',
+                                        ? 'text-blue-600 dark:text-blue-400 font-bold'
+                                        : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white',
                                 )}
                                 aria-current={active ? 'page' : undefined}
                             >
-                                <div className="relative flex h-6 w-6 items-center justify-center">
+                                <div
+                                    className={cn(
+                                        'relative flex h-7 w-7 items-center justify-center rounded-xl transition-all duration-200',
+                                        active
+                                            ? 'bg-blue-600/10 dark:bg-blue-500/20'
+                                            : '',
+                                    )}
+                                >
                                     <IconComponent
                                         className={cn(
                                             'h-5 w-5 transition-transform duration-200 active:scale-90',
                                             active
-                                                ? 'text-blue-600 dark:text-blue-400'
+                                                ? 'text-blue-600 dark:text-blue-400 scale-105'
                                                 : 'text-slate-500 dark:text-slate-400',
                                         )}
                                     />
@@ -114,10 +121,8 @@ export function StudentBottomNavBar() {
 
                                 <span
                                     className={cn(
-                                        'transition-all duration-200',
-                                        active
-                                            ? 'text-xs font-bold'
-                                            : 'text-[10px] font-semibold tracking-tight',
+                                        'mt-0.5 text-[10px] tracking-tight transition-all duration-200',
+                                        active ? 'font-bold' : 'font-medium',
                                     )}
                                 >
                                     {item.title}

@@ -17,10 +17,11 @@ class ProgramHeadViolationsController extends Controller
         $program = is_object($programHead) ? (string) ($programHead->program ?? '') : '';
 
         // Get all student IDs for this program
-        $programStudentIds = Student::query()
-            ->where('course', $program)
-            ->pluck('student_id')
-            ->toArray();
+        $studentsQuery = Student::query();
+        if (strtoupper($program) !== 'ALL') {
+            $studentsQuery->where('course', $program);
+        }
+        $programStudentIds = $studentsQuery->pluck('student_id')->toArray();
 
         // Fetch all non-archived incidents and filter them in memory
         $incidents = Incident::where('is_archived', false)->orderByDesc('id')

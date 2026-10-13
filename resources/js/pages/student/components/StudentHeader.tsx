@@ -186,7 +186,7 @@ export function StudentHeader() {
     const subtitleLabel = displayUser ? 'Student' : undefined;
 
     return (
-        <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-gradient-to-r from-[#0b2d66] via-[#103875] to-[#1e40af] backdrop-blur-xl transition-all duration-300 dark:bg-[#0B192C] dark:from-transparent dark:via-transparent dark:to-transparent">
+        <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-gradient-to-r from-[#0b2d66] via-[#103875] to-[#1e40af] backdrop-blur-xl transition-all duration-300 dark:bg-[#0B192C] dark:from-transparent dark:via-transparent dark:to-transparent pt-[env(safe-area-inset-top,0px)]">
             <div className="mx-auto flex h-16 w-full max-w-7xl items-center px-3 sm:px-6 lg:px-8">
                 <div className="flex items-center gap-1.5 sm:gap-3">
                     {/* Mobile Navigation Menu Trigger */}
@@ -207,7 +207,7 @@ export function StudentHeader() {
                             </SheetTrigger>
                             <SheetContent
                                 side="left"
-                                className="flex h-full w-80 flex-col border-r border-slate-200 bg-white p-0 dark:border-white/10 dark:bg-[#0B192C] [&>button]:hidden"
+                                className="flex h-full w-[85vw] max-w-xs flex-col border-r border-slate-200 bg-white p-0 dark:border-white/10 dark:bg-[#0B192C] [&>button]:hidden"
                             >
                                 <SheetHeader className="sr-only">
                                     <SheetTitle>Student Navigation Menu</SheetTitle>
@@ -215,7 +215,7 @@ export function StudentHeader() {
                                         Main navigation menu for student dashboard and services
                                     </SheetDescription>
                                 </SheetHeader>
-                                <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-5 py-4 dark:border-white/10 dark:bg-white/5">
+                                <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-5 pt-[max(1rem,env(safe-area-inset-top,0px))] pb-4 dark:border-white/10 dark:bg-white/5">
                                     <div className="flex items-center gap-2.5">
                                         <div className="flex -space-x-2">
                                             <img

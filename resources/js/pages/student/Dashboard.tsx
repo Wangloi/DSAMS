@@ -56,6 +56,18 @@ export default function StudentDashboard({
         }
     }, [status]);
 
+    useEffect(() => {
+        const handleOpenReport = () => setReportIncidentOpen(true);
+        window.addEventListener('open-student-report-incident', handleOpenReport);
+        if (typeof window !== 'undefined' && window.location.hash === '#report-incident') {
+            setReportIncidentOpen(true);
+            window.history.replaceState(null, '', window.location.pathname);
+        }
+        return () => {
+            window.removeEventListener('open-student-report-incident', handleOpenReport);
+        };
+    }, []);
+
     const displayName = authUser?.name || 'Student';
     const studentId = (authUser as any)?.student_id || '2023-0000';
 

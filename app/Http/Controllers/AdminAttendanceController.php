@@ -91,6 +91,15 @@ class AdminAttendanceController extends Controller
                     'geofenceLongitude' => $event->geofence_longitude,
                     'geofenceRadiusM' => (int) ($event->geofence_radius_m ?? 50),
                     'attendance_type' => $event->attendance_type ?? 'qr_scanner',
+                    'conflicting_events' => $event->getConflictingEvents()->map(fn (Event $ce) => [
+                        'id' => $ce->id,
+                        'event' => $ce->event_name,
+                        'name' => $ce->event_name,
+                        'dateTime' => $ce->date_time,
+                        'location' => $ce->location,
+                        'event_time' => $ce->event_time,
+                        'registration_end_time' => $ce->registration_end_time,
+                    ])->all(),
                 ];
             });
 
@@ -499,6 +508,54 @@ class AdminAttendanceController extends Controller
             return response()->json(['message' => 'Student not found.'], 404);
         }
 
+        $now = Carbon::now();
+        $conflictService = app(\App\Services\Attendance\ConflictAttendanceService::class);
+
+        // Check if student is eligible for primary event
+        $isEligible = \App\Services\Attendance\EventEligibilityService::isStudentEligible($student, $event);
+        if (! $isEligible) {
+            // Check if student is eligible for any conflicting schedule event
+            $conflictResult = $conflictService->scanConflictingEventIfPrimaryIneligible($event, $student, $now, [], $request);
+            if ($conflictResult) {
+                $primaryConflict = $conflictResult['primary']['event'];
+                $primaryAtt = $conflictResult['primary']['attendance'];
+                $scanEval = $conflictResult['primary']['scanEval'];
+                $status = $primaryAtt->status;
+                $isTimeOut = ($scanEval['action'] === 'check_out');
+
+                $allConflictedScans = array_merge([
+                    [
+                        'event_id' => $primaryConflict->id,
+                        'event_name' => $primaryConflict->event_name,
+                        'action' => $isTimeOut ? 'check_out' : 'check_in',
+                        'status' => $status,
+                        'time' => $now->format('h:i A'),
+                    ]
+                ], $conflictResult['additional_conflicts'] ?? []);
+
+                return response()->json([
+                    'attendance_id'  => $primaryAtt->id,
+                    'status'         => $status,
+                    'action'         => $isTimeOut ? 'check_out' : 'check_in',
+                    'message'        => ($isTimeOut ? 'Time-out (Check-out) recorded' : 'Time-in (Check-in) recorded') . " for conflicting schedule '{$primaryConflict->event_name}' (Student is registered for this conflicting schedule).",
+                    'conflicted_events_scanned' => $allConflictedScans,
+                    'scanned_at'     => $now->toDateTimeString(),
+                    'checked_in_at'  => optional($primaryAtt->checked_in_at)->toDateTimeString(),
+                    'checked_out_at' => $primaryAtt->checked_out_at ? optional($primaryAtt->checked_out_at)->toDateTimeString() : null,
+                    'student' => [
+                        'id'         => $student->id,
+                        'student_id' => $student->student_id,
+                        'name'       => $student->name,
+                        'program'    => (string) ($student->course ?? $student->program ?? ''),
+                    ],
+                ]);
+            }
+
+            return response()->json([
+                'message' => 'Attendance Denied: Student ' . ($student->name ?? $student->student_id) . ' is not eligible for this event (course/year mismatch).',
+            ], 403);
+        }
+
         $existingAttendance = Attendance::query()
             ->where('event_id', $event->id)
             ->where('student_id', $student->id)
@@ -514,8 +571,6 @@ class AdminAttendanceController extends Controller
 
             return response()->json(['message' => 'Student has already timed out (checked out) for this event.'], 409);
         }
-
-        $now = Carbon::now();
 
         $scanEval = $event->evaluateAttendanceScan($now, $existingAttendance);
         if (! $scanEval['allowed']) {
@@ -543,8 +598,25 @@ class AdminAttendanceController extends Controller
             $attendance = $existingAttendance;
         }
 
+        // Also record attendance for any eligible conflicting schedule events
+        $conflictedScans = $conflictService->recordAttendanceForEligibleConflicts(
+            $event,
+            $student,
+            $now,
+            $isTimeOut ? 'check_out' : 'check_in',
+            $status,
+            [],
+            $request
+        );
+
         $event->updateAttendanceCounts();
         app(StudentNotificationDispatcher::class)->attendanceRecorded($event, $attendance);
+
+        $conflictedSuffix = '';
+        if (! empty($conflictedScans)) {
+            $names = array_column($conflictedScans, 'event_name');
+            $conflictedSuffix = ' (Also scanned for conflicting schedule: ' . implode(', ', $names) . ')';
+        }
 
         $checkInLabel = $status === 'late'
             ? 'Time-in (Check-in) recorded as LATE.'
@@ -554,7 +626,8 @@ class AdminAttendanceController extends Controller
             'attendance_id'  => $attendance->id,
             'status'         => $attendance->status,
             'action'         => $isTimeOut ? 'check_out' : 'check_in',
-            'message'        => $isTimeOut ? 'Time-out (Check-out) recorded successfully.' : $checkInLabel,
+            'message'        => ($isTimeOut ? 'Time-out (Check-out) recorded successfully.' : $checkInLabel) . $conflictedSuffix,
+            'conflicted_events_scanned' => $conflictedScans,
             'scanned_at'     => $now->toDateTimeString(),
             'checked_in_at'  => optional($attendance->checked_in_at)->toDateTimeString(),
             'checked_out_at' => $attendance->checked_out_at ? optional($attendance->checked_out_at)->toDateTimeString() : null,
@@ -747,6 +820,8 @@ class AdminAttendanceController extends Controller
             'yearLevels.*' => 'string',
             'scannerStudentIds' => 'nullable|array',
             'scannerStudentIds.*' => 'string',
+            'scanner_student_ids' => 'nullable|array',
+            'scanner_student_ids.*' => 'string',
             'geofenceEnabled' => 'nullable|boolean',
             'geofenceLatitude' => 'nullable|numeric',
             'geofenceLongitude' => 'nullable|numeric',

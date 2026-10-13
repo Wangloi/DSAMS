@@ -149,9 +149,6 @@ Route::get('/student/dashboard', function () {
 Route::get('/student/admission-slips', function () {
     return redirect()->route('student.admission-slip.index');
 });
-Route::get('/student/certificates', function () {
-    return redirect()->route('student.dashboard');
-});
 
 Route::get('/student/help', function () {
     return Inertia::render('student/help/index');
@@ -234,15 +231,28 @@ Route::get('/student/students/search', function (Request $request) {
     $students = Student::query()
         ->where(function ($q) use ($query) {
             $q->where('student_id', 'LIKE', "%{$query}%")
-              ->orWhere('name', 'LIKE', "%{$query}%");
+              ->orWhere('name', 'LIKE', "%{$query}%")
+              ->orWhere('first_name', 'LIKE', "%{$query}%")
+              ->orWhere('last_name', 'LIKE', "%{$query}%");
         })
-        ->select('student_id', 'name')
+        ->select('id', 'student_id', 'name', 'first_name', 'last_name', 'course', 'year_level')
         ->limit(50)
         ->get()
         ->map(function ($student) {
+            $resolvedId = (string) ($student->student_id ?: $student->id);
+            $fullName = trim(($student->first_name ?? '') . ' ' . ($student->last_name ?? ''));
+            if ($fullName === '') {
+                $fullName = trim((string) ($student->name ?? ''));
+            }
+            if ($fullName === '') {
+                $fullName = $resolvedId;
+            }
             return [
-                'id' => $student->student_id, // Use student_id as the id
-                'name' => $student->name,
+                'id' => $resolvedId,
+                'name' => $fullName,
+                'student_id' => $resolvedId,
+                'course' => $student->course,
+                'year_level' => $student->year_level,
             ];
         });
 
@@ -328,6 +338,15 @@ Route::get('/program-head/qr-scanner', function () {
                 $scannerPortalActive = (bool) $event->scanner_portal_active;
             }
 
+            $conflicts = $event->getConflictingEvents()->map(fn (Event $ce) => [
+                'id' => (string) $ce->id,
+                'name' => (string) ($ce->event_name ?? ''),
+                'date' => optional($ce->event_date)->format('Y-m-d') ?: '',
+                'timeIn' => (string) ($ce->event_time ?? ''),
+                'timeEnd' => (string) ($ce->registration_end_time ?? ''),
+                'location' => (string) ($ce->location ?? ''),
+            ])->all();
+
             $eventPayload = [
                 'id' => (string) $event->id,
                 'name' => (string) ($event->event_name ?? ''),
@@ -336,6 +355,7 @@ Route::get('/program-head/qr-scanner', function () {
                 'timeEnd' => (string) ($event->registration_end_time ?? ''),
                 'location' => (string) ($event->location ?? ''),
                 'scannerPortalActive' => $scannerPortalActive,
+                'conflicting_events' => $conflicts,
             ];
         }
     }
@@ -748,15 +768,28 @@ Route::get('/admin/students/search', function (Request $request) {
     $students = Student::query()
         ->where(function ($q) use ($query) {
             $q->where('student_id', 'LIKE', "%{$query}%")
-              ->orWhere('name', 'LIKE', "%{$query}%");
+              ->orWhere('name', 'LIKE', "%{$query}%")
+              ->orWhere('first_name', 'LIKE', "%{$query}%")
+              ->orWhere('last_name', 'LIKE', "%{$query}%");
         })
-        ->select('student_id', 'name')
+        ->select('id', 'student_id', 'name', 'first_name', 'last_name', 'course', 'year_level')
         ->limit(50)
         ->get()
         ->map(function ($student) {
+            $resolvedId = (string) ($student->student_id ?: $student->id);
+            $fullName = trim(($student->first_name ?? '') . ' ' . ($student->last_name ?? ''));
+            if ($fullName === '') {
+                $fullName = trim((string) ($student->name ?? ''));
+            }
+            if ($fullName === '') {
+                $fullName = $resolvedId;
+            }
             return [
-                'id' => $student->student_id, // Use student_id as the id
-                'name' => $student->name,
+                'id' => $resolvedId,
+                'name' => $fullName,
+                'student_id' => $resolvedId,
+                'course' => $student->course,
+                'year_level' => $student->year_level,
             ];
         });
 
@@ -894,6 +927,15 @@ Route::get('/admin/qr-scanner', function () {
                 $scannerPortalActive = (bool) $event->scanner_portal_active;
             }
 
+            $conflicts = $event->getConflictingEvents()->map(fn (Event $ce) => [
+                'id' => (string) $ce->id,
+                'name' => (string) ($ce->event_name ?? ''),
+                'date' => optional($ce->event_date)->format('Y-m-d') ?: '',
+                'timeIn' => (string) ($ce->event_time ?? ''),
+                'timeEnd' => (string) ($ce->registration_end_time ?? ''),
+                'location' => (string) ($ce->location ?? ''),
+            ])->all();
+
             $eventPayload = [
                 'id' => (string) $event->id,
                 'name' => (string) ($event->event_name ?? ''),
@@ -902,6 +944,7 @@ Route::get('/admin/qr-scanner', function () {
                 'timeEnd' => (string) ($event->registration_end_time ?? ''),
                 'location' => (string) ($event->location ?? ''),
                 'scannerPortalActive' => $scannerPortalActive,
+                'conflicting_events' => $conflicts,
             ];
         }
     }

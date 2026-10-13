@@ -346,7 +346,7 @@ export default function AdminDashboard({
 
     return (
         <AdminLayout breadcrumbs={breadcrumbs}>
-            <Head title="Admin Command Center | DSAMS" />
+            <Head title="Admin Command Center | OSAMS" />
 
             <div className="min-h-screen bg-slate-50/60 pb-16 transition-colors duration-200 dark:bg-[#0B1120]">
                 <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5 px-3.5 py-4 sm:gap-6 sm:px-6 sm:py-6 lg:px-8">
@@ -1171,7 +1171,7 @@ export default function AdminDashboard({
                                             No Activities Logged Yet
                                         </p>
                                         <p className="text-[11px] text-slate-400">
-                                            Audit logs will appear here automatically as administrators and users interact with DSAMS.
+                                            Audit logs will appear here automatically as administrators and users interact with OSAMS.
                                         </p>
                                     </div>
                                 ) : (

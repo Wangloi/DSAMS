@@ -177,7 +177,7 @@ export default function DisciplinaryResolutionModal({
                     setIsSubmitting(false);
                     setConfirmServeOpen(false);
                     setActionSuccessMsg(
-                        `Formal Notice of Decision (${activePolicy.category}) successfully served to ${studentName}'s DSAMS account!`
+                        `Formal Notice of Decision (${activePolicy.category}) successfully served to ${studentName}'s OSAMS account!`
                     );
                     setTimeout(() => {
                         setActionSuccessMsg(null);
@@ -228,7 +228,7 @@ export default function DisciplinaryResolutionModal({
                             <div className="mt-4 space-y-2.5 text-xs text-slate-700 dark:text-slate-300">
                                 <p>
                                     The formal <strong>Notice of Decision ({activePolicy.category})</strong> will be officially delivered to{' '}
-                                    <strong className="text-slate-900 dark:text-white">{studentName}</strong>'s DSAMS account, logged in their 201 disciplinary record, and the case will advance in the 5-step pipeline.
+                                    <strong className="text-slate-900 dark:text-white">{studentName}</strong>'s OSAMS account, logged in their 201 disciplinary record, and the case will advance in the 5-step pipeline.
                                 </p>
                                 <div className="space-y-1.5 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 text-[11px] dark:border-emerald-900/60 dark:bg-emerald-950/40">
                                     <p><strong className="text-slate-900 dark:text-white">Student:</strong> {studentName} ({studentId})</p>
@@ -773,7 +773,7 @@ export default function DisciplinaryResolutionModal({
 
                             {/* Footer */}
                             <div className="mt-8 border-t border-slate-200 pt-2 text-center text-[9px] text-slate-400">
-                                St. Rita's College of Balingasag — Student Affairs Management System (DSAMS) | Official Resolution Docket
+                                St. Rita's College of Balingasag — Office of Student Affairs Management System (OSAMS) | Official Resolution Docket
                             </div>
                         </div>
                     </div>

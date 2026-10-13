@@ -150,12 +150,12 @@ export function StudentCallingNotices({
                             </div>
                         </div>
 
-                        <div className="shrink-0 self-end sm:self-center">
+                        <div className="w-full sm:w-auto shrink-0 self-center">
                             <Button
                                 type="button"
                                 size="sm"
                                 onClick={() => showIncidentDetails(inc)}
-                                className="rounded-xl bg-[#0b2d66] px-4 text-xs font-bold text-white shadow hover:bg-blue-900"
+                                className="w-full sm:w-auto rounded-xl bg-[#0b2d66] px-4 py-2 text-xs font-bold text-white shadow hover:bg-blue-900 active:scale-95 transition-all"
                             >
                                 {inc.action_data
                                     ? 'View Resolution'

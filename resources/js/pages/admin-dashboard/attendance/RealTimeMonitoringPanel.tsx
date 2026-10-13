@@ -869,6 +869,46 @@ export default function RealTimeMonitoringPanel({
                         </div>
                     </div>
 
+                    {/* CONFLICTING SCHEDULE ALERT STRIP */}
+                    {monitoredEvent?.conflicting_events && monitoredEvent.conflicting_events.length > 0 && (
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-amber-400/40 bg-amber-500/20 p-3 text-amber-100 shadow-md backdrop-blur-md">
+                            <div className="flex items-center gap-2.5">
+                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/30 text-amber-200">
+                                    <AlertCircle className="h-4 w-4" />
+                                </span>
+                                <div>
+                                    <div className="text-xs font-black uppercase tracking-wider text-amber-200">
+                                        Conflicting Schedule Active
+                                    </div>
+                                    <div className="text-xs text-amber-100/90 font-medium">
+                                        This event has a conflicting schedule with{' '}
+                                        <strong className="text-white underline">
+                                            {monitoredEvent.conflicting_events.map((c: any) => c.name || c.event).join(', ')}
+                                        </strong>
+                                        . Attendees will also be automatically scanned into conflicting events if eligible!
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 self-end sm:self-auto">
+                                {monitoredEvent.conflicting_events.map((c: any) => (
+                                    <button
+                                        key={c.id}
+                                        type="button"
+                                        onClick={() => {
+                                            window.location.href = isProgramHead
+                                                ? `/program-head/qr-scanner?event=${c.id}`
+                                                : `/admin/qr-scanner?event=${c.id}`;
+                                        }}
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300/40 bg-amber-500/30 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-amber-500/50 transition active:scale-95"
+                                    >
+                                        <RefreshCw className="h-3 w-3" />
+                                        Switch to {c.name || c.event}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* BOTTOM ROW: TABS & ACTION BUTTONS */}
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         {/* Tab Switcher */}
@@ -1878,7 +1918,7 @@ export default function RealTimeMonitoringPanel({
                             </h4>
                             <ol className="list-decimal space-y-1.5 pl-4 text-xs text-blue-700/90 dark:text-blue-300/80">
                                 <li>
-                                    Students log into DSAMS on their mobile phone or device.
+                                    Students log into OSAMS on their mobile phone or device.
                                 </li>
                                 <li>
                                     Open this event in their <strong>Student Dashboard</strong>.

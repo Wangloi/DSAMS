@@ -663,6 +663,34 @@ export default function AdminQrScannerPage({
                         <div className="space-y-6">
                             {/* Notification Banners */}
                             <div className="space-y-3">
+                                {event?.conflicting_events && event.conflicting_events.length > 0 && (
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-2xl border border-amber-300 bg-amber-50/70 p-4 text-sm font-bold text-amber-950 backdrop-blur-md dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                                        <div className="flex items-center gap-3">
+                                            <AlertCircle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                                            <div>
+                                                <span className="font-black uppercase tracking-wider text-xs block text-amber-700 dark:text-amber-300">Conflicting Schedule Active</span>
+                                                Conflicting with{' '}
+                                                <strong className="underline">
+                                                    {event.conflicting_events.map((c: any) => c.name || c.event).join(', ')}
+                                                </strong>
+                                                . Scanning attendees will automatically record attendance for conflicting schedule events if eligible!
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2 self-end sm:self-auto">
+                                            {event.conflicting_events.map((c: any) => (
+                                                <a
+                                                    key={c.id}
+                                                    href={`/admin/qr-scanner?event=${c.id}`}
+                                                    className="inline-flex items-center gap-1.5 rounded-xl border border-amber-400 bg-amber-200/50 px-3 py-1.5 text-xs font-black text-amber-900 shadow-sm hover:bg-amber-300/50 dark:border-amber-400/40 dark:bg-amber-500/20 dark:text-amber-100 dark:hover:bg-amber-500/40 transition"
+                                                >
+                                                    <RefreshCw className="h-3 w-3" />
+                                                    Switch to {c.name || c.event}
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
                                 {event?.scannerPortalActive === false && (
                                     <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50/50 p-4 text-sm font-bold text-amber-900 backdrop-blur-md dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
                                         <AlertCircle className="h-5 w-5 shrink-0" />
@@ -1391,7 +1419,7 @@ export default function AdminQrScannerPage({
                                                     Show this QR code on your
                                                     screen or projector.
                                                     Students scan it using their
-                                                    DSAMS app to check in. It
+                                                    OSAMS app to check in. It
                                                     auto-rotates every{' '}
                                                     {tokenLifetimeSeconds}{' '}
                                                     seconds.
@@ -1472,7 +1500,7 @@ export default function AdminQrScannerPage({
                                         How Students Scan
                                     </div>
                                     <ol className="space-y-2 text-xs text-blue-600/70 dark:text-indigo-200/70">
-                                        <li>1. Open DSAMS on their device</li>
+                                        <li>1. Open OSAMS on their device</li>
                                         <li>2. Go to their Dashboard</li>
                                         <li>
                                             3. Tap{' '}

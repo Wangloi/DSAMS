@@ -19,7 +19,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     return open ? (
         <SidebarInset>
             <ProgramHeadHeader />
-            <AppContent variant="sidebar" className="overflow-x-hidden pt-16 pb-24 lg:pb-8">
+            <AppContent variant="sidebar" className="overflow-x-hidden pt-16 pb-28 lg:pb-8">
                 {decorative}
                 <div className="relative z-10">{children}</div>
             </AppContent>
@@ -29,7 +29,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
             <ProgramHeadHeader />
             <AppContent
                 variant="sidebar"
-                className="mx-0 max-w-full overflow-x-hidden pt-16 pb-24 lg:pb-8"
+                className="mx-0 max-w-full overflow-x-hidden pt-16 pb-28 lg:pb-8"
             >
                 {decorative}
                 <div className="relative z-10">{children}</div>

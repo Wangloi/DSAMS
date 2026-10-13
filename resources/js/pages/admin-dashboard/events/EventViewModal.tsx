@@ -187,7 +187,7 @@ export default function EventViewModal({
                                     </Badge>
                                 </div>
                                 <DialogDescription className="mt-1 text-xs font-medium text-blue-100/90 sm:text-sm">
-                                    Organized by <strong className="text-white">{event.organizer || 'OSA / CSG'}</strong> • Complete Event Profile & Attendance Assignment
+                                    Organized by <strong className="text-white">{event.organizer || 'Office of Student Affairs'}</strong> • Complete Event Profile & Attendance Assignment
                                 </DialogDescription>
                             </DialogHeader>
                         </div>
@@ -218,7 +218,7 @@ export default function EventViewModal({
                 {/* Unified Single-View Content (No Step-by-Step) */}
                 <div className="scrollbar-thin min-h-0 flex-1 space-y-6 overflow-y-auto p-6 sm:p-8">
                     {/* Schedule & Timing Quick Strip */}
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
                         <div className="rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
                             <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase flex items-center gap-1">
                                 <Calendar className="h-3 w-3 text-[#23509A] dark:text-[#8CE4FF]" />
@@ -264,6 +264,16 @@ export default function EventViewModal({
                             </span>
                             <div className="mt-1 text-sm font-black text-slate-900 dark:text-white truncate" title={event.location}>
                                 {event.location || 'Campus Grounds'}
+                            </div>
+                        </div>
+
+                        <div className="col-span-2 sm:col-span-1 rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase flex items-center gap-1">
+                                <Building2 className="h-3 w-3 text-[#23509A] dark:text-[#8CE4FF]" />
+                                Organizing Body
+                            </span>
+                            <div className="mt-1 text-sm font-black text-slate-900 dark:text-white truncate" title={event.organizer}>
+                                {event.organizer || 'Office of Student Affairs'}
                             </div>
                         </div>
                     </div>

@@ -22,9 +22,10 @@ class CertificateController extends Controller
 {
     public function index(Request $request): Response
     {
+        /** @var Student|null $student */
         $student = auth()->guard('student')->user();
 
-        if (! $student) {
+        if (! $student instanceof Student) {
             abort(403);
         }
 
@@ -57,9 +58,10 @@ class CertificateController extends Controller
 
     public function generateCertificate(Request $request, Event $event): JsonResponse
     {
+        /** @var Student|null $student */
         $student = auth()->guard('student')->user();
 
-        if (! $student) {
+        if (! $student instanceof Student) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -134,9 +136,10 @@ class CertificateController extends Controller
 
     public function downloadCertificate(Request $request, Certificate $certificate)
     {
+        /** @var Student|null $student */
         $student = auth()->guard('student')->user();
 
-        if (! $student || $certificate->student_id !== $student->id) {
+        if (! $student instanceof Student || $certificate->student_id !== $student->id) {
             abort(403);
         }
 
@@ -206,9 +209,10 @@ class CertificateController extends Controller
 
     public function getAvailableCertificates(Request $request)
     {
+        /** @var Student|null $student */
         $student = auth()->guard('student')->user();
 
-        if (! $student) {
+        if (! $student instanceof Student) {
             abort(403);
         }
 

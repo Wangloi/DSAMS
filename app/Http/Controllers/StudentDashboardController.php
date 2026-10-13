@@ -277,6 +277,13 @@ class StudentDashboardController extends Controller
             }
 
             $allowedScanners = is_array($event->scanner_student_ids) ? $event->scanner_student_ids : [];
+            if (is_string($event->scanner_student_ids)) {
+                $decoded = json_decode($event->scanner_student_ids, true);
+                if (is_array($decoded)) {
+                    $allowedScanners = $decoded;
+                }
+            }
+            $allowedScanners = array_values(array_unique(array_filter(array_map('strval', (array) $allowedScanners))));
             $legacyScanner = trim((string) ($event->scanner_student_id ?? ''));
             if ($legacyScanner !== '' && ! in_array($legacyScanner, $allowedScanners, true)) {
                 $allowedScanners[] = $legacyScanner;

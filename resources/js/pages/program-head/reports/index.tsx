@@ -304,10 +304,10 @@ export default function ProgramHeadReportsPage() {
                                                     '_blank',
                                                 )
                                             }
-                                            className="h-10 gap-2 rounded-xl bg-slate-900 text-xs font-black tracking-wider text-white uppercase shadow-md transition-all hover:bg-blue-600 active:scale-95 dark:bg-white dark:text-slate-900 dark:hover:bg-blue-600"
+                                            className="h-10 gap-2 rounded-xl bg-blue-600 text-xs font-bold tracking-wider text-white  shadow-md shadow-blue-500/20 transition-all hover:bg-blue-700 active:scale-95 dark:bg-blue-600 dark:hover:bg-blue-500 dark:text-white dark:shadow-blue-950/40"
                                         >
                                             <Printer className="h-4 w-4" />
-                                            Print / PDF
+                                            Print Report
                                         </Button>
                                     </SimpleTooltip>
                                     <SimpleTooltip content="Export CSV Data">

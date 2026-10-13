@@ -50,9 +50,14 @@ class Event extends Model
     public function getScannerStudentsAttribute(): array
     {
         $allowed = $this->scanner_student_ids;
-        if (! is_array($allowed)) {
+        if (is_string($allowed)) {
+            $decoded = json_decode($allowed, true);
+            $allowed = is_array($decoded) ? $decoded : (trim($allowed) !== '' ? [$allowed] : []);
+        } elseif (! is_array($allowed)) {
             $allowed = [];
         }
+        $allowed = array_values(array_unique(array_filter(array_map('strval', (array) $allowed))));
+
         $legacy = trim((string) ($this->scanner_student_id ?? ''));
         if ($legacy !== '' && ! in_array($legacy, $allowed, true)) {
             $allowed[] = $legacy;
@@ -491,6 +496,69 @@ class Event extends Model
         } catch (\Throwable) {
             return true;
         }
+    }
+
+    /**
+     * Get all active conflicting events (same date and overlapping time schedule).
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, Event>
+     */
+    public function getConflictingEvents(bool $sameVenueOnly = false)
+    {
+        $rawDate = $this->getAttributes()['event_date'] ?? $this->event_date;
+        if (empty($rawDate)) {
+            return collect();
+        }
+
+        try {
+            $formattedDate = Carbon::parse($rawDate)->format('Y-m-d');
+        } catch (\Throwable) {
+            return collect();
+        }
+
+        $cleanLocation = trim(strtolower((string) ($this->location ?? '')));
+
+        $query = static::whereNull('archived_at')
+            ->where('approval_status', '!=', 'rejected')
+            ->where('id', '!=', $this->id)
+            ->whereDate('event_date', '=', $formattedDate);
+
+        $sameDayEvents = $query->get();
+
+        return $sameDayEvents->filter(function (Event $other) use ($cleanLocation, $sameVenueOnly) {
+            if ($sameVenueOnly && $cleanLocation !== '') {
+                $otherLoc = trim(strtolower((string) ($other->location ?? '')));
+                $matchesLoc = ($otherLoc === $cleanLocation || str_contains($otherLoc, $cleanLocation) || str_contains($cleanLocation, $otherLoc));
+                if (! $matchesLoc) {
+                    return false;
+                }
+            }
+
+            return static::areEventsOverlapping($this, $other);
+        })->values();
+    }
+
+    /**
+     * Check if two events have overlapping time schedules.
+     */
+    public static function areEventsOverlapping(Event $event1, Event $event2): bool
+    {
+        try {
+            $w1 = $event1->getAttendanceTimeWindows();
+            $w2 = $event2->getAttendanceTimeWindows();
+
+            $start1 = $w1['time_in_start'];
+            $end1 = $w1['time_out_end'] ?? ($start1 ? (clone $start1)->addHours(2) : null);
+
+            $start2 = $w2['time_in_start'];
+            $end2 = $w2['time_out_end'] ?? ($start2 ? (clone $start2)->addHours(2) : null);
+
+            if ($start1 && $end1 && $start2 && $end2) {
+                return $start1->lessThan($end2) && $start2->lessThan($end1);
+            }
+        } catch (\Throwable) {}
+
+        return static::isTimeOverlapping((string) $event1->event_time, (string) $event2->event_time);
     }
 
     /**

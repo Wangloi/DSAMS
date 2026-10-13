@@ -233,7 +233,7 @@ export default function ThermalPrinterModal({ open, onOpenChange }: Props) {
                                 <div>
                                     <div className="font-bold">First-Time Setup:</div>
                                     <p className="mt-0.5 text-[11px] leading-relaxed text-amber-800 dark:text-amber-300">
-                                        Run <strong>start-bridge.bat</strong> located in your DSAMS <code>tools/PT210PrintBridge</code> folder to activate local Bluetooth printing.
+                                        Run <strong>install-autostart.bat</strong> (or <code>start-bridge.bat</code>) in your DSAMS <code>tools/PT210PrintBridge</code> folder to enable automatic background Bluetooth printing.
                                     </p>
                                 </div>
                             </div>

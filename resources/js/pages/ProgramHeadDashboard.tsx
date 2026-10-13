@@ -202,10 +202,21 @@ export default function ProgramHeadDashboard({ user }: Props) {
         return () => clearInterval(interval);
     }, []);
 
+    const currentUser = (user || (page.props as any).user || (page.props as any).auth?.user) as any;
+    const userRole = currentUser?.role || 'Program Head';
+    const userOffice = currentUser?.office || null;
+    const badgeLabel = userOffice
+        ? userOffice
+        : program && program.toUpperCase() === 'ALL'
+          ? 'Campus-wide / All Programs'
+          : program
+            ? `${program} Department`
+            : userRole;
+
     /* ─────────────────────────────────── RENDER ─────────────────────────────────── */
     return (
         <ProgramHeadLayout>
-            <Head title="Program Head Dashboard" />
+            <Head title={userOffice ? `${userOffice} Portal` : (userRole === 'Instructor' ? 'Instructor Portal' : 'Program Head Dashboard')} />
 
             <div className="relative z-10 flex w-full flex-col gap-5 px-3.5 py-4 sm:gap-6 sm:px-6 sm:py-8 lg:px-8">
                 {/* ── Hero Header ─────────────────────────────────────────────── */}
@@ -223,20 +234,20 @@ export default function ProgramHeadDashboard({ user }: Props) {
 
                             <div>
                                 <h1 className="text-xl sm:text-2xl leading-tight font-black tracking-tight text-white">
-                                    Welcome Back, {user?.name || 'Program Head'}
-                                    !
+                                    Welcome Back, {currentUser?.name || 'Personnel'}!
                                 </h1>
                                 <div className="mt-0.5 flex flex-col gap-2 sm:flex-row sm:items-center">
                                     <p className="text-sm font-medium text-blue-200/80">
-                                        Monitoring program performance and
-                                        student activity for today.
+                                        {userOffice
+                                            ? `Overseeing ${userOffice} records, student activity, and clearance.`
+                                            : 'Monitoring program performance and student activity for today.'}
                                     </p>
                                     <Badge
                                         variant="outline"
                                         className="w-fit gap-1 self-center rounded-lg border-white/10 bg-white/5 px-2 py-0.5 text-[9px] font-black tracking-widest text-white uppercase backdrop-blur-md sm:self-auto"
                                     >
                                         <ShieldAlert className="h-2.5 w-2.5 text-blue-300" />
-                                        {program || 'Program Administration'}
+                                        {badgeLabel}
                                     </Badge>
                                 </div>
                             </div>

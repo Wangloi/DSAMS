@@ -296,9 +296,13 @@ class StudentNotificationPresenter
     public static function studentIsAllowedScanner(Student $student, Event $event): bool
     {
         $allowed = $event->scanner_student_ids;
-        if (! is_array($allowed)) {
+        if (is_string($allowed)) {
+            $decoded = json_decode($allowed, true);
+            $allowed = is_array($decoded) ? $decoded : [];
+        } elseif (! is_array($allowed)) {
             $allowed = [];
         }
+        $allowed = array_values(array_unique(array_filter(array_map('strval', (array) $allowed))));
 
         $legacy = trim((string) ($event->scanner_student_id ?? ''));
         if ($legacy !== '' && ! in_array($legacy, $allowed, true)) {

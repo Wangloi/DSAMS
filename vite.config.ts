@@ -36,6 +36,7 @@ export default defineConfig({
     server: {
         host: '0.0.0.0',
         cors: true,
+        origin: lanIp !== 'localhost' ? `http://${lanIp}:5173` : undefined,
         hmr: {
             host: lanIp,
         },

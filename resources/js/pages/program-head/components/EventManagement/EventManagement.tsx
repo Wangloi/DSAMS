@@ -1,6 +1,7 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import {
     Activity,
+    Building2,
     Calendar,
     CalendarDays,
     CheckCircle2,
@@ -28,6 +29,18 @@ import {
 } from '@/components/ui/select';
 import { cn, formatDate, formatTime } from '@/lib/utils';
 import ProgramHeadLayout from '@/pages/program-head/components/ProgramHeadLayout';
+
+const ORGANIZING_BODIES = [
+    'Office of Student Affairs',
+    'Student Affairs',
+    'Dean of College',
+    'Academic Affairs',
+    'Admin Office',
+    'College Student Government (CSG)',
+    'Guidance Office',
+    'HED Library',
+    'Sports Department',
+];
 
 type EventStatus =
     | 'upcoming'
@@ -122,6 +135,8 @@ export default function EventManagement() {
 
     const events = page.props.events ?? [];
     const program = page.props.program ?? '';
+    const authUser = (page.props as any).auth?.user || (page.props as any).user;
+    const defaultOrganizer = authUser?.office || (program ? `${program} Department` : 'Office of Student Affairs');
 
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<EventStatus | ''>('');
@@ -149,6 +164,7 @@ export default function EventManagement() {
 
     // Activity Plan Form State
     const [activityPlanTitle, setActivityPlanTitle] = useState('');
+    const [activityPlanOrganizer, setActivityPlanOrganizer] = useState('');
     const [activityPlanLocation, setActivityPlanLocation] = useState('');
     const [activityPlanDate, setActivityPlanDate] = useState('');
     const [activityPlanTime, setActivityPlanTime] = useState('08:00');
@@ -259,10 +275,19 @@ export default function EventManagement() {
         };
     };
 
+    const openActivityPlanModal = (defaultDate?: string) => {
+        if (defaultDate) {
+            setActivityPlanDate(defaultDate);
+        }
+        if (!activityPlanOrganizer) {
+            setActivityPlanOrganizer(defaultOrganizer);
+        }
+        setShowActivityPlanModal(true);
+    };
+
     const handleDateSelect = (selectInfo: any) => {
         const [datePart] = selectInfo.startStr.split('T');
-        setActivityPlanDate(datePart);
-        setShowActivityPlanModal(true);
+        openActivityPlanModal(datePart);
     };
 
     const handleActivityPlanSubmit = () => {
@@ -281,6 +306,7 @@ export default function EventManagement() {
         const payload: Record<string, any> = {
             event_name: activityPlanTitle.trim(),
             location: activityPlanLocation.trim(),
+            organizer: activityPlanOrganizer.trim() || defaultOrganizer,
             event_date: activityPlanDate,
             event_time: activityPlanTime || '08:00',
             description: activityPlanDescription.trim(),
@@ -302,6 +328,7 @@ export default function EventManagement() {
                     confirmButtonColor: '#1e40af',
                 });
                 setActivityPlanTitle('');
+                setActivityPlanOrganizer('');
                 setActivityPlanLocation('');
                 setActivityPlanDate('');
                 setActivityPlanTime('08:00');
@@ -467,9 +494,7 @@ function formatToIsoStart(dateStr: string, timeStr: string): string {
                                 <Button
                                     type="button"
                                     className="h-10 gap-2 rounded-xl bg-white px-5 text-[10px] font-black tracking-widest text-[#1e3a8a] uppercase shadow-md transition-all duration-200 hover:bg-slate-100 active:scale-95"
-                                    onClick={() =>
-                                        setShowActivityPlanModal(true)
-                                    }
+                                    onClick={() => openActivityPlanModal()}
                                 >
                                     <Upload className="h-4 w-4" />
                                     Upload Activity Plan
@@ -969,6 +994,25 @@ function formatToIsoStart(dateStr: string, timeStr: string): string {
 
                                 <div>
                                     <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-black tracking-wider text-slate-500 uppercase dark:text-slate-400">
+                                        <Building2 className="h-3.5 w-3.5 text-blue-500" />
+                                        Organizing Body / Office *
+                                    </label>
+                                    <Input
+                                        list="activityPlanOrganizerSuggestions"
+                                        placeholder="Select or enter organizing body"
+                                        value={activityPlanOrganizer}
+                                        onChange={(e) => setActivityPlanOrganizer(e.target.value)}
+                                        className="h-10 rounded-xl border border-slate-200 bg-white text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                    />
+                                    <datalist id="activityPlanOrganizerSuggestions">
+                                        {ORGANIZING_BODIES.map((org) => (
+                                            <option key={org} value={org} />
+                                        ))}
+                                    </datalist>
+                                </div>
+
+                                <div>
+                                    <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-black tracking-wider text-slate-500 uppercase dark:text-slate-400">
                                         <MapPin className="h-3.5 w-3.5 text-blue-500" />
                                         Proposed Venue / Location *
                                     </label>
@@ -1128,8 +1172,9 @@ function formatToIsoStart(dateStr: string, timeStr: string): string {
                                     <h2 className="mt-2 text-xl font-bold tracking-tight text-white">
                                         {selectedEvent.event_name}
                                     </h2>
-                                    <p className="mt-1 text-xs text-blue-200/90">
-                                        Organized by: {selectedEvent.organizer || 'Program Head'}
+                                    <p className="mt-1 flex items-center gap-1.5 text-xs text-blue-200/90">
+                                        <Building2 className="h-3.5 w-3.5 shrink-0 text-blue-200" />
+                                        <span>Organized by: {selectedEvent.organizer || 'Office of Student Affairs'}</span>
                                     </p>
                                 </div>
                                 <button
@@ -1176,7 +1221,7 @@ function formatToIsoStart(dateStr: string, timeStr: string): string {
                             )}
 
                             {/* Event Details Grid */}
-                            <div className="grid grid-cols-2 gap-4 rounded-xl border border-slate-200/80 bg-white p-4 dark:border-slate-800 dark:bg-slate-800/60">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 rounded-xl border border-slate-200/80 bg-white p-4 dark:border-slate-800 dark:bg-slate-800/60">
                                 <div>
                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Date & Time</span>
                                     <p className="mt-1 text-xs font-semibold text-slate-800 dark:text-slate-200">
@@ -1189,6 +1234,14 @@ function formatToIsoStart(dateStr: string, timeStr: string): string {
                                     <p className="mt-1 text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1">
                                         <MapPin className="h-3.5 w-3.5 text-blue-500" />
                                         {selectedEvent.location}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Organizing Body</span>
+                                    <p className="mt-1 text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+                                        <Building2 className="h-3.5 w-3.5 text-blue-500" />
+                                        {selectedEvent.organizer || 'Office of Student Affairs'}
                                     </p>
                                 </div>
 

@@ -16,11 +16,14 @@ class AttendanceScannerService
 {
     public function __construct(
         protected GeofenceValidationService $geofenceService,
-        protected EvaluationGateService $evaluationGateService
-    ) {}
+        protected EvaluationGateService $evaluationGateService,
+        protected ?ConflictAttendanceService $conflictService = null
+    ) {
+        $this->conflictService = $this->conflictService ?? app(ConflictAttendanceService::class);
+    }
 
     /**
-     * Check if a student is authorized to scan for an event.
+     * Check if a student is authorized to scan for an event (or any of its conflicting schedule events).
      */
     public function isAssignedScanner(?Student $student, Event $event): bool
     {
@@ -28,10 +31,34 @@ class AttendanceScannerService
             return false;
         }
 
+        if ($this->checkScannerAssignment($student, $event)) {
+            return true;
+        }
+
+        // Allow if scanner is assigned to any active event with a conflicting schedule
+        $conflicts = $event->getConflictingEvents();
+        foreach ($conflicts as $conflictEvent) {
+            if ($this->checkScannerAssignment($student, $conflictEvent)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check direct scanner assignment on an event.
+     */
+    protected function checkScannerAssignment(Student $student, Event $event): bool
+    {
         $allowed = $event->scanner_student_ids;
-        if (! is_array($allowed)) {
+        if (is_string($allowed)) {
+            $decoded = json_decode($allowed, true);
+            $allowed = is_array($decoded) ? $decoded : [];
+        } elseif (! is_array($allowed)) {
             $allowed = [];
         }
+        $allowed = array_values(array_unique(array_filter(array_map('strval', (array) $allowed))));
         $legacyAllowed = trim((string) ($event->scanner_student_id ?? ''));
         if ($legacyAllowed !== '' && ! in_array($legacyAllowed, $allowed, true)) {
             $allowed[] = $legacyAllowed;
@@ -134,6 +161,53 @@ class AttendanceScannerService
 
         // Check Course & Year Eligibility
         if (! $this->isStudentEligible($student, $event)) {
+            // Check if student is eligible for any conflicting schedule event
+            $conflictResult = $this->conflictService->scanConflictingEventIfPrimaryIneligible($event, $student, Carbon::now(), [
+                'latitude' => $lat,
+                'longitude' => $lng,
+                'accuracy_m' => $accuracyM,
+            ], $request);
+
+            if ($conflictResult) {
+                $primaryConflict = $conflictResult['primary']['event'];
+                $primaryAtt = $conflictResult['primary']['attendance'];
+                $scanEval = $conflictResult['primary']['scanEval'];
+                $status = $primaryAtt->status;
+                $isTimeOut = ($scanEval['action'] === 'check_out');
+
+                if (Schema::hasTable('activity_logs')) {
+                    ActivityLog::logForUser($scanner, 'Attendance', $isTimeOut ? 'Checked Out' : 'Checked In', "Recorded attendance for conflicting event #{$primaryConflict->id} ({$primaryConflict->event_name}) via scanner on event #{$event->id}", $request);
+                }
+
+                $allConflictedScans = array_merge([
+                    [
+                        'event_id' => $primaryConflict->id,
+                        'event_name' => $primaryConflict->event_name,
+                        'action' => $isTimeOut ? 'check_out' : 'check_in',
+                        'status' => $status,
+                        'time' => Carbon::now()->format('h:i A'),
+                    ]
+                ], $conflictResult['additional_conflicts'] ?? []);
+
+                return response()->json([
+                    'attendance_id' => $primaryAtt->id,
+                    'status' => $status,
+                    'scanned_at' => Carbon::now()->toDateTimeString(),
+                    'action' => $isTimeOut ? 'check_out' : 'check_in',
+                    'message' => ($isTimeOut ? 'Time-out (Check-out) recorded' : 'Time-in (Check-in) recorded') . " for conflicting schedule '{$primaryConflict->event_name}' (Student is registered for this conflicting schedule).",
+                    'conflicted_events_scanned' => $allConflictedScans,
+                    'time_in' => optional($primaryAtt->checked_in_at)->format('h:i A'),
+                    'time_out' => $primaryAtt->checked_out_at ? optional($primaryAtt->checked_out_at)->format('h:i A') : null,
+                    'student' => [
+                        'id' => $student->id,
+                        'student_id' => $student->student_id,
+                        'name' => $student->name,
+                        'course' => $student->course ?? $student->program,
+                        'year_level' => $student->year_level,
+                    ],
+                ]);
+            }
+
             if (Schema::hasTable('activity_logs')) {
                 ActivityLog::logForUser($scanner, 'Attendance', 'Denied', "Attendee '{$student->student_id}' not eligible for event #{$event->id}", $request);
             }
@@ -219,6 +293,22 @@ class AttendanceScannerService
             ]);
         }
 
+        // Also record attendance for any conflicting schedule events the student is eligible for
+        $conflictedScans = $this->conflictService->recordAttendanceForEligibleConflicts(
+            $event,
+            $student,
+            $now,
+            $isTimeOut ? 'check_out' : 'check_in',
+            $status,
+            [
+                'latitude' => $lat,
+                'longitude' => $lng,
+                'accuracy_m' => $accuracyM,
+                'distance_m' => $distanceRounded,
+            ],
+            $request
+        );
+
         $this->evaluationGateService->triggerEvaluationNotification($student, $event);
 
         $event->updateAttendanceCounts();
@@ -233,6 +323,12 @@ class AttendanceScannerService
             ? ' (cut-off was ' . $cutoff->format('h:i A') . ', 1 hr after start)'
             : ' (cut-off was 1 hr after start)';
 
+        $conflictedSuffix = '';
+        if (! empty($conflictedScans)) {
+            $names = array_column($conflictedScans, 'event_name');
+            $conflictedSuffix = ' (Also scanned for conflicting schedule: ' . implode(', ', $names) . ')';
+        }
+
         $checkInLabel = $status === 'late'
             ? 'Time-in (Check-in) recorded as LATE' . $cutoffStr . '.'
             : 'Time-in (Check-in) recorded successfully (On-Time).';
@@ -242,7 +338,8 @@ class AttendanceScannerService
             'status' => $attendance->status,
             'scanned_at' => $now->toDateTimeString(),
             'action' => $isTimeOut ? 'check_out' : 'check_in',
-            'message' => $isTimeOut ? 'Time-out (Check-out) recorded successfully.' : $checkInLabel,
+            'message' => ($isTimeOut ? 'Time-out (Check-out) recorded successfully.' : $checkInLabel) . $conflictedSuffix,
+            'conflicted_events_scanned' => $conflictedScans,
             'time_in' => optional($attendance->checked_in_at)->format('h:i A'),
             'time_out' => $attendance->checked_out_at ? optional($attendance->checked_out_at)->format('h:i A') : null,
             'student' => [

@@ -86,7 +86,7 @@ function buildDefaults(
         event_time: event.event_time || '',
         registration_end_time: event.registration_end_time || '',
         organizer: event.organizer || '',
-        geofence_enabled: event.geofence_enabled || false,
+        geofence_enabled: Boolean(event.geofence_enabled),
         geofence_latitude:
             event.geofence_latitude != null &&
             (typeof event.geofence_latitude !== 'string' ||
@@ -314,14 +314,32 @@ export default function EventEditModal({
                                         <Input
                                             id="organizer"
                                             value={data.organizer}
+                                            list="editOrganizerSuggestions"
                                             onChange={(e) =>
                                                 setData(
                                                     'organizer',
                                                     e.target.value,
                                                 )
                                             }
+                                            placeholder="Enter or select organizing body"
                                             className={`h-9 dark:border-slate-600 dark:bg-slate-800 ${errors.organizer ? 'border-rose-500 focus-visible:ring-rose-500' : ''}`}
                                         />
+                                        <datalist id="editOrganizerSuggestions">
+                                            <option value="Office of Student Affairs" />
+                                            <option value="Student Affairs" />
+                                            <option value="Dean of College" />
+                                            <option value="Academic Affairs" />
+                                            <option value="Admin Office" />
+                                            <option value="College Student Government (CSG)" />
+                                            <option value="Guidance Office" />
+                                            <option value="HED Library" />
+                                            <option value="Sports Department" />
+                                        </datalist>
+                                        {errors.organizer && (
+                                            <span className="text-xs font-medium text-rose-500">
+                                                {String(errors.organizer)}
+                                            </span>
+                                        )}
                                     </div>
 
                                     <div className="grid gap-2">

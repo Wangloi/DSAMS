@@ -142,6 +142,10 @@ export interface DisciplinaryActionRecord {
         remarks?: string;
     }>;
     created_at: string | null;
+    action_type?: string;
+    description?: string;
+    effective_date?: string;
+    served_by_name?: string;
 }
 
 export interface StudentDisciplinaryStats {

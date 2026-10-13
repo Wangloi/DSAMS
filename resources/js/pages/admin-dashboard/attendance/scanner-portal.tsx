@@ -399,7 +399,7 @@ export default function AdminAttendanceScannerPortalPage({
                                             <p className="max-w-sm text-center text-xs text-slate-500 dark:text-white/40">
                                                 Show this QR code on your screen
                                                 or projector. Students scan it
-                                                using their DSAMS app to check
+                                                using their OSAMS app to check
                                                 in. It auto-rotates every{' '}
                                                 {tokenLifetimeSeconds} seconds.
                                             </p>
@@ -479,7 +479,7 @@ export default function AdminAttendanceScannerPortalPage({
                                     How Students Scan
                                 </div>
                                 <ol className="space-y-2 text-xs text-blue-600/70 dark:text-indigo-200/70">
-                                    <li>1. Open DSAMS on their device</li>
+                                    <li>1. Open OSAMS on their device</li>
                                     <li>2. Go to their Dashboard</li>
                                     <li>
                                         3. Tap{' '}

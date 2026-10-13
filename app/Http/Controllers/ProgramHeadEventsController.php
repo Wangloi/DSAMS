@@ -57,15 +57,20 @@ class ProgramHeadEventsController extends Controller
             $activityPlanPath = $request->file('activity_plan')->store('activity_plans', 'public');
         }
 
+        $office = is_object($programHead) ? (string) ($programHead->office ?? '') : '';
         $organizer = !empty($validated['organizer'])
             ? $validated['organizer']
-            : ($program !== '' ? "{$program} Department" : ($programHead->name ?? 'Program Head'));
+            : ($office !== ''
+                ? $office
+                : (strtoupper($program) === 'ALL'
+                    ? 'Campus Administration'
+                    : ($program !== '' ? "{$program} Department" : ($programHead->name ?? 'Personnel'))));
 
         $courses = !empty($validated['courses'])
             ? $validated['courses']
-            : ($program !== '' ? [$program] : ['All']);
+            : (strtoupper($program) === 'ALL' || $program === '' ? ['All'] : [$program]);
 
-        $requesterLabel = ($programHead->name ?? 'Program Head') . ($program !== '' ? " ({$program})" : '');
+        $requesterLabel = ($programHead->name ?? 'Personnel') . ($office !== '' ? " ({$office})" : ($program !== '' ? " ({$program})" : ''));
 
         $eventData = [
             'event_name' => $validated['event_name'],

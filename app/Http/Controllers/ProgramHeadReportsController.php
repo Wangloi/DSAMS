@@ -25,8 +25,12 @@ class ProgramHeadReportsController extends Controller
         ];
 
         if ($start && $end && $program !== '') {
-            $studentIds = Student::where('course', $program)->pluck('id')->toArray();
-            $studentIdsStr = Student::where('course', $program)->pluck('student_id')->toArray();
+            $studentsQuery = Student::query();
+            if (strtoupper($program) !== 'ALL') {
+                $studentsQuery->where('course', $program);
+            }
+            $studentIds = $studentsQuery->pluck('id')->toArray();
+            $studentIdsStr = (clone $studentsQuery)->pluck('student_id')->toArray();
 
             if (Schema::hasTable('attendances')) {
                 $counts['attendance'] = Attendance::query()
@@ -202,8 +206,12 @@ class ProgramHeadReportsController extends Controller
             return ['header' => [], 'rows' => []];
         }
 
-        $studentIds = Student::where('course', $program)->pluck('id')->toArray();
-        $studentIdsStr = Student::where('course', $program)->pluck('student_id')->toArray();
+        $studentsQuery = Student::query();
+        if (strtoupper($program) !== 'ALL') {
+            $studentsQuery->where('course', $program);
+        }
+        $studentIds = $studentsQuery->pluck('id')->toArray();
+        $studentIdsStr = (clone $studentsQuery)->pluck('student_id')->toArray();
 
         if ($type === 'attendance') {
             $header = ['Scanned At', 'Student ID', 'Student Name', 'Event', 'Status'];
