@@ -466,8 +466,8 @@ export default function RealTimeMonitoringPanel({
                 return;
             }
         } else if (attendanceMode === 'exit') {
-            if (!isWithinWindow(currentHHMM, timeOutStart, timeOutEnd)) {
-                const msg = `Time-Out scanning is closed. Time-Out is only allowed between ${timeOutStart} and ${timeOutEnd}.`;
+            if (timeOutEnd && currentHHMM > timeOutEnd) {
+                const msg = `Time-Out scanning is closed. Attendance closed at ${timeOutEnd}.`;
                 setLastScanned({ status: 'invalid', message: msg });
                 Swal.fire({
                     icon: 'warning',
@@ -846,7 +846,7 @@ export default function RealTimeMonitoringPanel({
                         <div className="flex items-center gap-2 rounded-lg border border-rose-400/40 bg-rose-500/15 px-3 py-1.5 shadow-sm">
                             <LogOut className="h-4 w-4 text-rose-300" />
                             <span className="text-[11px] font-extrabold tracking-wider text-rose-200 uppercase">
-                                Time-Out (Starts 30m prior):
+                                Time-Out (Flexible):
                             </span>
                             <span className="text-xs font-black tracking-wide text-white">
                                 {timeOutStart === '10:30' && timeOutEnd === '12:00'

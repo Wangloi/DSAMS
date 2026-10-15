@@ -160,7 +160,8 @@ class ConflictAttendanceService
                 ->where('student_id', $student->id)
                 ->first();
 
-            $scanEval = $conflictEvent->evaluateAttendanceScan($now, $conflictAttendance);
+            $requestedMode = $request ? ($request->input('mode') ?? $request->input('scan_type')) : null;
+            $scanEval = $conflictEvent->evaluateAttendanceScan($now, $conflictAttendance, $requestedMode);
             if (! $scanEval['allowed']) {
                 continue;
             }

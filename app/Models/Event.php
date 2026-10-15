@@ -2,8 +2,12 @@
 
 namespace App\Models;
 
+use App\Support\ActiveAuth;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 
 class Event extends Model
 {
@@ -35,6 +39,7 @@ class Event extends Model
         'activity_plan_path',
         'requested_by',
         'rejection_reason',
+        'created_by_program_head_id',
     ];
 
     protected $appends = [
@@ -68,7 +73,7 @@ class Event extends Model
         }
 
         try {
-            if (! \Illuminate\Support\Facades\Schema::hasTable('students')) {
+            if (! Schema::hasTable('students')) {
                 return $this->formatFallbackScannerStudents($allowed);
             }
 
@@ -147,8 +152,132 @@ class Event extends Model
         'attendance_type' => 'string',
     ];
 
+    /** @var bool|null */
+    private static ?bool $hasCreatorColumn = null;
+
+    /**
+     * Determine if the active request / context is acting as an administrator.
+     */
+    public static function isAdminActing(): bool
+    {
+        try {
+            if (function_exists('request') && request()) {
+                $active = ActiveAuth::resolve(request());
+                if ($active === 'admin') {
+                    return true;
+                }
+                if ($active === 'program_head') {
+                    return false;
+                }
+            }
+        } catch (\Throwable) {}
+
+        if (Auth::getDefaultDriver() === 'admin') {
+            return true;
+        }
+
+        try {
+            if (Auth::guard('admin')->check() && !Auth::guard('program_head')->check()) {
+                return true;
+            }
+        } catch (\Throwable) {}
+
+        return false;
+    }
+
+    /**
+     * ID of the logged-in program head when the current request is acting as a program head.
+     */
+    public static function currentProgramHeadId(): ?int
+    {
+        if (self::isAdminActing()) {
+            return null;
+        }
+
+        try {
+            if (function_exists('request') && request()) {
+                $active = ActiveAuth::resolve(request());
+                if ($active === 'program_head' && Auth::guard('program_head')->check()) {
+                    return (int) Auth::guard('program_head')->id();
+                }
+            }
+        } catch (\Throwable) {}
+
+        try {
+            if (Auth::guard('program_head')->check()) {
+                $id = Auth::guard('program_head')->id();
+                if ($id) {
+                    return (int) $id;
+                }
+            }
+        } catch (\Throwable) {}
+
+        if (Auth::getDefaultDriver() === 'program_head') {
+            $user = Auth::guard('program_head')->user() ?: Auth::user();
+            return $user ? (int) $user->getAuthIdentifier() : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Whether the events table supports tracking the creating program head.
+     */
+    public static function supportsCreatorTracking(): bool
+    {
+        if (self::$hasCreatorColumn === null) {
+            try {
+                self::$hasCreatorColumn = Schema::hasColumn('events', 'created_by_program_head_id');
+            } catch (\Throwable) {
+                self::$hasCreatorColumn = false;
+            }
+        }
+
+        return self::$hasCreatorColumn;
+    }
+
+    /**
+     * Scope: events created by a specific program head.
+     */
+    public function scopeCreatedByProgramHead(Builder $query, int $programHeadId): Builder
+    {
+        return $query->where($this->getTable() . '.created_by_program_head_id', $programHeadId);
+    }
+
     protected static function booted(): void
     {
+        // 1. Events created by program heads must never appear on the admin side.
+        static::addGlobalScope('hide_program_head_events_from_admin', function (Builder $builder) {
+            if (self::supportsCreatorTracking() && self::isAdminActing()) {
+                $builder->whereNull($builder->getModel()->getTable() . '.created_by_program_head_id');
+            }
+        });
+
+        // 2. Program heads must NEVER see events created by OTHER program heads.
+        static::addGlobalScope('isolate_program_head_events', function (Builder $builder) {
+            if (!self::supportsCreatorTracking()) {
+                return;
+            }
+
+            $programHeadId = self::currentProgramHeadId();
+            if ($programHeadId !== null) {
+                $table = $builder->getModel()->getTable();
+                $builder->where(function ($query) use ($table, $programHeadId) {
+                    $query->whereNull($table . '.created_by_program_head_id')
+                          ->orWhere($table . '.created_by_program_head_id', $programHeadId);
+                });
+            }
+        });
+
+        static::creating(function (Event $event) {
+            if (self::supportsCreatorTracking() && empty($event->created_by_program_head_id)) {
+                $programHeadId = self::currentProgramHeadId();
+                if ($programHeadId !== null) {
+                    $event->created_by_program_head_id = $programHeadId;
+                }
+            }
+        });
+
         static::saving(function (Event $event) {
             $rawDate = $event->attributes['event_date'] ?? null;
             $rawTime = $event->attributes['event_time'] ?? null;
@@ -281,7 +410,7 @@ class Event extends Model
      *     status_code: int
      * }
      */
-    public function evaluateAttendanceScan(\Carbon\CarbonInterface $now, ?Attendance $existingAttendance = null): array
+    public function evaluateAttendanceScan(\Carbon\CarbonInterface $now, ?Attendance $existingAttendance = null, ?string $requestedMode = null): array
     {
         $windows = $this->getAttendanceTimeWindows();
         $start = $windows['time_in_start'];
@@ -291,6 +420,10 @@ class Event extends Model
 
         $checkedOutAt = $existingAttendance ? ($existingAttendance->getAttributes()['checked_out_at'] ?? $existingAttendance->checked_out_at) : null;
         $checkedInAt = $existingAttendance ? ($existingAttendance->getAttributes()['checked_in_at'] ?? $existingAttendance->checked_in_at) : null;
+
+        // Normalize requested mode ('entry'/'check_in' vs 'exit'/'check_out')
+        $isExplicitCheckIn = in_array(strtolower((string) $requestedMode), ['entry', 'check_in', 'in'], true);
+        $isExplicitCheckOut = in_array(strtolower((string) $requestedMode), ['exit', 'check_out', 'out'], true);
 
         // Case 1: Student is already checked out
         if ($existingAttendance && ! empty($checkedOutAt)) {
@@ -305,25 +438,55 @@ class Event extends Model
 
         // Case 2: Student is already checked in (attempting Time-Out / Check-Out)
         if ($existingAttendance && ! empty($checkedInAt)) {
-            // Check if Time-Out window has started
-            if ($outStart && $now->lessThan($outStart)) {
-                $statusLabel = ucfirst($existingAttendance->status ?? 'present');
+            $statusLabel = ucfirst($existingAttendance->status ?? 'present');
+
+            // If the scanner explicitly set mode to Check-In / Entry, do not accidentally time-out the attendee
+            if ($isExplicitCheckIn) {
+                $timeStr = '';
+                try {
+                    $cIn = $checkedInAt instanceof \DateTimeInterface
+                        ? Carbon::instance($checkedInAt)
+                        : Carbon::parse((string) $checkedInAt);
+                    $timeStr = $cIn->format('h:i A');
+                } catch (\Throwable) {}
+
                 return [
                     'allowed' => false,
-                    'action' => 'check_out',
+                    'action' => 'check_in',
                     'status' => $existingAttendance->status ?? 'present',
-                    'error_message' => "Time-out (Check-out) is not allowed yet. You are already checked in ({$statusLabel}). Time-out scanning starts 30 minutes before event end time (at {$outStart->format('h:i A')})" . ($outEnd ? " to {$outEnd->format('h:i A')}" : '') . '.',
-                    'status_code' => 400,
+                    'error_message' => "Student is already checked in ({$statusLabel})" . ($timeStr !== '' ? " at {$timeStr}" : '') . ". Switch to Time-Out mode to record check-out.",
+                    'status_code' => 409,
                 ];
             }
 
-            // Check if Time-Out window has closed
+            // Anti-duplicate protection: prevent accidental immediate double-scan within 60 seconds of check-in
+            // unless the scanner explicitly selected 'exit' / Time-Out mode
+            if (! $isExplicitCheckOut) {
+                try {
+                    $checkInCarbon = $checkedInAt instanceof \DateTimeInterface
+                        ? Carbon::instance($checkedInAt)
+                        : Carbon::parse((string) $checkedInAt);
+
+                    if ($now->diffInSeconds($checkInCarbon, false) > -60 && $now->greaterThanOrEqualTo($checkInCarbon)) {
+                        return [
+                            'allowed' => false,
+                            'action' => 'check_in',
+                            'status' => $existingAttendance->status ?? 'present',
+                            'error_message' => "Already checked in ({$statusLabel}) just now. Please wait at least 1 minute before timing out.",
+                            'status_code' => 429,
+                        ];
+                    }
+                } catch (\Throwable) {}
+            }
+
+            // Flexible Time-Out: Allow check-out anytime once checked in if the event ends quickly!
+            // We only block if the overall attendance closure window has expired long after event end.
             if ($outEnd && $now->greaterThan($outEnd)) {
                 return [
                     'allowed' => false,
                     'action' => 'check_out',
                     'status' => $existingAttendance->status ?? 'present',
-                    'error_message' => "Time-out (Check-out) window is closed. Time-out ended at {$outEnd->format('h:i A')}.",
+                    'error_message' => "Time-out (Check-out) window is closed. Attendance closed at {$outEnd->format('h:i A')}.",
                     'status_code' => 403,
                 ];
             }
@@ -339,6 +502,17 @@ class Event extends Model
         }
 
         // Case 3: Initial Check-In (no existing attendance record)
+        // If the scanner explicitly set mode to Check-Out / Exit, but the student never checked in:
+        if ($isExplicitCheckOut) {
+            return [
+                'allowed' => false,
+                'action' => 'check_out',
+                'status' => 'absent',
+                'error_message' => 'Cannot record Time-Out: Attendee has no prior Time-In record for this event.',
+                'status_code' => 422,
+            ];
+        }
+
         // Check if scanning has started
         if ($start && $now->lessThan($start)) {
             return [
@@ -435,12 +609,90 @@ class Event extends Model
     }
 
     /**
-     * Find existing schedule conflict (same venue, same date, overlapping time).
+     * Check if two location names refer to the same venue or conflicting sub-venue.
      */
-    public static function findScheduleConflict(string $eventDate, string $location, string $eventTime, $ignoreEventId = null): ?Event
+    public static function areLocationsConflicting(?string $loc1, ?string $loc2): bool
     {
+        if (empty($loc1) || empty($loc2)) {
+            return false;
+        }
+
+        $l1 = trim(strtolower($loc1));
+        $l2 = trim(strtolower($loc2));
+
+        $generics = ['campus / unspecified', 'campus/unspecified', 'unspecified', 'tba', 'to be announced', 'n/a', 'none', 'campus', 'tbd'];
+        if (in_array($l1, $generics, true) || in_array($l2, $generics, true)) {
+            return false;
+        }
+
+        if ($l1 === $l2) {
+            return true;
+        }
+
+        $norm1 = preg_replace('/[^\w\s]/', ' ', $l1);
+        $norm1 = trim(preg_replace('/\s+/', ' ', (string) $norm1));
+        $norm2 = preg_replace('/[^\w\s]/', ' ', $l2);
+        $norm2 = trim(preg_replace('/\s+/', ' ', (string) $norm2));
+
+        if ($norm1 === $norm2) {
+            return true;
+        }
+
+        $aliases = [
+            'gym' => 'gymnasium',
+            'avr' => 'audio visual room',
+            'audiovisual room' => 'audio visual room',
+            'audiovisual room avr' => 'audio visual room',
+            'audio visual room avr' => 'audio visual room',
+            'lib' => 'college library',
+            'library' => 'college library',
+            'caf' => 'cafeteria',
+            'canteen' => 'cafeteria',
+        ];
+
+        $canon1 = $aliases[$norm1] ?? $norm1;
+        $canon2 = $aliases[$norm2] ?? $norm2;
+
+        if ($canon1 === $canon2) {
+            return true;
+        }
+
+        // Distinct Room / Floor number checking to prevent false positives like "Room 101" vs "Room 102"
+        $hasRoom1 = preg_match('/\b(room|rm|floor|flr|lab|laboratory|hall|bldg|building)\s*(\d+|[a-z])\b/i', $norm1, $m1);
+        $hasRoom2 = preg_match('/\b(room|rm|floor|flr|lab|laboratory|hall|bldg|building)\s*(\d+|[a-z])\b/i', $norm2, $m2);
+        if ($hasRoom1 && $hasRoom2) {
+            return $m1[0] === $m2[0] && ($canon1 === $canon2 || str_contains($canon1, $canon2) || str_contains($canon2, $canon1));
+        }
+
+        if (str_contains($norm1, $norm2) || str_contains($norm2, $norm1)) {
+            if ($hasRoom1 || $hasRoom2) {
+                return false;
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Find existing schedule conflict (same venue, same date, overlapping time window).
+     */
+    public static function findScheduleConflict(
+        string $eventDate,
+        string $location,
+        string $eventTime,
+        $registrationEndTimeOrIgnoreId = null,
+        $ignoreEventId = null
+    ): ?Event {
         if (empty($eventDate) || empty($location)) {
             return null;
+        }
+
+        $registrationEndTime = null;
+        if (is_numeric($registrationEndTimeOrIgnoreId) && $ignoreEventId === null) {
+            $ignoreEventId = $registrationEndTimeOrIgnoreId;
+        } elseif (is_string($registrationEndTimeOrIgnoreId)) {
+            $registrationEndTime = $registrationEndTimeOrIgnoreId;
         }
 
         try {
@@ -449,9 +701,15 @@ class Event extends Model
             return null;
         }
 
-        $cleanLocation = trim(strtolower($location));
+        $targetEvent = new static([
+            'event_date' => $formattedDate,
+            'location' => $location,
+            'event_time' => $eventTime,
+            'registration_end_time' => $registrationEndTime,
+        ]);
 
-        $query = static::whereNull('archived_at')
+        $query = static::withoutGlobalScopes()
+            ->whereNull('archived_at')
             ->where('approval_status', '!=', 'rejected')
             ->whereDate('event_date', '=', $formattedDate);
 
@@ -462,9 +720,8 @@ class Event extends Model
         $sameDayEvents = $query->get();
 
         foreach ($sameDayEvents as $existingEvent) {
-            $existingLocation = trim(strtolower($existingEvent->location ?? ''));
-            if ($existingLocation === $cleanLocation || str_contains($existingLocation, $cleanLocation) || str_contains($cleanLocation, $existingLocation)) {
-                if (static::isTimeOverlapping($eventTime, (string) $existingEvent->event_time)) {
+            if (static::areLocationsConflicting($location, (string) ($existingEvent->location ?? ''))) {
+                if (static::areEventsOverlapping($targetEvent, $existingEvent)) {
                     return $existingEvent;
                 }
             }
@@ -516,8 +773,6 @@ class Event extends Model
             return collect();
         }
 
-        $cleanLocation = trim(strtolower((string) ($this->location ?? '')));
-
         $query = static::whereNull('archived_at')
             ->where('approval_status', '!=', 'rejected')
             ->where('id', '!=', $this->id)
@@ -525,11 +780,9 @@ class Event extends Model
 
         $sameDayEvents = $query->get();
 
-        return $sameDayEvents->filter(function (Event $other) use ($cleanLocation, $sameVenueOnly) {
-            if ($sameVenueOnly && $cleanLocation !== '') {
-                $otherLoc = trim(strtolower((string) ($other->location ?? '')));
-                $matchesLoc = ($otherLoc === $cleanLocation || str_contains($otherLoc, $cleanLocation) || str_contains($cleanLocation, $otherLoc));
-                if (! $matchesLoc) {
+        return $sameDayEvents->filter(function (Event $other) use ($sameVenueOnly) {
+            if ($sameVenueOnly) {
+                if (! static::areLocationsConflicting((string) $this->location, (string) $other->location)) {
                     return false;
                 }
             }

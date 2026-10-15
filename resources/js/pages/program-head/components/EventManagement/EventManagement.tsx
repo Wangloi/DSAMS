@@ -1,6 +1,7 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import {
     Activity,
+    AlertTriangle,
     Building2,
     Calendar,
     CalendarDays,
@@ -15,6 +16,11 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import Swal from 'sweetalert2';
+import {
+    findVenueConflict,
+    getBookedVenuesForDate,
+    areLocationsConflicting,
+} from '@/pages/admin-dashboard/events/venueConflictChecker';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -172,6 +178,25 @@ export default function EventManagement() {
     const [activityPlanFile, setActivityPlanFile] = useState<File | null>(null);
     const [isSubmittingPlan, setIsSubmittingPlan] = useState(false);
 
+    const activityPlanVenueConflict = useMemo(() => {
+        return findVenueConflict(
+            events || [],
+            activityPlanDate,
+            activityPlanLocation,
+            activityPlanTime || '08:00',
+            null,
+        );
+    }, [events, activityPlanDate, activityPlanLocation, activityPlanTime]);
+
+    const bookedVenuesOnDate = useMemo(() => {
+        return getBookedVenuesForDate(
+            events || [],
+            activityPlanDate,
+            activityPlanTime || '08:00',
+            null,
+        );
+    }, [events, activityPlanDate, activityPlanTime]);
+
     // Auto-select event from URL query params (e.g. from notifications)
     useMemo(() => {
         if (typeof window === 'undefined') return;
@@ -297,6 +322,16 @@ export default function EventManagement() {
                 text: 'Please provide event title, date, and venue location.',
                 icon: 'warning',
                 confirmButtonColor: '#1e40af',
+            });
+            return;
+        }
+
+        if (activityPlanVenueConflict.conflict) {
+            Swal.fire({
+                title: 'Venue Conflict Detected',
+                text: activityPlanVenueConflict.message,
+                icon: 'error',
+                confirmButtonColor: '#dc2626',
             });
             return;
         }
@@ -1020,8 +1055,61 @@ function formatToIsoStart(dateStr: string, timeStr: string): string {
                                         placeholder="e.g. Main Campus Gymnasium / AVR Hall 2"
                                         value={activityPlanLocation}
                                         onChange={(e) => setActivityPlanLocation(e.target.value)}
-                                        className="h-10 rounded-xl border border-slate-200 bg-white text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                        className={`h-10 rounded-xl border bg-white text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-white ${
+                                            activityPlanVenueConflict.conflict
+                                                ? 'border-rose-500 ring-1 ring-rose-500/20'
+                                                : 'border-slate-200'
+                                        }`}
                                     />
+                                    {activityPlanVenueConflict.conflict && (
+                                        <div className="mt-2 flex items-start gap-2.5 rounded-xl border border-rose-300 bg-rose-50 p-3 text-xs text-rose-800 shadow-sm dark:border-rose-800/70 dark:bg-rose-950/50 dark:text-rose-300">
+                                            <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
+                                            <div className="space-y-0.5">
+                                                <p className="font-bold text-rose-900 dark:text-rose-200">
+                                                    Venue Schedule Conflict Detected
+                                                </p>
+                                                <p>{activityPlanVenueConflict.message}</p>
+                                                <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium">
+                                                    Please choose an alternate venue or adjust the event date/time.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Quick Suggestions Chips */}
+                                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                                        <span className="text-[11px] text-slate-400">
+                                            Suggestions:
+                                        </span>
+                                        {[
+                                            'Gymnasium',
+                                            'Audio Visual Room (AVR)',
+                                            'Quadrangle / Grounds',
+                                            'Mother Ignacia Hall',
+                                            'Campus-Wide',
+                                        ].map((venue) => {
+                                            const isBooked = bookedVenuesOnDate.find((b) => areLocationsConflicting(b.venue, venue));
+                                            return (
+                                                <button
+                                                    key={venue}
+                                                    type="button"
+                                                    onClick={() => setActivityPlanLocation(venue)}
+                                                    className={`rounded-lg border px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                                                        isBooked
+                                                            ? 'border-amber-300 bg-amber-50/80 text-amber-800 hover:bg-amber-100 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-300'
+                                                            : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-blue-300 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                                                    }`}
+                                                >
+                                                    {venue}
+                                                    {isBooked && (
+                                                        <span className="ml-1 rounded bg-amber-200/80 px-1 py-0.5 text-[9px] font-bold text-amber-900 dark:bg-amber-900/60 dark:text-amber-200">
+                                                            Booked ({isBooked.schedule})
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-3">

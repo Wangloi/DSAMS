@@ -503,7 +503,7 @@ export default function EventEditModal({
                                                         <strong>Time-In Cut-off:</strong> Scans within <strong>1 hour after start time</strong> are recorded as <em>On-Time</em>. Scans after 1 hour will be marked as <strong>Late</strong>.
                                                     </li>
                                                     <li>
-                                                        <strong>Time-Out (Check-Out) Window:</strong> Time-out scanning starts <strong>30 minutes before event end time</strong>. Students cannot check out before this window.
+                                                        <strong>Time-Out (Check-Out) Window:</strong> Time-out is flexible and allows checkout anytime after check-in if an event ends early. Scheduled scanning closes 1 hour after event end time.
                                                     </li>
                                                 </ul>
                                             </div>

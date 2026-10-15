@@ -41,7 +41,7 @@ class Certificate extends Model
 
     public function event(): BelongsTo
     {
-        return $this->belongsTo(Event::class);
+        return $this->belongsTo(Event::class)->withoutGlobalScope('hide_program_head_events_from_admin');
     }
 
     public function evaluation(): BelongsTo

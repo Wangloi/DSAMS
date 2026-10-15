@@ -253,7 +253,7 @@ export default function EventViewModal({
                                 {regEnd}
                             </div>
                             <span className="text-[10px] font-medium text-blue-600 dark:text-blue-400">
-                                Time-out opens 30m prior
+                                Time-out is flexible
                             </span>
                         </div>
 

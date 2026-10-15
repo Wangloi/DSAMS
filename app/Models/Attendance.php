@@ -41,7 +41,7 @@ class Attendance extends Model
 
     public function event()
     {
-        return $this->belongsTo(Event::class);
+        return $this->belongsTo(Event::class)->withoutGlobalScope('hide_program_head_events_from_admin');
     }
 
     public function student()

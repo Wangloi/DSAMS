@@ -661,8 +661,8 @@ class ProgramHeadAttendanceController extends Controller
         }
 
         $now = Carbon::now();
-
-        $scanEval = $event->evaluateAttendanceScan($now, $existingAttendance);
+        $requestedMode = $request->input('mode') ?? $request->input('scan_type');
+        $scanEval = $event->evaluateAttendanceScan($now, $existingAttendance, $requestedMode);
         if (! $scanEval['allowed']) {
             return response()->json([
                 'message' => $scanEval['error_message'],

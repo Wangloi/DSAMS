@@ -70,6 +70,10 @@ class AdminEventsController extends Controller
             // Only include active (non-archived) events
             ->whereNull('archived_at');
 
+        // Program heads only manage their own events (admins never see program head events
+        // because of the global scope on the Event model).
+        $this->restrictToOwnEventsForProgramHead($query);
+
         if ($status === 'completed') {
             $query->orderBy('event_date', 'desc')->orderBy('event_time', 'desc');
         } else {
@@ -93,11 +97,14 @@ class AdminEventsController extends Controller
             ]);
         }
 
-        $allEvents = Event::whereNull('archived_at')->get();
+        $allEventsQuery = Event::whereNull('archived_at');
+        $this->restrictToOwnEventsForProgramHead($allEventsQuery);
+        $allEvents = $allEventsQuery->get();
 
         return inertia('admin-dashboard/events/index', [
             'events' => $events->items(),
             'allEvents' => $allEvents,
+            'conflictEvents' => $this->conflictEventsPayload(),
             'pagination' => [
                 'current_page' => $events->currentPage(),
                 'last_page' => $events->lastPage(),
@@ -113,6 +120,60 @@ class AdminEventsController extends Controller
         ]);
     }
 
+    /**
+     * Program heads can only see/manage events they created themselves.
+     */
+    private function restrictToOwnEventsForProgramHead($query): void
+    {
+        $programHeadId = Event::currentProgramHeadId();
+        if ($programHeadId === null) {
+            return;
+        }
+
+        if (Event::supportsCreatorTracking()) {
+            $query->createdByProgramHead($programHeadId);
+        } else {
+            // Column not migrated yet: never expose other events to program heads.
+            $query->whereRaw('1 = 0');
+        }
+    }
+
+    /**
+     * Authorize that a program head can only access/manage their own events.
+     */
+    private function authorizeEventAccess(Event $event): void
+    {
+        $programHeadId = Event::currentProgramHeadId();
+        if ($programHeadId !== null && Event::supportsCreatorTracking()) {
+            if ((int) $event->created_by_program_head_id !== $programHeadId) {
+                abort(403, 'Unauthorized access. You may only view or manage your own events.');
+            }
+        }
+    }
+
+    /**
+     * Minimal scheduling data of ALL active events (including program head events),
+     * used only for venue/time conflict detection in the create forms.
+     */
+    private function conflictEventsPayload(): array
+    {
+        return Event::withoutGlobalScopes()
+            ->whereNull('archived_at')
+            ->where('approval_status', '!=', 'rejected')
+            ->get(['id', 'event_name', 'location', 'event_date', 'event_time', 'registration_end_time', 'approval_status'])
+            ->map(fn (Event $e) => [
+                'id' => $e->id,
+                'event_name' => $e->event_name,
+                'location' => $e->location,
+                'event_date' => $e->event_date ? $e->event_date->format('Y-m-d') : '',
+                'event_time' => $e->event_time,
+                'registration_end_time' => $e->registration_end_time,
+                'approval_status' => $e->approval_status,
+            ])
+            ->values()
+            ->all();
+    }
+
     public function create()
     {
         return inertia('admin-dashboard/events/create', [
@@ -121,6 +182,7 @@ class AdminEventsController extends Controller
             'totalStudents' => Student::query()->count(),
             'studentCountsByCourseYear' => $this->studentCountsByCourseYear(),
             'announcements' => $this->publishedEventAnnouncements(),
+            'conflictEvents' => $this->conflictEventsPayload(),
         ]);
     }
 
@@ -186,11 +248,27 @@ class AdminEventsController extends Controller
         })));
 
         $location = $validated['location'] ?? 'Campus / Unspecified';
-        $conflict = Event::findScheduleConflict($validated['event_date'], $location, $validated['event_time']);
+        $conflict = Event::findScheduleConflict(
+            $validated['event_date'],
+            $location,
+            $validated['event_time'],
+            $validated['registration_end_time'] ?? null
+        );
         if ($conflict) {
+            $conflictSchedule = $conflict->event_time;
+            if (!empty($conflict->registration_end_time)) {
+                $conflictSchedule .= ' to ' . $conflict->registration_end_time;
+            }
+            $errorMsg = "Schedule & Venue Conflict! Venue '{$location}' is already booked on {$validated['event_date']} ({$conflictSchedule}) for '{$conflict->event_name}'.";
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'message' => $errorMsg,
+                    'errors' => ['location' => [$errorMsg]],
+                ], 422);
+            }
             return redirect()->back()->withErrors([
-                'location' => "Schedule Conflict! Venue '{$location}' is already booked on {$validated['event_date']} at {$conflict->event_time} for '{$conflict->event_name}'."
-            ])->with('error', "Schedule Conflict Detected! Venue '{$location}' is already booked on {$validated['event_date']} at {$conflict->event_time} for '{$conflict->event_name}'.");
+                'location' => $errorMsg,
+            ])->with('error', $errorMsg);
         }
 
         $event = Event::create([
@@ -210,6 +288,7 @@ class AdminEventsController extends Controller
             'attendance_type' => $validated['attendance_type'] ?? 'qr_scanner',
             'scanner_student_id' => $scannerStudentIds[0] ?? null,
             'scanner_student_ids' => $scannerStudentIds,
+            'created_by_program_head_id' => Event::currentProgramHeadId(),
         ]);
 
         // Generate QR code
@@ -247,6 +326,8 @@ class AdminEventsController extends Controller
 
     public function show(Event $event)
     {
+        $this->authorizeEventAccess($event);
+
         $event->load(['attendances.student', 'attendances.student.program']);
         // Ensure latitude/longitude are included even if model hides them
         $event->makeVisible(['geofence_latitude', 'geofence_longitude']);
@@ -257,6 +338,8 @@ class AdminEventsController extends Controller
 
     public function edit(Event $event)
     {
+        $this->authorizeEventAccess($event);
+
         return inertia('admin-dashboard/events/edit', [
             'event' => $event,
             'courses' => $this->studentCourseOptions(),
@@ -266,6 +349,8 @@ class AdminEventsController extends Controller
 
     public function update(Request $request, Event $event)
     {
+        $this->authorizeEventAccess($event);
+
         if (!$request->boolean('geofence_enabled')) {
             $request->merge([
                 'geofence_latitude' => null,
@@ -340,11 +425,28 @@ class AdminEventsController extends Controller
         }
 
         $location = $validated['location'] ?? 'Campus / Unspecified';
-        $conflict = Event::findScheduleConflict($validated['event_date'], $location, $validated['event_time'], $event->id);
+        $conflict = Event::findScheduleConflict(
+            $validated['event_date'],
+            $location,
+            $validated['event_time'],
+            $validated['registration_end_time'] ?? null,
+            $event->id
+        );
         if ($conflict) {
+            $conflictSchedule = $conflict->event_time;
+            if (!empty($conflict->registration_end_time)) {
+                $conflictSchedule .= ' to ' . $conflict->registration_end_time;
+            }
+            $errorMsg = "Schedule & Venue Conflict! Venue '{$location}' is already booked on {$validated['event_date']} ({$conflictSchedule}) for '{$conflict->event_name}'.";
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'message' => $errorMsg,
+                    'errors' => ['location' => [$errorMsg]],
+                ], 422);
+            }
             return redirect()->back()->withErrors([
-                'location' => "Schedule Conflict! Venue '{$location}' is already booked on {$validated['event_date']} at {$conflict->event_time} for '{$conflict->event_name}'."
-            ])->with('error', "Schedule Conflict Detected! Venue '{$location}' is already booked on {$validated['event_date']} at {$conflict->event_time} for '{$conflict->event_name}'.");
+                'location' => $errorMsg,
+            ])->with('error', $errorMsg);
         }
 
         $event->update([
@@ -387,6 +489,8 @@ class AdminEventsController extends Controller
 
     public function destroy(Event $event)
     {
+        $this->authorizeEventAccess($event);
+
         // Delete QR code if exists
         if ($event->qr_code) {
             Storage::disk('public')->delete($event->qr_code);
@@ -408,6 +512,8 @@ class AdminEventsController extends Controller
 
     public function archive(Event $event)
     {
+        $this->authorizeEventAccess($event);
+
         $event->update(['archived_at' => now()]);
 
         if (Schema::hasTable('activity_logs')) {
@@ -423,6 +529,8 @@ class AdminEventsController extends Controller
 
     public function unarchive(Event $event)
     {
+        $this->authorizeEventAccess($event);
+
         $event->update(['archived_at' => null]);
 
         if (Schema::hasTable('activity_logs')) {
@@ -438,6 +546,8 @@ class AdminEventsController extends Controller
 
     public function qrCode(Event $event)
     {
+        $this->authorizeEventAccess($event);
+
         if (!$event->qr_code) {
             return abort(404, 'QR code not found');
         }
@@ -472,8 +582,11 @@ class AdminEventsController extends Controller
             ->when($request->year_level, function ($q, $yearLevel) {
                 $q->whereJsonContains('year_levels', $yearLevel);
             })
-            ->whereNotNull('archived_at')
-            ->orderBy('event_date', 'desc')
+            ->whereNotNull('archived_at');
+
+        $this->restrictToOwnEventsForProgramHead($query);
+
+        $query->orderBy('event_date', 'desc')
             ->orderBy('event_time', 'desc');
 
         $events = $query->paginate(10);
@@ -496,6 +609,8 @@ class AdminEventsController extends Controller
 
     public function participantMonitoring(Event $event)
     {
+        $this->authorizeEventAccess($event);
+
         $event->load(['attendances.student', 'attendances.student.program']);
 
         $attendances = $event->attendances()
@@ -511,6 +626,8 @@ class AdminEventsController extends Controller
 
     public function attendanceAssignment(Event $event)
     {
+        $this->authorizeEventAccess($event);
+
         $event->load(['attendanceAssignment.student']);
         // Get eligible students based on event criteria
         $eligibleStudents = Student::where(function ($query) use ($event) {
@@ -531,6 +648,8 @@ class AdminEventsController extends Controller
 
     public function storeAttendanceAssignment(Request $request, Event $event)
     {
+        $this->authorizeEventAccess($event);
+
         $validated = $request->validate([
             'student_ids' => 'required|array',
             'student_ids.*' => 'exists:students,id',
@@ -725,10 +844,17 @@ class AdminEventsController extends Controller
 
     public function approveSchedule(Request $request, Event $event)
     {
-        $conflict = Event::findScheduleConflict((string) $event->event_date, (string) $event->location, (string) $event->event_time, $event->id);
+        $conflict = Event::findScheduleConflict(
+            (string) $event->event_date,
+            (string) $event->location,
+            (string) $event->event_time,
+            (string) ($event->registration_end_time ?? null),
+            $event->id
+        );
         if ($conflict) {
             $formattedDate = $event->event_date ? Carbon::parse($event->event_date)->format('Y-m-d') : '';
-            return redirect()->back()->with('error', "Cannot approve request! Venue '{$event->location}' is already booked on {$formattedDate} at {$conflict->event_time} for '{$conflict->event_name}'.");
+            $conflictSchedule = $conflict->event_time . (!empty($conflict->registration_end_time) ? ' to ' . $conflict->registration_end_time : '');
+            return redirect()->back()->with('error', "Cannot approve request! Venue '{$event->location}' is already booked on {$formattedDate} ({$conflictSchedule}) for '{$conflict->event_name}'.");
         }
 
         $event->update([

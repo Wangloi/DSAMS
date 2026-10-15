@@ -293,6 +293,15 @@ class ProgramHeadDashboardController extends Controller
             $eventsQuery->whereNull('archived_at');
         }
 
+        $programHead = auth()->guard('program_head')->user() ?: auth()->user();
+        $phId = is_object($programHead) ? (int) $programHead->id : Event::currentProgramHeadId();
+        if ($phId !== null && Event::supportsCreatorTracking()) {
+            $eventsQuery->where(function ($q) use ($phId) {
+                $q->whereNull('created_by_program_head_id')
+                  ->orWhere('created_by_program_head_id', $phId);
+            });
+        }
+
         $programStudentIds = [];
         if ($program !== '' && Schema::hasTable('students')) {
             $studentsQuery = Student::query()->where('is_archived', false);
@@ -349,6 +358,15 @@ class ProgramHeadDashboardController extends Controller
 
         if (Schema::hasColumn('events', 'archived_at')) {
             $eventsQuery->whereNull('archived_at');
+        }
+
+        $programHead = auth()->guard('program_head')->user() ?: auth()->user();
+        $phId = is_object($programHead) ? (int) $programHead->id : Event::currentProgramHeadId();
+        if ($phId !== null && Event::supportsCreatorTracking()) {
+            $eventsQuery->where(function ($q) use ($phId) {
+                $q->whereNull('created_by_program_head_id')
+                  ->orWhere('created_by_program_head_id', $phId);
+            });
         }
 
         $programStudentIds = [];

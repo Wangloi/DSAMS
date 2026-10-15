@@ -240,8 +240,9 @@ class AttendanceScannerService
             ->where('student_id', $student->id)
             ->first();
 
-        // Evaluate Time-In vs Late vs Time-Out based on event time windows
-        $scanEval = $event->evaluateAttendanceScan($now, $attendance);
+        // Evaluate Time-In vs Late vs Time-Out based on event time windows and requested mode
+        $requestedMode = $request->input('mode') ?? $request->input('scan_type');
+        $scanEval = $event->evaluateAttendanceScan($now, $attendance, $requestedMode);
         if (! $scanEval['allowed']) {
             if (Schema::hasTable('activity_logs')) {
                 ActivityLog::logForUser($scanner, 'Attendance', 'Denied', $scanEval['error_message'] . ' in event #' . $event->id, $request);

@@ -36,6 +36,8 @@ export default function AdminEventsIndex() {
         announcements = [],
         auth,
     } = props;
+    const conflictEvents: any[] =
+        ((props as any).conflictEvents as any[] | undefined) ?? allEvents;
 
     const isPersonnel =
         auth?.guard === 'program_head' ||
@@ -525,6 +527,7 @@ export default function AdminEventsIndex() {
                 open={isEventModalOpen}
                 onOpenChange={setIsEventModalOpen}
                 onClose={() => setIsEventModalOpen(false)}
+                existingEvents={conflictEvents}
                 onSubmit={(payload: CreateEventPayload) => {
                     if (modalMode === 'create') {
                         Swal.fire({
@@ -573,7 +576,7 @@ export default function AdminEventsIndex() {
                                     scanner_portal_active: true,
                                 };
 
-                                router.post(adminEvents(), sanitizedPayload, {
+                                router.post(baseEventsUrl, sanitizedPayload, {
                                     onSuccess: () => {
                                         setIsEventModalOpen(false);
                                         Swal.fire({
@@ -589,6 +592,7 @@ export default function AdminEventsIndex() {
                                             'Event creation errors:',
                                             errs,
                                         );
+                                        const isConflict = Boolean(errs?.location);
                                         const msg =
                                             errs &&
                                             typeof errs === 'object' &&
@@ -599,8 +603,9 @@ export default function AdminEventsIndex() {
                                                 : 'Failed to create event. Please check the form fields.';
                                         Swal.fire({
                                             icon: 'error',
-                                            title: 'Validation Error',
+                                            title: isConflict ? 'Venue Schedule Conflict' : 'Validation Error',
                                             html: msg,
+                                            confirmButtonColor: '#dc2626',
                                         });
                                     },
                                 });
@@ -693,6 +698,7 @@ export default function AdminEventsIndex() {
                                                 'Event update errors:',
                                                 errs,
                                             );
+                                            const isConflict = Boolean(errs?.location);
                                             const msg =
                                               errs &&
                                               typeof errs === 'object' &&
@@ -703,8 +709,9 @@ export default function AdminEventsIndex() {
                                                   : 'Failed to update event. Please check the form fields.';
                                             Swal.fire({
                                                 icon: 'error',
-                                                title: 'Validation Error',
+                                                title: isConflict ? 'Venue Schedule Conflict' : 'Validation Error',
                                                 html: msg,
+                                                confirmButtonColor: '#dc2626',
                                             });
                                         },
                                     },

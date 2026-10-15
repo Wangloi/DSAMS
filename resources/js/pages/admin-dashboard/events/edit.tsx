@@ -486,7 +486,7 @@ export default function EditEventPage() {
                                                             <strong>Time-In Cut-off:</strong> Attendance check-in is considered <em>On-Time</em> within <strong>1 hour after start time</strong>. Scans after 1 hour are marked as <strong>Late</strong>.
                                                         </li>
                                                         <li>
-                                                            <strong>Time-Out Start:</strong> Time-out (check-out) scanning begins <strong>30 minutes before end time</strong>. Students cannot check out before this window.
+                                                            <strong>Time-Out (Check-Out) Window:</strong> Time-out is flexible and allows checkout anytime after check-in if an event ends early. Scheduled scanning closes 1 hour after event end time.
                                                         </li>
                                                     </ul>
                                                 </div>

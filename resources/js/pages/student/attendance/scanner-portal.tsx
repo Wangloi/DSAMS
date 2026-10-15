@@ -813,7 +813,7 @@ export default function StudentAttendanceScannerPortalPage({
                             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-blue-100/90 font-medium mt-0.5">
                                 <span>{event.date || 'Today'}</span>
                                 {event.timeIn && <span>• In: {formatTime12h(event.timeIn)} (Cut-off: 1h)</span>}
-                                {event.timeEnd && <span>• Out: {formatTime12h(event.timeEnd)} (Opens 30m prior)</span>}
+                                {event.timeEnd && <span>• Out: Flexible (Until {formatTime12h(event.timeEnd)})</span>}
                                 {event.location && <span>• {event.location}</span>}
                             </div>
                         </div>
@@ -950,7 +950,7 @@ export default function StudentAttendanceScannerPortalPage({
                                     {event.timeEnd && (
                                         <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-3 py-1 font-semibold text-white backdrop-blur-md">
                                             <LogOut className="h-3.5 w-3.5 text-rose-300" />
-                                            Out: {formatTime12h(event.timeEnd)} (Opens 30m prior)
+                                            Out: Flexible (Until {formatTime12h(event.timeEnd)})
                                         </span>
                                     )}
                                     {event.location && (

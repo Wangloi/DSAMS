@@ -19,7 +19,7 @@ class ProgramHeadEventsController extends Controller
         $programHead = auth()->guard('program_head')->user();
         $program = is_object($programHead) ? (string) ($programHead->program ?? '') : '';
 
-        $events = $this->getEvents($program);
+        $events = $this->getEvents($program, $programHead?->id ? (int) $programHead->id : null);
 
         return Inertia::render('program-head/CalendarEvents', [
             'events' => $events,
@@ -45,11 +45,26 @@ class ProgramHeadEventsController extends Controller
         ]);
 
         // Check for schedule conflict at venue/time
-        $conflict = Event::findScheduleConflict($validated['event_date'], $validated['location'], $validated['event_time']);
+        $conflict = Event::findScheduleConflict(
+            $validated['event_date'],
+            $validated['location'],
+            $validated['event_time']
+        );
         if ($conflict) {
+            $conflictSchedule = $conflict->event_time;
+            if (!empty($conflict->registration_end_time)) {
+                $conflictSchedule .= ' to ' . $conflict->registration_end_time;
+            }
+            $errorMsg = "Schedule & Venue Conflict! Venue '{$validated['location']}' is already booked on {$validated['event_date']} ({$conflictSchedule}) for '{$conflict->event_name}'.";
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'message' => $errorMsg,
+                    'errors' => ['location' => [$errorMsg]],
+                ], 422);
+            }
             return redirect()->back()->withErrors([
-                'location' => "Schedule Conflict! Venue '{$validated['location']}' is already booked on {$validated['event_date']} at {$conflict->event_time} for '{$conflict->event_name}'."
-            ])->with('error', "Schedule Conflict Detected! Venue '{$validated['location']}' is already booked on {$validated['event_date']} at {$conflict->event_time} for '{$conflict->event_name}'.");
+                'location' => $errorMsg,
+            ])->with('error', $errorMsg);
         }
 
         $activityPlanPath = null;
@@ -84,6 +99,7 @@ class ProgramHeadEventsController extends Controller
             'approval_status' => 'pending',
             'activity_plan_path' => $activityPlanPath,
             'requested_by' => $requesterLabel,
+            'created_by_program_head_id' => $programHead?->id ?? Event::currentProgramHeadId(),
         ];
 
         $event = Event::create($eventData);
@@ -99,13 +115,16 @@ class ProgramHeadEventsController extends Controller
         return redirect()->back()->with('success', 'Activity plan schedule request submitted successfully! Pending administrator approval.');
     }
 
-    private function getEvents(string $program): array
+    private function getEvents(string $program, ?int $programHeadId = null): array
     {
         if (!Schema::hasTable('events')) {
             return [];
         }
 
         $eventsQuery = Event::query()->whereNull('archived_at');
+        if ($programHeadId !== null && Event::supportsCreatorTracking()) {
+            $eventsQuery->createdByProgramHead($programHeadId);
+        }
 
         return $eventsQuery
             ->orderBy('event_date')

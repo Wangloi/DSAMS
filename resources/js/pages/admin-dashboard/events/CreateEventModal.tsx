@@ -12,6 +12,7 @@ import {
 import {
     Calendar,
     Check,
+    AlertTriangle,
     ChevronLeft,
     ChevronRight,
     Clock,
@@ -29,6 +30,11 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { dedupeCourseRows } from './mergeCourseYearOptions';
+import {
+    findVenueConflict,
+    getBookedVenuesForDate,
+    areLocationsConflicting,
+} from './venueConflictChecker';
 
 export type CreateEventPayload = {
     eventName: string;
@@ -124,6 +130,7 @@ type Props = {
     }>;
     mode?: 'create' | 'edit';
     initialEvent?: Record<string, any> | null;
+    existingEvents?: any[];
 };
 
 const DRAFT_KEY = 'dsams_create_event_draft_v1';
@@ -170,6 +177,7 @@ export default function CreateEventModal({
     announcements,
     mode = 'create',
     initialEvent,
+    existingEvents = [],
 }: Props) {
     const [formData, setFormData] = useState<CreateEventPayload>({
         eventName: '',
@@ -200,6 +208,40 @@ export default function CreateEventModal({
         () => dedupeCourseRows(courses),
         [courses],
     );
+
+    const venueConflict = useMemo(() => {
+        return findVenueConflict(
+            existingEvents,
+            formData.eventDate,
+            formData.location,
+            formData.eventTime,
+            formData.registrationEndTime,
+            initialEvent?.id,
+        );
+    }, [
+        existingEvents,
+        formData.eventDate,
+        formData.location,
+        formData.eventTime,
+        formData.registrationEndTime,
+        initialEvent?.id,
+    ]);
+
+    const bookedVenuesOnDate = useMemo(() => {
+        return getBookedVenuesForDate(
+            existingEvents,
+            formData.eventDate,
+            formData.eventTime,
+            formData.registrationEndTime,
+            initialEvent?.id,
+        );
+    }, [
+        existingEvents,
+        formData.eventDate,
+        formData.eventTime,
+        formData.registrationEndTime,
+        initialEvent?.id,
+    ]);
 
     const [scannerStudentQuery, setScannerStudentQuery] = useState('');
     const [scannerSearchResults, setScannerSearchResults] = useState<
@@ -624,6 +666,8 @@ export default function CreateEventModal({
         } else if (step === 2) {
             if (!formData.location.trim()) {
                 errors.location = 'Event venue / location name is required';
+            } else if (venueConflict.conflict) {
+                errors.location = venueConflict.message || 'Venue is already booked for this schedule.';
             }
         }
 
@@ -1203,12 +1247,7 @@ export default function CreateEventModal({
                                                         )}. Scans recorded after 1 hour will be marked as <strong>Late</strong>.
                                                     </li>
                                                     <li>
-                                                        <strong>Time-Out (Check-Out) Window:</strong> Time-out scanning starts <strong>30 minutes before event end time</strong>
-                                                        {formData.registrationEndTime && (
-                                                            <span className="font-medium text-blue-700 dark:text-blue-400">
-                                                                {' '}(opens at {getFormattedTimeOutStart(formData.registrationEndTime)})
-                                                            </span>
-                                                        )}. Students cannot check out before this window.
+                                                        <strong>Time-Out (Check-Out) Window:</strong> Time-out is flexible and allows checkout anytime after check-in if an event ends early. Scheduled scanning closes 1 hour after event end time.
                                                     </li>
                                                 </ul>
                                             </div>
@@ -1346,12 +1385,27 @@ export default function CreateEventModal({
                                         }}
                                         placeholder="e.g. Gymnasium, Audio Visual Room (AVR), Campus-Wide"
                                         className={`h-10 rounded-xl text-xs dark:border-slate-700 dark:bg-slate-800 ${
-                                            validationErrors.location
-                                                ? 'border-rose-500 focus-visible:ring-rose-500'
+                                            validationErrors.location || venueConflict.conflict
+                                                ? 'border-rose-500 focus-visible:ring-rose-500 ring-1 ring-rose-500/20'
                                                 : ''
                                         }`}
                                         required
                                     />
+
+                                    {venueConflict.conflict && (
+                                        <div className="flex items-start gap-2.5 rounded-xl border border-rose-300 bg-rose-50 p-3 text-xs text-rose-800 shadow-sm dark:border-rose-800/70 dark:bg-rose-950/50 dark:text-rose-300">
+                                            <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
+                                            <div className="space-y-0.5">
+                                                <p className="font-bold text-rose-900 dark:text-rose-200">
+                                                    Venue Schedule Conflict Detected
+                                                </p>
+                                                <p>{venueConflict.message}</p>
+                                                <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium">
+                                                    Please choose an alternate venue or adjust the event schedule.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Quick Suggestions Chips */}
                                     <div className="flex flex-wrap items-center gap-1.5 pt-1">
@@ -1364,33 +1418,45 @@ export default function CreateEventModal({
                                             'Quadrangle / Grounds',
                                             'Mother Ignacia Hall',
                                             'Campus-Wide',
-                                        ].map((venue) => (
-                                            <button
-                                                key={venue}
-                                                type="button"
-                                                onClick={() => {
-                                                    setFormData((prev) => ({
-                                                        ...prev,
-                                                        location: venue,
-                                                        geofenceLatitude: '8.743070',
-                                                        geofenceLongitude: '124.774500',
-                                                        geofenceRadiusM: '300',
-                                                    }));
-                                                    if (validationErrors.location) {
-                                                        setValidationErrors((prev) => {
-                                                            const copy = { ...prev };
-                                                            delete copy.location;
-                                                            return copy;
-                                                        });
-                                                    }
-                                                }}
-                                                className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-600 transition-colors hover:border-blue-300 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-                                            >
-                                                {venue}
-                                            </button>
-                                        ))}
+                                        ].map((venue) => {
+                                            const isBooked = bookedVenuesOnDate.find((b) => areLocationsConflicting(b.venue, venue));
+                                            return (
+                                                <button
+                                                    key={venue}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setFormData((prev) => ({
+                                                            ...prev,
+                                                            location: venue,
+                                                            geofenceLatitude: '8.743070',
+                                                            geofenceLongitude: '124.774500',
+                                                            geofenceRadiusM: '300',
+                                                        }));
+                                                        if (validationErrors.location) {
+                                                            setValidationErrors((prev) => {
+                                                                const copy = { ...prev };
+                                                                delete copy.location;
+                                                                return copy;
+                                                            });
+                                                        }
+                                                    }}
+                                                    className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                                                        isBooked
+                                                            ? 'border-amber-300 bg-amber-50/80 text-amber-800 hover:bg-amber-100 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-300'
+                                                            : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-blue-300 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                                                    }`}
+                                                >
+                                                    {venue}
+                                                    {isBooked && (
+                                                        <span className="ml-1 rounded bg-amber-200/80 px-1 py-0.5 text-[9px] font-bold text-amber-900 dark:bg-amber-900/60 dark:text-amber-200">
+                                                            Booked ({isBooked.schedule})
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
                                     </div>
-                                    {validationErrors.location && (
+                                    {validationErrors.location && !venueConflict.conflict && (
                                         <p className="text-xs font-medium text-rose-500">
                                             {validationErrors.location}
                                         </p>

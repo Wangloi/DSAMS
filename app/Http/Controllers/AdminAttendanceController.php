@@ -22,9 +22,19 @@ class AdminAttendanceController extends Controller
     {
         try {
             // Get only active (non-archived) events with search and filter parameters
-            $eventModels = Event::query()
+            $eventQuery = Event::query()
                 ->active() // Only show non-archived events
-                ->withCount('attendances') // Load attendance count
+                ->withCount('attendances'); // Load attendance count
+
+            $programHeadId = Event::currentProgramHeadId();
+            if ($programHeadId !== null && Event::supportsCreatorTracking()) {
+                $eventQuery->where(function ($q) use ($programHeadId) {
+                    $q->whereNull('created_by_program_head_id')
+                      ->orWhere('created_by_program_head_id', $programHeadId);
+                });
+            }
+
+            $eventModels = $eventQuery
                 ->when(request('search'), function ($query, $search) {
                     $query->search($search);
                 })
@@ -572,7 +582,8 @@ class AdminAttendanceController extends Controller
             return response()->json(['message' => 'Student has already timed out (checked out) for this event.'], 409);
         }
 
-        $scanEval = $event->evaluateAttendanceScan($now, $existingAttendance);
+        $requestedMode = $request->input('mode') ?? $request->input('scan_type');
+        $scanEval = $event->evaluateAttendanceScan($now, $existingAttendance, $requestedMode);
         if (! $scanEval['allowed']) {
             return response()->json([
                 'message' => $scanEval['error_message'],

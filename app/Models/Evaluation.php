@@ -29,7 +29,7 @@ class Evaluation extends Model
 
     public function eventRecord()
     {
-        return $this->belongsTo(Event::class, 'event_id');
+        return $this->belongsTo(Event::class, 'event_id')->withoutGlobalScope('hide_program_head_events_from_admin');
     }
 
     public function responses()
