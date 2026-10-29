@@ -48,6 +48,27 @@
         <div class="meta">Generated: {{ now()->format('Y-m-d H:i') }}</div>
     </div>
 
+    @if(isset($attendanceSummary) && is_array($attendanceSummary) && ($attendanceSummary['total_events'] ?? 0) > 0)
+        <div style="display: flex; gap: 12px; margin: 12px 0 16px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px 16px;">
+            <div style="flex: 1; border-right: 1px solid #e2e8f0; padding-right: 12px;">
+                <div style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: bold; letter-spacing: 0.5px;">Overall Attendance Rate</div>
+                <div style="font-size: 22px; font-weight: 800; color: #1e3a8a; margin-top: 2px;">{{ $attendanceSummary['overall_percentage'] }}%</div>
+            </div>
+            <div style="flex: 1; border-right: 1px solid #e2e8f0; padding-right: 12px;">
+                <div style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: bold; letter-spacing: 0.5px;">Total Events</div>
+                <div style="font-size: 20px; font-weight: 700; color: #0f172a; margin-top: 2px;">{{ $attendanceSummary['total_events'] }}</div>
+            </div>
+            <div style="flex: 1; border-right: 1px solid #e2e8f0; padding-right: 12px;">
+                <div style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: bold; letter-spacing: 0.5px;">Total Expected Turnout</div>
+                <div style="font-size: 20px; font-weight: 700; color: #0f172a; margin-top: 2px;">{{ $attendanceSummary['total_expected'] }}</div>
+            </div>
+            <div style="flex: 1;">
+                <div style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: bold; letter-spacing: 0.5px;">Actual Attendees</div>
+                <div style="font-size: 20px; font-weight: 700; color: #0f172a; margin-top: 2px;">{{ $attendanceSummary['total_attended'] }}</div>
+            </div>
+        </div>
+    @endif
+
     <table>
         <thead>
             <tr>
@@ -58,7 +79,10 @@
         </thead>
         <tbody>
             @forelse($rows as $r)
-                <tr>
+                @php
+                    $isSummaryRow = isset($r[0]) && $r[0] === 'OVERALL SUMMARY';
+                @endphp
+                <tr style="{{ $isSummaryRow ? 'background: #f1f5f9; font-weight: bold; border-top: 2px solid #0f172a;' : '' }}">
                     @foreach($r as $cell)
                         <td>{{ $cell }}</td>
                     @endforeach
@@ -70,6 +94,19 @@
             @endforelse
         </tbody>
     </table>
+
+    <div style="display: flex; justify-content: space-between; margin-top: 48px; padding-top: 16px; page-break-inside: avoid;">
+        <div style="text-align: center; width: 220px;">
+            <div style="border-bottom: 1px solid #334155; height: 32px;"></div>
+            <div style="font-size: 11px; font-weight: bold; margin-top: 6px;">Prepared By</div>
+            <div style="font-size: 10px; color: #64748b;">OSA Records & Attendance Officer</div>
+        </div>
+        <div style="text-align: center; width: 220px;">
+            <div style="border-bottom: 1px solid #334155; height: 32px;"></div>
+            <div style="font-size: 11px; font-weight: bold; margin-top: 6px;">Verified & Approved By</div>
+            <div style="font-size: 10px; color: #64748b;">Director of Student Affairs</div>
+        </div>
+    </div>
 
     <div class="note">Tip: Use your browser Print dialog and choose “Save as PDF” to export a PDF.</div>
 

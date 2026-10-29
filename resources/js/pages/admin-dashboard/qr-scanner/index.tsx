@@ -2075,8 +2075,8 @@ export default function AdminQrScannerPage({
                         open={showCourseStudentsModal}
                         onOpenChange={setShowCourseStudentsModal}
                     >
-                        <DialogContent className="max-h-[85vh] w-[96vw] !max-w-6xl overflow-hidden rounded-[2rem] border-slate-200 bg-white p-0 shadow-2xl dark:border-slate-800 dark:bg-[#0B192C]">
-                            <DialogHeader className="border-b border-slate-50 bg-slate-50/30 px-8 py-6 dark:border-slate-800/50 dark:bg-slate-900/30">
+                        <DialogContent size="2xl" className="max-h-[85vh] w-[96vw] overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-0 shadow-2xl dark:border-slate-800 dark:bg-[#0B192C]">
+                            <DialogHeader className="border-b border-slate-100 bg-slate-50/50 px-8 py-6 pr-14 dark:border-slate-800/50 dark:bg-slate-900/30">
                                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                     <div className="flex items-center gap-3">
                                         <div className="rounded-xl bg-blue-600/10 p-2.5 text-blue-600 dark:bg-blue-600/20 dark:text-blue-400">

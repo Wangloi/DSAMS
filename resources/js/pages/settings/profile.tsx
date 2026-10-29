@@ -17,7 +17,7 @@ import SettingsPageLayout from '@/layouts/settings/settings-page-layout';
 import type { SharedData } from '@/types';
 import { Transition } from '@headlessui/react';
 import { Form, Link, usePage } from '@inertiajs/react';
-import { AlertCircle, CheckCircle2, Mail, UserRound } from 'lucide-react';
+import { AlertCircle, CheckCircle2, FileText, Mail, UserRound } from 'lucide-react';
 
 const inputClassName =
     'h-11 border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-900 dark:text-white focus-visible:border-[#23509A] focus-visible:ring-[#23509A]/20';
@@ -94,6 +94,34 @@ export default function Profile({
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Student Information Sheet card for students */}
+            {(roleLabel === 'Student' || (user as any)?.role === 'student' || Boolean((user as any)?.student_id)) && (
+                <Card className="overflow-hidden border-blue-200 bg-gradient-to-r from-blue-50/80 via-white to-blue-50/50 shadow-sm dark:border-blue-900/40 dark:bg-gradient-to-r dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/20">
+                    <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-start gap-3.5">
+                            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#0b2d66] text-white shadow-sm dark:bg-blue-600">
+                                <FileText className="h-5 w-5" />
+                            </div>
+                            <div className="space-y-0.5">
+                                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                                    Student Information Sheet
+                                </h3>
+                                <p className="text-xs text-slate-600 dark:text-slate-400">
+                                    Official institutional record on file with the Office of Student Affairs. View complete profile and update contact or academic background.
+                                </p>
+                            </div>
+                        </div>
+                        <Link
+                            href="/student/information-sheet"
+                            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#0b2d66] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-[#08204a] active:scale-95 dark:bg-blue-600 dark:hover:bg-blue-700"
+                        >
+                            <FileText className="h-3.5 w-3.5" />
+                            View Information Sheet
+                        </Link>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Profile form — clear labels, immediate feedback */}
             <Card className="border-slate-200/80 shadow-sm dark:border-slate-700 dark:bg-slate-900">

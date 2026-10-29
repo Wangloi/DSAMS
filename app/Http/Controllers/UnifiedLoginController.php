@@ -16,8 +16,8 @@ class UnifiedLoginController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        $identifier = $request->input('identifier');
-        $password = $request->input('password');
+        $identifier = trim((string) $request->input('identifier'));
+        $password = (string) $request->input('password');
         $remember = $request->boolean('remember');
 
         // List of guards to try
@@ -33,25 +33,34 @@ class UnifiedLoginController extends Controller
             'program_head' => 'Login successful! Welcome back, Program Head!',
         ];
 
-        // Try student guard first with student_id, then with email
-        if (Auth::guard('student')->attempt(['student_id' => $identifier, 'password' => $password], $remember)) {
-            $user = Auth::guard('student')->user();
-            if ($user->verification_status === 'rejected' || $user->status === 'rejected') {
-                Auth::guard('student')->logout();
-                throw ValidationException::withMessages([
-                    'identifier' => 'Your registration has been rejected. Please contact the administrator.',
-                ]);
+        // 1. Resolve student authentication: allow logging in with raw student ID (without 'ID-'), with 'ID-', or via email
+        $studentAttempt = false;
+        if (!str_contains($identifier, '@')) {
+            $rawId = $identifier;
+            $stripped = preg_replace('/^ID-/i', '', $rawId);
+            $withPrefix = 'ID-' . $stripped;
+
+            $candidateStudent = \App\Models\Student::where(function ($q) use ($rawId, $stripped, $withPrefix) {
+                $q->where('student_id', $rawId)
+                  ->orWhere('student_id', $withPrefix)
+                  ->orWhere('student_id', $stripped)
+                  ->orWhereRaw('UPPER(student_id) = ?', [strtoupper($withPrefix)])
+                  ->orWhereRaw('UPPER(student_id) = ?', [strtoupper($stripped)]);
+            })->first();
+
+            if ($candidateStudent && \Illuminate\Support\Facades\Hash::check($password, $candidateStudent->password)) {
+                Auth::guard('student')->login($candidateStudent, $remember);
+                $studentAttempt = true;
             }
-            // Check for two-factor authentication
-            if ($redirect = TwoFactorLoginHelper::redirectIfTwoFactorEnabled($request, $user, 'student', $remember)) {
-                return $redirect;
-            }
-            $request->session()->regenerate();
-            $request->session()->flash('status', $successMessages['student']);
-            $request->session()->flash('success', $successMessages['student']);
-            return redirect($dashboardRoutes['student']);
         }
-        if (Auth::guard('student')->attempt(['email' => $identifier, 'password' => $password], $remember)) {
+
+        // Fallback attempt with student guard by student_id or email
+        if (!$studentAttempt) {
+            $studentAttempt = Auth::guard('student')->attempt(['student_id' => $identifier, 'password' => $password], $remember)
+                || Auth::guard('student')->attempt(['email' => $identifier, 'password' => $password], $remember);
+        }
+
+        if ($studentAttempt) {
             $user = Auth::guard('student')->user();
             if ($user->verification_status === 'rejected' || $user->status === 'rejected') {
                 Auth::guard('student')->logout();
@@ -59,10 +68,27 @@ class UnifiedLoginController extends Controller
                     'identifier' => 'Your registration has been rejected. Please contact the administrator.',
                 ]);
             }
-            // Check for two-factor authentication
-            if ($redirect = TwoFactorLoginHelper::redirectIfTwoFactorEnabled($request, $user, 'student', $remember)) {
-                return $redirect;
+            // Enforce One Device, One Account Policy
+            try {
+                if (class_exists(\App\Services\Auth\DeviceBindingService::class)) {
+                    app(\App\Services\Auth\DeviceBindingService::class)->enforceDeviceBinding($user, $request);
+                }
+            } catch (ValidationException $e) {
+                Auth::guard('student')->logout();
+                throw $e;
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Device binding check skipped due to error: ' . $e->getMessage());
             }
+
+            // Check for two-factor authentication
+            try {
+                if ($redirect = TwoFactorLoginHelper::redirectIfTwoFactorEnabled($request, $user, 'student', $remember)) {
+                    return $redirect;
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('TwoFactor check skipped due to error: ' . $e->getMessage());
+            }
+
             $request->session()->regenerate();
             $request->session()->flash('status', $successMessages['student']);
             $request->session()->flash('success', $successMessages['student']);
@@ -72,19 +98,31 @@ class UnifiedLoginController extends Controller
         // Try admin guard with email
         if (Auth::guard('admin')->attempt(['email' => $identifier, 'password' => $password], $remember)) {
             $admin = Auth::guard('admin')->user();
-            if ($admin->isHandoverExpired() || $admin->is_active === false) {
-                if ($admin->is_active !== false) {
-                    $admin->update(['is_active' => false]);
+            try {
+                if (method_exists($admin, 'isHandoverExpired') && ($admin->isHandoverExpired() || $admin->is_active === false)) {
+                    if ($admin->is_active !== false) {
+                        $admin->update(['is_active' => false]);
+                    }
+                    Auth::guard('admin')->logout();
+                    throw ValidationException::withMessages([
+                        'identifier' => 'This administrator account has expired following the 3-day handover transition period. Please sign in using the new administrator account.',
+                    ]);
                 }
-                Auth::guard('admin')->logout();
-                throw ValidationException::withMessages([
-                    'identifier' => 'This administrator account has expired following the 3-day handover transition period. Please sign in using the new administrator account.',
-                ]);
+            } catch (ValidationException $e) {
+                throw $e;
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Admin handover check error: ' . $e->getMessage());
             }
+
             // Check for two-factor authentication
-            if ($redirect = TwoFactorLoginHelper::redirectIfTwoFactorEnabled($request, $admin, 'admin', $remember)) {
-                return $redirect;
+            try {
+                if ($redirect = TwoFactorLoginHelper::redirectIfTwoFactorEnabled($request, $admin, 'admin', $remember)) {
+                    return $redirect;
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Admin TwoFactor check error: ' . $e->getMessage());
             }
+
             $request->session()->regenerate();
             $request->session()->flash('status', $successMessages['admin']);
             $request->session()->flash('success', $successMessages['admin']);
@@ -104,9 +142,14 @@ class UnifiedLoginController extends Controller
                 ]);
             }
             // Check for two-factor authentication
-            if ($redirect = TwoFactorLoginHelper::redirectIfTwoFactorEnabled($request, $user, 'program_head', $remember)) {
-                return $redirect;
+            try {
+                if ($redirect = TwoFactorLoginHelper::redirectIfTwoFactorEnabled($request, $user, 'program_head', $remember)) {
+                    return $redirect;
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('ProgramHead TwoFactor check error: ' . $e->getMessage());
             }
+
             $request->session()->regenerate();
             $request->session()->flash('status', $successMessages['program_head']);
             $request->session()->flash('success', $successMessages['program_head']);

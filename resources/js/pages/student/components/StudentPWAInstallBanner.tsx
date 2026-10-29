@@ -128,7 +128,7 @@ export function StudentPWAInstallBanner() {
                     <button
                         type="button"
                         onClick={handleDismiss}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-white/70 transition-colors hover:bg-white/15 hover:text-white"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-red-300 transition-colors hover:bg-red-500/20 hover:text-red-100 cursor-pointer"
                         aria-label="Dismiss banner"
                     >
                         <X className="h-4 w-4" />

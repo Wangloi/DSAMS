@@ -19,9 +19,17 @@ class SecurityAudit
         $route = $request->route();
         $routeName = $route ? $route->getName() : null;
 
-        // Skip if route is excluded from auditing
+        // Skip if route is excluded from auditing or is a high-frequency read-only polling endpoint
         $excluded = config('audit.excluded_routes', []);
-        if ($routeName && in_array($routeName, $excluded)) {
+        if ($routeName) {
+            foreach ($excluded as $pattern) {
+                if ($routeName === $pattern || fnmatch($pattern, $routeName)) {
+                    return $response;
+                }
+            }
+        }
+
+        if ($request->isMethod('GET') && ($request->is('*/logs*') || $request->is('*/dynamic-qr-token*'))) {
             return $response;
         }
 
@@ -65,20 +73,28 @@ class SecurityAudit
             'device'   => $request->header('User-Agent'),
         ];
 
-        // Dispatch audit log
-        Audit::log($routeName ?? 'unknown', $payload);
+        // Dispatch audit log safely so logging errors never fail the user request
+        try {
+            Audit::log($routeName ?? 'unknown', $payload);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('SecurityAudit dispatch failed: ' . $e->getMessage());
+        }
 
 
         // Track failed login attempts
         if ($routeName === 'login' && $response->getStatusCode() === 401) {
-            $key = $actor ? $actor->id : $request->ip();
-            $redisKey = config('audit.redis_prefixes.login_failed') . ':' . $key;
+            try {
+                $key = $actor ? $actor->id : $request->ip();
+                $redisKey = config('audit.redis_prefixes.login_failed') . ':' . $key;
 
-            Redis::incr($redisKey);
-            Redis::expire(
-                $redisKey,
-                config('audit.thresholds.login_failed.window')
-            );
+                Redis::incr($redisKey);
+                Redis::expire(
+                    $redisKey,
+                    config('audit.thresholds.login_failed.window')
+                );
+            } catch (\Throwable) {
+                // Redis is not active/available on shared hosting
+            }
         }
 
         // Additional patterns can be added similarly

@@ -61,7 +61,9 @@ class AdminIncidentsViolationsController extends Controller
                         'date' => $date ? $date->format('Y-m-d') : null,
                         'time' => $time ? $time->format('H:i') : null,
                         'location' => $incident->location,
-                        'reportedBy' => $incident->reported_by,
+                        'reportedBy' => (!empty($incident->investigation_details['is_anonymous']) || str_contains(strtolower((string) $incident->reported_by), 'anonymous'))
+                            ? 'Anonymous Student'
+                            : $incident->reported_by,
                         'studentsInvolved' => $studentsNormalized,
                         'description' => $incident->description,
                         'immediateAction' => $incident->immediate_action,
@@ -100,13 +102,16 @@ class AdminIncidentsViolationsController extends Controller
             'status' => ['sometimes', 'in:Ongoing,Pending,Resolved,Escalated'],
         ]);
 
+        $admin = auth()->guard('admin')->user();
+        $defaultAdminReporter = $admin ? ($admin->name . ($admin->role ? " ({$admin->role})" : " (OSA Officer)")) : 'Office of Student Affairs';
+
         $incident = $disciplinaryService->createIncident([
             'violation_id' => $validated['violation_id'] ?? null,
             'incident_type' => $validated['incident_type'],
             'incident_date' => $validated['incident_date'],
             'incident_time' => $validated['incident_time'],
             'location' => $validated['location'],
-            'reported_by' => $validated['reported_by'] ?? null,
+            'reported_by' => !empty($validated['reported_by']) ? $validated['reported_by'] : $defaultAdminReporter,
             'students_involved' => $validated['students_involved'] ?? [],
             'description' => $validated['description'],
             'immediate_action' => $validated['immediate_action'] ?? null,
@@ -883,7 +888,9 @@ class AdminIncidentsViolationsController extends Controller
                 'date' => $date ? $date->format('Y-m-d') : null,
                 'time' => $time ? $time->format('H:i') : null,
                 'location' => $incident->location,
-                'reportedBy' => $incident->reported_by,
+                'reportedBy' => (!empty($incident->investigation_details['is_anonymous']) || str_contains(strtolower((string) $incident->reported_by), 'anonymous'))
+                    ? 'Anonymous Student'
+                    : $incident->reported_by,
                 'studentsInvolved' => $studentsNormalized,
                 'description' => $incident->description,
                 'immediateAction' => $incident->immediate_action,
@@ -892,7 +899,19 @@ class AdminIncidentsViolationsController extends Controller
                 'calling_phase' => $callingPhase,
                 'receivedBy' => $incident->received_by,
                 'evidencePaths' => $incident->evidence_paths ?? [],
-                'investigationDetails' => $incident->investigation_details ?? null,
+                'investigationDetails' => (function () use ($incident) {
+                    $details = $incident->investigation_details;
+                    if (is_array($details) && !empty($details['is_anonymous'])) {
+                        // Shield confidential reporter identity from authorized report viewers according to privacy rules
+                        $details['restricted_audit'] = [
+                            'is_anonymous' => true,
+                            'status' => 'Masked under privacy policy',
+                            'notice' => 'Reporter identity is shielded under student privacy rules. System accountability audit is stored in internal logs.',
+                            'submitted_at' => $details['restricted_audit']['submitted_at'] ?? null,
+                        ];
+                    }
+                    return $details;
+                })(),
                 'callingNoticeSentAt' => $incident->calling_notice_sent_at ? (\Illuminate\Support\Carbon::parse($incident->calling_notice_sent_at)->toISOString()) : null,
                 'callingNoticeDetails' => $incident->calling_notice_details ?? null,
                 'actionData' => $incident->action_data ?? null,

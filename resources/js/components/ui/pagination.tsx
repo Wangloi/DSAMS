@@ -39,7 +39,7 @@ export default function Pagination({
                             onChange={(e) =>
                                 onPageSizeChange(Number(e.target.value))
                             }
-                            className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 shadow-xs focus:border-blue-500 focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                            className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 shadow-xs cursor-pointer focus:border-blue-500 focus:outline-hidden dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                         >
                             <option value={5}>5</option>
                             <option value={10}>10</option>
@@ -60,7 +60,7 @@ export default function Pagination({
                         className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
                             currentPage === 1
                                 ? 'cursor-not-allowed text-slate-300 dark:text-slate-600'
-                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
+                                : 'cursor-pointer text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
                         }`}
                     >
                         Prev
@@ -74,7 +74,7 @@ export default function Pagination({
                                 onClick={() =>
                                     onPageChange(i + 1)
                                 }
-                                className={`flex h-7 w-7 items-center justify-center rounded-lg text-xs font-semibold transition ${
+                                className={`flex h-7 w-7 items-center justify-center rounded-lg text-xs font-semibold transition cursor-pointer ${
                                     currentPage === i + 1
                                         ? 'bg-[#1e40af] text-white shadow-xs'
                                         : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
@@ -98,7 +98,7 @@ export default function Pagination({
                         className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
                             currentPage === totalPages
                                 ? 'cursor-not-allowed text-slate-300 dark:text-slate-600'
-                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
+                                : 'cursor-pointer text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
                         }`}
                     >
                         Next

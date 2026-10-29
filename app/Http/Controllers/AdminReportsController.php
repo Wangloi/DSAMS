@@ -8,6 +8,7 @@ use App\Models\FoundItem;
 use App\Models\Incident;
 use App\Models\LostReport;
 use App\Models\AdmissionSlip;
+use App\Models\Event;
 use Illuminate\Http\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -68,10 +69,107 @@ class AdminReportsController extends Controller
                     ->count();
             }
             $counts['lost_found'] = $lostFoundCount;
+        } else {
+            if (Schema::hasTable('attendances')) {
+                $counts['attendance'] = Attendance::query()
+                    ->whereNotNull('scanned_at')
+                    ->count();
+            }
+
+            if (Schema::hasTable('incidents')) {
+                $counts['case_record'] = Incident::query()
+                    ->where('is_archived', false)
+                    ->count();
+            }
+
+            if (Schema::hasTable('evaluation_responses')) {
+                $counts['evaluation'] = EvaluationResponse::query()->count();
+            }
+
+            if (Schema::hasTable('admission_slips')) {
+                $counts['admission_slip'] = AdmissionSlip::query()
+                    ->where('is_archived', false)
+                    ->count();
+            }
+
+            $lostFoundCount = 0;
+            if (Schema::hasTable('found_items')) {
+                $lostFoundCount += FoundItem::query()->count();
+            }
+            if (Schema::hasTable('lost_reports')) {
+                $lostFoundCount += LostReport::query()->count();
+            }
+            $counts['lost_found'] = $lostFoundCount;
+        }
+
+        // Calculate comprehensive attendance turnout and percentage across all events in scope
+        $attendanceStats = [
+            'total_events' => 0,
+            'total_expected' => 0,
+            'total_attended' => 0,
+            'overall_percentage' => 0,
+            'events' => [],
+        ];
+
+        if (Schema::hasTable('events') && Schema::hasTable('attendances')) {
+            $eventsQuery = Event::query()->where('approval_status', 'approved');
+
+            if ($start && $end) {
+                $eventsQuery->where(function ($q) use ($start, $end) {
+                    $q->whereBetween('event_date', [$start->toDateString(), $end->toDateString()])
+                      ->orWhereHas('attendances', function ($aq) use ($start, $end) {
+                          $aq->whereBetween('scanned_at', [$start, $end]);
+                      });
+                });
+            }
+
+            $events = $eventsQuery->orderBy('event_date', 'desc')->get();
+            $totalExpected = 0;
+            $totalAttended = 0;
+            $eventsList = [];
+
+            foreach ($events as $event) {
+                $capacity = $event->attendanceCapacity();
+                $attended = $event->attendances()->whereNotNull('scanned_at')->count();
+                $percentage = $capacity > 0 ? round(($attended / $capacity) * 100, 1) : ($attended > 0 ? 100.0 : 0.0);
+
+                $totalExpected += $capacity;
+                $totalAttended += $attended;
+
+                $coursesStr = is_array($event->courses) && count($event->courses) > 0
+                    ? implode(', ', $event->courses)
+                    : 'All Programs';
+
+                $eventsList[] = [
+                    'id' => $event->id,
+                    'name' => $event->event_name,
+                    'date' => $event->event_date,
+                    'formatted_date' => $event->event_date ? Carbon::parse($event->event_date)->format('M d, Y') : '—',
+                    'time' => $event->event_time ? Carbon::parse($event->event_time)->format('h:i A') : '—',
+                    'location' => $event->location ?? 'Campus',
+                    'target_programs' => $coursesStr,
+                    'expected' => $capacity,
+                    'attended' => $attended,
+                    'percentage' => $percentage,
+                    'status' => $event->status,
+                ];
+            }
+
+            $overallRate = $totalExpected > 0 ? round(($totalAttended / $totalExpected) * 100, 1) : ($totalAttended > 0 ? 100.0 : 0.0);
+
+            $attendanceStats = [
+                'total_events' => count($events),
+                'total_expected' => $totalExpected,
+                'total_attended' => $totalAttended,
+                'overall_percentage' => $overallRate,
+                'events' => $eventsList,
+            ];
         }
 
         $recordsLabel = [
-            'attendance' => (string) $counts['attendance'] . ' Records',
+            'attendance' => count($attendanceStats['events']) > 0
+                ? "{$attendanceStats['overall_percentage']}% Attendance Rate • {$attendanceStats['total_attended']} Attended ({$attendanceStats['total_events']} Events)"
+                : '0% Attendance Rate • 0 Events',
             'case_record' => (string) $counts['case_record'] . ' Records',
             'evaluation' => (string) $counts['evaluation'] . ' Records',
             'lost_found' => (string) $counts['lost_found'] . ' Records',
@@ -82,6 +180,7 @@ class AdminReportsController extends Controller
             'range' => $range,
             'periodLabel' => $periodLabel,
             'recordsLabel' => $recordsLabel,
+            'attendanceStats' => $attendanceStats,
         ]);
     }
 
@@ -92,17 +191,18 @@ class AdminReportsController extends Controller
             abort(404);
         }
 
+        $mode = $request->query('mode');
         [$range, $start, $end, $periodLabel] = $this->resolveRange($request);
 
-        $filename = $type . '-' . str_replace(' ', '-', strtolower($range)) . '-' . Carbon::now()->format('Ymd-His') . '.csv';
+        $filename = $type . ($mode ? '-' . $mode : '') . '-' . str_replace(' ', '-', strtolower($range)) . '-' . Carbon::now()->format('Ymd-His') . '.csv';
 
-        return response()->streamDownload(function () use ($type, $start, $end) {
+        return response()->streamDownload(function () use ($type, $start, $end, $mode) {
             $out = fopen('php://output', 'w');
             if (!$out) {
                 return;
             }
 
-            $rows = $this->getReportRows($type, $start, $end);
+            $rows = $this->getReportRows($type, $start, $end, $mode);
             $header = $rows['header'];
             $data = $rows['rows'];
 
@@ -123,11 +223,12 @@ class AdminReportsController extends Controller
             abort(404);
         }
 
+        $mode = $request->query('mode');
         [$range, $start, $end, $periodLabel] = $this->resolveRange($request);
-        $result = $this->getReportRows($type, $start, $end);
+        $result = $this->getReportRows($type, $start, $end, $mode);
 
         $titleByType = [
-            'attendance' => 'Attendance Report',
+            'attendance' => 'Attendance Turnout & Participation Report',
             'case_record' => 'Case Record Report',
             'evaluation' => 'Evaluation Report',
             'lost_found' => 'Lost and Found Report',
@@ -142,21 +243,26 @@ class AdminReportsController extends Controller
                 'type' => $type,
                 'header' => $result['header'],
                 'rows' => $result['rows'],
+                'attendanceSummary' => $result['summary'] ?? null,
             ]);
     }
 
     private function resolveRange(Request $request): array
     {
-        $range = (string) $request->query('range', 'weekly');
-        if (!in_array($range, ['weekly', 'monthly', 'yearly', 'semester', 'custom'], true)) {
-            $range = 'weekly';
+        $range = (string) $request->query('range', 'all');
+        if (!in_array($range, ['all', 'weekly', 'monthly', 'yearly', 'semester', 'custom'], true)) {
+            $range = 'all';
         }
 
         $start = null;
         $end = null;
         $periodLabel = '';
 
-        if ($range === 'weekly') {
+        if ($range === 'all') {
+            $start = null;
+            $end = null;
+            $periodLabel = 'All Scheduled Events - Comprehensive Turnout';
+        } elseif ($range === 'weekly') {
             $start = Carbon::now()->startOfWeek();
             $end = Carbon::now()->endOfWeek();
             $periodLabel = 'Weekly Report - ' . Carbon::now()->format('F Y');
@@ -199,48 +305,136 @@ class AdminReportsController extends Controller
         return [$range, $start, $end, $periodLabel];
     }
 
-    private function getReportRows(string $type, ?Carbon $start, ?Carbon $end): array
+    private function getReportRows(string $type, ?Carbon $start, ?Carbon $end, ?string $mode = null): array
     {
-        if (!$start || !$end) {
-            return ['header' => [], 'rows' => []];
-        }
-
         if ($type === 'attendance') {
-            $header = ['Scanned At', 'Student ID', 'Student Name', 'Event', 'Status'];
-            $rows = [];
-            if (Schema::hasTable('attendances')) {
-                $items = Attendance::query()
-                    ->whereNotNull('scanned_at')
-                    ->whereBetween('scanned_at', [$start, $end])
-                    ->with([
-                        'student:id,name,student_id',
-                        'event:id,event_name',
-                    ])
-                    ->orderByDesc('scanned_at')
-                    ->limit(2000)
-                    ->get();
+            if ($mode === 'detailed') {
+                $header = ['Scanned At', 'Student ID', 'Student Name', 'Event', 'Status'];
+                $rows = [];
+                if (Schema::hasTable('attendances')) {
+                    $itemsQuery = Attendance::query()
+                        ->whereNotNull('scanned_at')
+                        ->with([
+                            'student:id,name,student_id',
+                            'event:id,event_name',
+                        ])
+                        ->orderByDesc('scanned_at');
 
-                foreach ($items as $a) {
-                    $rows[] = [
-                        optional($a->scanned_at)->toDateTimeString(),
-                        (string) (optional($a->student)->student_id ?? ''),
-                        (string) (optional($a->student)->name ?? ''),
-                        (string) (optional($a->event)->event_name ?? ''),
-                        (string) ($a->status ?? ''),
-                    ];
+                    if ($start && $end) {
+                        $itemsQuery->whereBetween('scanned_at', [$start, $end]);
+                    }
+
+                    $items = $itemsQuery->limit(2000)->get();
+
+                    foreach ($items as $a) {
+                        $rows[] = [
+                            optional($a->scanned_at)->toDateTimeString(),
+                            (string) (optional($a->student)->student_id ?? ''),
+                            (string) (optional($a->student)->name ?? ''),
+                            (string) (optional($a->event)->event_name ?? ''),
+                            (string) ($a->status ?? ''),
+                        ];
+                    }
                 }
+                return ['header' => $header, 'rows' => $rows];
             }
-            return ['header' => $header, 'rows' => $rows];
+
+            // Default & Primary: Attendance Turnout Report with Attendance Percentage on all events
+            $header = [
+                'Event Name',
+                'Event Date',
+                'Time',
+                'Venue',
+                'Target Programs',
+                'Expected Attendees',
+                'Actual Attendees',
+                'Attendance Rate (%)',
+                'Status',
+            ];
+
+            $eventsQuery = Event::query()->where('approval_status', 'approved');
+
+            if ($start && $end) {
+                $eventsQuery->where(function ($q) use ($start, $end) {
+                    $q->whereBetween('event_date', [$start->toDateString(), $end->toDateString()])
+                      ->orWhereHas('attendances', function ($aq) use ($start, $end) {
+                          $aq->whereBetween('scanned_at', [$start, $end]);
+                      });
+                });
+            }
+
+            $events = $eventsQuery->orderBy('event_date', 'desc')->get();
+            $rows = [];
+            $totalExpected = 0;
+            $totalAttended = 0;
+
+            foreach ($events as $e) {
+                $capacity = $e->attendanceCapacity();
+                $attended = $e->attendances()->whereNotNull('scanned_at')->count();
+                $percentage = $capacity > 0 ? round(($attended / $capacity) * 100, 1) : ($attended > 0 ? 100.0 : 0.0);
+
+                $totalExpected += $capacity;
+                $totalAttended += $attended;
+
+                $coursesStr = is_array($e->courses) && count($e->courses) > 0
+                    ? implode(', ', $e->courses)
+                    : 'All Programs';
+
+                $formattedDate = $e->event_date ? Carbon::parse($e->event_date)->format('M d, Y') : '—';
+                $formattedTime = $e->event_time ? Carbon::parse($e->event_time)->format('h:i A') : '—';
+
+                $rows[] = [
+                    (string) $e->event_name,
+                    $formattedDate,
+                    $formattedTime,
+                    (string) ($e->location ?? 'Campus'),
+                    $coursesStr,
+                    (string) $capacity,
+                    (string) $attended,
+                    $percentage . '%',
+                    ucfirst((string) $e->status),
+                ];
+            }
+
+            $overallPercentage = $totalExpected > 0
+                ? round(($totalAttended / $totalExpected) * 100, 1)
+                : ($totalAttended > 0 ? 100.0 : 0.0);
+
+            if (count($events) > 0) {
+                $rows[] = [
+                    'OVERALL SUMMARY',
+                    '',
+                    '',
+                    '',
+                    'Total Events: ' . count($events),
+                    (string) $totalExpected,
+                    (string) $totalAttended,
+                    $overallPercentage . '%',
+                    '',
+                ];
+            }
+
+            return [
+                'header' => $header,
+                'rows' => $rows,
+                'summary' => [
+                    'total_events' => count($events),
+                    'total_expected' => $totalExpected,
+                    'total_attended' => $totalAttended,
+                    'overall_percentage' => $overallPercentage,
+                ],
+            ];
         }
 
         if ($type === 'case_record') {
             $header = ['Case ID', 'Incident Type', 'Classification', 'Status', 'Incident Date', 'Location', 'Students Involved'];
             $rows = [];
             if (Schema::hasTable('incidents')) {
-                $items = Incident::query()
-                    ->where('is_archived', false)
-                    ->whereBetween('incident_date', [$start->toDateString(), $end->toDateString()])
-                    ->orderByDesc('incident_date')
+                $query = Incident::query()->where('is_archived', false);
+                if ($start && $end) {
+                    $query->whereBetween('incident_date', [$start->toDateString(), $end->toDateString()]);
+                }
+                $items = $query->orderByDesc('incident_date')
                     ->orderByDesc('id')
                     ->limit(2000)
                     ->get();
@@ -266,13 +460,15 @@ class AdminReportsController extends Controller
             $header = ['Submitted At', 'Evaluation', 'Student ID', 'Student Name'];
             $rows = [];
             if (Schema::hasTable('evaluation_responses')) {
-                $items = EvaluationResponse::query()
-                    ->whereBetween('submitted_at', [$start, $end])
+                $query = EvaluationResponse::query()
                     ->with([
                         'evaluation:id,name',
                         'student:id,name,student_id',
-                    ])
-                    ->orderByDesc('submitted_at')
+                    ]);
+                if ($start && $end) {
+                    $query->whereBetween('submitted_at', [$start, $end]);
+                }
+                $items = $query->orderByDesc('submitted_at')
                     ->limit(2000)
                     ->get();
 
@@ -292,10 +488,11 @@ class AdminReportsController extends Controller
             $header = ['Date Issued', 'Student Name', 'Program & Year', 'Case Title', 'Reason', 'Valid Until', 'Status'];
             $rows = [];
             if (Schema::hasTable('admission_slips')) {
-                $items = AdmissionSlip::query()
-                    ->where('is_archived', false)
-                    ->whereBetween('date_issued', [$start->toDateString(), $end->toDateString()])
-                    ->orderByDesc('date_issued')
+                $query = AdmissionSlip::query()->where('is_archived', false);
+                if ($start && $end) {
+                    $query->whereBetween('date_issued', [$start->toDateString(), $end->toDateString()]);
+                }
+                $items = $query->orderByDesc('date_issued')
                     ->orderByDesc('id')
                     ->limit(2000)
                     ->get();
@@ -319,9 +516,11 @@ class AdminReportsController extends Controller
         $rows = [];
 
         if (Schema::hasTable('found_items')) {
-            $items = FoundItem::query()
-                ->whereBetween('created_at', [$start, $end])
-                ->orderByDesc('created_at')
+            $query = FoundItem::query();
+            if ($start && $end) {
+                $query->whereBetween('created_at', [$start, $end]);
+            }
+            $items = $query->orderByDesc('created_at')
                 ->limit(2000)
                 ->get();
 
@@ -336,9 +535,11 @@ class AdminReportsController extends Controller
         }
 
         if (Schema::hasTable('lost_reports')) {
-            $items = LostReport::query()
-                ->whereBetween('created_at', [$start, $end])
-                ->orderByDesc('created_at')
+            $query = LostReport::query();
+            if ($start && $end) {
+                $query->whereBetween('created_at', [$start, $end]);
+            }
+            $items = $query->orderByDesc('created_at')
                 ->limit(2000)
                 ->get();
 

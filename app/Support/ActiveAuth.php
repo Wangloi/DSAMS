@@ -13,6 +13,10 @@ class ActiveAuth
 
     public static function syncFromRoute(Request $request): void
     {
+        if (! $request->hasSession()) {
+            return;
+        }
+
         $routeName = (string) optional($request->route())->getName();
         $path = (string) $request->path();
 
@@ -37,21 +41,27 @@ class ActiveAuth
     {
         static::syncFromRoute($request);
 
+        $hasSession = $request->hasSession();
+
         $explicit = $request->query('as');
         if (is_string($explicit) && in_array($explicit, self::GUARDS, true) && Auth::guard($explicit)->check()) {
-            $request->session()->put('active_guard', $explicit);
+            if ($hasSession) {
+                $request->session()->put('active_guard', $explicit);
+            }
 
             return $explicit;
         }
 
-        $sessionGuard = $request->session()->get('active_guard');
+        $sessionGuard = $hasSession ? $request->session()->get('active_guard') : null;
         if (is_string($sessionGuard) && in_array($sessionGuard, self::GUARDS, true) && Auth::guard($sessionGuard)->check()) {
             return $sessionGuard;
         }
 
         foreach (self::GUARDS as $guard) {
             if (Auth::guard($guard)->check()) {
-                $request->session()->put('active_guard', $guard);
+                if ($hasSession) {
+                    $request->session()->put('active_guard', $guard);
+                }
 
                 return $guard;
             }

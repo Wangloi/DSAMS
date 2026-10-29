@@ -156,28 +156,22 @@ export default function EventViewModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden rounded-3xl border-0 bg-slate-50 p-0 shadow-2xl sm:max-w-4xl dark:bg-slate-950 [&>button]:hidden">
-                {/* Modern Hero Header */}
-                <div className="shrink-0 relative overflow-hidden bg-gradient-to-r from-[#000D6A] via-[#102A83] to-[#23509A] px-6 py-5 text-white shadow-md sm:px-8">
-                    <div className="pointer-events-none absolute -top-12 -right-12 h-44 w-44 rounded-full bg-cyan-400/20 blur-3xl" />
-                    <div className="pointer-events-none absolute -bottom-10 left-1/3 h-32 w-32 rounded-full bg-blue-500/20 blur-2xl" />
-
-                    <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <DialogContent size="xl" className="flex max-h-[88vh] w-full flex-col gap-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-900 [&>button]:hidden">
+                {/* Clean Minimalist Header */}
+                <div className="shrink-0 border-b border-slate-100 bg-white px-6 py-5 dark:border-slate-800 dark:bg-slate-900 sm:px-8">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div className="flex items-start gap-4">
-                            <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-[#8CE4FF] shadow-inner ring-1 ring-white/30 backdrop-blur-md">
-                                <Calendar className="h-7 w-7" />
-                                <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-[#102A83]">
-                                    <Sparkles className="h-3 w-3 text-white" />
-                                </span>
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-[#23509A] dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
+                                <Calendar className="h-6 w-6" />
                             </div>
 
                             <DialogHeader className="p-0 text-left">
                                 <div className="flex flex-wrap items-center gap-2">
-                                    <DialogTitle className="text-xl font-black tracking-tight text-white sm:text-2xl">
+                                    <DialogTitle className="text-lg font-bold tracking-tight text-slate-900 dark:text-white sm:text-xl">
                                         {event.event_name}
                                     </DialogTitle>
                                     <Badge
-                                        className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider capitalize ${lifecycleStatusBadgeClass(
+                                        className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider capitalize ${lifecycleStatusBadgeClass(
                                             computedStatus,
                                         )}`}
                                     >
@@ -186,8 +180,8 @@ export default function EventViewModal({
                                             : computedStatus}
                                     </Badge>
                                 </div>
-                                <DialogDescription className="mt-1 text-xs font-medium text-blue-100/90 sm:text-sm">
-                                    Organized by <strong className="text-white">{event.organizer || 'Office of Student Affairs'}</strong> • Complete Event Profile & Attendance Assignment
+                                <DialogDescription className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                    Organized by <strong className="font-semibold text-slate-700 dark:text-slate-300">{event.organizer || 'Office of Student Affairs'}</strong> • Complete Event Profile & Attendance Assignment
                                 </DialogDescription>
                             </DialogHeader>
                         </div>
@@ -198,18 +192,19 @@ export default function EventViewModal({
                                 <Button
                                     type="button"
                                     onClick={() => onEdit(event)}
-                                    className="h-9 gap-1.5 rounded-xl bg-white/15 px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-white/25 active:scale-98"
+                                    className="h-8 gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-750"
                                 >
-                                    <Edit className="h-3.5 w-3.5 text-[#8CE4FF]" />
-                                    Edit Event
+                                    <Edit className="h-3.5 w-3.5 text-[#23509A] dark:text-blue-400" />
+                                    Edit
                                 </Button>
                             )}
                             <button
                                 type="button"
                                 onClick={() => onOpenChange(false)}
-                                className="rounded-full bg-white/10 p-2 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+                                className="flex h-8 w-8 items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                                aria-label="Close modal"
                             >
-                                <X className="h-5 w-5" />
+                                <X className="h-4 w-4" />
                             </button>
                         </div>
                     </div>
@@ -518,7 +513,7 @@ export default function EventViewModal({
                 </div>
 
                 {/* Footer Actions */}
-                <DialogFooter className="flex shrink-0 items-center justify-between border-t border-slate-200/90 bg-white px-6 py-4 dark:border-slate-800 dark:bg-slate-900 sm:px-8">
+                <DialogFooter className="flex shrink-0 items-center justify-between border-t border-slate-100 bg-slate-50/80 px-6 py-4 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/80 sm:px-8">
                     <div className="text-[11px] font-medium text-slate-400">
                         Event ID: #{event.id}
                     </div>
@@ -528,7 +523,7 @@ export default function EventViewModal({
                             variant="outline"
                             type="button"
                             onClick={() => onOpenChange(false)}
-                            className="rounded-xl border-slate-200 px-5 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                            className="rounded-xl border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-750"
                         >
                             Close
                         </Button>
@@ -536,7 +531,7 @@ export default function EventViewModal({
                             <Button
                                 type="button"
                                 onClick={() => onEdit(event)}
-                                className="gap-1.5 rounded-xl bg-gradient-to-r from-[#000D6A] via-[#102A83] to-[#23509A] px-6 text-xs font-bold text-white shadow-md hover:brightness-110 active:scale-98"
+                                className="gap-1.5 rounded-xl bg-[#23509A] px-6 text-sm font-semibold text-white hover:bg-[#1b4080] shadow-sm"
                             >
                                 <Edit className="h-3.5 w-3.5" />
                                 Edit Event

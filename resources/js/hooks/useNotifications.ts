@@ -137,16 +137,22 @@ export function useNotifications({
         };
     }, [userId, role, autoConnect, fetchNotifications, handleIncomingNotification]);
 
-    // Setup periodic polling / pulling timer
+    // Setup adaptive periodic polling / pulling timer (backs off when WebSocket is connected)
     useEffect(() => {
         if (!enablePolling || !userId || pollingInterval <= 0) return;
 
+        const socket = getSocketInstance();
+        const isSocketActive = Boolean(socket?.connected);
+
+        // Relax polling interval to 60s when WebSocket push is active to prevent server hammer
+        const effectiveInterval = isSocketActive ? Math.max(pollingInterval, 60000) : pollingInterval;
+
         const timer = setInterval(() => {
-            // Only pull if document is visible or always active
+            // Only pull if document is visible
             if (typeof document === 'undefined' || !document.hidden) {
                 void fetchNotifications(true);
             }
-        }, pollingInterval);
+        }, effectiveInterval);
 
         return () => {
             clearInterval(timer);

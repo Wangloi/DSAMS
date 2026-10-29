@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import VideoBackground from '@/components/VideoBackground';
+import { focusFirstInvalidField } from '@/lib/formFocusNavigation';
 import { forgotPassword, landing } from '@/routes';
 import { Form, Head, Link } from '@inertiajs/react';
 import {
@@ -16,10 +17,12 @@ import {
     EyeOff,
     Lock,
     LogIn,
+    Shield,
     User,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
+import { getDeviceBindingInfo } from '@/lib/device-uuid';
 
 type Props = {
     status?: string;
@@ -48,6 +51,8 @@ function AuthErrorAlert({
                         title: 'text-2xl font-black text-slate-800',
                         htmlContainer: 'text-sm text-slate-600 font-medium mt-2',
                     },
+                }).then(() => {
+                    setTimeout(() => focusFirstInvalidField(), 50);
                 });
             }
         }
@@ -61,10 +66,28 @@ export default function Login({
     canResetPassword,
     canRegister,
 }: Props) {
+    const [identifier, setIdentifier] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [deviceInfo, setDeviceInfo] = useState({ deviceUuid: '', deviceName: '' });
 
     useEffect(() => {
-        if (status) {
+        setDeviceInfo(getDeviceBindingInfo());
+    }, []);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined' && window.location.search.includes('expired=1')) {
+            Swal.fire({
+                title: 'Session Expired',
+                text: 'Your session expired due to inactivity. Please sign in again to continue.',
+                icon: 'info',
+                confirmButtonColor: '#1b2f8a',
+                customClass: {
+                    popup: 'rounded-2xl p-6 shadow-2xl font-sans',
+                    title: 'text-2xl font-black text-slate-800',
+                    htmlContainer: 'text-sm text-slate-600 font-medium mt-2',
+                },
+            });
+        } else if (status) {
             Swal.fire({
                 title: 'Success!',
                 text: status,
@@ -76,7 +99,7 @@ export default function Login({
     }, [status]);
 
     return (
-        <div className="relative flex min-h-svh w-full flex-row overflow-hidden bg-slate-50 font-sans selection:bg-blue-500 selection:text-white">
+        <div className="relative flex h-screen max-h-screen min-h-svh w-full flex-row overflow-hidden bg-slate-50 font-sans selection:bg-blue-500 selection:text-white">
             <Head title="Log in - Student Affairs Management System" />
 
             {/* Left: Video Area with White Opacity Overlay */}
@@ -134,34 +157,68 @@ export default function Login({
                 </div>
             </div>
 
-            {/* Right: Modern Form Panel */}
-            <div className="relative z-10 flex min-h-svh w-full shrink-0 flex-col justify-center overflow-y-auto border-l border-white/10 bg-gradient-to-b from-[#1b2f8a] via-[#162775] to-[#101d5c] px-5 py-8 shadow-2xl sm:px-10 sm:py-12 md:h-svh md:w-[480px] lg:w-[540px]">
-                <div className="mx-auto w-full max-w-sm space-y-6 sm:space-y-8">
-                    {/* Mobile back link & logos */}
-                    <div className="flex items-center justify-between gap-3 md:hidden">
+            {/* Right: Modern Form Panel with original Royal Blue Theme */}
+            <div className="relative z-10 flex h-full max-h-screen min-h-svh w-full shrink-0 flex-col justify-center overflow-x-hidden overflow-y-auto no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border-l border-white/10 bg-gradient-to-b from-[#1b2f8a] via-[#162775] to-[#0f1b52] px-4 py-6 shadow-2xl sm:px-10 sm:py-8 md:h-screen md:max-h-screen md:w-[480px] lg:w-[540px]">
+                {/* Subtle Professional Ambient Lighting within Royal Blue Theme */}
+                <div
+                    className="pointer-events-none absolute inset-x-0 -top-20 h-96 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.12)_0%,transparent_70%)]"
+                    aria-hidden="true"
+                />
+                <div
+                    className="pointer-events-none absolute -bottom-24 -right-16 h-80 w-80 rounded-full bg-blue-400/10 blur-[100px]"
+                    aria-hidden="true"
+                />
+
+                {/* Subtle Modern Dot-Matrix Texture */}
+                <div
+                    className="pointer-events-none absolute inset-0 opacity-[0.05] [background-image:radial-gradient(rgba(255,255,255,0.9)_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_80%_70%_at_50%_40%,#000_40%,transparent_100%)]"
+                    aria-hidden="true"
+                />
+
+                <div className="relative z-10 mx-auto my-auto w-full max-w-sm space-y-4 sm:space-y-5">
+                    {/* Mobile Top Navigation with Home link */}
+                    <div className="flex items-center justify-between md:hidden">
                         <Link
                             href={landing()}
-                            className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/90 backdrop-blur-md transition-colors hover:bg-white/20 hover:text-white"
+                            className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white/90 shadow-sm backdrop-blur-md transition-all hover:bg-white/20 hover:text-white"
                         >
                             <ArrowLeft className="h-3.5 w-3.5" />
                             <span>Home</span>
                         </Link>
-                        <div className="flex items-center gap-2 rounded-full bg-white/15 p-1.5 backdrop-blur-md">
+                    </div>
+
+                    {/* Centered Dual Institutional Logos on Mobile */}
+                    <div className="relative flex flex-col items-center justify-center md:hidden">
+                        {/* Soft ambient halo behind logos */}
+                        <div className="pointer-events-none absolute h-20 w-44 rounded-full bg-white/10 blur-xl" />
+                        <div className="relative flex items-center justify-center gap-4">
                             <img
-                                src="/images/SRCB.png"
-                                alt="SRCB"
-                                className="h-7 w-7 rounded-full bg-white object-contain p-0.5 shadow-xs"
+                                src="/images/SRCB1.png"
+                                alt="SRCB Logo"
+                                className="h-16 w-16 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.35)] transition-transform hover:scale-105"
                             />
-                            <img
-                                src="/images/OSA_Logo2.png"
-                                alt="OSA Logo"
-                                className="h-7 w-7 rounded-full bg-white object-contain p-0.5 shadow-xs"
-                            />
+                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white p-1.5 shadow-[0_8px_16px_rgba(0,0,0,0.25)] ring-2 ring-white/30 transition-transform hover:scale-105">
+                                <img
+                                    src="/images/DSA.ico"
+                                    alt="OSA Logo"
+                                    className="h-full w-full object-contain"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Institutional Text Below Logos */}
+                        <div className="mt-2.5 text-center space-y-0.5">
+                            <h3 className="text-xs font-bold tracking-wider text-white uppercase sm:text-sm">
+                                St. Rita&apos;s College of Balingasag
+                            </h3>
+                            <p className="text-xs font-medium text-blue-200/90">
+                                Office of Student Affairs
+                            </p>
                         </div>
                     </div>
 
                     {/* Panel Title Header */}
-                    <div className="space-y-1.5 text-left">
+                    <div className="space-y-1.5 text-center sm:text-left">
                         <h2 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
                             Welcome back
                         </h2>
@@ -175,7 +232,7 @@ export default function Login({
                         action="/login"
                         method="post"
                         resetOnSuccess={['password']}
-                        className="space-y-4 sm:space-y-5"
+                        className="space-y-3 sm:space-y-4"
                     >
                         {({ processing, errors }) => {
                             return (
@@ -196,14 +253,18 @@ export default function Login({
                                                     id="identifier"
                                                     type="text"
                                                     name="identifier"
-                                                    required
                                                     tabIndex={1}
                                                     autoFocus
+                                                    value={identifier}
+                                                    hasError={!!errors.identifier}
+                                                    aria-describedby={errors.identifier ? 'identifier-error' : undefined}
+                                                    onChange={(e) => setIdentifier(e.target.value)}
                                                     placeholder="Enter ID number or email"
                                                     className="h-11 rounded-xl border-white/20 bg-white/10 pl-10 text-base text-white placeholder-slate-400 transition-all focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-400/30 sm:h-12 sm:pl-11 sm:text-sm"
                                                 />
                                             </div>
                                             <InputError
+                                                id="identifier-error"
                                                 message={errors.identifier}
                                             />
                                         </div>
@@ -224,12 +285,13 @@ export default function Login({
                                                     id="password"
                                                     type={
                                                         showPassword
-                                                            ? 'text'
+                                                             ? 'text'
                                                             : 'password'
                                                     }
                                                     name="password"
-                                                    required
                                                     tabIndex={2}
+                                                    hasError={!!errors.password}
+                                                    aria-describedby={errors.password ? 'password-error' : undefined}
                                                     placeholder="Enter your password"
                                                     className="h-11 rounded-xl border-white/20 bg-white/10 pr-10 pl-10 text-base text-white placeholder-slate-400 transition-all focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-400/30 sm:h-12 sm:pr-11 sm:pl-11 sm:text-sm"
                                                 />
@@ -255,6 +317,7 @@ export default function Login({
                                                 </button>
                                             </div>
                                             <InputError
+                                                id="password-error"
                                                 message={errors.password}
                                             />
                                         </div>
@@ -304,6 +367,18 @@ export default function Login({
                                         </Button>
                                     </div>
 
+                                    {/* One Device, One Account Policy Hidden Inputs */}
+                                    <input
+                                        type="hidden"
+                                        name="device_uuid"
+                                        value={deviceInfo.deviceUuid}
+                                    />
+                                    <input
+                                        type="hidden"
+                                        name="device_name"
+                                        value={deviceInfo.deviceName}
+                                    />
+
                                     {status && (
                                         <Alert className="mt-4 rounded-xl border-emerald-500/40 bg-emerald-900/40 text-emerald-200">
                                             <CheckCircle className="h-4 w-4 text-emerald-400" />
@@ -312,6 +387,14 @@ export default function Login({
                                             </AlertDescription>
                                         </Alert>
                                     )}
+
+                                    {/* Device Integrity Assurance Badge */}
+                                    <div className="pt-2 text-center">
+                                        <div className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium text-slate-300/80 backdrop-blur-sm">
+                                            <Shield className="h-3 w-3 text-emerald-400" />
+                                            <span>Protected by 1-Device, 1-Account Attendance Policy</span>
+                                        </div>
+                                    </div>
                                 </>
                             );
                         }}

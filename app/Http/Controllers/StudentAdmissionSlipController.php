@@ -18,70 +18,124 @@ class StudentAdmissionSlipController extends Controller
     {
         $student = Auth::guard('student')->user() ?: $request->user('student');
 
+        if (! $student) {
+            return redirect()->route('login')->with('error', 'Please log in as a student to submit an admission slip.');
+        }
+
+        if ($student->status === 'rejected' || $student->verification_status === 'rejected') {
+            return redirect()->back()->with('error', 'Your student account is not authorized to submit admission slips.');
+        }
+
         $validated = $request->validate([
             'student_name' => ['nullable', 'string', 'max:255'],
             'program_year_level' => ['nullable', 'string', 'max:255'],
-            'case_text' => ['required', 'string', 'max:255'],
+            'case_text' => ['nullable', 'string', 'max:255'],
             'reason_text' => ['required', 'string', 'max:255'],
-            'valid_until' => ['required', 'date'],
         ]);
 
         $studentName = trim((string) ($validated['student_name'] ?? ''));
         if ($studentName === '') {
-            $studentName = (string) ($student?->name ?? '');
+            $studentName = (string) ($student->name ?? '');
+        }
+
+        $caseText = trim((string) ($validated['case_text'] ?? ''));
+        if ($caseText === '') {
+            $caseText = $validated['reason_text'];
+        }
+
+        // Duplicate prevention: check if an identical pending slip was submitted recently (last 5 minutes)
+        $duplicatePending = AdmissionSlip::where('is_archived', false)
+            ->where('status', 'PENDING')
+            ->where(function ($q) use ($student) {
+                if (Schema::hasColumn('admission_slips', 'student_id')) {
+                    $q->where('student_id', $student->id);
+                }
+                $q->orWhere('student_name', $student->name);
+            })
+            ->where('reason_text', $validated['reason_text'])
+            ->where('created_at', '>=', now()->subMinutes(5))
+            ->first();
+
+        if ($duplicatePending) {
+            return redirect()->back()->with('warning', 'A pending admission slip with this reason was already submitted recently. Please wait for administrator review.');
         }
 
         // Disciplinary clearance check: prevent admission slip if active major violation
-        if ($student) {
-            $studentDbId = (string) $student->id;
-            $studentSchoolId = (string) ($student->student_id ?? '');
+        $studentDbId = (string) $student->id;
+        $studentSchoolId = (string) ($student->student_id ?? '');
 
-            $hasActiveMajorIncident = \App\Models\Incident::where('is_archived', false)
-                ->where('status', '!=', 'Resolved')
-                ->whereIn('classification', ['Suspension', 'Exclusion', 'Expulsion'])
-                ->where(function ($q) use ($studentDbId, $studentSchoolId) {
-                    $q->whereJsonContains('students_involved', $studentDbId)
-                      ->orWhereJsonContains('students_involved', ['id' => $studentDbId])
-                      ->orWhereJsonContains('students_involved', ['id' => (int) $studentDbId]);
-                    if ($studentSchoolId) {
-                        $q->orWhereJsonContains('students_involved', $studentSchoolId)
-                          ->orWhereJsonContains('students_involved', ['id' => $studentSchoolId]);
-                    }
-                })
-                ->first();
+        $hasActiveMajorIncident = \App\Models\Incident::where('is_archived', false)
+            ->where('status', '!=', 'Resolved')
+            ->whereIn('classification', ['Suspension', 'Exclusion', 'Expulsion'])
+            ->where(function ($q) use ($studentDbId, $studentSchoolId) {
+                $q->whereJsonContains('students_involved', $studentDbId)
+                  ->orWhereJsonContains('students_involved', ['id' => $studentDbId])
+                  ->orWhereJsonContains('students_involved', ['id' => (int) $studentDbId]);
+                if ($studentSchoolId) {
+                    $q->orWhereJsonContains('students_involved', $studentSchoolId)
+                      ->orWhereJsonContains('students_involved', ['id' => $studentSchoolId]);
+                }
+            })
+            ->first();
 
-            if ($hasActiveMajorIncident) {
-                return redirect()->back()->with('error', "Disciplinary Clearance Required: You have an active incident ({$hasActiveMajorIncident->incident_type} - {$hasActiveMajorIncident->classification}). Please report to the Office of Student Affairs before requesting an Admission Slip.");
-            }
+        if ($hasActiveMajorIncident) {
+            return redirect()->back()->with('error', "Disciplinary Clearance Required: You have an active incident ({$hasActiveMajorIncident->incident_type} - {$hasActiveMajorIncident->classification}). Please report to the Office of Student Affairs before requesting an Admission Slip.");
         }
 
         $programYearLevel = trim((string) ($validated['program_year_level'] ?? ''));
         if ($programYearLevel === '') {
             $programYearLevel = trim(implode(' ', array_filter([
-                $student?->course,
-                $student?->year_level,
+                $student->course,
+                $student->year_level,
             ])));
         }
 
-        $slipAttributes = [
-            'student_name' => $studentName,
-            'program_year_level' => $programYearLevel,
-            'date_issued' => now()->toDateString(),
-            'case_text' => $validated['case_text'],
-            'reason_text' => $validated['reason_text'],
-            'valid_until' => $validated['valid_until'],
-            'status' => 'PENDING',
-            'is_archived' => false,
-        ];
+        try {
+            $slip = \Illuminate\Support\Facades\DB::transaction(function () use ($student, $validated, $studentName, $programYearLevel, $caseText) {
+                // Monthly limit check inside transaction with lock
+                $monthlyLimit = AdmissionSlip::MONTHLY_LIMIT;
+                $usedThisMonth = AdmissionSlip::where('is_archived', false)
+                    ->where('status', '!=', 'REJECTED')
+                    ->where(function ($q) use ($student) {
+                        if (Schema::hasColumn('admission_slips', 'student_id')) {
+                            $q->where('student_id', $student->id);
+                        }
+                        $q->orWhere('student_name', $student->name);
+                    })
+                    ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
+                    ->lockForUpdate()
+                    ->count();
 
-        if (Schema::hasColumn('admission_slips', 'student_id')) {
-            $slipAttributes['student_id'] = $student?->id;
+                if ($usedThisMonth >= $monthlyLimit) {
+                    throw new \DomainException("Admission Slip quota reached: You have already requested the maximum of {$monthlyLimit} admission slips for " . now()->format('F Y') . ". Please contact the Office of Student Affairs if you require an exemption.");
+                }
+
+                $slipAttributes = [
+                    'student_name' => $studentName,
+                    'program_year_level' => $programYearLevel,
+                    'date_issued' => now()->toDateString(),
+                    'case_text' => $caseText,
+                    'reason_text' => $validated['reason_text'],
+                    'valid_until' => AdmissionSlip::calculateValidUntil($validated['reason_text'], now()->toDateString()),
+                    'status' => 'PENDING',
+                    'is_archived' => false,
+                ];
+
+                if (Schema::hasColumn('admission_slips', 'student_id')) {
+                    $slipAttributes['student_id'] = $student->id;
+                }
+
+                return AdmissionSlip::create($slipAttributes);
+            });
+        } catch (\DomainException $de) {
+            return redirect()->back()->with('error', $de->getMessage());
+        } catch (\Throwable $e) {
+            \Log::error('Student admission slip submission error: ' . $e->getMessage(), ['exception' => $e]);
+            return redirect()->back()->with('error', 'Failed to submit admission slip request. Please try again.');
         }
 
-        $slip = AdmissionSlip::create($slipAttributes);
-
         if (Schema::hasTable('activity_logs')) {
-            ActivityLog::logForUser($student, 'Admission Slip', 'Requested', 'Submitted admission slip request.');
+            ActivityLog::logForUser($student, 'Admission Slip', 'Requested', 'Submitted admission slip request #' . $slip->id . '.');
         }
 
         // Send notifications to all admins

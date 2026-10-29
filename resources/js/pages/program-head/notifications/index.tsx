@@ -263,12 +263,12 @@ export default function ProgramHeadNotifications({ paginatedNotifications }: Pro
                         </p>
                         <div className="flex items-center gap-2">
                             {paginatedNotifications.prev_page_url ? (
-                                <Link href={paginatedNotifications.prev_page_url}>
-                                    <Button variant="outline" size="sm" className="dark:border-slate-700 dark:bg-slate-800">
+                                <Button variant="outline" size="sm" asChild className="dark:border-slate-700 dark:bg-slate-800">
+                                    <Link href={paginatedNotifications.prev_page_url}>
                                         <ChevronLeft className="mr-1 h-4 w-4" />
                                         Previous
-                                    </Button>
-                                </Link>
+                                    </Link>
+                                </Button>
                             ) : (
                                 <Button variant="outline" size="sm" disabled className="dark:border-slate-700 dark:bg-slate-800">
                                     <ChevronLeft className="mr-1 h-4 w-4" />
@@ -277,12 +277,12 @@ export default function ProgramHeadNotifications({ paginatedNotifications }: Pro
                             )}
 
                             {paginatedNotifications.next_page_url ? (
-                                <Link href={paginatedNotifications.next_page_url}>
-                                    <Button variant="outline" size="sm" className="dark:border-slate-700 dark:bg-slate-800">
+                                <Button variant="outline" size="sm" asChild className="dark:border-slate-700 dark:bg-slate-800">
+                                    <Link href={paginatedNotifications.next_page_url}>
                                         Next
                                         <ChevronRight className="ml-1 h-4 w-4" />
-                                    </Button>
-                                </Link>
+                                    </Link>
+                                </Button>
                             ) : (
                                 <Button variant="outline" size="sm" disabled className="dark:border-slate-700 dark:bg-slate-800">
                                     Next

@@ -67,20 +67,36 @@ app.get('/health', (req, res) => {
  */
 app.post('/api/notifications/emit', verifyLaravelSecret, (req, res) => {
     try {
-        const { room, event = 'notification', data } = req.body;
+        const { room, rooms, event = 'notification', data } = req.body;
         if (!data) {
             res.status(400).json({ error: 'Missing notification data payload' });
             return;
         }
+        if (Array.isArray(rooms) && rooms.length > 0) {
+            // High-performance batch emit to multiple target rooms
+            for (const targetRoom of rooms) {
+                if (targetRoom) {
+                    io.to(targetRoom).emit(event, data);
+                }
+            }
+            console.log(`[Socket.IO] Batch emitted '${event}' to ${rooms.length} rooms`);
+            res.json({
+                success: true,
+                deliveredTo: rooms,
+                event,
+                data,
+            });
+            return;
+        }
         if (room) {
-            // Target specific user or role room (e.g. "user_15", "role_admin")
+            // Target specific user, event, or role room (e.g. "user_15", "role_admin", "event_4")
             io.to(room).emit(event, data);
-            console.log(`[Socket.IO] Emitted '${event}' to room '${room}' -> Title: "${data.title}"`);
+            console.log(`[Socket.IO] Emitted '${event}' to room '${room}'`);
         }
         else {
             // Broadcast to all connected clients
             io.emit(event, data);
-            console.log(`[Socket.IO] Broadcasted '${event}' to all clients -> Title: "${data.title}"`);
+            console.log(`[Socket.IO] Broadcasted '${event}' to all clients`);
         }
         res.json({
             success: true,
@@ -110,8 +126,13 @@ io.use((socket, next) => {
 io.on('connection', (socket) => {
     const { userId, role } = socket.data;
     console.log(`[Socket.IO] Client connected: ${socket.id} (User: ${userId || 'guest'}, Role: ${role || 'none'})`);
-    // Join user-specific room
+    // Join user-specific room (both scoped and fallback)
     if (userId) {
+        if (role) {
+            const scopedUserRoom = `user_${role}_${userId}`;
+            socket.join(scopedUserRoom);
+            console.log(`[Socket.IO] Socket ${socket.id} joined scoped room: ${scopedUserRoom}`);
+        }
         const userRoom = `user_${userId}`;
         socket.join(userRoom);
         console.log(`[Socket.IO] Socket ${socket.id} joined room: ${userRoom}`);
@@ -125,9 +146,28 @@ io.on('connection', (socket) => {
     // Handle client requesting to join a custom room explicitly
     socket.on('join_user_room', (customUserId) => {
         if (customUserId) {
+            if (socket.data.role) {
+                const scopedRoom = `user_${socket.data.role}_${customUserId}`;
+                socket.join(scopedRoom);
+            }
             const room = `user_${customUserId}`;
             socket.join(room);
             console.log(`[Socket.IO] Socket ${socket.id} manually joined ${room}`);
+        }
+    });
+    // Handle client requesting to join a specific event room for real-time attendance monitoring
+    socket.on('join_event_room', (eventId) => {
+        if (eventId) {
+            const room = `event_${eventId}`;
+            socket.join(room);
+            console.log(`[Socket.IO] Socket ${socket.id} joined event room: ${room}`);
+        }
+    });
+    socket.on('leave_event_room', (eventId) => {
+        if (eventId) {
+            const room = `event_${eventId}`;
+            socket.leave(room);
+            console.log(`[Socket.IO] Socket ${socket.id} left event room: ${room}`);
         }
     });
     // Handle disconnection

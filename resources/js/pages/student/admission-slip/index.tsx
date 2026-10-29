@@ -34,6 +34,13 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Admission Slip', href: studentAdmissionSlipIndex() },
 ];
 
+interface MonthlyQuota {
+    used: number;
+    limit: number;
+    remaining: number;
+    month: string;
+}
+
 interface AdmissionSlipRecord {
     id: number;
     student_id?: number | string;
@@ -45,13 +52,20 @@ interface AdmissionSlipRecord {
     reason_text: string;
     status: 'PENDING' | 'APPROVED' | 'REJECTED' | string;
     created_at?: string;
+    slip_count?: string;
+    all_time_slip_count?: string;
+    monthly_slip_count?: number;
 }
 
 interface Props {
     slips?: AdmissionSlipRecord[];
+    monthlyQuota?: MonthlyQuota;
 }
 
-export default function StudentAdmissionSlipIndex({ slips = [] }: Props) {
+export default function StudentAdmissionSlipIndex({
+    slips = [],
+    monthlyQuota = { used: 0, limit: 3, remaining: 3, month: 'Current Month' },
+}: Props) {
     const { auth, errors: pageErrors } = usePage<SharedData>().props;
     const authUser = auth?.user;
     const errors = (pageErrors as Record<string, string>) || {};
@@ -104,9 +118,20 @@ export default function StudentAdmissionSlipIndex({ slips = [] }: Props) {
     const [reasonText, setReasonText] = useState('');
     const [customReason, setCustomReason] = useState('');
     const [dateIssued, setDateIssued] = useState(today);
-    const [validUntil, setValidUntil] = useState(todayPlus7);
     const [processing, setProcessing] = useState(false);
     const [selectedSlipForQr, setSelectedSlipForQr] = useState<AdmissionSlipRecord | null>(null);
+
+    const reasonTitles = [
+        'Absence due to Illness',
+        'Medical / Dental Checkup',
+        'Family Emergency',
+        'Bereavement',
+        'Late Enrollment / Payment',
+        'Official School Activity',
+        'Transportation Problem',
+        'Bad Weather / Calamity',
+        'Others',
+    ];
 
     const standardReasons = [
         'Illness / Not Feeling Well',
@@ -119,6 +144,28 @@ export default function StudentAdmissionSlipIndex({ slips = [] }: Props) {
         'Financial Concern',
     ];
 
+    const REASON_VALIDITY_DAYS: Record<string, number> = {
+        'Illness / Not Feeling Well': 3,
+        'Medical / Dental Appointment': 1,
+        'Family Emergency': 3,
+        'Bereavement in the Family': 7,
+        'Transportation Problem': 1,
+        'Bad Weather / Calamity': 2,
+        'Official School Activity': 5,
+        'Financial Concern': 3,
+        'Others': 2,
+    };
+
+    const getValidityDays = (reason: string): number => {
+        if (!reason) return 2;
+        for (const [key, days] of Object.entries(REASON_VALIDITY_DAYS)) {
+            if (reason.toLowerCase().includes(key.toLowerCase())) {
+                return days;
+            }
+        }
+        return 2;
+    };
+
     const addDaysIso = (isoDate: string, days: number) => {
         const base = new Date(`${isoDate}T00:00:00`);
         if (Number.isNaN(base.getTime())) return '';
@@ -128,9 +175,6 @@ export default function StudentAdmissionSlipIndex({ slips = [] }: Props) {
 
     const handleDateChange = (val: string) => {
         setDateIssued(val);
-        if (val) {
-            setValidUntil(addDaysIso(val, 7));
-        }
     };
 
     const handleReasonSelect = (r: string) => {
@@ -156,7 +200,6 @@ export default function StudentAdmissionSlipIndex({ slips = [] }: Props) {
         setReasonText('');
         setCustomReason('');
         setDateIssued(today);
-        setValidUntil(todayPlus7);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -168,15 +211,18 @@ export default function StudentAdmissionSlipIndex({ slips = [] }: Props) {
                 : reasonText.trim();
 
         const valErrors: string[] = [];
-        if (!caseText.trim()) valErrors.push('Reason Title / Case is required');
+        if (monthlyQuota.used >= monthlyQuota.limit) {
+            valErrors.push(
+                `Monthly quota limit reached: You have already used ${monthlyQuota.limit} admission slips for ${monthlyQuota.month}.`,
+            );
+        }
         if (!finalReason || finalReason === 'Others:')
             valErrors.push('Please select or specify a reason for absence');
         if (!dateIssued.trim()) valErrors.push('Date issued is required');
-        if (!validUntil.trim()) valErrors.push('Valid until date is required');
 
         if (valErrors.length) {
             Swal.fire({
-                title: 'Missing Required Fields',
+                title: 'Cannot Submit Request',
                 html: valErrors.map((err) => `• ${err}`).join('<br/>'),
                 icon: 'warning',
                 confirmButtonColor: '#0b2d66',
@@ -204,9 +250,8 @@ export default function StudentAdmissionSlipIndex({ slips = [] }: Props) {
                         student_name: resolvedName,
                         program_year_level: resolvedProgramYear,
                         date_issued: dateIssued.trim(),
-                        case_text: caseText.trim(),
+                        case_text: finalReason,
                         reason_text: finalReason,
-                        valid_until: validUntil.trim(),
                     },
                     {
                         preserveScroll: true,
@@ -415,11 +460,87 @@ export default function StudentAdmissionSlipIndex({ slips = [] }: Props) {
                                             Validity Period
                                         </div>
                                         <div className="text-sm font-bold text-slate-900 dark:text-white">
-                                            7-Day Active Pass
+                                            {reasonText
+                                                ? `Estimated: ${addDaysIso(dateIssued, getValidityDays(reasonText))}`
+                                                : 'Set upon approval'}
                                         </div>
                                         <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                                            Valid Until: {validUntil}
+                                            {reasonText
+                                                ? `Standard ${getValidityDays(reasonText)}-day validity (Adjustable by Admin)`
+                                                : 'Assigned by OSA Admin'}
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 3-QUOTA TRACKING BANNER */}
+                            <div
+                                className={`overflow-hidden rounded-2xl border p-4 sm:p-5 transition-all shadow-sm ${
+                                    monthlyQuota.used >= monthlyQuota.limit
+                                        ? 'border-rose-300 bg-rose-50/90 dark:border-rose-900/60 dark:bg-rose-950/40'
+                                        : monthlyQuota.used === 2
+                                          ? 'border-amber-300 bg-amber-50/90 dark:border-amber-900/60 dark:bg-amber-950/40'
+                                          : 'border-blue-200 bg-blue-50/70 dark:border-blue-900/40 dark:bg-blue-950/30'
+                                }`}
+                            >
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                    <div className="flex items-center gap-3.5">
+                                        <div
+                                            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-sm font-black shadow-md ${
+                                                monthlyQuota.used >= monthlyQuota.limit
+                                                    ? 'bg-rose-600 text-white shadow-rose-600/30'
+                                                    : monthlyQuota.used === 2
+                                                      ? 'bg-amber-500 text-white shadow-amber-500/30'
+                                                      : 'bg-blue-600 text-white shadow-blue-600/30'
+                                            }`}
+                                        >
+                                            {monthlyQuota.used}/{monthlyQuota.limit}
+                                        </div>
+                                        <div>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <span className="text-xs font-black tracking-wider text-slate-900 uppercase dark:text-white">
+                                                    Monthly Admission Quota
+                                                </span>
+                                                <span className="rounded-full bg-slate-200/80 px-2 py-0.5 text-[10px] font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                                    {monthlyQuota.month}
+                                                </span>
+                                            </div>
+                                            <p className="mt-1 text-xs font-medium text-slate-600 dark:text-slate-300">
+                                                {monthlyQuota.used >= monthlyQuota.limit ? (
+                                                    <span className="font-bold text-rose-600 dark:text-rose-400">
+                                                        Quota Limit Reached: Maximum of 3 slips per month reached. Additional requests require direct OSA office clearance.
+                                                    </span>
+                                                ) : (
+                                                    <span>
+                                                        You have{' '}
+                                                        <strong className="font-bold text-blue-600 dark:text-blue-400">
+                                                            {monthlyQuota.remaining} of {monthlyQuota.limit}
+                                                        </strong>{' '}
+                                                        slips available this calendar month.
+                                                    </span>
+                                                )}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* 3 Quota Indicator Slots */}
+                                    <div className="flex items-center gap-2 self-start sm:self-auto">
+                                        {[1, 2, 3].map((slot) => {
+                                            const isUsed = slot <= monthlyQuota.used;
+                                            return (
+                                                <div
+                                                    key={slot}
+                                                    className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold uppercase transition-all shadow-xs ${
+                                                        isUsed
+                                                            ? 'border border-rose-300 bg-rose-600 text-white dark:border-rose-700'
+                                                            : 'border border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                                    }`}
+                                                >
+                                                    <span>Slip #{slot}</span>
+                                                    <span>{isUsed ? '✓' : '—'}</span>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </div>
@@ -451,42 +572,26 @@ export default function StudentAdmissionSlipIndex({ slips = [] }: Props) {
                                                 htmlFor="validUntil"
                                                 className="text-xs font-black tracking-wider text-slate-600 uppercase dark:text-slate-300"
                                             >
-                                                Valid Until (Auto +7 Days) *
+                                                Valid Until
                                             </Label>
                                             <Input
                                                 id="validUntil"
-                                                type="date"
-                                                value={validUntil}
+                                                type="text"
+                                                value="To be set by Admin"
                                                 readOnly
                                                 className="h-12 cursor-not-allowed rounded-2xl border-slate-200 bg-slate-100 px-4 font-semibold text-slate-600 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400"
                                             />
-                                            <InputError message={errors.valid_until} />
                                         </div>
                                     </div>
 
-                                    {/* CASE / REASON TITLE */}
+                                    {/* REASON CATEGORY DROPDOWN */}
                                     <div className="space-y-2">
-                                        <Label
-                                            htmlFor="caseText"
-                                            className="text-xs font-black tracking-wider text-slate-600 uppercase dark:text-slate-300"
-                                        >
-                                            Reason Title / Case Summary *
-                                        </Label>
-                                        <Input
-                                            id="caseText"
-                                            value={caseText}
-                                            onChange={(e) => setCaseText(e.target.value)}
-                                            placeholder="e.g. Absence due to Flu / Medical Checkup / Family Emergency"
-                                            className="h-12 rounded-2xl border-slate-200 bg-slate-50/80 px-4 font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-500 dark:border-slate-800 dark:bg-slate-800/80 dark:text-white"
-                                        />
-                                        <InputError message={errors.case_text} />
-                                    </div>
-
-                                    {/* REASON CATEGORY SELECTOR */}
-                                    <div className="space-y-3">
                                         <div className="flex items-center justify-between">
-                                            <Label className="text-xs font-black tracking-wider text-slate-600 uppercase dark:text-slate-300">
-                                                Select Reason Category *
+                                            <Label
+                                                htmlFor="reasonSelect"
+                                                className="text-xs font-black tracking-wider text-slate-600 uppercase dark:text-slate-300"
+                                            >
+                                                Admission Slip Reason *
                                             </Label>
                                             {reasonText && (
                                                 <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">
@@ -495,62 +600,38 @@ export default function StudentAdmissionSlipIndex({ slips = [] }: Props) {
                                             )}
                                         </div>
 
-                                        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                                            {standardReasons.map((r) => {
-                                                const isSelected = reasonText === r;
-                                                return (
-                                                    <button
-                                                        key={r}
-                                                        type="button"
-                                                        onClick={() => handleReasonSelect(r)}
-                                                        className={`flex items-center justify-between rounded-2xl border p-4 text-left transition-all ${
-                                                            isSelected
-                                                                ? 'border-blue-600 bg-blue-50/80 text-blue-950 shadow-sm ring-2 ring-blue-500/20 dark:border-blue-500 dark:bg-blue-950/40 dark:text-blue-100'
-                                                                : 'border-slate-200/80 bg-slate-50/50 text-slate-700 hover:border-slate-300 hover:bg-slate-100/70 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-300 dark:hover:bg-slate-800/70'
-                                                        }`}
-                                                    >
-                                                        <span className="text-sm font-semibold">{r}</span>
-                                                        <div
-                                                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-all ${
-                                                                isSelected
-                                                                    ? 'border-blue-600 bg-blue-600 text-white dark:border-blue-500 dark:bg-blue-500'
-                                                                    : 'border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-800'
-                                                            }`}
-                                                        >
-                                                            {isSelected && <CheckCircle2 className="h-3.5 w-3.5" />}
-                                                        </div>
-                                                    </button>
-                                                );
-                                            })}
+                                        <select
+                                            id="reasonSelect"
+                                            value={reasonText}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setReasonText(val);
+                                                if (val !== 'Others') {
+                                                    setCustomReason('');
+                                                }
+                                            }}
+                                            className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 font-semibold text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-slate-800 dark:bg-slate-800/80 dark:text-white"
+                                        >
+                                            <option value="">-- Select admission slip reason --</option>
+                                            {standardReasons.map((r) => (
+                                                <option key={r} value={r}>
+                                                    {r}
+                                                </option>
+                                            ))}
+                                            <option value="Others">Others / Custom Reason (Specify below)</option>
+                                        </select>
+                                        <InputError message={errors.reason_text} />
 
-                                            {/* OTHERS OPTION */}
-                                            <button
-                                                type="button"
-                                                onClick={handleCustomReasonToggle}
-                                                className={`flex items-center justify-between rounded-2xl border p-4 text-left transition-all ${
-                                                    reasonText === 'Others'
-                                                        ? 'border-blue-600 bg-blue-50/80 text-blue-950 shadow-sm ring-2 ring-blue-500/20 dark:border-blue-500 dark:bg-blue-950/40 dark:text-blue-100'
-                                                        : 'border-slate-200/80 bg-slate-50/50 text-slate-700 hover:border-slate-300 hover:bg-slate-100/70 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-300 dark:hover:bg-slate-800/70'
-                                                }`}
-                                            >
-                                                <span className="text-sm font-semibold">
-                                                    Others / Custom Reason
+                                        {reasonText && (
+                                            <div className="flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50/80 px-3.5 py-2 text-xs font-medium text-blue-900 dark:border-blue-900/40 dark:bg-blue-950/40 dark:text-blue-300">
+                                                <Clock className="h-3.5 w-3.5 shrink-0 text-blue-600 dark:text-blue-400" />
+                                                <span>
+                                                    Institutional Policy: <strong>{getValidityDays(reasonText)} days</strong> validity (Estimated valid until <strong>{addDaysIso(dateIssued, getValidityDays(reasonText))}</strong>). Final validity can be adjusted by the OSA Admin.
                                                 </span>
-                                                <div
-                                                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-all ${
-                                                        reasonText === 'Others'
-                                                            ? 'border-blue-600 bg-blue-600 text-white dark:border-blue-500 dark:bg-blue-500'
-                                                            : 'border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-800'
-                                                    }`}
-                                                >
-                                                    {reasonText === 'Others' && (
-                                                        <CheckCircle2 className="h-3.5 w-3.5" />
-                                                    )}
-                                                </div>
-                                            </button>
-                                        </div>
+                                            </div>
+                                        )}
 
-                                        {/* CUSTOM REASON TEXTAREA */}
+                                        {/* CUSTOM REASON TEXTAREA (Shown when Others is chosen) */}
                                         {reasonText === 'Others' && (
                                             <div className="mt-3 animate-in space-y-2 duration-200 fade-in">
                                                 <Label
@@ -569,7 +650,6 @@ export default function StudentAdmissionSlipIndex({ slips = [] }: Props) {
                                                 />
                                             </div>
                                         )}
-                                        <InputError message={errors.reason_text} />
                                     </div>
 
                                     {/* NOTICE INFO */}
@@ -594,13 +674,21 @@ export default function StudentAdmissionSlipIndex({ slips = [] }: Props) {
                                         </Button>
                                         <Button
                                             type="submit"
-                                            disabled={processing}
-                                            className="h-12 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-8 text-xs font-black tracking-widest text-white uppercase shadow-lg shadow-blue-500/25 transition-all hover:from-blue-700 hover:to-indigo-700 active:scale-95 disabled:opacity-50"
+                                            disabled={
+                                                processing ||
+                                                monthlyQuota.used >= monthlyQuota.limit
+                                            }
+                                            className="h-12 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-8 text-xs font-black tracking-widest text-white uppercase shadow-lg shadow-blue-500/25 transition-all hover:from-blue-700 hover:to-indigo-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                                         >
                                             {processing ? (
                                                 <>
                                                     <Clock className="mr-2 h-4 w-4 animate-spin" />
                                                     Submitting Request...
+                                                </>
+                                            ) : monthlyQuota.used >= monthlyQuota.limit ? (
+                                                <>
+                                                    <AlertCircle className="mr-2 h-4 w-4" />
+                                                    Monthly Limit Reached (3/3)
                                                 </>
                                             ) : (
                                                 <>
@@ -649,9 +737,21 @@ export default function StudentAdmissionSlipIndex({ slips = [] }: Props) {
                                         >
                                             <div className="flex items-start justify-between border-b border-slate-100 p-5 dark:border-slate-800/80">
                                                 <div>
-                                                    <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
-                                                        Slip #{slip.id}
-                                                    </span>
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
+                                                            Slip #{slip.id}
+                                                        </span>
+                                                        {slip.slip_count && (
+                                                            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[9px] font-bold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+                                                                {slip.slip_count}
+                                                            </span>
+                                                        )}
+                                                        {slip.all_time_slip_count && (
+                                                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                                                                {slip.all_time_slip_count}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                     <h3 className="mt-0.5 text-base font-black text-slate-900 dark:text-white">
                                                         {slip.case_text}
                                                     </h3>
@@ -683,7 +783,7 @@ export default function StudentAdmissionSlipIndex({ slips = [] }: Props) {
                                                             Valid Until
                                                         </div>
                                                         <div className="font-semibold text-slate-900 dark:text-white">
-                                                            {slip.valid_until}
+                                                            {slip.valid_until || 'To be set by Admin'}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -743,7 +843,7 @@ export default function StudentAdmissionSlipIndex({ slips = [] }: Props) {
                             {selectedSlipForQr.case_text}
                         </p>
                         <p className="mt-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                            Valid Until: {selectedSlipForQr.valid_until}
+                            Valid Until: {selectedSlipForQr.valid_until || 'To be set by Admin'}
                         </p>
 
                         <p className="mt-4 text-[10px] leading-relaxed text-slate-400">

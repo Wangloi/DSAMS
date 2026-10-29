@@ -28,6 +28,7 @@ class DSAAdmissionSlipController extends Controller
         $slips = AdmissionSlip::with('student')
             ->orderBy('created_at', 'desc')
             ->paginate(10);
+        $slips->getCollection()->each->append('slip_count');
 
         return Inertia::render('dsa-dashboard/admission-slip/index', [
             'slips' => $slips,
@@ -85,9 +86,9 @@ class DSAAdmissionSlipController extends Controller
             'student_name' => 'sometimes|string|max:255',
             'program_year_level' => 'sometimes|string|max:255',
             'date_issued' => 'sometimes|string|max:255',
-            'case_text' => 'required|string|max:255',
-            'reason_text' => 'required|string|max:255',
-            'valid_until' => 'required|string|max:255',
+            'case_text' => 'sometimes|string|max:255',
+            'reason_text' => 'sometimes|string|max:255',
+            'valid_until' => 'sometimes|string|max:255',
             'status' => 'sometimes|string|max:255',
         ]);
 
@@ -113,7 +114,7 @@ class DSAAdmissionSlipController extends Controller
             ->with('success', 'Admission slip deleted successfully');
     }
 
-    public function approve(AdmissionSlip $admissionSlip)
+    public function approve(Request $request, AdmissionSlip $admissionSlip)
     {
         $user = Auth::user();
         
@@ -123,10 +124,19 @@ class DSAAdmissionSlipController extends Controller
         }
 
         $oldStatus = $admissionSlip->status;
-        $admissionSlip->update([
+        $updates = [
             'status' => 'APPROVED',
             'issued_by' => $user->id,
-        ]);
+        ];
+        if ($request->filled('valid_until')) {
+            $updates['valid_until'] = $request->input('valid_until');
+        } elseif (empty($admissionSlip->valid_until)) {
+            $updates['valid_until'] = AdmissionSlip::calculateValidUntil(
+                $admissionSlip->reason_text,
+                $admissionSlip->date_issued
+            );
+        }
+        $admissionSlip->update($updates);
 
         if (Schema::hasTable('activity_logs')) {
             ActivityLog::logForUser(

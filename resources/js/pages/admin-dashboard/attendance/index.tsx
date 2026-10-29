@@ -423,6 +423,9 @@ export default function AdminAttendancePage() {
                                 onSelectEventRow={(id) =>
                                     setSelectedListEventId(id ?? '')
                                 }
+                                printUrlForEvent={(eventId) =>
+                                    `/admin/attendance/${eventId}/print`
+                                }
                             />
                         </>
                     )}

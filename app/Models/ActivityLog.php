@@ -31,7 +31,7 @@ class ActivityLog extends Model
     public static function log(
         string $module,
         string $action,
-        string $details = null,
+        ?string $details = null,
         ?string $userName = null,
         ?string $userType = null,
         ?int $userId = null,
@@ -57,7 +57,7 @@ class ActivityLog extends Model
         $user,
         string $module,
         string $action,
-        string $details = null,
+        ?string $details = null,
         ?Request $request = null,
         $oldValue = null,
         $newValue = null

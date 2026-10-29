@@ -1,8 +1,8 @@
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { cn, toUrl } from '@/lib/utils';
-import type { NavItem } from '@/types';
-import { Link } from '@inertiajs/react';
-import { Lock, Palette, Settings, Shield, User } from 'lucide-react';
+import type { NavItem, SharedData } from '@/types';
+import { Link, usePage } from '@inertiajs/react';
+import { FileText, Lock, Palette, Settings, Shield, User } from 'lucide-react';
 import type { PropsWithChildren } from 'react';
 
 const sidebarNavItems: NavItem[] = [
@@ -30,6 +30,41 @@ const sidebarNavItems: NavItem[] = [
 
 export default function SettingsLayout({ children }: PropsWithChildren) {
     const { isCurrentUrl } = useCurrentUrl();
+    const { auth } = usePage<SharedData>().props;
+    const isStudent =
+        auth?.roleLabel === 'Student' ||
+        (auth?.user as any)?.role === 'student' ||
+        Boolean((auth?.user as any)?.student_id);
+
+    const navItems: NavItem[] = isStudent
+        ? [
+              {
+                  title: 'Profile',
+                  href: '/settings/profile',
+                  icon: User,
+              },
+              {
+                  title: 'Information Sheet',
+                  href: '/student/information-sheet',
+                  icon: FileText,
+              },
+              {
+                  title: 'Password',
+                  href: '/settings/password',
+                  icon: Lock,
+              },
+              {
+                  title: 'Two-Factor Auth',
+                  href: '/settings/two-factor',
+                  icon: Shield,
+              },
+              {
+                  title: 'Appearance',
+                  href: '/settings/appearance',
+                  icon: Palette,
+              },
+          ]
+        : sidebarNavItems;
 
     return (
         <div className="min-h-[calc(100vh-4rem)] bg-slate-100 dark:bg-slate-950">
@@ -66,7 +101,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                                 Settings
                             </p>
                             <ul className="flex flex-col gap-0.5" role="list">
-                                {sidebarNavItems.map((item, index) => {
+                                {navItems.map((item, index) => {
                                     const active = isCurrentUrl(item.href);
                                     const Icon = item.icon;
                                     return (

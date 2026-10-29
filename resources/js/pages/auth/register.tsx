@@ -1,9 +1,11 @@
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
+import { FormRequiredNotice } from '@/components/ui/form-required-notice';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import VideoBackground from '@/components/VideoBackground';
+import { focusFirstInvalidField } from '@/lib/formFocusNavigation';
 import { landing, login } from '@/routes';
 import { Head, Link, useForm } from '@inertiajs/react';
 import {
@@ -78,6 +80,9 @@ export default function Register() {
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
         form.post('/register', {
+            onError: () => {
+                setTimeout(() => focusFirstInvalidField(), 50);
+            },
             onFinish: () => form.reset('password', 'password_confirmation'),
         });
     };
@@ -142,9 +147,6 @@ export default function Register() {
             {/* Right: Modern Form Panel (Same layout and styling as Login Page right panel) */}
             <div className="relative z-10 flex h-svh w-full shrink-0 flex-col overflow-y-auto border-l border-white/10 bg-gradient-to-b from-[#1b2f8a] via-[#162775] to-[#101d5c] px-6 py-12 shadow-2xl sm:px-12 md:w-[480px] lg:w-[540px]">
                 <div className="my-auto w-full mx-auto max-w-sm space-y-6">
-                    
-
-
                     {/* Title Header */}
                     <div className="space-y-1 text-left">
                         <h2 className="text-3xl font-extrabold tracking-tight text-white">
@@ -155,11 +157,19 @@ export default function Register() {
                         </p>
                     </div>
 
-                    <form onSubmit={submit} className="space-y-4">
+                    <form onSubmit={submit} className="space-y-4" noValidate>
+                        <FormRequiredNotice
+                            message="Fields marked with * or Required must be completed."
+                            variant="badge"
+                            className="mb-2 border-blue-400/30 bg-blue-900/60 text-blue-100"
+                        />
+
                         {/* Role Selection (At the Top) */}
                         <div className="space-y-2">
                             <Label
                                 htmlFor="role"
+                                required
+                                showRequiredBadge
                                 className="text-xs font-semibold tracking-wider text-slate-200 uppercase"
                             >
                                 Register as
@@ -172,6 +182,8 @@ export default function Register() {
                                     required
                                     tabIndex={1}
                                     value={form.data.role}
+                                    aria-invalid={form.errors.role ? 'true' : undefined}
+                                    aria-describedby={form.errors.role ? 'role-error' : undefined}
                                     onChange={(e) => {
                                         const selectedRole = e.target.value;
                                         form.setData((data) => ({
@@ -181,7 +193,11 @@ export default function Register() {
                                             course: '',
                                         }));
                                     }}
-                                    className="h-12 w-full rounded-xl border border-white/20 bg-white/10 pr-3 pl-11 text-sm text-white focus:border-blue-400 focus:bg-[#162775] focus:outline-none transition-all"
+                                    className={`h-12 w-full rounded-xl border bg-white/10 pr-3 pl-11 text-sm text-white focus:border-blue-400 focus:bg-[#162775] focus:outline-none transition-all ${
+                                        form.errors.role
+                                            ? '!border-red-500 !ring-2 !ring-red-500/25'
+                                            : 'border-white/20'
+                                    }`}
                                 >
                                     <option value="" disabled className="bg-[#101d5c] text-slate-400">
                                         Select your role
@@ -191,13 +207,15 @@ export default function Register() {
                                     <option value="admin" className="bg-[#101d5c] text-white">Admin</option>
                                 </select>
                             </div>
-                            <InputError message={form.errors.role} />
+                            <InputError id="role-error" message={form.errors.role} />
                         </div>
 
                         {/* Username */}
                         <div className="space-y-2">
                             <Label
                                 htmlFor="name"
+                                required
+                                showRequiredBadge
                                 className="text-xs font-semibold tracking-wider text-slate-200 uppercase"
                             >
                                 Username
@@ -213,6 +231,8 @@ export default function Register() {
                                     autoComplete="name"
                                     name="name"
                                     value={form.data.name}
+                                    hasError={!!form.errors.name}
+                                    aria-describedby={form.errors.name ? 'name-error' : undefined}
                                     onChange={(e) =>
                                         form.setData(
                                             'name',
@@ -223,13 +243,15 @@ export default function Register() {
                                     className="h-12 rounded-xl border-white/20 bg-white/10 pl-11 text-white placeholder-slate-400 transition-all focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-400/30"
                                 />
                             </div>
-                            <InputError message={form.errors.name} />
+                            <InputError id="name-error" message={form.errors.name} />
                         </div>
 
                         {/* ID Number */}
                         <div className="space-y-2">
                             <Label
                                 htmlFor="student_id"
+                                required
+                                showRequiredBadge
                                 className="text-xs font-semibold tracking-wider text-slate-200 uppercase"
                             >
                                 {details.idLabel}
@@ -243,6 +265,8 @@ export default function Register() {
                                     tabIndex={3}
                                     name="student_id"
                                     value={form.data.student_id}
+                                    hasError={!!form.errors.student_id}
+                                    aria-describedby={form.errors.student_id ? 'student_id-error' : undefined}
                                     onChange={(e) =>
                                         form.setData(
                                             'student_id',
@@ -253,13 +277,15 @@ export default function Register() {
                                     className="h-12 rounded-xl border-white/20 bg-white/10 pl-11 text-white placeholder-slate-400 transition-all focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-400/30"
                                 />
                             </div>
-                            <InputError message={form.errors.student_id} />
+                            <InputError id="student_id-error" message={form.errors.student_id} />
                         </div>
 
                         {/* School Email */}
                         <div className="space-y-2">
                             <Label
                                 htmlFor="email"
+                                required
+                                showRequiredBadge
                                 className="text-xs font-semibold tracking-wider text-slate-200 uppercase"
                             >
                                 School Email
@@ -274,6 +300,8 @@ export default function Register() {
                                     autoComplete="email"
                                     name="email"
                                     value={form.data.email}
+                                    hasError={!!form.errors.email}
+                                    aria-describedby={form.errors.email ? 'email-error' : undefined}
                                     onChange={(e) =>
                                         form.setData(
                                             'email',
@@ -284,13 +312,15 @@ export default function Register() {
                                     className="h-12 rounded-xl border-white/20 bg-white/10 pl-11 text-white placeholder-slate-400 transition-all focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-400/30"
                                 />
                             </div>
-                            <InputError message={form.errors.email} />
+                            <InputError id="email-error" message={form.errors.email} />
                         </div>
 
                         {/* Course/Department */}
                         <div className="space-y-2">
                             <Label
                                 htmlFor="course"
+                                required
+                                showRequiredBadge
                                 className="text-xs font-semibold tracking-wider text-slate-200 uppercase"
                             >
                                 {details.courseLabel}
@@ -303,13 +333,19 @@ export default function Register() {
                                     required
                                     tabIndex={5}
                                     value={form.data.course}
+                                    aria-invalid={form.errors.course ? 'true' : undefined}
+                                    aria-describedby={form.errors.course ? 'course-error' : undefined}
                                     onChange={(e) =>
                                         form.setData(
                                             'course',
                                             e.target.value,
                                         )
                                     }
-                                    className="h-12 w-full rounded-xl border border-white/20 bg-white/10 pr-3 pl-11 text-sm text-white focus:border-blue-400 focus:bg-[#162775] focus:outline-none transition-all"
+                                    className={`h-12 w-full rounded-xl border bg-white/10 pr-3 pl-11 text-sm text-white focus:border-blue-400 focus:bg-[#162775] focus:outline-none transition-all ${
+                                        form.errors.course
+                                            ? '!border-red-500 !ring-2 !ring-red-500/25'
+                                            : 'border-white/20'
+                                    }`}
                                 >
                                     <option value="" disabled className="bg-[#101d5c] text-slate-400">
                                         {details.coursePlaceholder}
@@ -321,13 +357,15 @@ export default function Register() {
                                     ))}
                                 </select>
                             </div>
-                            <InputError message={form.errors.course} />
+                            <InputError id="course-error" message={form.errors.course} />
                         </div>
 
                         {/* Password */}
                         <div className="space-y-2">
                             <Label
                                 htmlFor="password"
+                                required
+                                showRequiredBadge
                                 className="text-xs font-semibold tracking-wider text-slate-200 uppercase"
                             >
                                 Password
@@ -342,6 +380,8 @@ export default function Register() {
                                     autoComplete="new-password"
                                     name="password"
                                     value={form.data.password}
+                                    hasError={!!form.errors.password}
+                                    aria-describedby={form.errors.password ? 'password-error' : undefined}
                                     onChange={(e) =>
                                         form.setData(
                                             'password',
@@ -352,13 +392,15 @@ export default function Register() {
                                     className="h-12 rounded-xl border-white/20 bg-white/10 pl-11 text-white placeholder-slate-400 transition-all focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-400/30"
                                 />
                             </div>
-                            <InputError message={form.errors.password} />
+                            <InputError id="password-error" message={form.errors.password} />
                         </div>
 
                         {/* Confirm Password */}
                         <div className="space-y-2">
                             <Label
                                 htmlFor="password_confirmation"
+                                required
+                                showRequiredBadge
                                 className="text-xs font-semibold tracking-wider text-slate-200 uppercase"
                             >
                                 Confirm Password
@@ -373,6 +415,8 @@ export default function Register() {
                                     autoComplete="new-password"
                                     name="password_confirmation"
                                     value={form.data.password_confirmation}
+                                    hasError={!!form.errors.password_confirmation}
+                                    aria-describedby={form.errors.password_confirmation ? 'password_confirmation-error' : undefined}
                                     onChange={(e) =>
                                         form.setData(
                                             'password_confirmation',
@@ -383,7 +427,7 @@ export default function Register() {
                                     className="h-12 rounded-xl border-white/20 bg-white/10 pl-11 text-white placeholder-slate-400 transition-all focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-400/30"
                                 />
                             </div>
-                            <InputError message={form.errors.password_confirmation} />
+                            <InputError id="password_confirmation-error" message={form.errors.password_confirmation} />
                         </div>
 
                         {/* Submit Button */}

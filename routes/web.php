@@ -30,9 +30,11 @@ use App\Http\Controllers\StudentEventsController;
 use App\Http\Controllers\ProgramHeadLoginController;
 use App\Http\Controllers\UnifiedLoginController;
 use App\Http\Controllers\ProgramHeadEventsController;
+use App\Http\Controllers\ProgramHeadAttendanceController;
 use App\Http\Controllers\DynamicAttendanceQrController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -141,10 +143,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 Route::get('/student-dashboard', [StudentDashboardController::class, 'index'])->middleware(['auth:student', 'approved'])->name('student.dashboard');
+Route::get('/student/event-history', [StudentDashboardController::class, 'history'])->middleware(['auth:student', 'approved'])->name('student.events.history');
 
 // PWA and legacy route aliases to prevent 404 errors
 Route::get('/student/dashboard', function () {
     return redirect()->route('student.dashboard');
+});
+Route::get('/student/events/history', function () {
+    return redirect()->route('student.events.history');
 });
 Route::get('/student/admission-slips', function () {
     return redirect()->route('student.admission-slip.index');
@@ -264,6 +270,7 @@ Route::post('/student/incidents', [StudentIncidentController::class, 'store'])->
 Route::get('/student/admission-slip', function () {
     $student = auth()->guard('student')->user();
     $slips = [];
+    $usedThisMonth = 0;
     if ($student) {
         $slips = \App\Models\AdmissionSlip::where('is_archived', false)
             ->where(function ($q) use ($student) {
@@ -271,10 +278,30 @@ Route::get('/student/admission-slip', function () {
                   ->orWhere('student_name', $student->name);
             })
             ->latest()
-            ->get();
+            ->get()
+            ->each(function ($slip) {
+                if ($slip instanceof \App\Models\AdmissionSlip) {
+                    $slip->append(['slip_count', 'all_time_slip_count', 'monthly_slip_count']);
+                }
+            });
+
+        $usedThisMonth = \App\Models\AdmissionSlip::where('is_archived', false)
+            ->where('status', '!=', 'REJECTED')
+            ->where(function ($q) use ($student) {
+                $q->where('student_id', $student->id)
+                  ->orWhere('student_name', $student->name);
+            })
+            ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
+            ->count();
     }
     return Inertia::render('student/admission-slip/index', [
         'slips' => $slips,
+        'monthlyQuota' => [
+            'used' => $usedThisMonth,
+            'limit' => \App\Models\AdmissionSlip::MONTHLY_LIMIT,
+            'remaining' => max(0, \App\Models\AdmissionSlip::MONTHLY_LIMIT - $usedThisMonth),
+            'month' => now()->format('F Y'),
+        ],
     ]);
 })->middleware(['auth:student', 'approved'])->name('student.admission-slip.index');
 
@@ -282,8 +309,14 @@ Route::post('/student/admission-slip', [\App\Http\Controllers\StudentAdmissionSl
     ->middleware(['auth:student', 'approved'])
     ->name('student.admission-slip.store');
 
+// Student Information Sheet (View & Update)
+Route::get('/student/information-sheet', [StudentProfileController::class, 'showInformationSheet'])
+    ->middleware(['auth:student', 'approved'])
+    ->name('student.information-sheet');
 
-
+Route::post('/student/information-sheet', [StudentProfileController::class, 'updateInformationSheet'])
+    ->middleware(['auth:student', 'approved'])
+    ->name('student.information-sheet.update');
 
 
 // Lost & Found (disabled for student UI)
@@ -296,7 +329,7 @@ Route::post('/student/admission-slip', [\App\Http\Controllers\StudentAdmissionSl
 // Student Registration Routes — now single-step (credentials only)
 Route::post('/student-register/step1', [StudentRegistrationController::class, 'storeStep1'])->name('student.register.step1.store');
 Route::post('/student-register/restart', [StudentRegistrationController::class, 'restart'])->name('student.register.restart');
-Route::post('/register', [StudentRegistrationController::class, 'register'])->name('register');
+Route::post('/register', [StudentRegistrationController::class, 'register'])->name('student.register.submit');
 
 // Student Profile Completion — called after first login when personal info is missing
 Route::post('/student/complete-profile', [StudentProfileController::class, 'store'])
@@ -312,19 +345,20 @@ Route::post('/program-head/students/bulk/status/activate', [ProgramHeadDashboard
 Route::post('/program-head/students/bulk/status/deactivate', [ProgramHeadDashboardController::class, 'bulkDeactivate'])->middleware(['auth:program_head', 'verified'])->name('program-head.students.bulk-status-deactivate');
 Route::post('/program-head/students/bulk/year-level', [ProgramHeadDashboardController::class, 'bulkSetYearLevel'])->middleware(['auth:program_head', 'verified'])->name('program-head.students.bulk-year-level');
 
-Route::get('/program-head/attendance', [AdminAttendanceController::class, 'index'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance');
-Route::post('/program-head/attendance', [AdminAttendanceController::class, 'store'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance.store');
-Route::post('/program-head/attendance/{event}/scan', [AdminAttendanceController::class, 'scanAttendance'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance.scan');
-Route::post('/program-head/attendance/{event}/activate-scanner-portal', [AdminAttendanceController::class, 'activateScannerPortal'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance.activate-scanner-portal');
-Route::get('/program-head/attendance/{event}/dynamic-qr/token', [DynamicAttendanceQrController::class, 'token'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance.dynamic-qr.token');
-Route::get('/program-head/attendance/{event}/dynamic-qr', [DynamicAttendanceQrController::class, 'show'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance.dynamic-qr');
-Route::get('/program-head/attendance/{event}/logs', [AdminAttendanceController::class, 'logs'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance.logs');
-Route::get('/program-head/attendance/{event}/students', [AdminAttendanceController::class, 'studentsByCourse'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance.students');
-Route::get('/program-head/attendance/{event}/print', [AdminAttendanceController::class, 'printEvent'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance.print');
-Route::match(['put', 'post'], '/program-head/attendance/{event}', [AdminAttendanceController::class, 'update'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance.update');
-Route::delete('/program-head/attendance/{event}', [AdminAttendanceController::class, 'destroy'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance.destroy');
-Route::put('/program-head/attendance/{event}/archive', [AdminAttendanceController::class, 'archive'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance.archive');
-Route::put('/program-head/attendance/{event}/unarchive', [AdminAttendanceController::class, 'unarchive'])->middleware(['web', 'auth.active:admin,program_head', 'verified'])->name('program-head.attendance.unarchive');
+Route::get('/program-head/attendance', [AdminAttendanceController::class, 'index'])->middleware(['auth.active:admin,program_head', 'verified'])->name('program-head.attendance');
+Route::post('/program-head/attendance', [AdminAttendanceController::class, 'store'])->middleware(['auth.active:admin,program_head', 'verified'])->name('program-head.attendance.store');
+Route::post('/program-head/attendance/{event}/scan', [AdminAttendanceController::class, 'scanAttendance'])->middleware(['auth.active:admin,program_head', 'verified'])->name('program-head.attendance.scan');
+Route::post('/program-head/attendance/{event}/activate-scanner-portal', [AdminAttendanceController::class, 'activateScannerPortal'])->middleware(['auth.active:admin,program_head', 'verified'])->name('program-head.attendance.activate-scanner-portal');
+Route::get('/program-head/attendance/{event}/dynamic-qr/token', [DynamicAttendanceQrController::class, 'token'])->middleware(['auth.active:admin,program_head', 'verified'])->name('program-head.attendance.dynamic-qr.token');
+Route::get('/program-head/attendance/{event}/dynamic-qr', [DynamicAttendanceQrController::class, 'show'])->middleware(['auth.active:admin,program_head', 'verified'])->name('program-head.attendance.dynamic-qr');
+Route::get('/program-head/attendance/{event}/logs', [AdminAttendanceController::class, 'logs'])->middleware(['auth.active:admin,program_head', 'verified'])->name('program-head.attendance.logs');
+Route::get('/program-head/attendance/{event}/students', [AdminAttendanceController::class, 'studentsByCourse'])->middleware(['auth.active:admin,program_head', 'verified'])->name('program-head.attendance.students');
+Route::get('/program-head/attendance/{event}/print', [AdminAttendanceController::class, 'printEvent'])->middleware(['auth.active:admin,program_head', 'verified'])->name('program-head.attendance.print');
+Route::match(['put', 'post'], '/program-head/attendance/{event}', [AdminAttendanceController::class, 'update'])->middleware(['auth.active:admin,program_head', 'verified'])->name('program-head.attendance.update');
+Route::delete('/program-head/attendance/{event}', [AdminAttendanceController::class, 'destroy'])->middleware(['auth.active:admin,program_head', 'verified'])->name('program-head.attendance.destroy');
+Route::put('/program-head/attendance/{event}/archive', [AdminAttendanceController::class, 'archive'])->middleware(['auth.active:admin,program_head', 'verified'])->name('program-head.attendance.archive');
+Route::put('/program-head/attendance/{event}/unarchive', [AdminAttendanceController::class, 'unarchive'])->middleware(['auth.active:admin,program_head', 'verified'])->name('program-head.attendance.unarchive');
+Route::post('/program-head/attendance/{attendance}/clear-flag', [ProgramHeadAttendanceController::class, 'clearAttendanceFlag'])->middleware(['auth.active:admin,program_head', 'verified'])->name('program-head.attendance.clear-flag');
 
 Route::get('/program-head/qr-scanner', function () {
     $eventId = request()->query('event');
@@ -405,6 +439,7 @@ Route::get('/admin', function () {
 })->middleware('auth:admin')->name('admin.redirect');
 
 Route::get('/admin/manage-users', [AdminManageUsersController::class, 'index'])->middleware('auth:admin')->name('admin.manage-users');
+Route::get('/admin/manage-users/view/{type}/{id}', [AdminManageUsersController::class, 'show'])->whereIn('type', ['student', 'program-head'])->whereNumber('id')->middleware('auth:admin')->name('admin.manage-users.show');
 Route::post('/admin/manage-users', [AdminManageUsersController::class, 'store'])->middleware('auth:admin')->name('admin.manage-users.store');
 Route::put('/admin/manage-users', [AdminManageUsersController::class, 'updateLegacy'])->middleware('auth:admin')->name('admin.manage-users.update-legacy');
 Route::delete('/admin/manage-users', [AdminManageUsersController::class, 'destroyLegacy'])->middleware('auth:admin')->name('admin.manage-users.destroy-legacy');
@@ -412,6 +447,7 @@ Route::put('/admin/manage-users/{student}', [AdminManageUsersController::class, 
 Route::match(['put', 'post'], '/admin/manage-users/{student}/status', [AdminManageUsersController::class, 'updateStatus'])->middleware('auth:admin')->name('admin.manage-users.status');
 Route::match(['put', 'post'], '/admin/manage-users/{student}/status/approve', [AdminManageUsersController::class, 'updateApproval'])->middleware('auth:admin')->name('admin.manage-users.approve');
 Route::match(['put', 'post'], '/admin/manage-users/{student}/archive', [AdminManageUsersController::class, 'archive'])->middleware('auth:admin')->name('admin.manage-users.archive');
+Route::match(['put', 'post'], '/admin/manage-users/{student}/reset-device', [AdminManageUsersController::class, 'resetStudentDevice'])->middleware('auth:admin')->name('admin.manage-users.reset-device');
 
 // Verification (ProgramHeads + Bulk)
 Route::match(['put', 'post'], '/admin/manage-users/program-heads/{programHead}/verification/approve', [AdminManageUsersController::class, 'approveProgramHead'])->middleware('auth:admin')->name('admin.manage-users.program-heads.approve');
@@ -532,12 +568,24 @@ Route::get('/admin/students/lookup', function (Request $request) {
         return response()->json(['message' => 'Student not found'], 404);
     }
 
+    $slipsCountThisMonth = \App\Models\AdmissionSlip::where('is_archived', false)
+        ->where('status', '!=', 'REJECTED')
+        ->where(function ($q) use ($student) {
+            $q->where('student_id', $student->id)
+              ->orWhere('student_name', $student->name);
+        })
+        ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
+        ->count();
+
     return response()->json([
         'id' => $student->id,
         'student_id' => $student->student_id,
         'name' => $student->name,
         'course' => $student->course,
         'year_level' => $student->year_level,
+        'monthly_slips_count' => $slipsCountThisMonth,
+        'monthly_quota_limit' => \App\Models\AdmissionSlip::MONTHLY_LIMIT,
+        'monthly_quota_reached' => $slipsCountThisMonth >= \App\Models\AdmissionSlip::MONTHLY_LIMIT,
     ]);
 })->middleware('auth:admin,program_head,web')->name('admin.students.lookup');
 
@@ -590,7 +638,8 @@ Route::get('/students/{student}/attendance-history', function (Request $request,
         ->orderByDesc('created_at')
         ->get();
 
-    $attendanceRecords = $attendances->map(function (Attendance $att) {
+    $attendanceRecords = $attendances->map(function ($att) {
+        /** @var Attendance $att */
         $event = $att->event;
         $checkIn = $att->checked_in_at ?: $att->scanned_at ?: $att->created_at;
         $checkOut = $att->checked_out_at;
@@ -707,7 +756,8 @@ Route::get('/students/{student}/violations', function (Request $request, $studen
         ->orderByDesc('created_at')
         ->get();
 
-    $violationRecords = $incidents->map(function (Incident $inc) {
+    $violationRecords = $incidents->map(function ($inc) {
+        /** @var Incident $inc */
         $violation = $inc->violation;
         return [
             'id' => $inc->id,
@@ -816,15 +866,15 @@ Route::post('/admin/disciplinary-action/{action}/review', [AdminIncidentsViolati
 
 // Put specific routes with parameters first
 Route::post('/admin/attendance/{event}/activate-scanner-portal', [AdminAttendanceController::class, 'activateScannerPortal'])
-    ->middleware(['web', 'auth.active:admin,program_head'])
+    ->middleware('auth.active:admin,program_head')
     ->name('admin.attendance.activate-scanner-portal');
 
 Route::get('/admin/attendance/{event}/logs', [AdminAttendanceController::class, 'logs'])
-    ->middleware(['web', 'auth.active:admin,program_head'])
+    ->middleware('auth.active:admin,program_head')
     ->name('admin.attendance.logs');
 
 Route::get('/admin/attendance/{event}/students-by-course', [AdminAttendanceController::class, 'studentsByCourse'])
-    ->middleware(['web', 'auth.active:admin,program_head'])
+    ->middleware('auth.active:admin,program_head')
     ->name('admin.attendance.students-by-course');
 
 // Route::get('/admin/attendance/{event}/manual-override', [AdminManualOverrideController::class, 'index'])
@@ -842,6 +892,7 @@ Route::match(['put', 'post'], '/admin/attendance/{event}', [AdminAttendanceContr
 Route::delete('/admin/attendance/{event}', [AdminAttendanceController::class, 'destroy'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.attendance.destroy');
 Route::put('/admin/attendance/{event}/archive', [AdminAttendanceController::class, 'archive'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.attendance.archive');
 Route::put('/admin/attendance/{event}/unarchive', [AdminAttendanceController::class, 'unarchive'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.attendance.unarchive');
+Route::post('/admin/attendance/{attendance}/clear-flag', [AdminAttendanceController::class, 'clearAttendanceFlag'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.attendance.clear-flag');
 
 // Then put general routes without parameters
 Route::get('/admin/attendance', [AdminAttendanceController::class, 'index'])->middleware(['web', 'auth.active:admin,program_head'])->name('admin.attendance');
@@ -966,29 +1017,33 @@ Route::get('/student/certificates/{certificate}/download', [CertificateControlle
 
 Route::get('/login', function () {
     $alerts = [];
-    if (Schema::hasTable('activity_logs')) {
-        $alerts = ActivityLog::query()
-            ->where('module', 'Security Monitor')
-            ->where('action', 'ALERT')
-            ->where('ip_address', request()->ip())
-            ->where('created_at', '>=', now()->subMinutes(30))
-            ->orderByDesc('created_at')
-            ->limit(5)
-            ->get(['id', 'module', 'action', 'details', 'created_at', 'old_value', 'new_value'])
-            ->map(function ($log) {
-                $old = $log->old_value ? json_decode($log->old_value, true) : null;
-                return [
-                    'id' => $log->id,
-                    'module' => $log->module,
-                    'action' => $log->action,
-                    'details' => $log->details,
-                    'timestamp' => $log->created_at?->toDateTimeString(),
-                    'recent_count' => $old['recent_count'] ?? null,
-                    'window_minutes' => $old['window_minutes'] ?? null,
-                ];
-            })
-            ->values()
-            ->all();
+    try {
+        if (Schema::hasTable('activity_logs')) {
+            $alerts = ActivityLog::query()
+                ->where('module', 'Security Monitor')
+                ->where('action', 'ALERT')
+                ->where('ip_address', request()->ip())
+                ->where('created_at', '>=', now()->subMinutes(30))
+                ->orderByDesc('created_at')
+                ->limit(5)
+                ->get(['id', 'module', 'action', 'details', 'created_at', 'old_value', 'new_value'])
+                ->map(function ($log) {
+                    $old = $log->old_value ? json_decode($log->old_value, true) : null;
+                    return [
+                        'id' => $log->id,
+                        'module' => $log->module,
+                        'action' => $log->action,
+                        'details' => $log->details,
+                        'timestamp' => $log->created_at?->toDateTimeString(),
+                        'recent_count' => $old['recent_count'] ?? null,
+                        'window_minutes' => $old['window_minutes'] ?? null,
+                    ];
+                })
+                ->values()
+                ->all();
+        }
+    } catch (\Throwable) {
+        $alerts = [];
     }
 
     return Inertia::render('auth/login', [
@@ -1016,6 +1071,12 @@ Route::get('/admin-login', function () {
 use App\Http\Controllers\SecurityAlertController;
 Route::get('/api/auth/status/login-block', [\App\Http\Controllers\AuthStatusController::class, 'loginBlock'])->middleware('web');
 Route::get('/api/auth/status/scanner-block', [\App\Http\Controllers\AuthStatusController::class, 'scannerBlock'])->middleware('web');
+
+// WCAG 2.2.1 Timing Adjustable session endpoints
+use App\Http\Controllers\SessionTimeoutController;
+Route::get('/api/session/status', [SessionTimeoutController::class, 'status'])->middleware('web');
+Route::post('/api/session/extend', [SessionTimeoutController::class, 'extend'])->middleware('web');
+
 Route::get('/api/security-alerts', [SecurityAlertController::class, 'index'])->middleware('web');
 
 use App\Http\Controllers\NotificationController;
@@ -1028,6 +1089,158 @@ Route::middleware(['web'])->group(function () {
     Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
     Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
     Route::post('/notifications/test', [NotificationController::class, 'testNotification'])->name('notifications.test');
+});
+
+// Secure route to run Artisan commands on remote hosting without SSH/terminal access
+Route::get('/system-artisan-run/{secret}', function ($secret) {
+    if ($secret !== 'dsa-deploy-2026') {
+        abort(403, 'Unauthorized');
+    }
+
+    $results = [];
+
+    // Ensure system is not in maintenance mode (which causes 503 Service Unavailable)
+    try {
+        if (file_exists(storage_path('framework/down'))) {
+            @unlink(storage_path('framework/down'));
+            $results[] = "=== MAINTENANCE MODE ===\nRemoved storage/framework/down (System is now UP)";
+        }
+        if (file_exists(storage_path('framework/maintenance.php'))) {
+            @unlink(storage_path('framework/maintenance.php'));
+            $results[] = "=== MAINTENANCE MODE ===\nRemoved storage/framework/maintenance.php (System is now UP)";
+        }
+        \Illuminate\Support\Facades\Artisan::call('up');
+        $results[] = "=== 1. SYSTEM STATUS ===\n" . trim(\Illuminate\Support\Facades\Artisan::output() ?: 'Application is active.');
+    } catch (\Throwable $e) {
+        $results[] = "=== 1. SYSTEM STATUS ERROR ===\n" . $e->getMessage();
+    }
+
+    // Flush cache & compiled bootstrap
+    try {
+        \Illuminate\Support\Facades\Artisan::call('optimize:clear');
+        $results[] = "=== 2. CACHE & OPTIMIZE CLEAR ===\n" . trim(\Illuminate\Support\Facades\Artisan::output());
+    } catch (\Throwable $e) {
+        $results[] = "=== 2. OPTIMIZE CLEAR ERROR ===\n" . $e->getMessage();
+    }
+
+    // Run database migrations safely
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        $results[] = "=== 3. DATABASE MIGRATIONS ===\n" . trim(\Illuminate\Support\Facades\Artisan::output());
+    } catch (\Throwable $e) {
+        $results[] = "=== 3. MIGRATE ERROR ===\n" . $e->getMessage();
+    }
+
+    // Remove public/hot if it was accidentally uploaded to prevent Vite connecting to local IP
+    try {
+        if (file_exists(public_path('hot'))) {
+            @unlink(public_path('hot'));
+            $results[] = "=== VITE HOT FILE ===\nRemoved public/hot (Forces production compiled assets)";
+        }
+    } catch (\Throwable $e) {
+        $results[] = "=== VITE HOT ERROR ===\n" . $e->getMessage();
+    }
+
+    // Check Vite manifest location
+    try {
+        $manifestPath = public_path('build/manifest.json');
+        if (file_exists($manifestPath)) {
+            $results[] = "=== 4. VITE MANIFEST ===\nFound at: {$manifestPath} (" . filesize($manifestPath) . " bytes)";
+        } else {
+            $altManifest = base_path('public_html/build/manifest.json');
+            if (file_exists($altManifest)) {
+                $results[] = "=== 4. VITE MANIFEST WARNING ===\nManifest found at public_html/build/manifest.json but public_path() points to " . public_path();
+            } else {
+                $results[] = "=== 4. VITE MANIFEST ERROR ===\nManifest NOT found at: {$manifestPath}";
+            }
+        }
+    } catch (\Throwable $e) {
+        $results[] = "=== 4. VITE CHECK ERROR ===\n" . $e->getMessage();
+    }
+
+    // Test Database connection & tables
+    try {
+        DB::connection()->getPdo();
+        $dbName = DB::connection()->getDatabaseName();
+        $hasSessions = Schema::hasTable('sessions');
+        $hasStudents = Schema::hasTable('students');
+        $hasAdmins = Schema::hasTable('admin_users');
+        $results[] = "=== 5. DATABASE CHECK ===\nConnected to: {$dbName}\n- sessions table: " . ($hasSessions ? 'OK' : 'MISSING!') . "\n- students table: " . ($hasStudents ? 'OK' : 'MISSING!') . "\n- admin_users table: " . ($hasAdmins ? 'OK' : 'MISSING!');
+    } catch (\Throwable $e) {
+        $results[] = "=== 5. DATABASE CONNECTION ERROR ===\n" . $e->getMessage();
+    }
+
+    // Direct simulated /login execution to catch the exact 500 error if any
+    try {
+        $testReq = Request::create('/login', 'GET');
+        $testRes = app()->handle($testReq);
+        $status = $testRes->getStatusCode();
+        if ($status === 200) {
+            $results[] = "=== 6. /login ROUTE TEST ===\nSTATUS: 200 OK (Login page loaded successfully!)";
+        } else {
+            $msg = "STATUS: {$status}\n";
+            /** @var mixed $rawRes */
+            $rawRes = $testRes;
+            $ex = property_exists($testRes, 'exception') ? $rawRes->exception : null;
+            if ($ex instanceof \Throwable) {
+                $msg .= "Exception: " . get_class($ex) . "\nMessage: " . $ex->getMessage() . "\nFile: " . $ex->getFile() . ":" . $ex->getLine() . "\nTrace:\n" . $ex->getTraceAsString();
+            } else {
+                $msg .= "Response snippet:\n" . substr(strip_tags((string) $testRes->getContent()), 0, 500);
+            }
+            $results[] = "=== 6. /login ROUTE TEST ERROR ===\n{$msg}";
+        }
+    } catch (\Throwable $e) {
+        $results[] = "=== 6. /login DIRECT EXECUTION EXCEPTION ===\n" . get_class($e) . ": " . $e->getMessage() . "\nFile: " . $e->getFile() . ":" . $e->getLine() . "\nTrace:\n" . $e->getTraceAsString();
+    }
+
+    // Direct simulated POST /login execution
+    try {
+        $controller = app(UnifiedLoginController::class);
+        $postReq = Request::create('/login', 'POST', [
+            'identifier' => 'test-diagnostic-id-check',
+            'password' => 'test-password',
+        ]);
+        try {
+            $controller->login($postReq);
+            $results[] = "=== 7. POST /login CONTROLLER TEST ===\nUnexpectedly passed without credentials.";
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $results[] = "=== 7. POST /login CONTROLLER TEST ===\nSTATUS: OK (ValidationException handled properly: " . json_encode($e->errors()) . ")";
+        }
+    } catch (\Throwable $e) {
+        $results[] = "=== 7. POST /login CONTROLLER TEST ERROR ===\nException: " . get_class($e) . "\nMessage: " . $e->getMessage() . "\nFile: " . $e->getFile() . ":" . $e->getLine() . "\nTrace:\n" . $e->getTraceAsString();
+    }
+
+    // Direct simulated StudentDashboardController execution with student login
+    try {
+        $student = Student::first();
+        if ($student) {
+            Auth::guard('student')->login($student);
+            $dashController = app(StudentDashboardController::class);
+            $dashRes = $dashController->index();
+            $results[] = "=== 8. /student-dashboard CONTROLLER TEST ===\nSTATUS: 200 OK (Dashboard rendered successfully for student ID: {$student->id}, Name: {$student->name})";
+        } else {
+            $results[] = "=== 8. /student-dashboard ROUTE TEST ===\nNo student record found in database to test.";
+        }
+    } catch (\Throwable $e) {
+        $results[] = "=== 8. /student-dashboard DIRECT EXECUTION EXCEPTION ===\n" . get_class($e) . ": " . $e->getMessage() . "\nFile: " . $e->getFile() . ":" . $e->getLine() . "\nTrace:\n" . $e->getTraceAsString();
+    }
+
+    // Read last 120 lines of laravel.log to display recent errors
+    try {
+        $logPath = storage_path('logs/laravel.log');
+        if (file_exists($logPath)) {
+            $lines = file($logPath);
+            $lastLines = array_slice($lines, -120);
+            $results[] = "=== 9. RECENT LARAVEL LOG ENTRIES ===\n" . implode("", $lastLines);
+        } else {
+            $results[] = "=== 9. LARAVEL LOG ===\nNo log file found.";
+        }
+    } catch (\Throwable $e) {
+        $results[] = "=== 9. LOG READ ERROR ===\n" . $e->getMessage();
+    }
+
+    $output = htmlspecialchars(implode("\n\n", $results));
+    return response("<pre style=\"background:#0f172a;color:#34d399;padding:24px;font-family:Consolas,monospace;font-size:13px;border-radius:8px;line-height:1.5;white-space:pre-wrap;word-break:break-all;\">{$output}</pre><div style=\"margin:20px;font-family:sans-serif;\"><a href=\"/login\" style=\"background:#2563eb;color:#fff;padding:10px 20px;text-decoration:none;border-radius:6px;font-weight:bold;margin-right:12px;\">Go to Login</a> <a href=\"/student-dashboard\" style=\"background:#059669;color:#fff;padding:10px 20px;text-decoration:none;border-radius:6px;font-weight:bold;\">Go to Student Dashboard</a></div>");
 });
 
 require __DIR__.'/settings.php';

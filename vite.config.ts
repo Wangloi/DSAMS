@@ -11,16 +11,17 @@ import os from 'os';
 function getLanIp(): string {
     const interfaces = os.networkInterfaces();
     for (const name of Object.keys(interfaces)) {
-        if (/virtual|vmware|vbox|vethernet|host-only/i.test(name)) {
+        if (/virtual|vmware|vbox|vethernet|host-only|cloudflare|warp|tun|tap/i.test(name)) {
             continue;
         }
         for (const iface of interfaces[name] ?? []) {
             if (iface.family === 'IPv4' && !iface.internal) {
-                // Exclude APIPA (169.254.x.x), VirtualBox host-only (192.168.56.x), and Windows Mobile Hotspot (192.168.137.x) subnets
+                // Exclude APIPA (169.254.x.x), VirtualBox host-only (192.168.56.x), Windows Mobile Hotspot (192.168.137.x), and Cloudflare WARP/VPN (172.16.x.x)
                 if (
                     !iface.address.startsWith('169.254.') &&
                     !iface.address.startsWith('192.168.56.') &&
-                    !iface.address.startsWith('192.168.137.')
+                    !iface.address.startsWith('192.168.137.') &&
+                    !iface.address.startsWith('172.16.')
                 ) {
                     return iface.address;
                 }

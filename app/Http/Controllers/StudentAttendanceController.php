@@ -12,9 +12,11 @@ use App\Services\Attendance\EvaluationGateService;
 use App\Services\Attendance\GeofenceValidationService;
 use App\Services\StudentNotificationDispatcher;
 use Carbon\Carbon;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -222,10 +224,113 @@ class StudentAttendanceController extends Controller
                 ], 422);
             }
 
-            $existing = Attendance::query()->where('event_id', $event->id)->where('student_id', $student->id)->first();
             $now = Carbon::now();
 
-            $scanEval = $event->evaluateAttendanceScan($now, $existing);
+            try {
+                [$attendance, $scanEval, $conflictedScans] = DB::transaction(function () use ($event, $student, $now, $validated, $request, $conflictService) {
+                    $existing = Attendance::query()
+                        ->where('event_id', $event->id)
+                        ->where('student_id', $student->id)
+                        ->lockForUpdate()
+                        ->first();
+
+                    $scanEval = $event->evaluateAttendanceScan($now, $existing);
+                    if (! $scanEval['allowed']) {
+                        return [$existing, $scanEval, []];
+                    }
+
+                    $status = $scanEval['status'];
+                    $isMidSession = ($scanEval['action'] === 'mid_session_verify');
+                    $isTimeOut = ($scanEval['action'] === 'check_out');
+
+                    $eventLat = $event->geofence_latitude;
+                    $eventLng = $event->geofence_longitude;
+                    $distanceRounded = null;
+                    if ((bool) ($event->geofence_enabled ?? false) && isset($validated['latitude'], $validated['longitude']) && $eventLat !== null && $eventLng !== null) {
+                        $distanceRounded = (int) round($this->geofenceService->haversineDistanceMeters((float) $validated['latitude'], (float) $validated['longitude'], (float) $eventLat, (float) $eventLng));
+                    }
+
+                    if (! $existing) {
+                        $attendance = Attendance::create([
+                            'event_id' => $event->id,
+                            'student_id' => $student->id,
+                            'scanned_at' => $now,
+                            'status' => $status,
+                            'checked_in_at' => $now,
+                            'check_in_latitude' => $validated['latitude'] ?? null,
+                            'check_in_longitude' => $validated['longitude'] ?? null,
+                            'check_in_accuracy_m' => isset($validated['accuracy_m']) ? (int) round((float) $validated['accuracy_m']) : null,
+                            'check_in_distance_m' => $distanceRounded,
+                            'check_in_token_id' => $validated['token'],
+                            'check_in_user_agent' => $request->userAgent(),
+                        ]);
+                    } elseif ($isMidSession) {
+                        $existing->update([
+                            'mid_session_verified_at' => $now,
+                            'scanned_at' => $now,
+                        ]);
+                        $attendance = $existing;
+                    } else {
+                        $updateData = [
+                            'status' => $status,
+                            'scanned_at' => $now,
+                            'checked_out_at' => $now,
+                            'check_out_latitude' => $validated['latitude'] ?? null,
+                            'check_out_longitude' => $validated['longitude'] ?? null,
+                            'check_out_accuracy_m' => isset($validated['accuracy_m']) ? (int) round((float) $validated['accuracy_m']) : null,
+                            'check_out_distance_m' => $distanceRounded,
+                            'check_out_token_id' => $validated['token'],
+                            'check_out_user_agent' => $request->userAgent(),
+                        ];
+                        if (! empty($scanEval['is_flagged'])) {
+                            $updateData['is_flagged'] = true;
+                            $updateData['flagged_reason'] = $scanEval['flagged_reason'] ?? 'Dwell gap detected';
+                        }
+                        $existing->update($updateData);
+                        $attendance = $existing;
+                    }
+
+                    // Also record attendance for any conflicting schedule events the student is eligible for
+                    $conflictedScans = $conflictService->recordAttendanceForEligibleConflicts(
+                        $event,
+                        $student,
+                        $now,
+                        $scanEval['action'],
+                        $status,
+                        [
+                            'latitude' => $validated['latitude'] ?? null,
+                            'longitude' => $validated['longitude'] ?? null,
+                            'accuracy_m' => $validated['accuracy_m'] ?? null,
+                            'distance_m' => $distanceRounded,
+                            'token_id' => $validated['token'],
+                            'user_agent' => $request->userAgent(),
+                        ],
+                        $request
+                    );
+
+                    $event->updateAttendanceCounts();
+
+                    return [$attendance, $scanEval, $conflictedScans];
+                });
+            } catch (QueryException $qe) {
+                // Gracefully handle parallel duplicate scan race condition
+                $existing = Attendance::query()
+                    ->where('event_id', $event->id)
+                    ->where('student_id', $student->id)
+                    ->first();
+
+                if ($existing) {
+                    return response()->json([
+                        'message' => 'Your attendance has already been recorded for this event.',
+                        'attendance_id' => $existing->id,
+                        'status' => $existing->status,
+                    ], 409);
+                }
+
+                \Log::error('Dynamic QR scan database error: ' . $qe->getMessage(), ['exception' => $qe]);
+                return response()->json(['message' => 'A database error occurred while processing your attendance scan. Please try again.'], 500);
+            }
+
             if (! $scanEval['allowed']) {
                 return response()->json([
                     'message' => $scanEval['error_message'],
@@ -233,64 +338,39 @@ class StudentAttendanceController extends Controller
             }
 
             $status = $scanEval['status'];
+            $isMidSession = ($scanEval['action'] === 'mid_session_verify');
             $isTimeOut = ($scanEval['action'] === 'check_out');
-
-            $eventLat = $event->geofence_latitude;
-            $eventLng = $event->geofence_longitude;
-            $distanceRounded = null;
-            if ((bool) ($event->geofence_enabled ?? false) && isset($validated['latitude'], $validated['longitude']) && $eventLat !== null && $eventLng !== null) {
-                $distanceRounded = (int) round($this->geofenceService->haversineDistanceMeters((float) $validated['latitude'], (float) $validated['longitude'], (float) $eventLat, (float) $eventLng));
-            }
-
-            if (! $existing) {
-                $attendance = Attendance::create([
-                    'event_id' => $event->id,
-                    'student_id' => $student->id,
-                    'scanned_at' => $now,
-                    'status' => $status,
-                    'checked_in_at' => $now,
-                    'check_in_latitude' => $validated['latitude'] ?? null,
-                    'check_in_longitude' => $validated['longitude'] ?? null,
-                    'check_in_accuracy_m' => isset($validated['accuracy_m']) ? (int) round((float) $validated['accuracy_m']) : null,
-                    'check_in_distance_m' => $distanceRounded,
-                    'check_in_token_id' => $validated['token'],
-                    'check_in_user_agent' => $request->userAgent(),
-                ]);
-            } else {
-                $existing->update([
-                    'scanned_at' => $now,
-                    'checked_out_at' => $now,
-                    'check_out_latitude' => $validated['latitude'] ?? null,
-                    'check_out_longitude' => $validated['longitude'] ?? null,
-                    'check_out_accuracy_m' => isset($validated['accuracy_m']) ? (int) round((float) $validated['accuracy_m']) : null,
-                    'check_out_distance_m' => $distanceRounded,
-                    'check_out_token_id' => $validated['token'],
-                    'check_out_user_agent' => $request->userAgent(),
-                ]);
-                $attendance = $existing;
-            }
-
-            // Also record attendance for any conflicting schedule events the student is eligible for
-            $conflictedScans = $conflictService->recordAttendanceForEligibleConflicts(
-                $event,
-                $student,
-                $now,
-                $isTimeOut ? 'check_out' : 'check_in',
-                $status,
-                [
-                    'latitude' => $validated['latitude'] ?? null,
-                    'longitude' => $validated['longitude'] ?? null,
-                    'accuracy_m' => $validated['accuracy_m'] ?? null,
-                    'distance_m' => $distanceRounded,
-                    'token_id' => $validated['token'],
-                    'user_agent' => $request->userAgent(),
-                ],
-                $request
-            );
-
-            $event->updateAttendanceCounts();
             try {
                 app(StudentNotificationDispatcher::class)->attendanceRecorded($event, $attendance);
+            } catch (\Throwable) {}
+
+            try {
+                app(\App\Services\RealtimeNotificationService::class)->broadcastAttendanceScan($event->id, [
+                    'action' => $scanEval['action'],
+                    'status' => $attendance->status,
+                    'scanned_at' => $now->toDateTimeString(),
+                    'time' => $now->format('h:i A'),
+                    'is_flagged' => (bool) ($attendance->is_flagged ?? false),
+                    'student' => [
+                        'id' => $student->id,
+                        'student_id' => $student->student_id,
+                        'name' => $student->name,
+                        'course' => $student->course ?? $student->program,
+                        'year_level' => $student->year_level,
+                    ],
+                    'log' => [
+                        'id' => (string) $attendance->id,
+                        'student_id' => (string) $student->student_id,
+                        'name' => (string) $student->name,
+                        'program' => (string) ($student->course ?? $student->program ?? ''),
+                        'course' => (string) ($student->course ?? $student->program ?? ''),
+                        'year_level' => (string) ($student->year_level ?? ''),
+                        'time' => $now->format('h:i A'),
+                        'status' => $attendance->status,
+                        'scanned' => true,
+                        'action' => $scanEval['action'],
+                    ],
+                ]);
             } catch (\Throwable) {}
 
             $conflictedSuffix = '';
@@ -303,14 +383,27 @@ class StudentAttendanceController extends Controller
                 ? 'Time-in (Check-in) recorded as LATE.'
                 : 'Time-in (Check-in) recorded successfully (On-Time).';
 
+            $midSessionLabel = 'Mid-session in-venue presence verified successfully (Spot-Check Confirmed).';
+
+            $checkOutLabel = $status === 'left_early'
+                ? 'Time-out recorded: Early Departure (Left before official conclusion).'
+                : ($attendance->is_flagged
+                    ? 'Time-out recorded with WARNING: Missing mid-session presence verification. Attendance flagged for administrative review.'
+                    : 'Time-out (Check-out) recorded successfully. Full attendance verified.');
+
+            $finalMessage = $isMidSession ? $midSessionLabel : ($isTimeOut ? $checkOutLabel : $checkInLabel);
+
             return response()->json([
                 'attendance_id' => $attendance->id,
                 'status' => $attendance->status,
-                'action' => $isTimeOut ? 'check_out' : 'check_in',
-                'message' => ($isTimeOut ? 'Time-out (Check-out) recorded successfully.' : $checkInLabel) . $conflictedSuffix,
+                'action' => $scanEval['action'],
+                'is_flagged' => (bool) ($attendance->is_flagged ?? false),
+                'flagged_reason' => $attendance->flagged_reason,
+                'message' => $finalMessage . $conflictedSuffix,
                 'conflicted_events_scanned' => $conflictedScans,
                 'checked_in_at' => optional($attendance->checked_in_at)->toDateTimeString(),
                 'checked_out_at' => $attendance->checked_out_at ? optional($attendance->checked_out_at)->toDateTimeString() : null,
+                'mid_session_verified_at' => $attendance->mid_session_verified_at ? optional($attendance->mid_session_verified_at)->toDateTimeString() : null,
                 'student' => [
                     'id' => $student->id,
                     'student_id' => $student->student_id,
@@ -398,127 +491,144 @@ class StudentAttendanceController extends Controller
                 ], 422);
             }
 
-            $existing = Attendance::query()->where('event_id', $event->id)->where('student_id', $student->id)->first();
-            $now = Carbon::now();
-
-            $scanEval = $event->evaluateAttendanceScan($now, $existing);
-            if (! $scanEval['allowed']) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $scanEval['error_message'],
-                ], $scanEval['status_code']);
-            }
-
-            $status = $scanEval['status'];
-            $isTimeOut = ($scanEval['action'] === 'check_out');
-
             $eventLat = $event->geofence_latitude ?? config('geofence.campus_latitude', 8.743070);
             $eventLng = $event->geofence_longitude ?? config('geofence.campus_longitude', 124.774500);
             $distanceRounded = (int) round($this->geofenceService->haversineDistanceMeters((float) $validated['latitude'], (float) $validated['longitude'], (float) $eventLat, (float) $eventLng));
             $allowedRadius = (int) ($event->geofence_radius_m ?? 50);
 
-            if (! $existing) {
-                $attendance = Attendance::create([
-                    'event_id' => $event->id,
-                    'student_id' => $student->id,
-                    'scanned_at' => $now,
-                    'status' => $status,
-                    'checked_in_at' => $now,
-                    'check_in_latitude' => $validated['latitude'],
-                    'check_in_longitude' => $validated['longitude'],
-                    'check_in_accuracy_m' => isset($validated['accuracy_m']) ? (int) round((float) $validated['accuracy_m']) : null,
-                    'check_in_distance_m' => $distanceRounded,
-                    'check_in_user_agent' => $request->userAgent(),
-                ]);
+            $result = \Illuminate\Support\Facades\DB::transaction(function () use ($event, $student, $validated, $distanceRounded, $allowedRadius, $request, $conflictService) {
+                $existing = Attendance::query()
+                    ->where('event_id', $event->id)
+                    ->where('student_id', $student->id)
+                    ->lockForUpdate()
+                    ->first();
+                $now = Carbon::now();
 
-                // Also record for eligible conflicting schedule events
-                $conflictedScans = $conflictService->recordAttendanceForEligibleConflicts(
-                    $event,
-                    $student,
-                    $now,
-                    'check_in',
-                    $status,
-                    [
-                        'latitude' => $validated['latitude'],
-                        'longitude' => $validated['longitude'],
-                        'accuracy_m' => $validated['accuracy_m'] ?? null,
-                        'distance_m' => $distanceRounded,
-                        'user_agent' => $request->userAgent(),
-                    ],
-                    $request
-                );
-
-                $event->updateAttendanceCounts();
-                try {
-                    app(StudentNotificationDispatcher::class)->attendanceRecorded($event, $attendance);
-                } catch (\Throwable) {}
-
-                $conflictedSuffix = '';
-                if (! empty($conflictedScans)) {
-                    $names = array_column($conflictedScans, 'event_name');
-                    $conflictedSuffix = ' (Also recorded for conflicting schedule: ' . implode(', ', $names) . ')';
+                $scanEval = $event->evaluateAttendanceScan($now, $existing);
+                if (! $scanEval['allowed']) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $scanEval['error_message'],
+                    ], $scanEval['status_code']);
                 }
 
-                $checkInMsg = $status === 'late'
-                    ? "Check-in successful (Late Arrival)! You are {$distanceRounded}m from the venue." . $conflictedSuffix
-                    : "Check-in successful! You are {$distanceRounded}m from the venue." . $conflictedSuffix;
+                $status = $scanEval['status'];
+                $isTimeOut = ($scanEval['action'] === 'check_out');
 
-                return response()->json([
-                    'success' => true,
-                    'message' => $checkInMsg,
-                    'type' => 'check_in',
-                    'status' => $status,
-                    'distance_m' => $distanceRounded,
-                    'allowed_radius_m' => $allowedRadius,
-                    'checked_at' => $now->toDateTimeString(),
-                    'conflicted_events_scanned' => $conflictedScans,
-                ]);
-            } else {
-                $existing->update([
-                    'scanned_at' => $now,
-                    'checked_out_at' => $now,
-                    'check_out_latitude' => $validated['latitude'],
-                    'check_out_longitude' => $validated['longitude'],
-                    'check_out_accuracy_m' => isset($validated['accuracy_m']) ? (int) round((float) $validated['accuracy_m']) : null,
-                    'check_out_distance_m' => $distanceRounded,
-                ]);
+                if (! $existing) {
+                    $attendance = Attendance::create([
+                        'event_id' => $event->id,
+                        'student_id' => $student->id,
+                        'scanned_at' => $now,
+                        'status' => $status,
+                        'checked_in_at' => $now,
+                        'check_in_latitude' => $validated['latitude'],
+                        'check_in_longitude' => $validated['longitude'],
+                        'check_in_accuracy_m' => isset($validated['accuracy_m']) ? (int) round((float) $validated['accuracy_m']) : null,
+                        'check_in_distance_m' => $distanceRounded,
+                        'check_in_user_agent' => $request->userAgent(),
+                    ]);
 
-                // Also record checkout for eligible conflicting schedule events
-                $conflictedScans = $conflictService->recordAttendanceForEligibleConflicts(
-                    $event,
-                    $student,
-                    $now,
-                    'check_out',
-                    $status,
-                    [
-                        'latitude' => $validated['latitude'],
-                        'longitude' => $validated['longitude'],
-                        'accuracy_m' => $validated['accuracy_m'] ?? null,
+                    // Also record for eligible conflicting schedule events
+                    $conflictedScans = $conflictService->recordAttendanceForEligibleConflicts(
+                        $event,
+                        $student,
+                        $now,
+                        'check_in',
+                        $status,
+                        [
+                            'latitude' => $validated['latitude'],
+                            'longitude' => $validated['longitude'],
+                            'accuracy_m' => $validated['accuracy_m'] ?? null,
+                            'distance_m' => $distanceRounded,
+                            'user_agent' => $request->userAgent(),
+                        ],
+                        $request
+                    );
+
+                    $event->updateAttendanceCounts();
+                    try {
+                        app(StudentNotificationDispatcher::class)->attendanceRecorded($event, $attendance);
+                    } catch (\Throwable) {}
+
+                    $conflictedSuffix = '';
+                    if (! empty($conflictedScans)) {
+                        $names = array_column($conflictedScans, 'event_name');
+                        $conflictedSuffix = ' (Also recorded for conflicting schedule: ' . implode(', ', $names) . ')';
+                    }
+
+                    $checkInMsg = $status === 'late'
+                        ? "Check-in successful (Late Arrival)! You are {$distanceRounded}m from the venue." . $conflictedSuffix
+                        : "Check-in successful! You are {$distanceRounded}m from the venue." . $conflictedSuffix;
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => $checkInMsg,
+                        'type' => 'check_in',
+                        'status' => $status,
                         'distance_m' => $distanceRounded,
-                        'user_agent' => $request->userAgent(),
-                    ],
-                    $request
-                );
+                        'allowed_radius_m' => $allowedRadius,
+                        'checked_at' => $now->toDateTimeString(),
+                        'conflicted_events_scanned' => $conflictedScans,
+                    ]);
+                } else {
+                    $existing->update([
+                        'scanned_at' => $now,
+                        'checked_out_at' => $now,
+                        'check_out_latitude' => $validated['latitude'],
+                        'check_out_longitude' => $validated['longitude'],
+                        'check_out_accuracy_m' => isset($validated['accuracy_m']) ? (int) round((float) $validated['accuracy_m']) : null,
+                        'check_out_distance_m' => $distanceRounded,
+                    ]);
 
-                $event->updateAttendanceCounts();
+                    // Also record checkout for eligible conflicting schedule events
+                    $conflictedScans = $conflictService->recordAttendanceForEligibleConflicts(
+                        $event,
+                        $student,
+                        $now,
+                        'check_out',
+                        $status,
+                        [
+                            'latitude' => $validated['latitude'],
+                            'longitude' => $validated['longitude'],
+                            'accuracy_m' => $validated['accuracy_m'] ?? null,
+                            'distance_m' => $distanceRounded,
+                            'user_agent' => $request->userAgent(),
+                        ],
+                        $request
+                    );
 
-                $conflictedSuffix = '';
-                if (! empty($conflictedScans)) {
-                    $names = array_column($conflictedScans, 'event_name');
-                    $conflictedSuffix = ' (Also recorded for conflicting schedule: ' . implode(', ', $names) . ')';
+                    $event->updateAttendanceCounts();
+
+                    $conflictedSuffix = '';
+                    if (! empty($conflictedScans)) {
+                        $names = array_column($conflictedScans, 'event_name');
+                        $conflictedSuffix = ' (Also recorded for conflicting schedule: ' . implode(', ', $names) . ')';
+                    }
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => "Check-out successful! You are {$distanceRounded}m from the venue." . $conflictedSuffix,
+                        'type' => 'check_out',
+                        'status' => $existing->status,
+                        'distance_m' => $distanceRounded,
+                        'allowed_radius_m' => $allowedRadius,
+                        'checked_at' => $now->toDateTimeString(),
+                        'conflicted_events_scanned' => $conflictedScans,
+                    ]);
                 }
+            });
 
-                return response()->json([
-                    'success' => true,
-                    'message' => "Check-out successful! You are {$distanceRounded}m from the venue." . $conflictedSuffix,
-                    'type' => 'check_out',
-                    'status' => $existing->status,
-                    'distance_m' => $distanceRounded,
-                    'allowed_radius_m' => $allowedRadius,
-                    'checked_at' => $now->toDateTimeString(),
-                    'conflicted_events_scanned' => $conflictedScans,
-                ]);
+            return $result;
+        } catch (\Illuminate\Database\QueryException $qe) {
+            \Log::warning('Direct geofence checkin query exception: ' . $qe->getMessage(), [
+                'event_id' => $event->id,
+                'student_id' => $student->id,
+            ]);
+            if (isset($qe->errorInfo[1]) && $qe->errorInfo[1] == 1062) {
+                return response()->json(['message' => 'Attendance has already been recorded for this event.'], 409);
             }
+            return response()->json(['message' => 'A database conflict occurred while recording attendance.'], 409);
         } catch (\Throwable $e) {
             \Log::error('Direct geofence checkin error: ' . $e->getMessage(), ['exception' => $e]);
             return response()->json(['message' => 'Attendance error: ' . $e->getMessage()], 500);

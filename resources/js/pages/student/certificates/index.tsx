@@ -467,7 +467,7 @@ export default function CertificatesPage() {
                                                                 cert.event_id,
                                                             )
                                                         }
-                                                        className="h-10 w-full rounded-lg bg-slate-900 text-[10px] font-black tracking-[0.2em] text-white uppercase shadow-md transition-all duration-500 hover:bg-blue-600 hover:text-white active:scale-[0.98] dark:bg-white dark:text-slate-900 dark:hover:bg-blue-600"
+                                                        className="h-10 w-full rounded-lg bg-blue-600 text-[10px] font-black tracking-[0.2em] text-white uppercase shadow-md shadow-blue-500/20 transition-all duration-500 hover:bg-blue-700 active:scale-[0.98] dark:bg-blue-600 dark:hover:bg-blue-500"
                                                     >
                                                         {generating ===
                                                         cert.event_id ? (
@@ -658,7 +658,7 @@ export default function CertificatesPage() {
                                                                     certificate.id,
                                                                 )
                                                             }
-                                                            className="h-9 flex-1 rounded-lg bg-slate-900 text-[9px] font-black tracking-widest text-white uppercase shadow-md transition-all hover:bg-blue-600 hover:text-white active:scale-95 dark:bg-white dark:text-slate-900 dark:hover:bg-blue-600 dark:hover:text-white"
+                                                            className="h-9 flex-1 rounded-lg bg-blue-600 text-[9px] font-black tracking-widest text-white uppercase shadow-md shadow-blue-500/20 transition-all hover:bg-blue-700 active:scale-95 dark:bg-blue-600 dark:hover:bg-blue-500"
                                                         >
                                                             {downloading ===
                                                             certificate.id ? (
@@ -682,7 +682,7 @@ export default function CertificatesPage() {
             </StudentLayout>
 
             <Dialog open={showDetails} onOpenChange={setShowDetails}>
-                <DialogContent className="fixed top-[50%] left-[50%] z-50 w-[95vw] sm:max-w-[640px] md:max-w-[680px] lg:max-w-[700px] translate-x-[-50%] translate-y-[-50%] max-h-[95vh] overflow-y-auto border bg-white p-3 sm:p-4 shadow-2xl duration-200 rounded-xl sm:rounded-2xl dark:bg-slate-900 dark:border-slate-800">
+                <DialogContent size="lg" className="max-h-[95vh] overflow-y-auto p-4 sm:p-6">
                     {/* Header Controls */}
                     <DialogHeader className="mb-1.5 flex flex-row items-center justify-between border-b border-gray-100 pb-1.5 text-left print:hidden dark:border-slate-800">
                         <div>
@@ -925,7 +925,7 @@ export default function CertificatesPage() {
                                     disabled={
                                         downloading === selectedCertificate.id
                                     }
-                                    className="h-8 w-full sm:w-auto gap-1.5 bg-[#0c2340] text-xs text-white hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+                                    className="h-8 w-full sm:w-auto gap-1.5 bg-blue-600 text-xs text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500"
                                 >
                                     {downloading === selectedCertificate.id ? (
                                         <Loader2 className="h-3.5 w-3.5 animate-spin" />

@@ -8,6 +8,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { FormRequiredNotice } from '@/components/ui/form-required-notice';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -261,52 +262,45 @@ export default function AddProgramHeadDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[88vh] w-[95vw] sm:max-w-3xl flex-col overflow-hidden rounded-3xl border-0 bg-white p-0 shadow-2xl dark:bg-slate-950 [&>button]:hidden">
-                {/* Hero Header with Deep Blue Gradient & Glassmorphism */}
-                <div className="relative shrink-0 overflow-hidden bg-gradient-to-r from-[#000D6A] via-[#102A83] to-[#0B4DFF] px-6 py-4.5 text-white shadow-md sm:px-8">
-                    {/* Decorative glowing background blobs */}
-                    <div className="pointer-events-none absolute -top-12 -right-12 h-44 w-44 rounded-full bg-cyan-400/20 blur-3xl" />
-                    <div className="pointer-events-none absolute -bottom-10 left-1/3 h-32 w-32 rounded-full bg-blue-500/20 blur-2xl" />
-
-                    <div className="relative z-10 flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3.5">
-                            <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 shadow-inner ring-1 ring-white/30 backdrop-blur-md">
-                                <ActiveIcon className="h-6 w-6 text-[#8CE4FF] transition-all" />
-                                <span className="absolute -bottom-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-[#102A83]">
-                                    <Sparkles className="h-2.5 w-2.5 text-white" />
-                                </span>
-                            </div>
-
-                            <DialogHeader className="p-0 text-left">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <DialogTitle className="text-lg font-black tracking-tight text-white sm:text-xl">
-                                        {editingUser ? 'Edit Personnel' : 'Add New Personnel'}
-                                    </DialogTitle>
-                                    <span className="rounded-full bg-blue-400/20 px-2.5 py-0.5 text-[10px] font-bold text-[#8CE4FF] uppercase tracking-wider backdrop-blur-sm">
-                                        {activeRole} Account
-                                    </span>
-                                </div>
-                                <DialogDescription className="mt-0.5 text-xs font-medium text-blue-100/90">
-                                    {editingUser
-                                        ? 'Update personnel credentials, role status, and assigned academic department.'
-                                        : 'Configure credentials and department affiliation for faculty, program heads, or office staff.'}
-                                </DialogDescription>
-                            </DialogHeader>
+            <DialogContent size="lg" className="flex max-h-[88vh] w-[95vw] flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-900 [&>button]:hidden">
+                <div className="flex shrink-0 items-center justify-between border-b border-slate-100 bg-white px-6 py-5 dark:border-slate-800 dark:bg-slate-900 sm:px-8">
+                    <div className="flex items-center gap-3.5">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-[#23509A] dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
+                            <ActiveIcon className="h-5 w-5" />
                         </div>
 
-                        {/* Top Close Button */}
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="rounded-full bg-white/10 p-2 text-white/80 transition-all hover:bg-white/20 hover:text-white active:scale-95"
-                        >
-                            <X className="h-4 w-4" />
-                        </button>
+                        <DialogHeader className="p-0 text-left">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <DialogTitle className="text-lg font-bold tracking-tight text-slate-900 dark:text-white sm:text-xl">
+                                    {editingUser ? 'Edit Personnel' : 'Add New Personnel'}
+                                </DialogTitle>
+                                <span className="rounded-full border border-blue-200/60 bg-blue-50 px-2.5 py-0.5 text-[10px] font-bold text-[#23509A] uppercase tracking-wider dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300">
+                                    {activeRole} Account
+                                </span>
+                            </div>
+                            <DialogDescription className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                {editingUser
+                                    ? 'Update personnel credentials, role status, and assigned academic department.'
+                                    : 'Configure credentials and department affiliation for faculty, program heads, or office staff.'}
+                            </DialogDescription>
+                        </DialogHeader>
                     </div>
+
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label="Close dialog"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300 cursor-pointer"
+                    >
+                        <X className="h-4 w-4" />
+                    </button>
                 </div>
 
                 {/* Form Body Scrollable Area */}
                 <div className="scrollbar-thin min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-5 sm:px-8">
+                    {/* Standard Form Required Notice */}
+                    <FormRequiredNotice message="Personnel registration fields marked with * or Required must be completed." />
+
                     {/* Error Banner */}
                     {hasAnyError && (
                         <div className="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50/90 p-4 text-xs font-semibold text-red-700 shadow-sm dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
@@ -549,9 +543,11 @@ export default function AddProgramHeadDialog({
                             <div className="flex flex-wrap items-center justify-between gap-1">
                                 <Label
                                     htmlFor="ph_name"
+                                    required
+                                    showRequiredBadge
                                     className="text-xs font-semibold text-slate-600 dark:text-slate-400"
                                 >
-                                    Full Name & Title *
+                                    Full Name & Title
                                 </Label>
                                 <div className="flex flex-wrap items-center gap-1">
                                     <span className="text-[10px] text-slate-400 mr-0.5">Quick prefix:</span>
@@ -573,6 +569,8 @@ export default function AddProgramHeadDialog({
                                     id="ph_name"
                                     placeholder="e.g. Dr. Maria Clara Santos"
                                     value={String(form.name ?? '')}
+                                    hasError={!!(errors as any).name}
+                                    aria-describedby={(errors as any).name ? 'ph-name-error' : undefined}
                                     onChange={(e) =>
                                         setForm((p) => ({
                                             ...p,
@@ -582,7 +580,7 @@ export default function AddProgramHeadDialog({
                                     className="h-11 rounded-xl border-slate-200 bg-white pl-10 text-sm font-medium shadow-xs focus:border-[#23509A] focus:ring-2 focus:ring-[#23509A]/20 dark:border-slate-700 dark:bg-slate-900"
                                 />
                             </div>
-                            <InputError message={(errors as any).name} />
+                            <InputError id="ph-name-error" message={(errors as any).name} />
                         </div>
 
                         {/* Email Address & Password row */}
@@ -591,9 +589,11 @@ export default function AddProgramHeadDialog({
                             <div className="grid gap-1.5">
                                 <Label
                                     htmlFor="ph_email"
+                                    required
+                                    showRequiredBadge
                                     className="text-xs font-semibold text-slate-600 dark:text-slate-400"
                                 >
-                                    Institutional Email Address *
+                                    Institutional Email Address
                                 </Label>
                                 <div className="relative">
                                     <Mail className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -602,6 +602,8 @@ export default function AddProgramHeadDialog({
                                         type="email"
                                         placeholder="e.g. msantos@srcb.edu.ph"
                                         value={form.email}
+                                        hasError={!!errors.email}
+                                        aria-describedby={errors.email ? 'ph-email-error' : undefined}
                                         onChange={(e) =>
                                             setForm((p) => ({
                                                 ...p,
@@ -611,7 +613,7 @@ export default function AddProgramHeadDialog({
                                         className="h-11 rounded-xl border-slate-200 bg-white pl-10 text-sm font-medium shadow-xs focus:border-[#23509A] focus:ring-2 focus:ring-[#23509A]/20 dark:border-slate-700 dark:bg-slate-900"
                                     />
                                 </div>
-                                <InputError message={errors.email} />
+                                <InputError id="ph-email-error" message={errors.email} />
                             </div>
 
                             {/* Password with Show/Hide & Auto-generate */}
@@ -619,9 +621,12 @@ export default function AddProgramHeadDialog({
                                 <div className="flex items-center justify-between">
                                     <Label
                                         htmlFor="ph_password"
+                                        required={!editingUser}
+                                        optional={!!editingUser}
+                                        showRequiredBadge={!editingUser}
                                         className="text-xs font-semibold text-slate-600 dark:text-slate-400"
                                     >
-                                        Password {editingUser ? '(Optional)' : '*'}
+                                        Password
                                     </Label>
                                     <button
                                         type="button"
@@ -643,6 +648,8 @@ export default function AddProgramHeadDialog({
                                                 : 'Min. 8 characters'
                                         }
                                         value={form.password}
+                                        hasError={!!errors.password}
+                                        aria-describedby={errors.password ? 'ph-password-error' : undefined}
                                         onChange={(e) =>
                                             setForm((p) => ({
                                                 ...p,
@@ -654,7 +661,7 @@ export default function AddProgramHeadDialog({
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                        className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
                                     >
                                         {showPassword ? (
                                             <EyeOff className="h-4 w-4" />
@@ -663,7 +670,7 @@ export default function AddProgramHeadDialog({
                                         )}
                                     </button>
                                 </div>
-                                <InputError message={errors.password} />
+                                <InputError id="ph-password-error" message={errors.password} />
                             </div>
                         </div>
                     </div>
@@ -718,7 +725,7 @@ export default function AddProgramHeadDialog({
                         </Button>
                         <Button
                             type="button"
-                            className="h-10 rounded-xl bg-gradient-to-r from-[#000D6A] via-[#102A83] to-[#0B4DFF] px-6 text-xs font-bold text-white shadow-md transition-all hover:shadow-lg hover:brightness-110 active:scale-98"
+                            className="h-10 rounded-xl bg-[#23509A] px-6 text-xs font-bold text-white shadow-sm transition-all hover:bg-[#1b4080] active:scale-98"
                             onClick={onSubmit}
                         >
                             {editingUser ? 'Save Personnel Changes' : 'Create Personnel Account'}

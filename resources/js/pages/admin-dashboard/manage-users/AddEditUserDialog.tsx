@@ -9,6 +9,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { FormRequiredNotice } from '@/components/ui/form-required-notice';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -18,10 +19,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Hash, IdCard, KeyRound, Shield, UserPlus, Users } from 'lucide-react';
+import { focusFirstInvalidField } from '@/lib/formFocusNavigation';
+import { Hash, IdCard, KeyRound, Shield, UserPlus, Users, X } from 'lucide-react';
 import QRCode from 'qrcode';
 import type React from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { UserForm, UserRow } from './types';
 
 type Props = {
@@ -49,6 +51,64 @@ export default function AddEditUserDialog({
     onSubmit,
     onOpenBulkAdd,
 }: Props) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
+    const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+    useEffect(() => {
+        if (open) {
+            setClientErrors({});
+            setTouched({});
+        }
+    }, [open]);
+
+    const markTouched = (field: string) => {
+        setTouched((p) => ({ ...p, [field]: true }));
+    };
+
+    const clearFieldError = (key: string) => {
+        if (clientErrors[key]) {
+            setClientErrors((p) => {
+                const next = { ...p };
+                delete next[key];
+                return next;
+            });
+        }
+    };
+
+    const handleDialogSubmit = () => {
+        const errs: Record<string, string> = {};
+        if (!form.student_id?.trim() || form.student_id.trim() === 'ID-') {
+            errs.student_id = 'Student ID number is required (e.g. ID-230123).';
+        }
+        if (!form.first_name?.trim()) {
+            errs.first_name = 'First name is required.';
+        }
+        if (!form.last_name?.trim()) {
+            errs.last_name = 'Last name is required.';
+        }
+        if (!form.year_level?.trim()) {
+            errs.year_level = 'Please select a year level.';
+        }
+        if (!form.course?.trim()) {
+            errs.course = 'Please select a section / course.';
+        }
+        if (!form.role?.trim()) {
+            errs.role = 'Please select an account role.';
+        }
+
+        if (Object.keys(errs).length > 0) {
+            setClientErrors(errs);
+            setTimeout(() => {
+                focusFirstInvalidField(containerRef.current);
+            }, 50);
+            return;
+        }
+
+        setClientErrors({});
+        onSubmit(qrDataUrl);
+    };
+
     const qrText = useMemo(
         () => form.student_id?.trim() ?? '',
         [form.student_id],
@@ -85,7 +145,7 @@ export default function AddEditUserDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[85vh] w-[95vw] sm:max-w-4xl flex-col overflow-hidden rounded-2xl border-0 bg-white p-0 shadow-2xl dark:bg-slate-900 [&>button]:hidden">
+            <DialogContent size="xl" className="flex max-h-[85vh] w-[95vw] flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-900 [&>button]:hidden">
                 {/* Hero Gradient Header */}
                 <div className="relative shrink-0 overflow-hidden bg-gradient-to-r from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] px-6 py-4.5 text-white shadow-md">
                     <div className="pointer-events-none absolute -top-10 -right-10 h-36 w-36 rounded-full bg-blue-400/10 blur-2xl" />
@@ -108,24 +168,36 @@ export default function AddEditUserDialog({
                             </DialogHeader>
                         </div>
 
-                        {onOpenBulkAdd && !editingUser && (
-                            <Button
+                        <div className="flex items-center gap-2.5 shrink-0">
+                            {onOpenBulkAdd && !editingUser && (
+                                <Button
+                                    type="button"
+                                    onClick={() => {
+                                        onClose();
+                                        onOpenBulkAdd();
+                                    }}
+                                    className="shrink-0 gap-2 rounded-xl border border-emerald-400/30 bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-md shadow-emerald-900/30 transition-all hover:scale-[1.02] hover:bg-emerald-600"
+                                >
+                                    <Users className="h-4 w-4" />
+                                    Bulk Import CSV
+                                </Button>
+                            )}
+                            <button
                                 type="button"
-                                onClick={() => {
-                                    onClose();
-                                    onOpenBulkAdd();
-                                }}
-                                className="shrink-0 gap-2 rounded-xl border border-emerald-400/30 bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-md shadow-emerald-900/30 transition-all hover:scale-[1.02] hover:bg-emerald-600"
+                                onClick={onClose}
+                                aria-label="Close dialog"
+                                className="flex h-8 w-8 items-center justify-center rounded-lg text-red-300 transition-colors hover:bg-red-500/20 hover:text-red-100 cursor-pointer shrink-0"
                             >
-                                <Users className="h-4 w-4" />
-                                Bulk Import CSV
-                            </Button>
-                        )}
+                                <X className="h-4.5 w-4.5" />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 {/* Dialog Form Scroll Area */}
-                <div className="scrollbar-thin min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5">
+                <div ref={containerRef} className="scrollbar-thin min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5">
+                    <FormRequiredNotice message="Fields marked with * or Required must be completed." />
+
                     {hasAnyError && (
                         <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50/90 p-4 text-xs font-semibold text-red-700 shadow-sm dark:border-red-800/50 dark:bg-red-950/30 dark:text-red-300">
                             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-600 text-[10px] font-black text-white">
@@ -142,6 +214,8 @@ export default function AddEditUserDialog({
                             <div className="grid gap-1.5 sm:col-span-2">
                                 <Label
                                     htmlFor="student_id"
+                                    required
+                                    showRequiredBadge
                                     className="text-xs font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400"
                                 >
                                     Student ID Number
@@ -150,24 +224,46 @@ export default function AddEditUserDialog({
                                     <IdCard className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-slate-400" />
                                     <Input
                                         id="student_id"
-                                        placeholder="e.g. 230123"
+                                        placeholder="e.g. ID-230123"
                                         value={form.student_id}
-                                        onChange={(e) =>
+                                        hasError={!!(clientErrors.student_id || errors.student_id)}
+                                        aria-describedby={(clientErrors.student_id || errors.student_id) ? "student_id-error" : undefined}
+                                        onFocus={() =>
+                                            setForm((p) =>
+                                                p.student_id
+                                                    ? p
+                                                    : { ...p, student_id: 'ID-' },
+                                            )
+                                        }
+                                        onBlur={() => {
+                                            markTouched('student_id');
+                                            if (!form.student_id?.trim() || form.student_id.trim() === 'ID-') {
+                                                setClientErrors((p) => ({ ...p, student_id: 'Student ID number is required (e.g. ID-230123).' }));
+                                            }
+                                        }}
+                                        onChange={(e) => {
+                                            clearFieldError('student_id');
+                                            const raw = e.target.value;
+                                            const rest = raw
+                                                .replace(/^ID-?/i, '')
+                                                .trimStart();
                                             setForm((p) => ({
                                                 ...p,
-                                                student_id: e.target.value,
-                                            }))
-                                        }
+                                                student_id: `ID-${rest}`,
+                                            }));
+                                        }}
                                         className="h-10 rounded-xl border-slate-200 bg-slate-50/50 pl-10 text-sm font-semibold tracking-wide text-slate-800 focus:bg-white dark:border-slate-700 dark:bg-slate-800/50 dark:text-white dark:focus:bg-slate-800"
                                     />
                                 </div>
-                                <InputError message={errors.student_id} />
+                                <InputError id="student_id-error" message={clientErrors.student_id || errors.student_id} />
                             </div>
 
                             {/* Firstname */}
                             <div className="grid gap-1.5">
                                 <Label
                                     htmlFor="first_name"
+                                    required
+                                    showRequiredBadge
                                     className="text-xs font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400"
                                 >
                                     First Name
@@ -176,21 +272,32 @@ export default function AddEditUserDialog({
                                     id="first_name"
                                     placeholder="e.g. Juan"
                                     value={form.first_name}
-                                    onChange={(e) =>
+                                    hasError={!!(clientErrors.first_name || errors.first_name)}
+                                    aria-describedby={(clientErrors.first_name || errors.first_name) ? "first_name-error" : undefined}
+                                    onBlur={() => {
+                                        markTouched('first_name');
+                                        if (!form.first_name?.trim()) {
+                                            setClientErrors((p) => ({ ...p, first_name: 'First name is required.' }));
+                                        }
+                                    }}
+                                    onChange={(e) => {
+                                        clearFieldError('first_name');
                                         setForm((p) => ({
                                             ...p,
                                             first_name: e.target.value,
-                                        }))
-                                    }
+                                        }));
+                                    }}
                                     className="h-10 rounded-xl border-slate-200 bg-slate-50/50 text-sm font-medium focus:bg-white dark:border-slate-700 dark:bg-slate-800/50 dark:focus:bg-slate-800"
                                 />
-                                <InputError message={errors.first_name} />
+                                <InputError id="first_name-error" message={clientErrors.first_name || errors.first_name} />
                             </div>
 
                             {/* Lastname */}
                             <div className="grid gap-1.5">
                                 <Label
                                     htmlFor="last_name"
+                                    required
+                                    showRequiredBadge
                                     className="text-xs font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400"
                                 >
                                     Last Name
@@ -199,43 +306,57 @@ export default function AddEditUserDialog({
                                     id="last_name"
                                     placeholder="e.g. Dela Cruz"
                                     value={form.last_name}
-                                    onChange={(e) =>
+                                    hasError={!!(clientErrors.last_name || errors.last_name)}
+                                    aria-describedby={(clientErrors.last_name || errors.last_name) ? "last_name-error" : undefined}
+                                    onBlur={() => {
+                                        markTouched('last_name');
+                                        if (!form.last_name?.trim()) {
+                                            setClientErrors((p) => ({ ...p, last_name: 'Last name is required.' }));
+                                        }
+                                    }}
+                                    onChange={(e) => {
+                                        clearFieldError('last_name');
                                         setForm((p) => ({
                                             ...p,
                                             last_name: e.target.value,
-                                        }))
-                                    }
+                                        }));
+                                    }}
                                     className="h-10 rounded-xl border-slate-200 bg-slate-50/50 text-sm font-medium focus:bg-white dark:border-slate-700 dark:bg-slate-800/50 dark:focus:bg-slate-800"
                                 />
-                                <InputError message={errors.last_name} />
+                                <InputError id="last_name-error" message={clientErrors.last_name || errors.last_name} />
                             </div>
 
                             {/* Grade / Year Level */}
                             <div className="grid gap-1.5">
                                 <Label
                                     htmlFor="year_level"
+                                    required
+                                    showRequiredBadge
                                     className="text-xs font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400"
                                 >
                                     Year Level
                                 </Label>
                                 <Select
                                     value={form.year_level}
-                                    onValueChange={(val) =>
+                                    onValueChange={(val) => {
+                                        clearFieldError('year_level');
                                         setForm((p) => ({
                                             ...p,
                                             year_level: val,
-                                        }))
-                                    }
+                                        }));
+                                    }}
                                 >
                                     <SelectTrigger
                                         id="year_level"
+                                        hasError={!!(clientErrors.year_level || errors.year_level)}
+                                        aria-describedby={(clientErrors.year_level || errors.year_level) ? "year_level-error" : undefined}
                                         className="h-10 rounded-xl border-slate-200 bg-slate-50/50 text-sm font-medium dark:border-slate-700 dark:bg-slate-800/50"
                                     >
                                         <SelectValue placeholder="Select year level" />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-xl">
                                         <SelectItem value="1st Year">
-                                            1st Year
+                                             1st Year
                                         </SelectItem>
                                         <SelectItem value="2nd Year">
                                             2nd Year
@@ -251,28 +372,33 @@ export default function AddEditUserDialog({
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
-                                <InputError message={errors.year_level} />
+                                <InputError id="year_level-error" message={clientErrors.year_level || errors.year_level} />
                             </div>
 
                             {/* Section / Course */}
                             <div className="grid gap-1.5">
                                 <Label
                                     htmlFor="course"
+                                    required
+                                    showRequiredBadge
                                     className="text-xs font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400"
                                 >
                                     Section / Course
                                 </Label>
                                 <Select
                                     value={form.course}
-                                    onValueChange={(value) =>
+                                    onValueChange={(value) => {
+                                        clearFieldError('course');
                                         setForm((p) => ({
                                             ...p,
                                             course: value,
-                                        }))
-                                    }
+                                        }));
+                                    }}
                                 >
                                     <SelectTrigger
                                         id="course"
+                                        hasError={!!(clientErrors.course || errors.course)}
+                                        aria-describedby={(clientErrors.course || errors.course) ? "course-error" : undefined}
                                         className="h-10 rounded-xl border-slate-200 bg-slate-50/50 text-sm font-medium dark:border-slate-700 dark:bg-slate-800/50"
                                     >
                                         <SelectValue placeholder="Select course" />
@@ -298,13 +424,14 @@ export default function AddEditUserDialog({
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
-                                <InputError message={errors.course} />
+                                <InputError id="course-error" message={clientErrors.course || errors.course} />
                             </div>
 
                             {/* Default Password Info */}
                             <div className="grid gap-1.5">
                                 <Label
                                     htmlFor="password"
+                                    optional
                                     className="text-xs font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400"
                                 >
                                     Default Password
@@ -325,22 +452,27 @@ export default function AddEditUserDialog({
                             <div className="grid gap-1.5">
                                 <Label
                                     htmlFor="role"
+                                    required
+                                    showRequiredBadge
                                     className="text-xs font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400"
                                 >
                                     Account Role
                                 </Label>
                                 <Select
                                     value={form.role}
-                                    onValueChange={(value) =>
+                                    onValueChange={(value) => {
+                                        clearFieldError('role');
                                         setForm((p) => ({
                                             ...p,
                                             role: value,
                                             officer_features: value === 'Student' ? [] : (p.officer_features ?? []),
-                                        }))
-                                    }
+                                        }));
+                                    }}
                                 >
                                     <SelectTrigger
                                         id="role"
+                                        hasError={!!(clientErrors.role || errors.role)}
+                                        aria-describedby={(clientErrors.role || errors.role) ? "role-error" : undefined}
                                         className="h-10 rounded-xl border-slate-200 bg-slate-50/50 text-sm font-medium dark:border-slate-700 dark:bg-slate-800/50"
                                     >
                                         <SelectValue placeholder="Select role" />
@@ -545,8 +677,8 @@ export default function AddEditUserDialog({
                     </Button>
                     <Button
                         type="button"
-                        className="rounded-xl bg-gradient-to-r from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] px-6 font-bold text-white shadow-md transition-all hover:shadow-lg hover:brightness-110"
-                        onClick={() => onSubmit(qrDataUrl)}
+                        className="rounded-xl bg-gradient-to-r from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] px-6 font-bold text-white shadow-md transition-all hover:shadow-lg hover:brightness-110 cursor-pointer"
+                        onClick={handleDialogSubmit}
                     >
                         {editingUser ? 'Update Account' : 'Create User Account'}
                     </Button>

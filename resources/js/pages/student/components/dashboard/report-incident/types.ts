@@ -13,6 +13,7 @@ export interface ReportIncidentFormData {
     incident_time: string;
     location: string;
     reported_by: string;
+    is_anonymous?: boolean;
     students_involved: StudentInvolved[];
     classification: IncidentClassification;
     description: string;

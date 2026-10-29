@@ -8,6 +8,7 @@ import {
     playScanSuccessSound,
     playScanErrorSound,
 } from '@/services/notification-sound';
+import { getRealAcademicYearInfo } from '@/lib/utils';
 
 import StudentLayout from './components/StudentLayout';
 import { StudentDashboardFooter } from './components/StudentDashboardFooter';
@@ -26,9 +27,11 @@ export default function StudentDashboard({
     user,
     evaluations: serverEvaluations,
     events = [],
+    attendedEvents = [],
     incidents = [],
     violations = [],
     programs: serverPrograms = [],
+    initialTab = 'schedule',
 }: StudentDashboardProps) {
     const page = usePage();
     const getInitials = useInitials();
@@ -41,8 +44,10 @@ export default function StudentDashboard({
 
     const status =
         (page.props as any)?.status ||
-        (page.props as any)?.flash?.status ||
-        (page.props as any)?.flash?.success;
+        (page.props as any)?.flash?.status;
+    const flashSuccess = (page.props as any)?.flash?.success;
+    const flashError = (page.props as any)?.flash?.error;
+    const [reportIncidentOpen, setReportIncidentOpen] = useState(false);
 
     useEffect(() => {
         if (status) {
@@ -55,6 +60,29 @@ export default function StudentDashboard({
             });
         }
     }, [status]);
+
+    useEffect(() => {
+        if (flashSuccess && !flashSuccess.toLowerCase().includes('incident report')) {
+            Swal.fire({
+                title: 'Success!',
+                text: flashSuccess,
+                icon: 'success',
+                timer: 3000,
+                showConfirmButton: false,
+            });
+        }
+    }, [flashSuccess]);
+
+    useEffect(() => {
+        if (flashError && !reportIncidentOpen) {
+            Swal.fire({
+                title: 'Error',
+                text: flashError,
+                icon: 'error',
+                confirmButtonColor: '#ef4444',
+            });
+        }
+    }, [flashError, reportIncidentOpen]);
 
     useEffect(() => {
         const handleOpenReport = () => setReportIncidentOpen(true);
@@ -89,8 +117,9 @@ export default function StudentDashboard({
         ? `${resolvedProgram.code} — ${resolvedProgram.name}`
         : (authUser as any)?.program || studentCourse || 'General Education';
 
-    const [academicYear, setAcademicYear] = useState('2024 - 2025');
-    const [reportIncidentOpen, setReportIncidentOpen] = useState(false);
+    const [academicYear, setAcademicYear] = useState(
+        () => getRealAcademicYearInfo().currentAY,
+    );
     const [gpsCheckingIn, setGpsCheckingIn] = useState<number | null>(null);
 
     const isGpsAttendance = (e: EventRecord) => {
@@ -262,7 +291,7 @@ export default function StudentDashboard({
     const evaluationRows = serverEvaluations || [];
 
     return (
-        <StudentLayout>
+        <StudentLayout hideBottomNav={needsProfileCompletion}>
             {/* Profile completion gate — non-dismissible until student fills in personal info */}
             <StudentProfileCompletionModal
                 isOpen={needsProfileCompletion}
@@ -294,9 +323,11 @@ export default function StudentDashboard({
                         getInitials={getInitials}
                     />
 
-                    {/* CAMPUS SCHEDULE TIMELINE */}
+                    {/* CAMPUS SCHEDULE TIMELINE & ATTENDED EVENT HISTORY */}
                     <StudentTimelineEvents
                         events={events}
+                        attendedEvents={attendedEvents}
+                        initialTab={initialTab}
                         gpsCheckingIn={gpsCheckingIn}
                         handleGpsCheckin={handleGpsCheckin}
                         isGpsAttendance={isGpsAttendance}

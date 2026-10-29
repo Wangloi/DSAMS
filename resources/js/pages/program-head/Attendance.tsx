@@ -5,13 +5,16 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { formatLastNameFirst } from '@/lib/utils';
 import { Head } from '@inertiajs/react';
+import { Printer } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import AttendanceHeader from '../admin-dashboard/attendance/AttendanceHeader';
 import AttendanceStatsCards from '../admin-dashboard/attendance/AttendanceStatsCards';
 import AttendanceTable from '../admin-dashboard/attendance/AttendanceTable';
 import CourseStudentsDialog from '../admin-dashboard/attendance/CourseStudentsDialog';
+import PrintAttendanceModal from '../admin-dashboard/attendance/PrintAttendanceModal';
 import RealTimeMonitoringPanel from '../admin-dashboard/attendance/RealTimeMonitoringPanel';
 import ProgramHeadLayout from './components/ProgramHeadLayout';
 
@@ -79,6 +82,8 @@ export default function Attendance({
     const [courseStudentsError, setCourseStudentsError] = useState<
         string | null
     >(null);
+
+    const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
     useEffect(() => {
         setEvents(initialEvents);
@@ -339,14 +344,28 @@ export default function Attendance({
                 open={showAttendeesModal}
                 onOpenChange={setShowAttendeesModal}
             >
-                <DialogContent className="max-h-[85vh] w-[96vw] !max-w-4xl overflow-hidden border border-slate-200 bg-white p-0 dark:border-slate-800 dark:bg-slate-900">
-                    <DialogHeader className="border-b border-slate-100 bg-slate-50 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/50">
-                        <DialogTitle className="text-base font-bold text-slate-950 dark:text-white">
-                            {viewingEventName} - Attendees List
-                        </DialogTitle>
-                        <DialogDescription className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                            List of student attendees check-in logs
-                        </DialogDescription>
+                <DialogContent size="xl" className="max-h-[85vh] w-[96vw] overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+                    <DialogHeader className="border-b border-slate-100 bg-slate-50 px-6 py-4 pr-14 dark:border-slate-800 dark:bg-slate-900/50">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <DialogTitle className="text-base font-bold text-slate-950 dark:text-white">
+                                    {viewingEventName} - Attendees List
+                                </DialogTitle>
+                                <DialogDescription className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                                    List of student attendees check-in logs
+                                </DialogDescription>
+                            </div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setIsPrintModalOpen(true)}
+                                className="flex items-center gap-1.5 rounded-xl border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200"
+                            >
+                                <Printer className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                                <span>Print Sheet</span>
+                            </Button>
+                        </div>
                     </DialogHeader>
                     <div className="max-h-[calc(85vh-120px)] overflow-y-auto p-6">
                         {attendeesLoading ? (
@@ -414,6 +433,20 @@ export default function Attendance({
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <PrintAttendanceModal
+                open={isPrintModalOpen}
+                onOpenChange={setIsPrintModalOpen}
+                eventId={viewingEventId}
+                eventName={viewingEventName}
+                isProgramHead={true}
+                userProgram={program}
+                baseUrl={
+                    viewingEventId
+                        ? `/program-head/attendance/${viewingEventId}/print`
+                        : undefined
+                }
+            />
         </ProgramHeadLayout>
     );
 }

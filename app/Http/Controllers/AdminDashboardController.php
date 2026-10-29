@@ -40,7 +40,8 @@ class AdminDashboardController extends Controller
             ->orderByDesc('created_at')
             ->limit(20)
             ->get()
-            ->map(function (ActivityLog $log) {
+            ->map(function ($log) {
+                /** @var ActivityLog $log */
                 $userName = (string) ($log->user_name ?? 'Unknown');
                 $action = (string) ($log->action ?? '');
                 $details = (string) ($log->details ?? '');

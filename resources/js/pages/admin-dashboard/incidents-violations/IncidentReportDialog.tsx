@@ -14,7 +14,9 @@ import {
     ClipboardList,
     FileText,
     Users,
+    X,
 } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import IncidentReportDialogDetails from './IncidentReportDialogDetails';
@@ -51,7 +53,18 @@ const emptyForm: FormState = {
 
 export default function IncidentReportDialog(props: Props) {
     const { open, onOpenChange, onClose, onSubmit, violations } = props;
-    const [form, setForm] = useState<FormState>(emptyForm);
+    const page = usePage();
+    const authUser = (page.props as any)?.auth?.user;
+
+    const defaultAdminReporter = useMemo(() => {
+        if (!authUser?.name) return 'Office of Student Affairs';
+        return authUser.name + (authUser.role ? ` (${authUser.role})` : ' (OSA Officer)');
+    }, [authUser]);
+
+    const [form, setForm] = useState<FormState>(() => ({
+        ...emptyForm,
+        reportedBy: defaultAdminReporter,
+    }));
     const [studentDraft, setStudentDraft] = useState('');
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
@@ -191,7 +204,10 @@ export default function IncidentReportDialog(props: Props) {
             });
             setIsViewMode(props.viewMode ?? false);
         } else {
-            setForm(emptyForm);
+            setForm({
+                ...emptyForm,
+                reportedBy: defaultAdminReporter,
+            });
             setStudentDraft('');
             setIsViewMode(false);
         }
@@ -348,20 +364,18 @@ export default function IncidentReportDialog(props: Props) {
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent className="overflow-hidden rounded-2xl border-0 bg-white p-0 shadow-2xl sm:max-w-3xl dark:bg-[#0B192C] [&>button]:hidden">
-                {/* Hero Gradient Header */}
-                <div className="relative overflow-hidden bg-gradient-to-r from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] px-6 py-6 text-white shadow-md">
-                    <div className="pointer-events-none absolute -top-10 -right-10 h-36 w-36 rounded-full bg-blue-400/10 blur-2xl" />
-                    <div className="relative z-10 flex flex-col gap-5">
+            <DialogContent size="lg" className="flex max-h-[90vh] w-[95vw] flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-900 [&>button]:hidden">
+                <div className="shrink-0 border-b border-slate-100 bg-white px-6 py-5 dark:border-slate-800 dark:bg-slate-900 sm:px-8">
+                    <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3.5">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/10 shadow-inner ring-1 ring-white/20 backdrop-blur-md">
-                                <AlertTriangle className="h-6 w-6 text-white" />
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-100 bg-amber-50 text-amber-600 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-400">
+                                <AlertTriangle className="h-5 w-5" />
                             </div>
                             <DialogHeader className="p-0 text-left">
-                                <DialogTitle className="text-xl font-black tracking-tight text-white">
+                                <DialogTitle className="text-lg font-bold tracking-tight text-slate-900 dark:text-white sm:text-xl">
                                     {title}
                                 </DialogTitle>
-                                <DialogDescription className="mt-0.5 text-xs font-medium text-blue-100/80">
+                                <DialogDescription className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                                     {isViewMode
                                         ? 'View the incident report details below.'
                                         : 'Provide details about the incident to create a new report.'}
@@ -369,59 +383,68 @@ export default function IncidentReportDialog(props: Props) {
                             </DialogHeader>
                         </div>
 
-                        {/* Step Indicators */}
-                        <div className="grid grid-cols-3 gap-2.5 border-t border-white/10 pt-3">
-                            {[
-                                { label: 'General Info', icon: ClipboardList },
-                                { label: 'Persons Involved', icon: Users },
-                                { label: 'Narrative & Action', icon: FileText },
-                            ].map((s, i) => {
-                                const num = i + 1;
-                                const isDone = num < currentStep;
-                                const isActive = num === currentStep;
+                        <button
+                            type="button"
+                            onClick={() => handleOpenChange(false)}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                            aria-label="Close dialog"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    </div>
 
-                                return (
+                    {/* Step Indicators */}
+                    <div className="mt-4 grid grid-cols-3 gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+                        {[
+                            { label: 'General Info', icon: ClipboardList },
+                            { label: 'Persons Involved', icon: Users },
+                            { label: 'Narrative & Action', icon: FileText },
+                        ].map((s, i) => {
+                            const num = i + 1;
+                            const isDone = num < currentStep;
+                            const isActive = num === currentStep;
+
+                            return (
+                                <div
+                                    key={s.label}
+                                    className={`flex items-center gap-2 rounded-xl px-3 py-2 transition-all ${
+                                        isActive
+                                            ? 'border border-blue-200 bg-blue-50/80 font-bold text-[#23509A] dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300'
+                                            : isDone
+                                              ? 'border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                              : 'border border-transparent bg-slate-50 text-slate-500 dark:bg-slate-800/60 dark:text-slate-400'
+                                    }`}
+                                >
                                     <div
-                                        key={s.label}
-                                        className={`flex items-center gap-2.5 rounded-xl px-3 py-2 transition-all ${
+                                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-black ${
                                             isActive
-                                                ? 'bg-white font-bold text-[#1e3a8a] shadow-md'
+                                                ? 'bg-[#23509A] text-white'
                                                 : isDone
-                                                  ? 'border border-emerald-400/30 bg-emerald-500/20 text-emerald-200'
-                                                  : 'bg-white/10 text-blue-100/60'
+                                                  ? 'bg-emerald-600 text-white'
+                                                  : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
                                         }`}
                                     >
-                                        <div
-                                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-black ${
-                                                isActive
-                                                    ? 'bg-[#1e3a8a] text-white'
-                                                    : isDone
-                                                      ? 'bg-emerald-500 text-white'
-                                                      : 'bg-white/20 text-white'
-                                            }`}
-                                        >
-                                            {isDone ? (
-                                                <Check className="h-3.5 w-3.5 stroke-[3]" />
-                                            ) : (
-                                                num
-                                            )}
-                                        </div>
-                                        <div className="hidden min-w-0 sm:block">
-                                            <p className="truncate text-[11px] font-bold">
-                                                {s.label}
-                                            </p>
-                                        </div>
-                                        <span className="truncate text-[10px] font-semibold sm:hidden">
-                                            {s.label}
-                                        </span>
+                                        {isDone ? (
+                                            <Check className="h-3.5 w-3.5 stroke-[3]" />
+                                        ) : (
+                                            num
+                                        )}
                                     </div>
-                                );
-                            })}
-                        </div>
+                                    <div className="hidden min-w-0 sm:block">
+                                        <p className="truncate text-[11px] font-bold">
+                                            {s.label}
+                                        </p>
+                                    </div>
+                                    <span className="truncate text-[10px] font-semibold sm:hidden">
+                                        {s.label}
+                                    </span>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 
-                <div className="max-h-[60vh] min-h-[300px] space-y-5 overflow-y-auto px-6 py-6 dark:bg-[#0B192C]">
+                <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-6 sm:px-8 dark:bg-slate-900">
                     {currentStep === 1 && (
                         <div className="space-y-4">
                             <IncidentReportDialogDetails
@@ -433,12 +456,17 @@ export default function IncidentReportDialog(props: Props) {
                                 violations={violations}
                             />
                             <div className="grid gap-2">
-                                <Label
-                                    htmlFor="reportedBy"
-                                    className="text-xs font-semibold tracking-wider text-slate-800 uppercase dark:text-slate-200"
-                                >
-                                    Reported by (Name / Position)
-                                </Label>
+                                <div className="flex items-center justify-between">
+                                    <Label
+                                        htmlFor="reportedBy"
+                                        className="text-xs font-semibold tracking-wider text-slate-800 uppercase dark:text-slate-200"
+                                    >
+                                        Reported by (Name / Position)
+                                    </Label>
+                                    <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase">
+                                        Authenticated Account
+                                    </span>
+                                </div>
                                 <Input
                                     id="reportedBy"
                                     value={form.reportedBy}
@@ -563,13 +591,13 @@ export default function IncidentReportDialog(props: Props) {
                     )}
                 </div>
 
-                <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/40">
+                <div className="shrink-0 flex items-center justify-between border-t border-slate-100 bg-slate-50/80 px-6 py-4 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/80 sm:px-8">
                     <div className="flex items-center gap-2">
                         {currentStep > 1 && (
                             <Button
                                 type="button"
                                 variant="outline"
-                                className="h-10 rounded-xl border-slate-200 bg-white px-4 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                                className="h-10 rounded-xl border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-750"
                                 onClick={prevStep}
                             >
                                 Back
@@ -578,7 +606,7 @@ export default function IncidentReportDialog(props: Props) {
                         <Button
                             type="button"
                             variant="outline"
-                            className="h-10 rounded-xl border-slate-200 bg-white px-4 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                            className="h-10 rounded-xl border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-750"
                             onClick={close}
                         >
                             {isViewMode ? 'Close' : 'Cancel'}
@@ -590,7 +618,7 @@ export default function IncidentReportDialog(props: Props) {
                             <Button
                                 type="button"
                                 variant="default"
-                                className="h-10 rounded-xl bg-gradient-to-r from-[#0b1c5c] to-[#1e3a8a] px-5 font-bold text-white shadow-md hover:opacity-90"
+                                className="h-10 rounded-xl bg-slate-800 px-5 text-xs font-bold text-white shadow-xs hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600"
                                 onClick={toggleEditMode}
                             >
                                 Edit
@@ -600,7 +628,7 @@ export default function IncidentReportDialog(props: Props) {
                         {currentStep < 3 ? (
                             <Button
                                 type="button"
-                                className="h-10 rounded-xl bg-gradient-to-r from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] px-5 font-bold text-white shadow-md hover:opacity-90"
+                                className="h-10 rounded-xl bg-[#23509A] px-5 text-xs font-bold text-white shadow-xs hover:bg-[#1b4080]"
                                 onClick={nextStep}
                             >
                                 Next
@@ -609,7 +637,7 @@ export default function IncidentReportDialog(props: Props) {
                             !isViewMode && (
                                 <Button
                                     type="button"
-                                    className="h-10 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 px-5 font-bold text-white shadow-md hover:opacity-90"
+                                    className="h-10 rounded-xl bg-rose-600 px-5 text-xs font-bold text-white shadow-xs hover:bg-rose-700"
                                     disabled={!canSubmit}
                                     onClick={submit}
                                 >

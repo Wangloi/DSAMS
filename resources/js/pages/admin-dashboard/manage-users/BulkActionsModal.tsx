@@ -31,6 +31,7 @@ import {
     UserCheck,
     Users,
     UserX,
+    X,
     XCircle,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -239,10 +240,48 @@ export default function BulkActionsModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent id="bulk-actions-modal-dialog" className="sm:max-w-4xl max-w-4xl overflow-hidden p-0 gap-0 bg-white dark:bg-[#0B192C] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl relative">
+            <DialogContent id="bulk-actions-modal-dialog" size="xl" className="overflow-hidden p-0 gap-0 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-2xl [&>button]:hidden">
+                <DialogHeader className="sr-only">
+                    <DialogTitle>Batch Student Operations</DialogTitle>
+                    <DialogDescription>
+                        Perform bulk updates across multiple selected student profiles
+                    </DialogDescription>
+                </DialogHeader>
+
+                {/* ── CLEAN MINIMALIST HEADER ── */}
+                <div className="shrink-0 border-b border-slate-100 bg-white px-6 py-5 dark:border-slate-800 dark:bg-slate-900">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3.5">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-[#23509A] dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
+                                <Users className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                                        Batch Student Operations
+                                    </h3>
+                                    <span className="rounded-full border border-blue-200/60 bg-blue-50 px-2.5 py-0.5 text-[10px] font-bold text-[#23509A] uppercase tracking-wider dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300">
+                                        {selectedUserIds.length} Selected
+                                    </span>
+                                </div>
+                                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                                    Select target students and apply updates to program, year level, or roles
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => onOpenChange(false)}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                            aria-label="Close modal"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    </div>
+                </div>
 
                 {/* 2-Column Main Area (Fits directly without vertical scrolling) */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-5 p-5 bg-slate-50/50 dark:bg-[#0B192C]/80">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-5 p-5 bg-slate-50/50 dark:bg-slate-950/40">
                     {/* LEFT COLUMN: User Selection List (Col Span 7) */}
                     <div className="md:col-span-7 flex flex-col space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
                         {/* Title Bar & Counter */}
@@ -545,7 +584,7 @@ export default function BulkActionsModal({
                             </Button>
                             <Button
                                 type="button"
-                                className="flex-1 bg-gradient-to-r from-[#0B192C] via-[#1E3E62] to-[#1e3a8a] text-white hover:opacity-95 text-xs font-bold shadow-md shadow-blue-950/20"
+                                className="flex-1 bg-[#23509A] hover:bg-[#1b3f7a] text-white text-xs font-semibold shadow-xs transition-colors"
                                 disabled={isSubmitting || selectedUserIds.length === 0}
                                 onClick={handleApplyAction}
                             >

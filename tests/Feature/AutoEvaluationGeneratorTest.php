@@ -3,6 +3,10 @@
 use App\Models\AdminUser;
 use Illuminate\Http\UploadedFile;
 
+beforeEach(function () {
+    $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+});
+
 test('guests are redirected from the auto-generate route', function () {
     $this->post(route('admin.evaluation.auto-generate'))
         ->assertRedirect();

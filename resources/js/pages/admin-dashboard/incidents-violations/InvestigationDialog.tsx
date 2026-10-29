@@ -164,7 +164,8 @@ export default function InvestigationDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 overlayClassName="z-[90]"
-                className="z-[95] max-h-[92vh] w-[95vw] sm:max-w-4xl md:max-w-5xl gap-0 overflow-y-auto border-slate-200 bg-slate-50 p-0 shadow-2xl dark:border-slate-800 dark:bg-[#0B192C] [&>button:last-child]:hidden"
+                size="xl"
+                className="z-[95] max-h-[92vh] w-[95vw] gap-0 overflow-y-auto border border-slate-200/80 bg-slate-50 p-0 rounded-2xl shadow-2xl dark:border-slate-800 dark:bg-[#0B192C] [&>button:last-child]:hidden"
             >
                 <DialogHeader className="sr-only">
                     <DialogTitle>Step 2: Investigation & Fact-Finding</DialogTitle>
@@ -208,7 +209,7 @@ export default function InvestigationDialog({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => onOpenChange(false)}
-                                className="h-8 w-8 p-0 rounded-lg text-pink-200 hover:text-white hover:bg-white/15 cursor-pointer transition-colors shrink-0"
+                                className="h-8 w-8 p-0 rounded-lg text-red-300 hover:text-red-100 hover:bg-red-500/25 cursor-pointer transition-colors shrink-0"
                                 aria-label="Close modal"
                             >
                                 <X className="h-4.5 w-4.5" />

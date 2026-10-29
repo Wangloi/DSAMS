@@ -76,6 +76,8 @@ class ThermalPrintController extends Controller
             'valid_until' => $admissionSlip->valid_until,
             'status' => $admissionSlip->status,
             'dean_name' => $deanName,
+            'slip_count' => $admissionSlip->slip_count,
+            'all_time_slip_count' => $admissionSlip->all_time_slip_count,
         ];
 
         // Also approve if not already approved

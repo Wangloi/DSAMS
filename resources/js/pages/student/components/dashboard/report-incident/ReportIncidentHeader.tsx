@@ -10,13 +10,15 @@ import {
     ClipboardList,
     FileText,
     Users,
+    X,
 } from 'lucide-react';
 
 interface ReportIncidentHeaderProps {
     reportStep: number;
+    onClose?: () => void;
 }
 
-export function ReportIncidentHeader({ reportStep }: ReportIncidentHeaderProps) {
+export function ReportIncidentHeader({ reportStep, onClose }: ReportIncidentHeaderProps) {
     const steps = [
         { label: 'General Info', icon: ClipboardList },
         { label: 'Details', icon: Users },
@@ -27,18 +29,31 @@ export function ReportIncidentHeader({ reportStep }: ReportIncidentHeaderProps) 
         <div className="relative overflow-hidden bg-gradient-to-r from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] px-6 py-6 text-white shadow-md">
             <div className="pointer-events-none absolute -top-10 -right-10 h-36 w-36 rounded-full bg-blue-400/10 blur-2xl" />
             <div className="relative z-10 flex flex-col gap-5">
-                <div className="flex items-center gap-3.5">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/10 shadow-inner ring-1 ring-white/20 backdrop-blur-md">
-                        <AlertTriangle className="h-6 w-6 text-white" />
+                <div className="flex items-center justify-between gap-3.5">
+                    <div className="flex items-center gap-3.5">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/10 shadow-inner ring-1 ring-white/20 backdrop-blur-md">
+                            <AlertTriangle className="h-6 w-6 text-white" />
+                        </div>
+                        <DialogHeader className="p-0 text-left">
+                            <DialogTitle className="text-xl font-black tracking-tight text-white">
+                                Report Incident
+                            </DialogTitle>
+                            <DialogDescription className="mt-0.5 text-xs font-medium text-blue-100/80">
+                                Provide details about the incident to create a new report.
+                            </DialogDescription>
+                        </DialogHeader>
                     </div>
-                    <DialogHeader className="p-0 text-left">
-                        <DialogTitle className="text-xl font-black tracking-tight text-white">
-                            Report Incident
-                        </DialogTitle>
-                        <DialogDescription className="mt-0.5 text-xs font-medium text-blue-100/80">
-                            Provide details about the incident to create a new report.
-                        </DialogDescription>
-                    </DialogHeader>
+
+                    {onClose && (
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            aria-label="Close dialog"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-red-300 transition-colors hover:bg-red-500/20 hover:text-red-100 cursor-pointer shrink-0"
+                        >
+                            <X className="h-4.5 w-4.5" />
+                        </button>
+                    )}
                 </div>
 
                 {/* Step Indicators */}

@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 import '../css/app.css';
 import Swal from 'sweetalert2';
 import { AuthLoadingOverlay } from './components/AuthLoadingOverlay';
+import { SessionTimeoutModal } from './components/SessionTimeoutModal';
 import { applyTheme, getStoredAppearance, initializeTheme } from './hooks/use-appearance';
 import { registerServiceWorker } from './lib/pwa';
 
@@ -116,6 +117,7 @@ function GlobalAppWrapper({ App, props }: { App: any; props: any }) {
                 visible={loadingState !== null}
                 state={loadingState?.state || 'authenticating'}
             />
+            <SessionTimeoutModal initialPageProps={props?.initialPage?.props} />
         </>
     );
 }

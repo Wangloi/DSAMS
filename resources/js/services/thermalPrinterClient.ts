@@ -33,6 +33,7 @@ export interface AdmissionSlipPrintData {
     status?: string;
     deanName?: string;
     slipId?: string | number;
+    slipCount?: string;
 }
 
 const LOCAL_BRIDGE_URL = 'http://127.0.0.1:9101';
@@ -186,6 +187,7 @@ export const thermalPrinterClient = {
                     status: data.status || 'APPROVED',
                     dean_name: data.deanName || 'Rey John N. Bongcas',
                     slip_id: data.slipId ? String(data.slipId) : '',
+                    slip_count: data.slipCount || '',
                 }),
                 signal: AbortSignal.timeout(10000),
             });

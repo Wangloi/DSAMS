@@ -382,15 +382,18 @@ export default function AdminEventsIndex() {
 
     // Calendar handlers
     const handleDateSelect = (selectInfo: any) => {
-        const [datePart] = selectInfo.startStr.split('T');
+        const raw = selectInfo?.startStr || selectInfo?.dateStr || '';
+        const [datePart] = raw.split('T');
+        if (!datePart) return;
         setModalMode('create');
         setModalData({ event_date: datePart });
         setIsEventModalOpen(true);
     };
 
     const handleEventClick = (clickInfo: any) => {
+        const targetId = clickInfo?.event?.id ?? clickInfo?.id;
         const ev = allEvents.find(
-            (ev: Event) => String(ev.id) === String(clickInfo.event.id),
+            (ev: Event) => String(ev.id) === String(targetId),
         );
         if (ev) {
             setViewEvent(ev);

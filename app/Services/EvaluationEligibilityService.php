@@ -224,31 +224,34 @@ class EvaluationEligibilityService
             return null;
         }
 
-        $existingCertificate = Certificate::query()
-            ->where('student_id', $student->id)
-            ->where('evaluation_id', $evaluation->id)
-            ->first();
-
-        if ($existingCertificate) {
-            return $existingCertificate;
-        }
-
         $admin = \App\Models\AdminUser::query()->first();
         $adminName = $admin?->name ?? 'Rey John N. Bongcas';
 
-        return Certificate::create([
-            'student_id' => $student->id,
-            'event_id' => $event->id,
-            'evaluation_id' => $evaluation->id,
-            'certificate_number' => Certificate::generateCertificateNumber(),
-            'certificate_type' => 'evaluation_completion',
-            'title' => 'Certificate of Evaluation Completion',
-            'description' => 'This certifies that the student has completed the evaluation for '.$event->event_name,
-            'issue_date' => now(),
-            'issued_by' => 'Department of Student Affairs',
-            'signature_name' => $adminName,
-            'signature_title' => 'Dean of Student Affairs',
-            'is_generated' => false,
-        ]);
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($student, $evaluation, $event, $adminName) {
+            $existingCertificate = Certificate::query()
+                ->where('student_id', $student->id)
+                ->where('evaluation_id', $evaluation->id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($existingCertificate) {
+                return $existingCertificate;
+            }
+
+            return Certificate::create([
+                'student_id' => $student->id,
+                'event_id' => $event->id,
+                'evaluation_id' => $evaluation->id,
+                'certificate_number' => Certificate::generateCertificateNumber(),
+                'certificate_type' => 'evaluation_completion',
+                'title' => 'Certificate of Evaluation Completion',
+                'description' => 'This certifies that the student has completed the evaluation for '.$event->event_name,
+                'issue_date' => now(),
+                'issued_by' => 'Department of Student Affairs',
+                'signature_name' => $adminName,
+                'signature_title' => 'Dean of Student Affairs',
+                'is_generated' => false,
+            ]);
+        });
     }
 }

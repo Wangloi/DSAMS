@@ -5,6 +5,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
@@ -28,7 +30,8 @@ import {
 import type { BreadcrumbItem } from '@/types';
 import { SimpleTooltip } from '@/components/ui/tooltip';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { Archive, ArchiveRestore, BookOpen, Edit, Eye, Plus, Search, Trash2, Users } from 'lucide-react';
+import { Archive, ArchiveRestore, BookOpen, Edit, Eye, GraduationCap, Plus, Search, Trash2, Users, X } from 'lucide-react';
+import { getProgramTheme } from '@/lib/program-themes';
 import { useEffect, useMemo, useState } from 'react';
 import AdminLayout from '../admin-layout';
 
@@ -358,15 +361,31 @@ export default function AdminProgramsPage() {
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                    {pagedRows.map((r) => (
+                                    {pagedRows.map((r) => {
+                                        const theme = getProgramTheme(r);
+                                        return (
                                         <Card
                                             key={r.id}
                                             onClick={() => handleView(r.id)}
-                                            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200/70 bg-white/80 shadow-sm backdrop-blur transition-all duration-200 hover:shadow-md supports-[backdrop-filter]:bg-white/60 dark:border-slate-700 dark:bg-[#0B192C]/50"
+                                            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-200/70 bg-white/80 p-0 gap-0 shadow-sm backdrop-blur transition-all duration-200 hover:shadow-md supports-[backdrop-filter]:bg-white/60 dark:border-slate-700 dark:bg-[#0B192C]/50"
                                         >
                                             {/* Card header */}
-                                            <div className="relative rounded-t-2xl bg-gradient-to-r from-[#0b2d66] via-[#103875] to-[#1e40af] px-5 pt-5 pb-4">
-                                                <div className="min-w-0 pr-24">
+                                            <div className={`relative rounded-t-2xl bg-gradient-to-r ${theme.headerGradient} px-5 pt-5 pb-4`}>
+                                                <div className="pointer-events-none absolute -top-8 -right-8 h-24 w-24 rounded-full bg-white/10" />
+
+                                                {/* Program Emblem / Logo */}
+                                                <div className="absolute top-4 right-4 z-10 flex h-14 w-14 items-center justify-center rounded-full border-2 border-white/80 bg-white p-1 shadow-md ring-2 ring-black/5 transition-transform duration-300 group-hover:scale-105">
+                                                    <img
+                                                        src={theme.logoUrl}
+                                                        alt={`${r.name} logo`}
+                                                        className="h-full w-full rounded-full object-contain"
+                                                        onError={(e) => {
+                                                            (e.currentTarget as HTMLImageElement).src = '/images/SRCB.png';
+                                                        }}
+                                                    />
+                                                </div>
+
+                                                <div className="relative z-10 min-w-0 pr-16">
                                                     <div className="flex flex-wrap items-center gap-2">
                                                         <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-1">
                                                             <div className="font-mono text-[11px] text-white/90">
@@ -403,7 +422,7 @@ export default function AdminProgramsPage() {
                                             </div>
 
                                             {/* Divider */}
-                                            <div className="mt-4 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent dark:via-slate-700" />
+                                            <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent dark:via-slate-700" />
 
                                             {/* Body */}
                                             <div className="px-5 pt-4 pb-14">
@@ -437,7 +456,7 @@ export default function AdminProgramsPage() {
                                                 </div>
 
                                                 {/* Subtle hover highlight */}
-                                                <div className="pointer-events-none mt-4 h-1 w-0 bg-gradient-to-r from-[#0b2d66] via-[#23509A] to-[#1e40af] transition-all duration-200 group-hover:w-full" />
+                                                <div className={`pointer-events-none mt-4 h-1 w-0 bg-gradient-to-r ${theme.hoverBarGradient} transition-all duration-200 group-hover:w-full`} />
 
                                                 {/* Actions (bottom-right, horizontal) */}
                                                 <div
@@ -514,7 +533,8 @@ export default function AdminProgramsPage() {
                                                 </div>
                                             </div>
                                         </Card>
-                                    ))}
+                                    );
+                                })}
                                 </div>
                             )}
 
@@ -620,13 +640,37 @@ export default function AdminProgramsPage() {
                 open={isCreateModalOpen}
                 onOpenChange={setIsCreateModalOpen}
             >
-                <DialogContent className="bg-white sm:max-w-[600px] dark:bg-slate-800">
-                    <DialogHeader>
-                        <DialogTitle className="text-slate-900 dark:text-white">
-                            Create New Program
-                        </DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                <DialogContent size="lg" className="flex max-h-[90vh] w-[95vw] flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-900 [&>button]:hidden">
+                    <div className="flex shrink-0 items-center justify-between border-b border-slate-100 bg-white px-6 py-5 dark:border-slate-800 dark:bg-slate-900 sm:px-8">
+                        <div className="flex items-center gap-3.5">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-[#23509A] dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
+                                <GraduationCap className="h-5 w-5" />
+                            </div>
+                            <DialogHeader className="p-0 text-left">
+                                <DialogTitle className="text-lg font-bold tracking-tight text-slate-900 dark:text-white sm:text-xl">
+                                    Create New Program
+                                </DialogTitle>
+                                <DialogDescription className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                    Register a new academic degree or department program.
+                                </DialogDescription>
+                            </DialogHeader>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setIsCreateModalOpen(false);
+                                reset();
+                            }}
+                            aria-label="Close dialog"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300 cursor-pointer"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                        <div className="min-h-0 flex-1 space-y-6 overflow-y-auto p-6 sm:p-8">
                         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                             <div className="space-y-2">
                                 <Label
@@ -767,7 +811,9 @@ export default function AdminProgramsPage() {
                             </Label>
                         </div>
 
-                        <div className="flex items-center justify-end gap-4 border-t border-slate-200 pt-6 dark:border-slate-700">
+                        </div>
+
+                        <DialogFooter className="shrink-0 flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50/80 px-6 py-4 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/80 sm:px-8">
                             <Button
                                 type="button"
                                 variant="outline"
@@ -775,18 +821,18 @@ export default function AdminProgramsPage() {
                                     setIsCreateModalOpen(false);
                                     reset();
                                 }}
-                                className="border-slate-300 text-slate-700 dark:border-slate-600 dark:text-slate-300"
+                                className="rounded-xl border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-750"
                             >
                                 Cancel
                             </Button>
                             <Button
                                 type="submit"
                                 disabled={processing}
-                                className="bg-blue-600 text-white hover:bg-blue-700"
+                                className="rounded-xl bg-[#23509A] px-6 text-sm font-semibold text-white hover:bg-[#1b4080] shadow-sm disabled:opacity-50"
                             >
                                 {processing ? 'Creating...' : 'Create Program'}
                             </Button>
-                        </div>
+                        </DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>

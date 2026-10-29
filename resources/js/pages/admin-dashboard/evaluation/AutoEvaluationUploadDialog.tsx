@@ -179,9 +179,11 @@ export default function AutoEvaluationUploadDialog({
                         </div>
                     </div>
                     <button
+                        type="button"
                         onClick={onClose}
                         disabled={isLoading}
-                        className="absolute top-4 right-4 rounded-full p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                        aria-label="Close dialog"
+                        className="absolute top-4 right-4 rounded-full p-1.5 text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300 cursor-pointer disabled:pointer-events-none disabled:opacity-50"
                     >
                         <X className="h-4 w-4" />
                     </button>

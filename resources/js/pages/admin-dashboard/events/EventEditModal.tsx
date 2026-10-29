@@ -188,8 +188,8 @@ export default function EventEditModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[85vh] w-full max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden rounded-xl border border-slate-200 p-0 sm:max-w-4xl dark:border-slate-700 dark:bg-slate-900">
-                <DialogHeader className="shrink-0 border-b border-transparent bg-gradient-to-r from-[#0b2d66] to-[#1e40af] px-6 py-5 text-white dark:border-slate-700">
+            <DialogContent size="xl" preventClose={processing} className="flex max-h-[85vh] w-full flex-col gap-0 overflow-hidden rounded-2xl border border-slate-200/80 p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+                <DialogHeader className="shrink-0 border-b border-transparent bg-gradient-to-r from-[#0b2d66] to-[#1e40af] px-6 py-5 pr-14 text-white dark:border-slate-700">
                     <DialogTitle className="flex items-center gap-2 text-xl font-bold text-white">
                         <Calendar className="h-5 w-5 text-blue-200" />
                         Edit Event

@@ -45,7 +45,7 @@ class StudentNotificationPresenter
             ->limit(50)
             ->get();
 
-        Log::info('[StudentNotificationPresenter] recentForStudent loaded', [
+        Log::debug('[StudentNotificationPresenter] recentForStudent loaded', [
             'student_id' => $student->id,
             'count' => $raw->count(),
             'types' => $raw->pluck('data')->map(fn ($d) => (is_array($d) ? ($d['type'] ?? null) : null))->values()->all(),
@@ -58,7 +58,7 @@ class StudentNotificationPresenter
                     return false;
                 }
                 if (($row['type'] ?? '') === 'attendance_scanner_available') {
-                    Log::info('[StudentNotificationPresenter] evaluating attendance_scanner_available', [
+                    Log::debug('[StudentNotificationPresenter] evaluating attendance_scanner_available', [
                         'student_id' => $student->id,
                         'notification_id' => $row['id'] ?? null,
                         'eventId' => $row['eventId'] ?? null,
@@ -190,7 +190,7 @@ class StudentNotificationPresenter
         $type = (string) ($notification['type'] ?? '');
 
         if ($type === 'attendance_scanner_available') {
-            Log::info('[StudentNotificationPresenter] isRelevantForStudent attendance_scanner_available (entry)', [
+            Log::debug('[StudentNotificationPresenter] isRelevantForStudent attendance_scanner_available (entry)', [
                 'student_id' => $student->id,
                 'notification_id' => $notification['id'] ?? null,
                 'eventId_eventIdKey' => $notification['eventId'] ?? null,
@@ -224,7 +224,7 @@ class StudentNotificationPresenter
     private static function isActiveScannerPortalForStudent(Student $student, array $notification): bool
     {
         if ($student->status !== 'approved') {
-            Log::info('[StudentNotificationPresenter] scanner portal relevance rejected (student not approved)', [
+            Log::debug('[StudentNotificationPresenter] scanner portal relevance rejected (student not approved)', [
                 'student_id' => $student->id,
                 'status' => $student->status,
             ]);
@@ -233,7 +233,7 @@ class StudentNotificationPresenter
 
         $eventId = $notification['eventId'] ?? $notification['event_id'] ?? null;
         if (! $eventId) {
-            Log::info('[StudentNotificationPresenter] scanner portal relevance rejected (missing eventId)', [
+            Log::debug('[StudentNotificationPresenter] scanner portal relevance rejected (missing eventId)', [
                 'student_id' => $student->id,
                 'notification_id' => $notification['id'] ?? null,
             ]);
@@ -242,7 +242,7 @@ class StudentNotificationPresenter
 
         $event = Event::query()->find($eventId);
         if (! $event) {
-            Log::info('[StudentNotificationPresenter] scanner portal relevance rejected (event not found)', [
+            Log::debug('[StudentNotificationPresenter] scanner portal relevance rejected (event not found)', [
                 'student_id' => $student->id,
                 'eventId' => $eventId,
                 'notification_id' => $notification['id'] ?? null,
@@ -251,7 +251,7 @@ class StudentNotificationPresenter
         }
 
         if ($event->archived_at !== null) {
-            Log::info('[StudentNotificationPresenter] scanner portal relevance rejected (event archived)', [
+            Log::debug('[StudentNotificationPresenter] scanner portal relevance rejected (event archived)', [
                 'student_id' => $student->id,
                 'eventId' => $eventId,
                 'archived_at' => $event->archived_at,

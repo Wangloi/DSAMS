@@ -17,6 +17,12 @@ return [
     'campus_latitude' => (float) env('CAMPUS_LATITUDE', 8.743070),
     'campus_longitude' => (float) env('CAMPUS_LONGITUDE', 124.774500),
     'campus_radius_m' => (int) env('CAMPUS_RADIUS_M', 300),
+
+    'gymnasium_name' => (string) env('GYM_NAME', "SRCB Gymnasium"),
+    'gymnasium_latitude' => (float) env('GYM_LATITUDE', 8.742800),
+    'gymnasium_longitude' => (float) env('GYM_LONGITUDE', 124.774200),
+    'gymnasium_radius_m' => (int) env('GYM_RADIUS_M', 50),
+
     'max_accuracy_m' => (float) env('MAX_GEOFENCE_ACCURACY_M', 5000),
 
 ];

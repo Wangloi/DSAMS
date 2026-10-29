@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Attendance;
 use App\Models\Event;
 use App\Models\Student;
@@ -211,87 +212,177 @@ class ProgramHeadAttendanceController extends Controller
 
     public function logs(Request $request, Event $event): JsonResponse
     {
-        $program = $this->programHeadProgram();
-        if ($program === '') {
+        try {
+            $program = $this->programHeadProgram();
+            if ($program === '') {
+                return response()->json([
+                    'rows' => [],
+                    'counts' => ['total' => 0, 'present' => 0, 'late' => 0, 'flagged' => 0, 'incomplete' => 0],
+                    'byCourse' => [],
+                    'server_time' => now()->toDateTimeString(),
+                ]);
+            }
+
+            [$allStudents, $attendances, $baseAttendanceQuery] = $this->resolveEventStudentsAndAttendances($event, $program);
+
+            $limit = $request->has('limit') ? (int) $request->query('limit') : 2000;
+            if ($limit < 1) {
+                $limit = 1;
+            }
+            if ($limit > 2000) {
+                $limit = 2000;
+            }
+
+            $rows = $allStudents
+                ->map(function (Student $student) use ($attendances, $event) {
+                    $att = $attendances->get($student->id);
+                    $hasScanned = ($att !== null && ($att->checked_in_at !== null || $att->scanned_at !== null));
+                    $timeCarbon = $att ? ($att->checked_in_at ?? $att->scanned_at) : null;
+
+                    $fullName = trim((string) ($student->name ?? ''));
+                    if (! empty($student->last_name) || ! empty($student->first_name)) {
+                        $fullName = trim(($student->last_name ?? '').', '.($student->first_name ?? '').' '.($student->middle_name ?? ''));
+                    }
+
+                    $isFlagged = (bool) ($att && isset($att->is_flagged) && $att->is_flagged);
+                    $status = 'Absent';
+                    if ($hasScanned) {
+                        $rawStatus = strtolower((string) ($att->status ?? 'present'));
+                        if ($isFlagged) {
+                            $status = 'Flagged';
+                        } elseif (in_array($rawStatus, ['incomplete', 'left_early'], true) || ($event->status === 'completed' && empty($att->checked_out_at))) {
+                            $status = 'Incomplete';
+                        } else {
+                            $status = ucfirst($rawStatus);
+                        }
+                    }
+
+                    return [
+                        'id' => (string) ($att?->id ?? $student->id),
+                        'attendance_id' => $att?->id ? (int) $att->id : null,
+                        'student_id' => (string) ($student->student_id ?? '—'),
+                        'name' => $fullName ?: (string) ($student->name ?? '—'),
+                        'program' => (string) (($student->course ?? $student->program ?? '') ?: '—'),
+                        'year_level' => (string) ($student->year_level ?? '—'),
+                        'checked_in_at' => $timeCarbon ? optional($timeCarbon)->toDateTimeString() : null,
+                        'checked_out_at' => ($att && $att->checked_out_at) ? optional($att->checked_out_at)->toDateTimeString() : null,
+                        'mid_session_verified_at' => ($att && $att->mid_session_verified_at) ? optional($att->mid_session_verified_at)->toDateTimeString() : null,
+                        'time' => $timeCarbon ? optional($timeCarbon)->format('g:i A') : '—',
+                        'time_out' => ($att && $att->checked_out_at) ? optional($att->checked_out_at)->format('g:i A') : '—',
+                        'mid_session_time' => ($att && $att->mid_session_verified_at) ? optional($att->mid_session_verified_at)->format('g:i A') : '—',
+                        'status' => $status,
+                        'is_flagged' => $isFlagged,
+                        'flagged_reason' => $att?->flagged_reason,
+                        'is_absent' => ! $hasScanned,
+                    ];
+                })
+                ->sortBy('name')
+                ->values()
+                ->take($limit);
+
+            $expected = $this->programEligibleStudentsCount($event, $program);
+
+            $isUpcoming = ($event->status === 'upcoming');
+
+            if ($isUpcoming) {
+                $counts = [
+                    'total' => 0,
+                    'present' => 0,
+                    'late' => 0,
+                    'flagged' => 0,
+                    'incomplete' => 0,
+                ];
+                $scanned = 0;
+                $scannerPortalActive = false;
+            } else {
+                $baseScannedQuery = (clone $baseAttendanceQuery)->where(function ($q) {
+                    $q->whereNotNull('checked_in_at')->orWhereNotNull('scanned_at');
+                });
+
+                $hasFlaggedCol = Schema::hasColumn('attendances', 'is_flagged');
+
+                $counts = [
+                    'total' => (int) (clone $baseScannedQuery)->count(),
+                    'present' => (int) (clone $baseScannedQuery)
+                        ->whereIn('status', ['present', 'completed'])
+                        ->when($hasFlaggedCol, fn($q) => $q->where('is_flagged', false))
+                        ->count(),
+                    'late' => (int) (clone $baseScannedQuery)->where('status', 'late')->count(),
+                    'flagged' => $hasFlaggedCol ? (int) (clone $baseScannedQuery)->where('is_flagged', true)->count() : 0,
+                    'incomplete' => (int) (clone $baseAttendanceQuery)->where(function ($q) {
+                        $q->whereIn('status', ['incomplete', 'left_early'])->orWhereNull('checked_out_at');
+                    })->where(function ($q) {
+                        $q->whereNotNull('checked_in_at')->orWhereNotNull('scanned_at');
+                    })->count(),
+                ];
+                $scanned = (int) (clone $baseScannedQuery)->count();
+                $scannerPortalActive = Schema::hasColumn('events', 'scanner_portal_active') ? (bool) $event->scanner_portal_active : true;
+            }
+
             return response()->json([
-                'rows' => [],
-                'counts' => ['total' => 0, 'present' => 0, 'late' => 0],
-                'byCourse' => [],
+                'event' => [
+                    'id' => $event->id,
+                    'name' => $event->event_name,
+                    'status' => $event->status,
+                    'is_upcoming' => $isUpcoming,
+                    'event_date' => optional($event->event_date)->format('Y-m-d'),
+                    'event_time' => $event->event_time,
+                ],
+                'status' => $event->status,
+                'is_upcoming' => $isUpcoming,
+                'scanner_portal_active' => $scannerPortalActive,
+                'counts' => $counts,
+                'byCourse' => [[
+                    'program' => $program,
+                    'expected' => $expected,
+                    'scanned' => $scanned,
+                    'remaining' => max($expected - $scanned, 0),
+                    'percentage' => $expected > 0 ? round(($scanned / $expected) * 100, 1) : 0,
+                ]],
+                'rows' => $rows,
                 'server_time' => now()->toDateTimeString(),
             ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Program head real-time attendance logs error for event ' . $event->id . ': ' . $e->getMessage(), [
+                'exception' => $e,
+            ]);
+
+            return response()->json([
+                'event' => [
+                    'id' => $event->id,
+                    'name' => $event->event_name ?? 'Event',
+                    'status' => $event->status ?? 'upcoming',
+                    'is_upcoming' => ($event->status === 'upcoming'),
+                    'event_date' => optional($event->event_date)->format('Y-m-d'),
+                    'event_time' => $event->event_time,
+                ],
+                'status' => $event->status ?? 'upcoming',
+                'is_upcoming' => ($event->status === 'upcoming'),
+                'scanner_portal_active' => false,
+                'counts' => [
+                    'total' => 0,
+                    'present' => 0,
+                    'late' => 0,
+                    'flagged' => 0,
+                    'incomplete' => 0,
+                ],
+                'byCourse' => [],
+                'rows' => [],
+                'server_time' => now()->toDateTimeString(),
+                'error' => config('app.debug') ? $e->getMessage() : 'An error occurred while loading real-time monitoring logs.',
+            ]);
         }
-
-        [$allStudents, $attendances, $baseAttendanceQuery] = $this->resolveEventStudentsAndAttendances($event, $program);
-
-        $limit = $request->has('limit') ? (int) $request->query('limit') : 2000;
-        if ($limit < 1) {
-            $limit = 1;
-        }
-        if ($limit > 2000) {
-            $limit = 2000;
-        }
-
-        $rows = $allStudents
-            ->map(function (Student $student) use ($attendances) {
-                $att = $attendances->get($student->id);
-                $hasScanned = ($att !== null && ($att->checked_in_at !== null || $att->scanned_at !== null));
-                $timeCarbon = $att ? ($att->checked_in_at ?? $att->scanned_at) : null;
-
-                $fullName = trim((string) ($student->name ?? ''));
-                if (! empty($student->last_name) || ! empty($student->first_name)) {
-                    $fullName = trim(($student->last_name ?? '').', '.($student->first_name ?? '').' '.($student->middle_name ?? ''));
-                }
-
-                $status = $hasScanned ? ucfirst((string) ($att->status ?? 'present')) : 'Absent';
-
-                return [
-                    'id' => (string) ($att?->id ?? $student->id),
-                    'student_id' => (string) ($student->student_id ?? '—'),
-                    'name' => $fullName ?: (string) ($student->name ?? '—'),
-                    'program' => (string) (($student->course ?? $student->program ?? '') ?: '—'),
-                    'year_level' => (string) ($student->year_level ?? '—'),
-                    'checked_in_at' => $timeCarbon ? optional($timeCarbon)->toDateTimeString() : null,
-                    'checked_out_at' => ($att && $att->checked_out_at) ? optional($att->checked_out_at)->toDateTimeString() : null,
-                    'time' => $timeCarbon ? optional($timeCarbon)->format('g:i A') : '—',
-                    'time_out' => ($att && $att->checked_out_at) ? optional($att->checked_out_at)->format('g:i A') : '—',
-                    'status' => $status,
-                    'is_absent' => ! $hasScanned,
-                ];
-            })
-            ->sortBy('name')
-            ->values()
-            ->take($limit);
-
-        $expected = $this->programEligibleStudentsCount($event, $program);
-        $scanned = $attendances->count();
-
-        return response()->json([
-            'event' => [
-                'id' => $event->id,
-                'name' => $event->event_name,
-            ],
-            'scanner_portal_active' => Schema::hasColumn('events', 'scanner_portal_active') ? (bool) $event->scanner_portal_active : true,
-            'counts' => [
-                'total' => (int) (clone $baseAttendanceQuery)->count(),
-                'present' => (int) (clone $baseAttendanceQuery)->where('status', 'present')->count(),
-                'late' => (int) (clone $baseAttendanceQuery)->where('status', 'late')->count(),
-            ],
-            'byCourse' => [[
-                'program' => $program,
-                'expected' => $expected,
-                'scanned' => $scanned,
-                'remaining' => max($expected - $scanned, 0),
-                'percentage' => $expected > 0 ? round(($scanned / $expected) * 100, 1) : 0,
-            ]],
-            'rows' => $rows,
-            'server_time' => now()->toDateTimeString(),
-        ]);
     }
 
     public function printEvent(Request $request, Event $event): \Illuminate\Http\Response
     {
         $program = $this->programHeadProgram();
-        [$allStudents, $attendances] = $this->resolveEventStudentsAndAttendances($event, $program);
+        $yearLevelFilter = $request->query('year_level');
+        if ($yearLevelFilter === 'all' || trim((string) $yearLevelFilter) === '') {
+            $yearLevelFilter = null;
+        }
+
+        [$allStudents, $attendances] = $this->resolveEventStudentsAndAttendances($event, $program, $yearLevelFilter);
 
         $printData = $this->buildPrintSections($allStudents, $attendances, $program);
 
@@ -323,19 +414,47 @@ class ProgramHeadAttendanceController extends Controller
             'totalAttendees' => $printData['totalAttendees'],
             'totalAbsent' => $printData['totalAbsent'],
             'totalStudents' => $printData['totalAttendees'] + $printData['totalAbsent'],
+            'selectedCourse' => $program,
+            'selectedYearLevel' => $yearLevelFilter,
         ]);
     }
 
     /**
      * @return array{0: Collection<int, Student>, 1: Collection<string|int, Attendance>, 2: Builder}
      */
-    private function resolveEventStudentsAndAttendances(Event $event, string $program): array
+    private function resolveEventStudentsAndAttendances(Event $event, string $program, ?string $yearLevelFilter = null): array
+    {
+        $eligibleStudents = $this->queryEligibleProgramStudents($event, $program, $yearLevelFilter);
+        $baseAttendanceQuery = $this->queryBaseAttendance((int) $event->id, $program, $yearLevelFilter);
+
+        $attendances = (clone $baseAttendanceQuery)
+            ->with('student')
+            ->get()
+            ->keyBy('student_id');
+
+        $attendedStudents = $attendances->pluck('student')->filter();
+
+        $allStudents = $eligibleStudents->isEmpty()
+            ? $attendedStudents->values()
+            : $eligibleStudents->concat($attendedStudents)->unique('id')->values();
+
+        if (! empty($yearLevelFilter)) {
+            $allStudents = $allStudents->filter(function ($s) use ($yearLevelFilter) {
+                $yl = (string) ($s->year_level ?? '');
+
+                return strcasecmp($yl, $yearLevelFilter) === 0 || stripos($yl, $yearLevelFilter) === 0;
+            })->values();
+        }
+
+        return [$allStudents, $attendances, $baseAttendanceQuery];
+    }
+
+    private function queryEligibleProgramStudents(Event $event, string $program, ?string $yearLevelFilter = null)
     {
         $eventYearLevels = is_array($event->year_levels)
             ? array_values(array_filter($event->year_levels, fn ($y) => ! EventEligibilityService::isAllWildcard((string) $y)))
             : [];
 
-        // Query eligible students for this event in this program
         $studentsQuery = Student::query();
         if ($program !== '') {
             $studentsQuery->where('course', $program);
@@ -350,38 +469,37 @@ class ProgramHeadAttendanceController extends Controller
                 $q->where('is_archived', false)->orWhereNull('is_archived');
             });
         }
-        if (! empty($eventYearLevels)) {
+        if (! empty($yearLevelFilter)) {
+            $studentsQuery->where(function ($q) use ($yearLevelFilter) {
+                $q->where('year_level', $yearLevelFilter)
+                  ->orWhere('year_level', 'like', $yearLevelFilter . '%');
+            });
+        } elseif (! empty($eventYearLevels)) {
             $studentsQuery->whereIn('year_level', $eventYearLevels);
         }
 
-        $eligibleStudents = $studentsQuery
+        return $studentsQuery
             ->orderBy('year_level')
             ->orderBy('last_name')
             ->orderBy('first_name')
             ->get();
+    }
 
-        // Fetch attendance records for this event
-        $baseAttendanceQuery = Attendance::where('event_id', $event->id)
-            ->whereHas('student', function ($q) use ($program) {
+    private function queryBaseAttendance(int $eventId, string $program, ?string $yearLevelFilter = null): Builder
+    {
+        return Attendance::query()
+            ->where('event_id', $eventId)
+            ->whereHas('student', function ($q) use ($program, $yearLevelFilter) {
                 if ($program !== '') {
                     $q->where('course', $program);
                 }
+                if (! empty($yearLevelFilter)) {
+                    $q->where(function ($sq) use ($yearLevelFilter) {
+                        $sq->where('year_level', $yearLevelFilter)
+                          ->orWhere('year_level', 'like', $yearLevelFilter . '%');
+                    });
+                }
             });
-
-        $attendances = (clone $baseAttendanceQuery)
-            ->with('student')
-            ->get()
-            ->keyBy('student_id');
-
-        $allStudents = $eligibleStudents;
-        if ($allStudents->isEmpty()) {
-            $allStudents = $attendances->map(fn ($a) => $a->student)->filter()->values();
-        } else {
-            $attendedStudents = $attendances->map(fn ($a) => $a->student)->filter();
-            $allStudents = $allStudents->merge($attendedStudents)->unique('id')->values();
-        }
-
-        return [$allStudents, $attendances, $baseAttendanceQuery];
     }
 
     /**
@@ -538,6 +656,10 @@ class ProgramHeadAttendanceController extends Controller
 
     public function activateScannerPortal(Request $request, Event $event): RedirectResponse
     {
+        if ($event->status === 'upcoming') {
+            return redirect()->route('program-head.attendance')->with('info', 'Scanner portal cannot be activated yet because the event is upcoming.')->setStatusCode(303);
+        }
+
         if (Schema::hasColumn('events', 'scanner_portal_active')) {
             $event->update(['scanner_portal_active' => true]);
         }
@@ -710,5 +832,34 @@ class ProgramHeadAttendanceController extends Controller
                 'program' => (string) ($student->course ?? $student->program ?? ''),
             ],
         ]);
+    }
+
+    /**
+     * Clear dwell gap or missing mid-session attendance flag for an attendee.
+     */
+    public function clearAttendanceFlag(Attendance $attendance, Request $request)
+    {
+        $attendance->clearFlag(auth()->id());
+        $attendance->update(['status' => 'present']);
+
+        if (Schema::hasTable('activity_logs')) {
+            $programHead = auth()->guard('program_head')->user();
+            ActivityLog::logForUser(
+                $programHead,
+                'Attendance',
+                'Flag Cleared',
+                "Cleared dwell gap attendance flag for student #{$attendance->student_id} on event #{$attendance->event_id}.",
+                $request
+            );
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Attendance flag cleared successfully. Attendance verified.',
+            ]);
+        }
+
+        return back()->with('success', 'Attendance flag cleared successfully.')->setStatusCode(303);
     }
 }

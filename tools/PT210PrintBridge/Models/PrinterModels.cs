@@ -74,6 +74,20 @@ public class AdmissionSlipRequest
     private string? _status;
     private string? _deanName;
     private string? _slipId;
+    private string? _slipCount;
+    private string? _allTimeCount;
+
+    [JsonPropertyName("slip_count")]
+    public string? SlipCountSnake { get => _slipCount; set => _slipCount = value; }
+
+    [JsonPropertyName("slipCount")]
+    public string? SlipCount { get => _slipCount; set => _slipCount = value; }
+
+    [JsonPropertyName("all_time_slip_count")]
+    public string? AllTimeSlipCountSnake { get => _allTimeCount; set => _allTimeCount = value; }
+
+    [JsonPropertyName("allTimeCount")]
+    public string? AllTimeCount { get => _allTimeCount; set => _allTimeCount = value; }
 
     [JsonPropertyName("student_name")]
     public string? StudentNameSnake { get => _studentName; set => _studentName = value; }

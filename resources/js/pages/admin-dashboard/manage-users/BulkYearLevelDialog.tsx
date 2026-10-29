@@ -97,7 +97,7 @@ export function BulkYearLevelDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent id="bulk-year-level-modal-dialog" className="sm:max-w-md relative">
+            <DialogContent id="bulk-year-level-modal-dialog" size="sm" preventClose={isUpdatingYearLevel}>
 
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">

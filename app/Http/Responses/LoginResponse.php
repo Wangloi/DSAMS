@@ -13,11 +13,12 @@ class LoginResponse implements LoginResponseContract
 {
     public function toResponse($request): Response
     {
-        $user = Auth::user();
+        $guard = \App\Support\ActiveAuth::resolve($request);
+        $user = $guard ? Auth::guard($guard)->user() : null;
 
-        if ($user->role === 'admin') {
+        if ($guard === 'admin' || ($user && $user->role === 'admin')) {
             $redirectUrl = '/admin-dashboard';
-        } elseif ($user->role === 'program_head') {
+        } elseif ($guard === 'program_head' || ($user && $user->role === 'program_head')) {
             $redirectUrl = '/program-head-dashboard';
         } else {
             $redirectUrl = '/student-dashboard';

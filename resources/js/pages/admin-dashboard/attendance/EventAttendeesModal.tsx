@@ -31,6 +31,7 @@ import {
     X,
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
+import PrintAttendanceModal from './PrintAttendanceModal';
 
 type Attendee = {
     id: string;
@@ -97,6 +98,7 @@ export default function EventAttendeesModal({
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedProgram, setSelectedProgram] = useState<string>('all');
     const [statusFilter, setStatusFilter] = useState<'all' | 'present' | 'late' | 'absent'>('all');
+    const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
     useEffect(() => {
         if (open && eventId) {
@@ -105,6 +107,7 @@ export default function EventAttendeesModal({
             setSearchQuery('');
             setSelectedProgram('all');
             setStatusFilter('all');
+            setIsPrintModalOpen(false);
         }
     }, [open, eventId]);
 
@@ -145,8 +148,7 @@ export default function EventAttendeesModal({
 
     const handlePrint = () => {
         if (!eventId) return;
-        const targetUrl = printUrl || `/admin/attendance/${eventId}/print`;
-        window.open(targetUrl, '_blank');
+        setIsPrintModalOpen(true);
     };
 
     const uniquePrograms = useMemo(() => {
@@ -230,8 +232,9 @@ export default function EventAttendeesModal({
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[85vh] h-[85vh] w-[95vw] !max-w-5xl flex-col overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-slate-50 !p-0 !gap-0 shadow-2xl dark:border-slate-800 dark:bg-slate-950 [&>button]:hidden">
+        <>
+            <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent size="2xl" className="flex max-h-[85vh] h-[85vh] w-[95vw] flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-50 !p-0 !gap-0 shadow-2xl dark:border-slate-800 dark:bg-slate-950 [&>button]:hidden">
                 <DialogHeader className="sr-only">
                     <DialogTitle>
                         {eventName || 'Event Participants'} Attendees List
@@ -242,46 +245,39 @@ export default function EventAttendeesModal({
                 </DialogHeader>
 
                 <div className="flex h-full w-full flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
-                    {/* ── EXECUTIVE HERO HEADER ── */}
-                    <div className="relative shrink-0 bg-gradient-to-r from-[#000D6A] via-[#0A1B7A] to-[#1E3A8A] px-6 py-5 text-white shadow-md sm:px-8">
-                        {/* Background decorative glow elements */}
-                        <div className="pointer-events-none absolute -top-12 -right-12 h-44 w-44 rounded-full bg-cyan-400/20 blur-3xl" />
-                        <div className="pointer-events-none absolute -bottom-10 left-1/4 h-32 w-32 rounded-full bg-blue-400/20 blur-2xl" />
-
-                        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    {/* ── CLEAN MINIMALIST HEADER ── */}
+                    <div className="shrink-0 border-b border-slate-100 bg-white px-6 py-5 dark:border-slate-800 dark:bg-slate-900 sm:px-8">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-center gap-3.5 min-w-0">
-                                <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#8CE4FF] shadow-inner ring-1 ring-white/30 backdrop-blur-md">
+                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-[#23509A] dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
                                     <Users className="h-5 w-5" />
-                                    <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-[#000D6A]">
-                                        <span className="h-1 w-1 rounded-full bg-white" />
-                                    </span>
                                 </div>
                                 <div className="min-w-0 space-y-1">
                                     <div className="flex flex-wrap items-center gap-2">
-                                        <h2 className="truncate text-base font-black tracking-tight text-white sm:text-lg">
+                                        <h2 className="truncate text-lg font-bold tracking-tight text-slate-900 dark:text-white sm:text-xl">
                                             {eventName || 'Event Attendees List'}
                                         </h2>
-                                        <span className="shrink-0 rounded-full bg-white/15 px-2.5 py-0.5 text-[11px] font-bold text-[#8CE4FF] backdrop-blur-xs">
+                                        <span className="shrink-0 rounded-full border border-blue-200/60 bg-blue-50 px-2.5 py-0.5 text-[10px] font-bold text-[#23509A] uppercase tracking-wider dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300">
                                             {attendees.length}{' '}
                                             {attendees.length === 1
                                                 ? 'Participant'
                                                 : 'Participants'}
                                         </span>
                                     </div>
-                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-blue-100/80">
+                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
                                         {eventDate && (
                                             <span className="inline-flex items-center gap-1 font-medium">
-                                                <Calendar className="h-3.5 w-3.5 text-[#8CE4FF]/90" />
+                                                <Calendar className="h-3.5 w-3.5 text-[#23509A] dark:text-blue-400" />
                                                 {eventDate}
                                             </span>
                                         )}
                                         {eventLocation && (
                                             <span className="inline-flex items-center gap-1 font-medium">
-                                                <MapPin className="h-3.5 w-3.5 text-[#8CE4FF]/90" />
+                                                <MapPin className="h-3.5 w-3.5 text-[#23509A] dark:text-blue-400" />
                                                 {eventLocation}
                                             </span>
                                         )}
-                                        <span className="hidden sm:inline font-medium text-blue-200/60">• Attendance Logs</span>
+                                        <span className="hidden sm:inline font-medium text-slate-400">• Attendance Logs</span>
                                     </div>
                                 </div>
                             </div>
@@ -290,18 +286,19 @@ export default function EventAttendeesModal({
                                 <Button
                                     type="button"
                                     onClick={handlePrint}
-                                    className="flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/15 px-3.5 py-2 text-xs font-semibold text-white shadow-sm backdrop-blur-md transition-all hover:bg-white/25 active:scale-95"
+                                    className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs transition-all hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-750"
                                 >
-                                    <Printer className="h-3.5 w-3.5 text-[#8CE4FF]" />
+                                    <Printer className="h-3.5 w-3.5 text-[#23509A] dark:text-blue-400" />
                                     <span>Print Sheet</span>
                                 </Button>
                                 <button
                                     type="button"
                                     onClick={() => onOpenChange(false)}
-                                    className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 text-white/80 transition-all hover:bg-white/20 hover:text-white active:scale-95"
-                                    aria-label="Close modal"
+                                    className="flex h-8 w-8 items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                                    aria-label="Close dialog"
                                 >
                                     <X className="h-4 w-4" />
+                                    <span className="sr-only">Close dialog</span>
                                 </button>
                             </div>
                         </div>
@@ -382,7 +379,7 @@ export default function EventAttendeesModal({
 
                         <div className="flex flex-wrap items-center gap-2">
                             {/* Status Filter Pills */}
-                            <div className="inline-flex rounded-xl border border-slate-200 bg-white p-0.5 shadow-2xs dark:border-slate-700 dark:bg-slate-800">
+                            <div role="radiogroup" aria-label="Status filter" className="inline-flex rounded-xl border border-slate-200 bg-white p-0.5 shadow-2xs dark:border-slate-700 dark:bg-slate-800">
                                 {(
                                     [
                                         { key: 'all', label: 'All' },
@@ -394,8 +391,10 @@ export default function EventAttendeesModal({
                                     <button
                                         key={st.key}
                                         type="button"
+                                        role="radio"
+                                        aria-checked={statusFilter === st.key}
                                         onClick={() => setStatusFilter(st.key)}
-                                        className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all ${
+                                        className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all focus-visible:ring-2 focus-visible:ring-[#000D6A] focus-visible:outline-none ${
                                             statusFilter === st.key
                                                 ? 'bg-[#000D6A] text-white shadow-xs dark:bg-blue-600'
                                                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
@@ -411,7 +410,7 @@ export default function EventAttendeesModal({
                                 value={selectedProgram}
                                 onValueChange={setSelectedProgram}
                             >
-                                <SelectTrigger className="h-9 w-44 rounded-xl border-slate-200 bg-white text-xs font-medium shadow-2xs dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                                <SelectTrigger aria-label="Filter by program" className="h-9 w-44 rounded-xl border-slate-200 bg-white text-xs font-medium shadow-2xs dark:border-slate-700 dark:bg-slate-800 dark:text-white">
                                     <div className="flex items-center gap-1.5 truncate">
                                         <Filter className="h-3 w-3 text-slate-400" />
                                         <SelectValue placeholder="All Programs" />
@@ -620,5 +619,16 @@ export default function EventAttendeesModal({
                 </div>
             </DialogContent>
         </Dialog>
+            <PrintAttendanceModal
+                open={isPrintModalOpen}
+                onOpenChange={setIsPrintModalOpen}
+                eventId={eventId}
+                eventName={eventName}
+                eventDate={eventDate}
+                initialProgram={selectedProgram}
+                courses={uniquePrograms}
+                baseUrl={printUrl}
+            />
+        </>
     );
 }

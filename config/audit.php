@@ -9,6 +9,18 @@ return [
         'events.*',
     ],
 
+    // Routes excluded from auditing (high-frequency polling, logs, heartbeats, tokens)
+    'excluded_routes' => [
+        'admin.attendance.logs',
+        'program-head.attendance.logs',
+        'admin.attendance.dynamic-qr-token',
+        'program-head.attendance.dynamic-qr-token',
+        'student.events.logs',
+        'student.attendance.logs',
+        '*.logs',
+        '*.dynamic-qr-token',
+    ],
+
     // Redis key prefixes for each alert type
     'redis_prefixes' => [
         'login_failed'   => 'audit:login_failed',

@@ -44,7 +44,7 @@ export default function CourseStudentsDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[85vh] w-[96vw] !max-w-6xl overflow-hidden bg-white p-0 dark:bg-slate-900">
+            <DialogContent size="2xl" className="max-h-[85vh] w-[96vw] overflow-hidden bg-white p-0 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-2xl">
                 <DialogHeader className="border-b border-slate-200 bg-slate-50 p-3.5 sm:px-6 sm:py-4 dark:border-slate-800 dark:bg-slate-800/50">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>

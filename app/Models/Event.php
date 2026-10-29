@@ -285,7 +285,52 @@ class Event extends Model
             if ($rawDate !== null && $rawDate !== '') {
                 $event->attributes['status'] = self::deriveLifecycleStatusFromDate($rawDate, $rawTime, $rawEnd);
             }
+
+            self::filterNonExistentColumns($event);
         });
+    }
+
+    protected static ?array $tableColumns = null;
+
+    /**
+     * Get cached list of actual columns in the events table
+     */
+    public static function getTableColumns(): array
+    {
+        if (self::$tableColumns === null) {
+            try {
+                self::$tableColumns = Schema::getColumnListing('events');
+            } catch (\Throwable) {
+                self::$tableColumns = [];
+            }
+        }
+
+        return self::$tableColumns;
+    }
+
+    /**
+     * Remove any attributes that do not exist in the database table to prevent SQL 1054 errors on unmigrated hosts
+     */
+    public static function filterNonExistentColumns(Event $event): void
+    {
+        $cols = self::getTableColumns();
+        if (!empty($cols)) {
+            $colsLookup = array_flip($cols);
+            foreach (array_keys($event->attributes) as $key) {
+                if (!isset($colsLookup[$key])) {
+                    unset($event->attributes[$key]);
+                }
+            }
+        }
+    }
+
+    /**
+     * Whether the events table supports geofencing columns.
+     */
+    public static function supportsGeofencing(): bool
+    {
+        $cols = self::getTableColumns();
+        return !empty($cols) && in_array('geofence_enabled', $cols, true);
     }
 
     /**
@@ -479,8 +524,50 @@ class Event extends Model
                 } catch (\Throwable) {}
             }
 
-            // Flexible Time-Out: Allow check-out anytime once checked in if the event ends quickly!
-            // We only block if the overall attendance closure window has expired long after event end.
+            // Check if scanning during the active event session (before official Time-Out window opens)
+            if ($outStart && $now->lessThan($outStart)) {
+                // If marshal scanner explicitly set Exit / Check-out mode, record premature early departure
+                if ($isExplicitCheckOut) {
+                    return [
+                        'allowed' => true,
+                        'action' => 'check_out',
+                        'status' => 'left_early',
+                        'is_flagged' => true,
+                        'flagged_reason' => 'Departed venue prematurely before official checkout window.',
+                        'error_message' => null,
+                        'status_code' => 200,
+                    ];
+                }
+
+                // If scan happens during active event session, record as Mid-Session Spot-Check Presence Verification!
+                $lastMidVerify = $existingAttendance->mid_session_verified_at;
+                if ($lastMidVerify) {
+                    try {
+                        $lastMidCarbon = $lastMidVerify instanceof \DateTimeInterface
+                            ? Carbon::instance($lastMidVerify)
+                            : Carbon::parse((string) $lastMidVerify);
+                        if ($now->diffInMinutes($lastMidCarbon) < 15) {
+                            return [
+                                'allowed' => true,
+                                'action' => 'mid_session_verify',
+                                'status' => $existingAttendance->status ?? 'present',
+                                'error_message' => 'Mid-session in-venue presence already confirmed at ' . $lastMidCarbon->format('h:i A') . '. Active presence verified.',
+                                'status_code' => 200,
+                            ];
+                        }
+                    } catch (\Throwable) {}
+                }
+
+                return [
+                    'allowed' => true,
+                    'action' => 'mid_session_verify',
+                    'status' => $existingAttendance->status ?? 'present',
+                    'error_message' => null,
+                    'status_code' => 200,
+                ];
+            }
+
+            // Check if overall attendance scanning window has completely closed
             if ($outEnd && $now->greaterThan($outEnd)) {
                 return [
                     'allowed' => false,
@@ -491,11 +578,31 @@ class Event extends Model
                 ];
             }
 
+            // Official Time-Out Window:
+            // Anti-Split Attendance: Detect dwell gap if event >= 90 mins and student skipped mid-session verification
+            $sessionMinutes = ($start && $outStart) ? $start->diffInMinutes($outStart) : 0;
+            $hasLongSession = $sessionMinutes >= 90;
+            $missingMidVerify = empty($existingAttendance->mid_session_verified_at);
+
+            $isFlagged = false;
+            $flaggedReason = null;
+            $checkoutStatus = $existingAttendance->status ?? 'present';
+
+            if ($hasLongSession && $missingMidVerify) {
+                $isFlagged = true;
+                $startStr = $start ? $start->format('h:i A') : 'start';
+                $outStartStr = $outStart ? $outStart->format('h:i A') : 'conclusion';
+                $flaggedReason = "Dwell Gap Alert: Missing mid-session presence verification between {$startStr} and {$outStartStr}. Potential split attendance.";
+                $checkoutStatus = 'flagged';
+            }
+
             // Time-out is allowed
             return [
                 'allowed' => true,
                 'action' => 'check_out',
-                'status' => $existingAttendance->status ?? 'present',
+                'status' => $checkoutStatus,
+                'is_flagged' => $isFlagged,
+                'flagged_reason' => $flaggedReason,
                 'error_message' => null,
                 'status_code' => 200,
             ];
@@ -780,7 +887,8 @@ class Event extends Model
 
         $sameDayEvents = $query->get();
 
-        return $sameDayEvents->filter(function (Event $other) use ($sameVenueOnly) {
+        return $sameDayEvents->filter(function ($other) use ($sameVenueOnly) {
+            /** @var Event $other */
             if ($sameVenueOnly) {
                 if (! static::areLocationsConflicting((string) $this->location, (string) $other->location)) {
                     return false;
@@ -1002,11 +1110,30 @@ class Event extends Model
     }
 
 
-    public function updateAttendanceCounts()
+    public function updateAttendanceCounts(bool $force = false)
     {
         try {
+            $throttleKey = 'event:attendance_counts_throttle:' . $this->id;
+            if (! $force && \Illuminate\Support\Facades\Cache::has($throttleKey)) {
+                return;
+            }
+            \Illuminate\Support\Facades\Cache::put($throttleKey, true, now()->addSeconds(3));
+
+            // Finalize abandoned / left early attendances if event is completed or past attendance window
+            $windows = $this->getAttendanceTimeWindows();
+            $outEnd = $windows['time_out_end'];
+            $isConcluded = ($this->status === 'completed') || ($outEnd && Carbon::now()->greaterThan($outEnd));
+
+            if ($isConcluded) {
+                $this->attendances()
+                    ->whereNotNull('checked_in_at')
+                    ->whereNull('checked_out_at')
+                    ->whereNotIn('status', ['incomplete', 'left_early', 'excused'])
+                    ->update(['status' => 'incomplete']);
+            }
+
             $this->total_attendees = (int) $this->attendances()->count();
-            $this->present_count = (int) $this->attendances()->where('status', 'present')->count();
+            $this->present_count = (int) $this->attendances()->whereIn('status', ['present', 'completed'])->count();
             $this->save();
         } catch (\Throwable) {
             // Ignore count update failure

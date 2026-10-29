@@ -93,7 +93,7 @@ export default function QRScanner({ open, onClose, onScan }: QRScannerProps) {
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent size="md">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <QrCode className="h-5 w-5" />

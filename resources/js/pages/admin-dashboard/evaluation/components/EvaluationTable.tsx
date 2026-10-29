@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { adminEvaluationMetrics } from '@/routes';
 import { Link } from '@inertiajs/react';
 import { SimpleTooltip } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 import {
     Archive,
     BarChart3,
@@ -15,7 +16,7 @@ import {
     Send,
     XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { EvaluationForm, EventOption } from './types';
 
 interface EvaluationTableProps {
@@ -43,16 +44,33 @@ export default function EvaluationTable({
     handleOpenCreateForEvent,
 }: EvaluationTableProps) {
     const [searchQuery, setSearchQuery] = useState('');
+    const [pageIndex, setPageIndex] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
-    const filteredEvents = events.filter((event) => {
-        const evaluation = evaluations.find((e) => e.event_id === event.id);
-        const q = searchQuery.trim().toLowerCase();
-        if (!q) return true;
-        return (
-            event.name.toLowerCase().includes(q) ||
-            (evaluation?.name && evaluation.name.toLowerCase().includes(q))
-        );
-    });
+    const filteredEvents = useMemo(() => {
+        return events.filter((event) => {
+            const evaluation = evaluations.find((e) => e.event_id === event.id);
+            const q = searchQuery.trim().toLowerCase();
+            if (!q) return true;
+            return (
+                event.name.toLowerCase().includes(q) ||
+                (evaluation?.name && evaluation.name.toLowerCase().includes(q))
+            );
+        });
+    }, [events, evaluations, searchQuery]);
+
+    useEffect(() => {
+        setPageIndex(1);
+    }, [searchQuery]);
+
+    const totalItems = filteredEvents.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+    const clampedPage = Math.min(Math.max(pageIndex, 1), totalPages);
+
+    const pagedEvents = useMemo(() => {
+        const start = (clampedPage - 1) * pageSize;
+        return filteredEvents.slice(start, start + pageSize);
+    }, [filteredEvents, clampedPage, pageSize]);
 
     return (
         <Card className="border-0 bg-white shadow-lg dark:bg-[#0B192C]/50">
@@ -125,7 +143,7 @@ export default function EvaluationTable({
                                     </td>
                                 </tr>
                             ) : (
-                                filteredEvents.map((event) => {
+                                pagedEvents.map((event) => {
                                     const evaluation = evaluations.find(
                                         (e) => e.event_id === event.id,
                                     );
@@ -213,21 +231,21 @@ export default function EvaluationTable({
                                                     {evaluation ? (
                                                         <>
                                                             <SimpleTooltip content="View Metrics">
-                                                                <Link
-                                                                    href={adminEvaluationMetrics(
-                                                                        evaluation.id,
-                                                                    )}
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 rounded-md text-cyan-600 transition-all duration-200 hover:bg-cyan-50 dark:text-cyan-400 dark:hover:bg-cyan-950/30"
+                                                                    asChild
                                                                 >
-                                                                    <Button
-                                                                        type="button"
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="h-8 w-8 rounded-md text-cyan-600 transition-all duration-200 hover:bg-cyan-50 dark:text-cyan-400 dark:hover:bg-cyan-950/30"
+                                                                    <Link
+                                                                        href={adminEvaluationMetrics(
+                                                                            evaluation.id,
+                                                                        )}
                                                                         aria-label="View Metrics"
                                                                     >
                                                                         <BarChart3 className="h-4 w-4" />
-                                                                    </Button>
-                                                                </Link>
+                                                                    </Link>
+                                                                </Button>
                                                             </SimpleTooltip>
 
                                                             {evaluation &&
@@ -362,6 +380,81 @@ export default function EvaluationTable({
                             )}
                         </tbody>
                     </table>
+                </div>
+
+                <div className="flex flex-col gap-3 border-t border-slate-100 p-3.5 sm:px-6 sm:py-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
+                    <div className="flex flex-wrap items-center justify-between sm:justify-start gap-2.5 text-xs text-slate-600 dark:text-slate-400">
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] sm:text-xs">Rows:</span>
+                            <select
+                                value={pageSize}
+                                onChange={(e) => {
+                                    setPageSize(Number(e.target.value));
+                                    setPageIndex(1);
+                                }}
+                                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                            >
+                                {[10, 25, 50, 100].map((size) => (
+                                    <option key={size} value={size}>
+                                        {size}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <span className="hidden sm:inline text-slate-400 dark:text-slate-600">|</span>
+                        <span className="text-[11px] sm:text-xs">
+                            Showing{' '}
+                            {totalItems === 0
+                                ? 0
+                                : (clampedPage - 1) * pageSize + 1}{' '}
+                            to {Math.min(clampedPage * pageSize, totalItems)} of {totalItems} entries
+                        </span>
+                    </div>
+
+                    <div className="flex items-center justify-center sm:justify-end gap-1">
+                        <button
+                            type="button"
+                            className="rounded-md px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800 cursor-pointer"
+                            onClick={() => setPageIndex((p) => Math.max(1, p - 1))}
+                            disabled={clampedPage <= 1}
+                        >
+                            Prev
+                        </button>
+                        {(() => {
+                            let startPage = Math.max(1, clampedPage - 1);
+                            let endPage = Math.min(totalPages, startPage + 2);
+                            if (endPage - startPage < 2) {
+                                startPage = Math.max(1, endPage - 2);
+                            }
+                            const pages = [];
+                            for (let i = startPage; i <= endPage; i++) {
+                                pages.push(i);
+                            }
+                            return pages.map((num) => (
+                                <button
+                                    key={num}
+                                    type="button"
+                                    onClick={() => setPageIndex(num)}
+                                    className={cn(
+                                        'rounded-md px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer',
+                                        clampedPage === num
+                                            ? 'bg-[#23509A] text-white dark:bg-blue-600 font-bold'
+                                            : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800',
+                                    )}
+                                >
+                                    {num}
+                                </button>
+                            ));
+                        })()}
+                        <button
+                            type="button"
+                            className="rounded-md px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800 cursor-pointer"
+                            onClick={() => setPageIndex((p) => Math.min(totalPages, p + 1))}
+                            disabled={clampedPage >= totalPages}
+                        >
+                            Next
+                        </button>
+                    </div>
                 </div>
             </CardContent>
         </Card>

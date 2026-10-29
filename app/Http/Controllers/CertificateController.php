@@ -13,7 +13,9 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response as ResponseFacade;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -29,14 +31,41 @@ class CertificateController extends Controller
             abort(403);
         }
 
-        $admin = AdminUser::query()->first();
-        $activeAdminName = $admin?->name ?? 'Rey John N. Bongcas';
+        try {
+            $admin = AdminUser::query()->first();
+            $activeAdminName = $admin?->name ?? 'Rey John N. Bongcas';
 
-        $certificates = Certificate::query()
-            ->with(['event', 'student', 'evaluation'])
-            ->where('student_id', $student->id)
-            ->orderBy('created_at', 'desc')
-            ->get();
+            $withRelations = ['event', 'student'];
+            if (Schema::hasTable('certificates') && Schema::hasColumn('certificates', 'evaluation_id')) {
+                $withRelations[] = 'evaluation';
+            }
+
+            $certificates = Certificate::query()
+                ->with($withRelations)
+                ->where('student_id', $student->id)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $formattedCerts = $certificates
+                ->map(function ($certificate) use ($activeAdminName) {
+                    return $certificate instanceof Certificate
+                        ? $this->formatCertificate($certificate, $activeAdminName)
+                        : null;
+                })
+                ->filter()
+                ->values()
+                ->all();
+
+            $availableCerts = $this->availableCertificatesForStudent($student);
+        } catch (\Throwable $e) {
+            Log::error('[CertificateController::index] Error loading certificates: ' . $e->getMessage(), [
+                'exception' => $e,
+                'student_id' => $student->id,
+            ]);
+            $activeAdminName = 'Rey John N. Bongcas';
+            $formattedCerts = [];
+            $availableCerts = [];
+        }
 
         return Inertia::render('student/certificates/index', [
             'student' => [
@@ -47,11 +76,8 @@ class CertificateController extends Controller
                 'year_level' => (string) ($student->year_level ?? ''),
             ],
             'activeAdminName' => $activeAdminName,
-            'certificates' => $certificates
-                ->map(fn (Certificate $certificate) => $this->formatCertificate($certificate, $activeAdminName))
-                ->values()
-                ->all(),
-            'availableCertificates' => $this->availableCertificatesForStudent($student),
+            'certificates' => $formattedCerts,
+            'availableCertificates' => $availableCerts,
             'highlightCertificateId' => $request->query('certificate'),
         ]);
     }
@@ -69,11 +95,22 @@ class CertificateController extends Controller
         $attendance = Attendance::query()
             ->where('event_id', $event->id)
             ->where('student_id', $student->id)
-            ->where('status', 'present')
             ->first();
 
         if (! $attendance) {
-            return response()->json(['message' => 'You must attend this event to receive a certificate'], 422);
+            return response()->json(['message' => 'You must have an official attendance record for this event to receive a certificate.'], 422);
+        }
+
+        if (in_array(strtolower((string) $attendance->status), ['incomplete', 'left_early', 'absent'], true) || empty($attendance->checked_out_at)) {
+            return response()->json([
+                'message' => 'Incomplete Attendance: Certificate cannot be issued because you did not record a valid Time-Out inside the venue upon event conclusion.',
+            ], 422);
+        }
+
+        if (! empty($attendance->is_flagged)) {
+            return response()->json([
+                'message' => 'Attendance Flagged for Review: ' . ($attendance->flagged_reason ?: 'Your attendance was flagged for missing mid-session presence verification.') . ' Please contact your Program Head or DSA Marshal to review and clear this flag before generating your certificate.',
+            ], 422);
         }
 
         $evaluation = Evaluation::query()
@@ -94,44 +131,73 @@ class CertificateController extends Controller
             }
         }
 
-        // Check if certificate already exists
-        $existingCertificate = Certificate::query()
-            ->where('student_id', $student->id)
-            ->where('event_id', $event->id)
-            ->first();
-
-        if ($existingCertificate) {
-            return response()->json([
-                'message' => 'Certificate already generated',
-                'certificate' => $this->formatCertificate($existingCertificate->load(['student', 'event', 'evaluation'])),
-            ]);
-        }
-
         $admin = AdminUser::query()->first();
         $adminName = $admin?->name ?? 'Rey John N. Bongcas';
 
-        // Create certificate record
-        $certificate = Certificate::create([
-            'student_id' => $student->id,
-            'event_id' => $event->id,
-            'evaluation_id' => $evaluation?->id,
-            'certificate_type' => $evaluation ? 'evaluation_completion' : 'participation',
-            'certificate_number' => Certificate::generateCertificateNumber(),
-            'title' => $evaluation ? 'Certificate of Evaluation Completion' : 'Certificate of Participation',
-            'description' => $evaluation
-                ? 'This certifies that the student has completed the evaluation for '.$event->event_name
-                : 'This is to certify that the student has successfully participated in the event',
-            'issue_date' => Carbon::now(),
-            'issued_by' => 'Department of Student Affairs',
-            'signature_name' => $adminName,
-            'signature_title' => 'Dean of Student Affairs',
-            'is_generated' => false,
-        ]);
+        try {
+            $certificate = \Illuminate\Support\Facades\DB::transaction(function () use ($student, $event, $evaluation, $adminName) {
+                // Check if certificate already exists with row-level locking
+                $existingCertificate = Certificate::query()
+                    ->where('student_id', $student->id)
+                    ->where('event_id', $event->id)
+                    ->lockForUpdate()
+                    ->first();
 
-        return response()->json([
-            'message' => 'Certificate record created successfully',
-            'certificate' => $this->formatCertificate($certificate->load(['student', 'event', 'evaluation']), $adminName),
-        ]);
+                if ($existingCertificate) {
+                    return $existingCertificate;
+                }
+
+                // Create certificate record
+                return Certificate::create([
+                    'student_id' => $student->id,
+                    'event_id' => $event->id,
+                    'evaluation_id' => $evaluation?->id,
+                    'certificate_type' => $evaluation ? 'evaluation_completion' : 'participation',
+                    'certificate_number' => Certificate::generateCertificateNumber(),
+                    'title' => $evaluation ? 'Certificate of Evaluation Completion' : 'Certificate of Participation',
+                    'description' => $evaluation
+                        ? 'This certifies that the student has completed the evaluation for '.$event->event_name
+                        : 'This is to certify that the student has successfully participated in the event',
+                    'issue_date' => Carbon::now(),
+                    'issued_by' => 'Department of Student Affairs',
+                    'signature_name' => $adminName,
+                    'signature_title' => 'Dean of Student Affairs',
+                    'is_generated' => false,
+                ]);
+            });
+
+            return response()->json([
+                'message' => 'Certificate generated successfully',
+                'certificate' => $this->formatCertificate($certificate->load(['student', 'event', 'evaluation']), $adminName),
+            ]);
+        } catch (\Illuminate\Database\QueryException $qe) {
+            Log::warning('[CertificateController::generateCertificate] Query exception: ' . $qe->getMessage(), [
+                'student_id' => $student->id,
+                'event_id' => $event->id,
+            ]);
+
+            $existing = Certificate::query()
+                ->where('student_id', $student->id)
+                ->where('event_id', $event->id)
+                ->first();
+
+            if ($existing) {
+                return response()->json([
+                    'message' => 'Certificate already generated',
+                    'certificate' => $this->formatCertificate($existing->load(['student', 'event', 'evaluation']), $adminName),
+                ]);
+            }
+
+            return response()->json(['message' => 'A conflict occurred while creating your certificate.'], 409);
+        } catch (\Throwable $e) {
+            Log::error('[CertificateController::generateCertificate] Error generating certificate: ' . $e->getMessage(), [
+                'exception' => $e,
+                'student_id' => $student->id,
+                'event_id' => $event->id,
+            ]);
+
+            return response()->json(['message' => 'An unexpected error occurred while generating the certificate.'], 500);
+        }
     }
 
     public function downloadCertificate(Request $request, Certificate $certificate)
@@ -223,57 +289,95 @@ class CertificateController extends Controller
 
     private function availableCertificatesForStudent(Student $student): array
     {
-        // Get events the student attended and can get certificates for
-        $attendedEvents = Event::query()
-            ->whereHas('attendances', function ($query) use ($student) {
-                $query->where('student_id', $student->id)
-                    ->where('status', 'present');
-            })
-            ->where('status', 'completed')
-            ->where('event_date', '<', Carbon::now())
-            ->with(['attendances' => function ($query) use ($student) {
-                $query->where('student_id', $student->id);
-            }])
-            ->get();
+        try {
+            if (! Schema::hasTable('events') || ! Schema::hasTable('attendances')) {
+                return [];
+            }
 
-        $availableCertificates = [];
+            $hasIsFlagged = Schema::hasColumn('attendances', 'is_flagged');
 
-        foreach ($attendedEvents as $event) {
-            // Check if certificate already exists
-            $hasCertificate = Certificate::query()
-                ->where('student_id', $student->id)
-                ->where('event_id', $event->id)
-                ->exists();
+            // Get events the student attended and can get certificates for
+            $attendedEvents = Event::query()
+                ->whereHas('attendances', function ($query) use ($student, $hasIsFlagged) {
+                    $query->where('student_id', $student->id)
+                        ->whereIn('status', ['present', 'late', 'completed'])
+                        ->whereNotNull('checked_out_at');
 
-            // Check if evaluation is required and completed
-            $evaluationRequired = EvaluationResponse::query()
-                ->join('evaluations', 'evaluation_responses.evaluation_id', '=', 'evaluations.id')
-                ->where('evaluations.event_id', $event->id)
-                ->where('evaluations.is_active', true)
-                ->exists();
+                    if ($hasIsFlagged) {
+                        $query->where(function ($q) {
+                            $q->where('is_flagged', false)->orWhereNull('is_flagged');
+                        });
+                    }
+                })
+                ->where('status', 'completed')
+                ->where('event_date', '<', Carbon::now())
+                ->with(['attendances' => function ($query) use ($student) {
+                    $query->where('student_id', $student->id);
+                }])
+                ->get();
 
-            $evaluationCompleted = ! $evaluationRequired || EvaluationResponse::query()
-                ->join('evaluations', 'evaluation_responses.evaluation_id', '=', 'evaluations.id')
-                ->where('evaluations.event_id', $event->id)
-                ->where('evaluations.is_active', true)
-                ->where('evaluation_responses.student_id', $student->id)
-                ->exists();
+            $availableCertificates = [];
+            $hasEvaluationsTable = Schema::hasTable('evaluations');
+            $hasResponsesTable = Schema::hasTable('evaluation_responses');
 
-            $availableCertificates[] = [
-                'event_id' => $event->id,
-                'event_name' => $event->event_name,
-                'event_date' => optional($event->event_date)->format('Y-m-d'),
-                'has_certificate' => $hasCertificate,
-                'evaluation_required' => $evaluationRequired,
-                'evaluation_completed' => $evaluationCompleted,
-                'can_generate' => ! $hasCertificate && $evaluationCompleted,
-            ];
+            foreach ($attendedEvents as $event) {
+                // Check if certificate already exists
+                $hasCertificate = Certificate::query()
+                    ->where('student_id', $student->id)
+                    ->where('event_id', $event->id)
+                    ->exists();
+
+                // Check if evaluation is required and completed
+                $evaluationRequired = false;
+                $evaluationCompleted = true;
+
+                if ($hasEvaluationsTable) {
+                    $evaluationRequired = Evaluation::query()
+                        ->where('event_id', $event->id)
+                        ->where('is_active', true)
+                        ->exists();
+
+                    if ($evaluationRequired) {
+                        if ($hasResponsesTable) {
+                            $evaluationCompleted = EvaluationResponse::query()
+                                ->join('evaluations', 'evaluation_responses.evaluation_id', '=', 'evaluations.id')
+                                ->where('evaluations.event_id', $event->id)
+                                ->where('evaluations.is_active', true)
+                                ->where('evaluation_responses.student_id', $student->id)
+                                ->exists();
+                        } else {
+                            $evaluationCompleted = false;
+                        }
+                    }
+                }
+
+                $availableCertificates[] = [
+                    'event_id' => $event->id,
+                    'event_name' => $event->event_name,
+                    'event_date' => optional($event->event_date)->format('Y-m-d'),
+                    'has_certificate' => $hasCertificate,
+                    'evaluation_required' => $evaluationRequired,
+                    'evaluation_completed' => $evaluationCompleted,
+                    'can_generate' => ! $hasCertificate && $evaluationCompleted,
+                ];
+            }
+
+            return $availableCertificates;
+        } catch (\Throwable $e) {
+            Log::error('[CertificateController::availableCertificatesForStudent] Error: ' . $e->getMessage(), [
+                'exception' => $e,
+                'student_id' => $student->id,
+            ]);
+            return [];
         }
-
-        return $availableCertificates;
     }
 
-    private function formatCertificate(Certificate $certificate, ?string $activeAdminName = null): array
+    /**
+     * @param Certificate|mixed $certificate
+     * @param string|null $activeAdminName
+     * @return array<string, mixed>
+     */
+    private function formatCertificate($certificate, ?string $activeAdminName = null): array
     {
         $adminName = $activeAdminName ?? AdminUser::query()->first()?->name ?? 'Rey John N. Bongcas';
         $signatureName = (string) ($certificate->signature_name ?? '');

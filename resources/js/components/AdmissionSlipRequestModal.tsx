@@ -7,11 +7,13 @@ import {
     DialogFooter,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { FormRequiredNotice } from '@/components/ui/form-required-notice';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { focusFirstInvalidField } from '@/lib/formFocusNavigation';
 import { router } from '@inertiajs/react';
 import { PlusCircle } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SweetAlertResult } from 'sweetalert2';
 import Swal from 'sweetalert2';
 
@@ -83,6 +85,9 @@ export function AdmissionSlipRequestModal({
         ...emptyForm,
         ...stableInitialData,
     }));
+    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+    const [touched, setTouched] = useState<Record<string, boolean>>({});
+    const containerRef = useRef<HTMLDivElement>(null);
     const [lookupStatus, setLookupStatus] = useState<
         'idle' | 'loading' | 'found' | 'not_found'
     >('idle');
@@ -96,12 +101,28 @@ export function AdmissionSlipRequestModal({
     useEffect(() => {
         if (open) {
             setForm({ ...emptyForm, ...stableInitialData });
+            setFormErrors({});
+            setTouched({});
             setLookupStatus('idle');
             setSearchResults([]);
             setIsDropdownOpen(false);
             setProcessing(false);
         }
     }, [open, emptyForm, stableInitialData]);
+
+    const markTouched = (field: string) => {
+        setTouched((p) => ({ ...p, [field]: true }));
+    };
+
+    const clearFieldError = (key: string) => {
+        if (formErrors[key]) {
+            setFormErrors((p) => {
+                const next = { ...p };
+                delete next[key];
+                return next;
+            });
+        }
+    };
 
     const addDaysIso = (isoDate: string, days: number) => {
         const base = new Date(`${isoDate}T00:00:00`);
@@ -181,31 +202,45 @@ export function AdmissionSlipRequestModal({
     };
 
     const closeModal = () => {
+        setFormErrors({});
+        setTouched({});
         setOpen(false);
         setForm(emptyForm);
     };
 
     const submitSlip = () => {
-        // Client-side validation
-        const valErrors: string[] = [];
-        if (!form.studentName.trim()) valErrors.push('Student name is required');
-        if (!form.programYear.trim()) valErrors.push('Program year is required');
-        if (!form.dateIssued.trim()) valErrors.push('Date issued is required');
-        if (!form.caseText.trim()) valErrors.push('Case text is required');
-        if (!form.reasonText.trim()) valErrors.push('Reason text is required');
-        if (!form.validUntil.trim())
-            valErrors.push('Valid until date is required');
+        const errs: Record<string, string> = {};
+        if (!isStudent && !form.userId.trim()) {
+            errs.userId = 'Student ID is required.';
+        }
+        if (!form.studentName.trim()) {
+            errs.studentName = 'Student name is required.';
+        }
+        if (!form.programYear.trim()) {
+            errs.programYear = 'Program and year level are required.';
+        }
+        if (!form.dateIssued.trim()) {
+            errs.dateIssued = 'Date issued is required.';
+        }
+        if (!form.caseText.trim()) {
+            errs.caseText = 'Please select a reason title / case category.';
+        }
+        if (!form.reasonText.trim()) {
+            errs.reasonText = 'Please select or specify a reason.';
+        }
+        if (!isStudent && !form.validUntil.trim()) {
+            errs.validUntil = 'Valid until date is required.';
+        }
 
-        if (valErrors.length) {
-            Swal.fire({
-                title: 'Validation error',
-                html: valErrors.join('<br/>'),
-                icon: 'error',
-                confirmButtonText: 'OK',
-                confirmButtonColor: '#3085d6',
-            });
+        if (Object.keys(errs).length > 0) {
+            setFormErrors(errs);
+            setTimeout(() => {
+                focusFirstInvalidField(containerRef.current);
+            }, 50);
             return;
         }
+
+        setFormErrors({});
 
         if (onSubmit) {
             onSubmit({
@@ -216,7 +251,9 @@ export function AdmissionSlipRequestModal({
                 date_issued: form.dateIssued.trim(),
                 case_text: form.caseText.trim(),
                 reason_text: form.reasonText.trim(),
-                valid_until: form.validUntil.trim(),
+                ...(isStudent
+                    ? {}
+                    : { valid_until: form.validUntil.trim() }),
             });
             return;
         }
@@ -258,7 +295,9 @@ export function AdmissionSlipRequestModal({
                         date_issued: form.dateIssued.trim(),
                         case_text: form.caseText.trim(),
                         reason_text: form.reasonText.trim(),
-                        valid_until: form.validUntil.trim(),
+                        ...(isStudent
+                            ? {}
+                            : { valid_until: form.validUntil.trim() }),
                     },
                     {
                         preserveScroll: true,
@@ -284,7 +323,7 @@ export function AdmissionSlipRequestModal({
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogContent className="flex max-h-[90vh] w-[96vw] max-w-2xl flex-col overflow-hidden rounded-3xl border-0 bg-white p-0 shadow-2xl dark:bg-slate-900">
+            <DialogContent size="lg" preventClose={processing} className="flex max-h-[90vh] flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
                 <div className="relative bg-gradient-to-br from-[#0b2d66] to-[#1e40af] px-8 py-8 text-white">
                     <div className="absolute top-0 right-0 h-64 w-64 translate-x-1/2 -translate-y-1/2 rounded-full bg-white/5 blur-3xl" />
                     <div className="relative flex items-center gap-6">
@@ -308,18 +347,22 @@ export function AdmissionSlipRequestModal({
                     </div>
                 </div>
 
-                <div className="min-h-0 flex-1 space-y-6 overflow-y-auto p-8">
+                <div ref={containerRef} className="min-h-0 flex-1 space-y-6 overflow-y-auto p-8">
+                    <FormRequiredNotice message="Fields marked with * or Required must be completed." />
+
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                         <div className="relative grid gap-2.5">
                             <Label
-                                htmlFor="userId"
+                                htmlFor={isStudent ? 'studentUserId' : 'userId'}
+                                required={!isStudent}
+                                showRequiredBadge={!isStudent}
                                 className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
                             >
                                 User ID
                             </Label>
                             {isStudent ? (
                                 <Input
-                                    id="userId"
+                                    id="studentUserId"
                                     value={form.userId || 'N/A'}
                                     readOnly
                                     className="h-11 cursor-not-allowed rounded-xl border-slate-200 bg-slate-100 px-4 text-slate-700 dark:border-slate-800 dark:bg-slate-800/80 dark:text-slate-300"
@@ -329,7 +372,10 @@ export function AdmissionSlipRequestModal({
                                     <Input
                                         id="userId"
                                         value={form.userId}
+                                        hasError={!!formErrors.userId}
+                                        aria-describedby={formErrors.userId ? "userId-error" : undefined}
                                         onChange={(e) => {
+                                            clearFieldError('userId');
                                             const v = e.target.value;
                                             setForm((p) => ({
                                                 ...p,
@@ -338,6 +384,10 @@ export function AdmissionSlipRequestModal({
                                             handleSearch(v);
                                         }}
                                         onBlur={() => {
+                                            markTouched('userId');
+                                            if (!form.userId.trim()) {
+                                                setFormErrors((p) => ({ ...p, userId: 'Student ID is required.' }));
+                                            }
                                             setTimeout(
                                                 () => setIsDropdownOpen(false),
                                                 200,
@@ -350,7 +400,7 @@ export function AdmissionSlipRequestModal({
                                         }}
                                         placeholder="Enter student ID"
                                         autoComplete="off"
-                                        className="h-11 rounded-xl border-slate-200 bg-slate-50 px-4 text-slate-900 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50 dark:text-white"
+                                        className="h-11 rounded-xl"
                                     />
 
                                     {isDropdownOpen &&
@@ -363,6 +413,7 @@ export function AdmissionSlipRequestModal({
                                                             type="button"
                                                             className="flex w-full flex-col px-4 py-2 text-left text-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/60"
                                                             onClick={() => {
+                                                                clearFieldError('userId');
                                                                 setForm(
                                                                     (p) => ({
                                                                         ...p,
@@ -398,6 +449,7 @@ export function AdmissionSlipRequestModal({
                                                 ? '✗ Student not found'
                                                 : ''}
                                     </div>
+                                    <InputError id="userId-error" message={formErrors.userId} />
                                 </>
                             )}
                         </div>
@@ -405,6 +457,8 @@ export function AdmissionSlipRequestModal({
                         <div className="grid gap-2.5">
                             <Label
                                 htmlFor="studentName"
+                                required
+                                showRequiredBadge
                                 className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
                             >
                                 Name
@@ -412,16 +466,20 @@ export function AdmissionSlipRequestModal({
                             <Input
                                 id="studentName"
                                 value={form.studentName}
+                                hasError={!!(formErrors.studentName || errors.student_name)}
+                                aria-describedby={(formErrors.studentName || errors.student_name) ? "studentName-error" : undefined}
                                 readOnly
                                 placeholder="Student name will appear here"
                                 className="h-11 cursor-not-allowed rounded-xl border-slate-200 bg-slate-100 px-4 text-slate-700 dark:border-slate-800 dark:bg-slate-800/80 dark:text-slate-300"
                             />
-                            <InputError message={errors.student_name} />
+                            <InputError id="studentName-error" message={formErrors.studentName || errors.student_name} />
                         </div>
 
                         <div className="grid gap-2.5">
                             <Label
                                 htmlFor="programYear"
+                                required
+                                showRequiredBadge
                                 className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
                             >
                                 Program/Year Level
@@ -429,16 +487,20 @@ export function AdmissionSlipRequestModal({
                             <Input
                                 id="programYear"
                                 value={form.programYear}
+                                hasError={!!(formErrors.programYear || errors.program_year_level)}
+                                aria-describedby={(formErrors.programYear || errors.program_year_level) ? "programYear-error" : undefined}
                                 readOnly
                                 placeholder="Program and year level will appear here"
                                 className="h-11 cursor-not-allowed rounded-xl border-slate-200 bg-slate-100 px-4 text-slate-700 dark:border-slate-800 dark:bg-slate-800/80 dark:text-slate-300"
                             />
-                            <InputError message={errors.program_year_level} />
+                            <InputError id="programYear-error" message={formErrors.programYear || errors.program_year_level} />
                         </div>
 
                         <div className="grid gap-2.5">
                             <Label
                                 htmlFor="dateIssued"
+                                required
+                                showRequiredBadge
                                 className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
                             >
                                 Date Issued
@@ -447,7 +509,16 @@ export function AdmissionSlipRequestModal({
                                 id="dateIssued"
                                 type="date"
                                 value={form.dateIssued}
+                                hasError={!!(formErrors.dateIssued || errors.date_issued)}
+                                aria-describedby={(formErrors.dateIssued || errors.date_issued) ? "dateIssued-error" : undefined}
+                                onBlur={() => {
+                                    markTouched('dateIssued');
+                                    if (!form.dateIssued.trim()) {
+                                        setFormErrors((p) => ({ ...p, dateIssued: 'Date issued is required.' }));
+                                    }
+                                }}
                                 onChange={(e) => {
+                                    clearFieldError('dateIssued');
                                     const v = e.target.value;
                                     setForm((p) => ({
                                         ...p,
@@ -455,54 +526,116 @@ export function AdmissionSlipRequestModal({
                                         validUntil: v ? addDaysIso(v, 7) : '',
                                     }));
                                 }}
-                                className="h-11 rounded-xl border-slate-200 bg-slate-50 px-4 text-slate-900 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50 dark:text-white"
+                                className="h-11 rounded-xl"
                             />
-                            <InputError message={errors.date_issued} />
+                            <InputError id="dateIssued-error" message={formErrors.dateIssued || errors.date_issued} />
                         </div>
 
                         <div className="grid gap-2.5">
                             <Label
-                                htmlFor="validUntil"
+                                htmlFor={isStudent ? 'studentValidUntil' : 'validUntil'}
+                                required={!isStudent}
+                                showRequiredBadge={!isStudent}
+                                optional={isStudent}
                                 className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
                             >
                                 Valid Until
                             </Label>
-                            <Input
-                                id="validUntil"
-                                type="date"
-                                value={form.validUntil}
-                                readOnly
-                                className="h-11 cursor-not-allowed rounded-xl border-slate-200 bg-slate-100 px-4 text-slate-700 dark:border-slate-800 dark:bg-slate-800/80 dark:text-slate-300"
-                            />
-                            <InputError message={errors.valid_until} />
+                            {isStudent ? (
+                                <Input
+                                    id="studentValidUntil"
+                                    type="text"
+                                    value="To be set by Admin"
+                                    readOnly
+                                    className="h-11 cursor-not-allowed rounded-xl border-slate-200 bg-slate-100 px-4 text-slate-700 dark:border-slate-800 dark:bg-slate-800/80 dark:text-slate-300"
+                                />
+                            ) : (
+                                <Input
+                                    id="validUntil"
+                                    type="date"
+                                    value={form.validUntil}
+                                    hasError={!!(formErrors.validUntil || errors.valid_until)}
+                                    aria-describedby={(formErrors.validUntil || errors.valid_until) ? "validUntil-error" : undefined}
+                                    onBlur={() => {
+                                        markTouched('validUntil');
+                                        if (!form.validUntil.trim()) {
+                                            setFormErrors((p) => ({ ...p, validUntil: 'Valid until date is required.' }));
+                                        }
+                                    }}
+                                    onChange={(e) => {
+                                        clearFieldError('validUntil');
+                                        setForm((p) => ({
+                                            ...p,
+                                            validUntil: e.target.value,
+                                        }));
+                                    }}
+                                    className="h-11 rounded-xl"
+                                />
+                            )}
+                            <InputError id="validUntil-error" message={formErrors.validUntil || errors.valid_until} />
                         </div>
                     </div>
 
                     <div className="grid gap-2.5">
                         <Label
                             htmlFor="caseText"
+                            required
+                            showRequiredBadge
                             className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
                         >
                             Case / Reason Title
                         </Label>
-                        <Input
+                        <select
                             id="caseText"
                             value={form.caseText}
-                            onChange={(e) =>
+                            aria-invalid={!!(formErrors.caseText || errors.case_text)}
+                            aria-describedby={(formErrors.caseText || errors.case_text) ? "caseText-error" : undefined}
+                            onBlur={() => {
+                                markTouched('caseText');
+                                if (!form.caseText.trim()) {
+                                    setFormErrors((p) => ({ ...p, caseText: 'Please select a reason title / case category.' }));
+                                }
+                            }}
+                            onChange={(e) => {
+                                clearFieldError('caseText');
                                 setForm((p) => ({
                                     ...p,
                                     caseText: e.target.value,
-                                }))
-                            }
-                            placeholder="Enter case"
-                            className="h-11 rounded-xl border-slate-200 bg-slate-50 px-4 text-slate-900 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-800/50 dark:text-white"
-                        />
-                        <InputError message={errors.case_text} />
+                                }));
+                            }}
+                            className={`h-11 w-full rounded-xl border bg-slate-50 px-4 text-slate-900 focus:outline-none dark:bg-slate-800/50 dark:text-white ${
+                                formErrors.caseText || errors.case_text
+                                    ? '!border-red-500 !ring-2 !ring-red-500/25 dark:!border-red-500'
+                                    : 'border-slate-200 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-800'
+                            }`}
+                        >
+                            <option value="">Select reason title</option>
+                            {[
+                                'Absence due to Illness',
+                                'Medical / Dental Checkup',
+                                'Family Emergency',
+                                'Bereavement',
+                                'Late Enrollment / Payment',
+                                'Official School Activity',
+                                'Transportation Problem',
+                                'Bad Weather / Calamity',
+                                'Others',
+                            ].map((t) => (
+                                <option key={t} value={t}>
+                                    {t}
+                                </option>
+                            ))}
+                        </select>
+                        <InputError id="caseText-error" message={formErrors.caseText || errors.case_text} />
                     </div>
 
                     <div className="grid gap-2.5">
-                        <Label className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400">
-                            Reason *
+                        <Label
+                            required
+                            showRequiredBadge
+                            className="ml-1 text-[10px] font-black tracking-widest text-slate-500 uppercase dark:text-slate-400"
+                        >
+                            Reason
                         </Label>
                         <div className="mt-1 ml-1 grid grid-cols-1 gap-3 md:grid-cols-2">
                             {[
@@ -524,12 +657,13 @@ export function AdmissionSlipRequestModal({
                                         <input
                                             type="checkbox"
                                             checked={checked}
-                                            onChange={() =>
+                                            onChange={() => {
+                                                clearFieldError('reasonText');
                                                 setForm((p) => ({
                                                     ...p,
                                                     reasonText: r,
-                                                }))
-                                            }
+                                                }));
+                                            }}
                                             className="h-4.5 w-4.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                                         />
                                         <span>{r}</span>
@@ -552,12 +686,13 @@ export function AdmissionSlipRequestModal({
                                         ].includes(form.reasonText) &&
                                         form.reasonText !== ''
                                     }
-                                    onChange={() =>
+                                    onChange={() => {
+                                        clearFieldError('reasonText');
                                         setForm((p) => ({
                                             ...p,
                                             reasonText: 'Others: ',
-                                        }))
-                                    }
+                                        }));
+                                    }}
                                     className="h-4.5 w-4.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                                 />
                                 <span>Others</span>
@@ -578,9 +713,11 @@ export function AdmissionSlipRequestModal({
                                 <div className="mt-2 animate-in space-y-1.5 duration-200 fade-in">
                                     <Label
                                         htmlFor="reasonText_other"
+                                        required
+                                        showRequiredBadge
                                         className="ml-1 text-[9px] font-bold tracking-widest text-slate-400 uppercase"
                                     >
-                                        Specify Reason Details *
+                                        Specify Reason Details
                                     </Label>
                                     <textarea
                                         id="reasonText_other"
@@ -594,20 +731,27 @@ export function AdmissionSlipRequestModal({
                                                   )
                                                 : form.reasonText
                                         }
-                                        onChange={(e) =>
+                                        aria-invalid={!!(formErrors.reasonText || errors.reason_text)}
+                                        aria-describedby={(formErrors.reasonText || errors.reason_text) ? "reasonText-error" : undefined}
+                                        onChange={(e) => {
+                                            clearFieldError('reasonText');
                                             setForm((p) => ({
                                                 ...p,
                                                 reasonText:
                                                     'Others: ' + e.target.value,
-                                            }))
-                                        }
+                                            }));
+                                        }}
                                         placeholder="Specify other reason details..."
                                         rows={2}
-                                        className="min-h-16 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 shadow-none focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:outline-none dark:border-slate-700 dark:bg-slate-800/50 dark:text-white"
+                                        className={`min-h-16 w-full resize-none rounded-xl border bg-slate-50 px-4 py-3 text-sm text-slate-900 shadow-none focus-visible:outline-none dark:bg-slate-800/50 dark:text-white ${
+                                            formErrors.reasonText || errors.reason_text
+                                                ? '!border-red-500 !ring-2 !ring-red-500/25 dark:!border-red-500'
+                                                : 'border-slate-200 focus-visible:ring-2 focus-visible:ring-blue-500/20 dark:border-slate-700'
+                                        }`}
                                     />
                                 </div>
                             )}
-                        <InputError message={errors.reason_text} />
+                        <InputError id="reasonText-error" message={formErrors.reasonText || errors.reason_text} />
                     </div>
                 </div>
 
@@ -617,23 +761,15 @@ export function AdmissionSlipRequestModal({
                         variant="ghost"
                         onClick={closeModal}
                         disabled={processing}
-                        className="rounded-xl px-6 text-[10px] font-black tracking-widest text-slate-500 uppercase transition-all hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                        className="rounded-xl px-6 text-[10px] font-black tracking-widest text-slate-500 uppercase transition-all hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 cursor-pointer"
                     >
                         Cancel
                     </Button>
                     <Button
                         type="button"
-                        className="rounded-xl bg-blue-600 px-8 text-[10px] font-black tracking-widest text-white uppercase shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-700 active:scale-95 disabled:opacity-50"
+                        className="rounded-xl bg-blue-600 px-8 text-[10px] font-black tracking-widest text-white uppercase shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-700 active:scale-95 disabled:opacity-50 cursor-pointer"
                         onClick={submitSlip}
-                        disabled={
-                            processing ||
-                            !form.studentName.trim() ||
-                            !form.programYear.trim() ||
-                            !form.dateIssued.trim() ||
-                            !form.caseText.trim() ||
-                            !form.reasonText.trim() ||
-                            !form.validUntil.trim()
-                        }
+                        disabled={processing}
                     >
                         {processing
                             ? isStudent

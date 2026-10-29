@@ -112,7 +112,7 @@ export default function ThermalPrinterModal({ open, onOpenChange }: Props) {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md overflow-hidden rounded-3xl border-0 p-0 shadow-2xl dark:bg-slate-900">
+            <DialogContent size="sm" className="overflow-hidden rounded-2xl border border-slate-200/80 p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
                 <div className="bg-gradient-to-br from-[#0b2d66] to-[#1e40af] p-6 text-white">
                     <div className="flex items-center gap-3">
                         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 shadow-inner backdrop-blur-md">

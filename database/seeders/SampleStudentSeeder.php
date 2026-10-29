@@ -14,7 +14,16 @@ class SampleStudentSeeder extends Seeder
      */
     public function run(): void
     {
-        $bsitProgram = Program::where('code', 'BSIT')->first();
+        $bsitProgram = Program::firstOrCreate(
+            ['code' => 'BSIT'],
+            [
+                'name' => 'Bachelor of Science in Information Technology',
+                'description' => 'Department of Information Technology',
+                'department' => 'HED',
+                'duration' => '4 Years',
+                'is_active' => true,
+            ]
+        );
 
         Student::updateOrCreate(
             ['student_id' => '2024-0001'],
@@ -29,7 +38,7 @@ class SampleStudentSeeder extends Seeder
                 'student_id'                 => '2024-0001',
                 'course'                     => 'BS Information Technology',
                 'year_level'                 => '3rd Year',
-                'program_id'                 => $bsitProgram ? $bsitProgram->id : 1,
+                'program_id'                 => $bsitProgram->id,
                 'program'                    => 'Bachelor of Science in Information Technology',
                 'major'                      => 'Information Technology',
                 'role'                       => 'Student',

@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { formatLastNameFirst } from '@/lib/utils';
+import { getProgramTheme } from '@/lib/program-themes';
 import type { UserRow } from './types';
 
 export type StudentAttendanceRecord = {
@@ -95,22 +96,54 @@ type Props = {
 const getProgramBadgeClass = (program?: string | null) => {
     const p = String(program || '').toUpperCase();
     if (p.includes('BSIT') || p.includes('INFORMATION TECH')) {
-        return 'bg-[#800000]/10 text-[#800000] border-[#800000]/25 dark:bg-[#800000]/25 dark:text-[#ff9999] dark:border-[#800000]/40';
+        return 'bg-red-600/30 text-red-200 border-red-400/60';
     }
     if (p.includes('BSBA') || p.includes('BUSINESS')) {
-        return 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-700/50';
+        return 'bg-amber-400/20 text-amber-200 border-amber-300/40';
     }
     if (p.includes('BEED') || p.includes('BSED') || p.includes('EDUCATION')) {
-        return 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/50';
+        return 'bg-sky-400/20 text-sky-100 border-sky-300/40';
     }
     if (p.includes('CRIM') || p.includes('BSCRIM')) {
-        return 'bg-blue-100 text-[#1e40af] border-[#3b82f6]/30 dark:bg-blue-950/60 dark:text-[#93c5fd] dark:border-blue-700/50';
+        return 'bg-blue-400/25 text-blue-100 border-blue-300/40';
     }
     if (p.includes('BSHM') || p.includes('HOSPITALITY') || p.includes('HM')) {
-        return 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/50';
+        return 'bg-emerald-400/20 text-emerald-200 border-emerald-300/40';
     }
-    return 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
+    return 'bg-white/15 text-white border-white/20';
 };
+
+const SheetCheck = ({ checked, label }: { checked: boolean; label: string }) => (
+    <div className="flex items-center gap-2">
+        <span
+            className={`flex h-4 w-4 items-center justify-center rounded-sm border text-[10px] font-black ${
+                checked
+                    ? 'border-[#0b2d66] bg-[#0b2d66] text-white'
+                    : 'border-slate-400 bg-white dark:bg-slate-900'
+            }`}
+        >
+            {checked ? '✓' : ''}
+        </span>
+        <span className={checked ? 'font-bold text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}>
+            {label}
+        </span>
+    </div>
+);
+
+const SheetField = ({ label, value, className = '' }: { label: string; value?: React.ReactNode; className?: string }) => (
+    <div className={`flex items-end gap-2 ${className}`}>
+        <span className="font-bold whitespace-nowrap text-[#0b2d66] dark:text-blue-400">{label}</span>
+        <div className="min-h-[18px] flex-1 border-b border-slate-400 pb-px font-semibold text-slate-900 dark:text-white">
+            {value || 'N/A'}
+        </div>
+    </div>
+);
+
+const SheetSection = ({ children }: { children: React.ReactNode }) => (
+    <div className="mt-6 mb-3 border-b border-dashed border-[#0b2d66] pb-1 text-center text-[10px] font-bold tracking-widest text-[#0b2d66] uppercase dark:text-blue-400">
+        {children}
+    </div>
+);
 
 export default function ViewStudentDialog({
     open,
@@ -121,6 +154,7 @@ export default function ViewStudentDialog({
     const isProgramHead =
         student?.userType === 'program_head' ||
         String(student?.role ?? '').toLowerCase().includes('program');
+    const programTheme = getProgramTheme(student ? (student.course || student.program) : null);
 
     const [activeTab, setActiveTab] = useState<'attendance' | 'violations' | 'info'>('attendance');
     const [attendances, setAttendances] = useState<StudentAttendanceRecord[]>([]);
@@ -943,7 +977,7 @@ export default function ViewStudentDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[92vh] w-full !max-w-4xl flex-col overflow-hidden rounded-3xl border-0 bg-slate-50 p-0 shadow-2xl dark:bg-slate-950 [&>button]:hidden">
+            <DialogContent size="2xl" className="flex max-h-[94vh] w-full flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-50 p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-950 [&>button]:hidden">
                 <DialogHeader className="sr-only">
                     <DialogTitle>
                         {student ? formatLastNameFirst(student) : 'User Details'}
@@ -991,7 +1025,8 @@ export default function ViewStudentDialog({
                                     <button
                                         type="button"
                                         onClick={() => onOpenChange(false)}
-                                        className="rounded-full bg-white/10 p-2 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+                                        className="rounded-full bg-red-500/10 p-2 text-red-300 transition-colors hover:bg-red-500/25 hover:text-red-100 cursor-pointer"
+                                        aria-label="Close dialog"
                                     >
                                         <X className="h-4 w-4" />
                                     </button>
@@ -1153,11 +1188,29 @@ export default function ViewStudentDialog({
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-2 self-end sm:self-auto">
+                                <div className="flex items-center gap-3 self-end sm:self-auto">
+                                    <div className="hidden sm:flex items-center gap-2.5 rounded-2xl border border-white/20 bg-white/10 px-3 py-1.5 backdrop-blur-md">
+                                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white p-1 shadow-xs border border-white/80">
+                                            <img
+                                                src={programTheme.logoUrl}
+                                                alt={`${programTheme.name} logo`}
+                                                className="h-full w-full object-contain rounded-full"
+                                                onError={(e) => {
+                                                    (e.currentTarget as HTMLImageElement).src = '/images/SRCB.png';
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-[9px] font-bold text-white/70 uppercase tracking-wider">Department</div>
+                                            <div className="text-[11px] font-black text-white">{programTheme.name}</div>
+                                        </div>
+                                    </div>
+
                                     <button
                                         type="button"
                                         onClick={() => onOpenChange(false)}
-                                        className="rounded-full bg-white/10 p-2 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+                                        className="rounded-full bg-red-500/10 p-2 text-red-300 transition-colors hover:bg-red-500/25 hover:text-red-100 cursor-pointer"
+                                        aria-label="Close dialog"
                                     >
                                         <X className="h-4 w-4" />
                                     </button>
@@ -1708,7 +1761,7 @@ export default function ViewStudentDialog({
                         {/* ── TAB CONTENT: STUDENT INFORMATION SHEET (Admin Only) ── */}
                         {activeTab === 'info' && !hideInformationSheet && (
                             <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto p-6 sm:p-8">
-                                <div className="mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-8">
+                                <div className="w-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-8">
                                     {/* School Header */}
                                     <div className="mb-6 flex items-center justify-between gap-4 border-b-2 border-[#0b2d66] pb-4">
                                         <img
@@ -1744,97 +1797,132 @@ export default function ViewStudentDialog({
                                         </p>
                                     </div>
 
-                                    {/* Personal Info Box */}
-                                    <div className="space-y-4 text-xs">
-                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                            <div>
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase">Full Name</span>
-                                                <div className="mt-0.5 font-bold text-slate-900 dark:text-white">
-                                                    {student.name}
+                                    <div className="text-xs">
+                                        {/* Entry Status / Program / Major */}
+                                        <div className="overflow-hidden rounded-md border border-blue-200 dark:border-slate-700">
+                                            <div className="grid grid-cols-[150px_1fr] border-b border-blue-200 dark:border-slate-700">
+                                                <div className="bg-blue-50 p-2.5 text-[10px] font-bold text-[#0b2d66] dark:bg-slate-800 dark:text-blue-400">
+                                                    ENTRY STATUS
+                                                    <span className="block text-[8px] font-normal text-slate-500">(please check)</span>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2 p-2.5 sm:grid-cols-4">
+                                                    <SheetCheck checked={student.year_level === '1st Year'} label="1st Year" />
+                                                    <SheetCheck checked={student.year_level === '2nd Year'} label="2nd Year" />
+                                                    <SheetCheck checked={student.year_level === '3rd Year'} label="3rd Year" />
+                                                    <SheetCheck checked={student.year_level === '4th Year'} label="4th Year" />
+                                                    <SheetCheck checked={student.entry_status === 'Freshman'} label="Freshman" />
+                                                    <SheetCheck checked={student.entry_status === 'Returnee'} label="Returnee" />
+                                                    <SheetCheck checked={student.entry_status === 'Transferee'} label="Transferee" />
+                                                    <SheetCheck checked={student.entry_status === 'Old Student'} label="Old Student" />
                                                 </div>
                                             </div>
-                                            <div>
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase">Student ID</span>
-                                                <div className="mt-0.5 font-mono font-bold text-slate-900 dark:text-white">
-                                                    {student.student_id || 'N/A'}
+                                            <div className="grid grid-cols-[150px_1fr] border-b border-blue-200 dark:border-slate-700">
+                                                <div className="bg-blue-50 p-2.5 text-[10px] font-bold text-[#0b2d66] dark:bg-slate-800 dark:text-blue-400">
+                                                    PROGRAM
+                                                    <span className="block text-[8px] font-normal text-slate-500">(do not abbreviate)</span>
+                                                </div>
+                                                <div className="p-2.5 font-bold text-slate-900 dark:text-white">
+                                                    {student.program || student.course || 'N/A'}
                                                 </div>
                                             </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                            <div>
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase">Program / Course</span>
-                                                <div className="mt-0.5 font-bold text-slate-900 dark:text-white">
-                                                    {student.course || student.program || 'N/A'}
+                                            <div className="grid grid-cols-[150px_1fr]">
+                                                <div className="bg-blue-50 p-2.5 text-[10px] font-bold text-[#0b2d66] dark:bg-slate-800 dark:text-blue-400">
+                                                    MAJOR
+                                                    <span className="block text-[8px] font-normal text-slate-500">(if applicable &amp; do not abbreviate)</span>
                                                 </div>
-                                            </div>
-                                            <div>
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase">Year Level & Entry Status</span>
-                                                <div className="mt-0.5 font-semibold text-slate-800 dark:text-slate-200">
-                                                    {student.year_level || 'N/A'} • {student.entry_status || 'Regular'}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                            <div>
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase">Email</span>
-                                                <div className="mt-0.5 font-semibold text-slate-800 dark:text-slate-200">
-                                                    {student.email}
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase">Contact Number</span>
-                                                <div className="mt-0.5 font-semibold text-slate-800 dark:text-slate-200">
-                                                    {student.contact_no || 'N/A'}
+                                                <div className="p-2.5 font-bold text-slate-900 dark:text-white">
+                                                    {student.major || 'N/A'}
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                        {/* Personal Information */}
+                                        <SheetSection>Personal Information</SheetSection>
+                                        <div className="space-y-3">
                                             <div>
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase">Home Address</span>
-                                                <div className="mt-0.5 font-semibold text-slate-800 dark:text-slate-200">
-                                                    {student.home_address || 'N/A'}
+                                                <div className="flex items-end gap-2">
+                                                    <span className="font-bold text-[#0b2d66] dark:text-blue-400">Name:</span>
+                                                    <div className="grid flex-1 grid-cols-3 gap-2 border-b border-slate-400 pb-px text-center font-black text-slate-900 uppercase dark:text-white">
+                                                        <div>{student.last_name || 'N/A'}</div>
+                                                        <div>{student.first_name || 'N/A'}</div>
+                                                        <div>{student.middle_name || 'N/A'}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-0.5 ml-12 grid grid-cols-3 text-center text-[8px] text-slate-400">
+                                                    <div>(Surname)</div>
+                                                    <div>(Given Name)</div>
+                                                    <div>(Middle Name)</div>
                                                 </div>
                                             </div>
-                                            <div>
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase">Birthday & Birthplace</span>
-                                                <div className="mt-0.5 font-semibold text-slate-800 dark:text-slate-200">
-                                                    {student.birthday || 'N/A'} {student.place_of_birth ? `(${student.place_of_birth})` : ''}
+                                            <SheetField label="Student ID:" value={student.student_id} />
+                                            <SheetField label="Home Address:" value={student.home_address} />
+                                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                <SheetField label="Birthday:" value={student.birthday} />
+                                                <SheetField label="Place of Birth:" value={student.place_of_birth} />
+                                            </div>
+                                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                                                <SheetField label="Religion:" value={student.religion} />
+                                                <div className="flex items-end gap-2">
+                                                    <span className="font-bold text-[#0b2d66] dark:text-blue-400">Gender:</span>
+                                                    <div className="flex flex-1 items-center justify-center gap-4 border-b border-slate-400 pb-px">
+                                                        <SheetCheck checked={student.gender?.toLowerCase() === 'male'} label="Male" />
+                                                        <SheetCheck checked={student.gender?.toLowerCase() === 'female'} label="Female" />
+                                                    </div>
                                                 </div>
+                                                <SheetField label="Contact No.:" value={student.contact_no} />
+                                            </div>
+                                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                <SheetField label="E-mail:" value={student.email} />
+                                                <SheetField label="Nationality:" value={student.nationality || 'Filipino'} />
                                             </div>
                                         </div>
 
-                                        <div className="border-t border-slate-100 pt-4 dark:border-slate-800">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase">Family Background</span>
-                                            <div className="mt-2 grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
-                                                <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60">
-                                                    <span className="text-[10px] font-bold text-slate-500">Mother:</span>
-                                                    <p className="font-semibold text-slate-800 dark:text-slate-200">
-                                                        {student.mother_name || 'N/A'}
-                                                    </p>
-                                                    <p className="text-[11px] text-slate-500">
-                                                        Contact: {student.mother_contact || 'N/A'}
-                                                    </p>
-                                                </div>
-                                                <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/60">
-                                                    <span className="text-[10px] font-bold text-slate-500">Father:</span>
-                                                    <p className="font-semibold text-slate-800 dark:text-slate-200">
-                                                        {student.father_name || 'N/A'}
-                                                    </p>
-                                                    <p className="text-[11px] text-slate-500">
-                                                        Contact: {student.father_contact || 'N/A'}
-                                                    </p>
-                                                </div>
+                                        {/* Academic Background */}
+                                        <SheetSection>Academic Background</SheetSection>
+                                        <div className="overflow-hidden rounded-md border border-blue-200 dark:border-slate-700">
+                                            <div className="grid grid-cols-[150px_1fr_110px] bg-blue-50 text-center text-[10px] font-bold text-[#0b2d66] dark:bg-slate-800 dark:text-blue-400">
+                                                <div className="p-2">LEVEL</div>
+                                                <div className="border-l border-blue-200 p-2 dark:border-slate-700">SCHOOL ATTENDED</div>
+                                                <div className="border-l border-blue-200 p-2 dark:border-slate-700">YEAR GRADUATED</div>
                                             </div>
+                                            {[
+                                                ['Elementary', student.elementary_school, student.elementary_year_graduated],
+                                                ['Junior High School', student.junior_high_school, student.junior_high_year_graduated],
+                                                ['Senior High School', student.senior_high_school, student.senior_high_year_graduated],
+                                            ].map(([level, school, year]) => (
+                                                <div key={String(level)} className="grid grid-cols-[150px_1fr_110px] border-t border-blue-200 dark:border-slate-700">
+                                                    <div className="bg-blue-50 p-2 font-bold text-[#0b2d66] dark:bg-slate-800 dark:text-blue-400">{level}</div>
+                                                    <div className="border-l border-blue-200 p-2 font-semibold text-slate-900 dark:border-slate-700 dark:text-white">{school || 'N/A'}</div>
+                                                    <div className="border-l border-blue-200 p-2 text-center font-semibold text-slate-900 dark:border-slate-700 dark:text-white">{year || 'N/A'}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* Family Background */}
+                                        <SheetSection>Family Background</SheetSection>
+                                        <div className="space-y-3">
+                                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                <SheetField label="Mother:" value={student.mother_name} />
+                                                <SheetField label="Contact Number:" value={student.mother_contact} />
+                                            </div>
+                                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                <SheetField label="Father:" value={student.father_name} />
+                                                <SheetField label="Contact Number:" value={student.father_contact} />
+                                            </div>
+                                        </div>
+
+                                        {/* Signature */}
+                                        <div className="mt-10 text-center">
+                                            <div className="mx-auto w-60 border-b border-slate-300 pb-0.5 font-bold text-[#0b2d66] uppercase dark:text-blue-400">
+                                                {student.name}
+                                            </div>
+                                            <div className="text-[8px] font-bold text-slate-400 uppercase">Student Signature</div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* ── MODAL FOOTER ── */}
                         <div className="flex items-center justify-between border-t border-slate-200 bg-white px-6 py-3.5 dark:border-slate-800 dark:bg-slate-900 sm:px-8">
                             <div className="text-xs text-slate-500 dark:text-slate-400">
                                 Showing {activeTab === 'attendance' ? `${filteredAttendances.length} event log(s)` : activeTab === 'violations' ? `${filteredViolations.length} violation(s)` : 'official record'}

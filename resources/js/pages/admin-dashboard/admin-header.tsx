@@ -237,7 +237,8 @@ export function AdminHeader() {
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className="h-8 w-8 rounded-full text-slate-500 hover:bg-slate-200 dark:text-white dark:hover:bg-white/10"
+                                    aria-label="Close navigation menu"
+                                    className="h-8 w-8 rounded-full text-red-500 hover:bg-red-50 hover:text-red-600 dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300 cursor-pointer transition-colors"
                                 >
                                     <X className="h-4 w-4" />
                                 </Button>

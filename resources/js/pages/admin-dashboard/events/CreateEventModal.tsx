@@ -10,6 +10,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import {
+    Building2,
     Calendar,
     Check,
     AlertTriangle,
@@ -27,8 +28,11 @@ import {
     UserCheck,
     X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import InputError from '@/components/input-error';
+import { FormRequiredNotice } from '@/components/ui/form-required-notice';
+import { focusFirstInvalidField } from '@/lib/formFocusNavigation';
 import { dedupeCourseRows } from './mergeCourseYearOptions';
 import {
     findVenueConflict,
@@ -179,6 +183,7 @@ export default function CreateEventModal({
     initialEvent,
     existingEvents = [],
 }: Props) {
+    const containerRef = useRef<HTMLDivElement>(null);
     const [formData, setFormData] = useState<CreateEventPayload>({
         eventName: '',
         organizer: '',
@@ -393,12 +398,20 @@ export default function CreateEventModal({
                 setScannerSearchResults([]);
                 setScannerStudentError('');
 
+                const clickedDate =
+                    initialEvent?.event_date ||
+                    initialEvent?.eventDate ||
+                    '';
+
                 const savedDraftRaw = localStorage.getItem(DRAFT_KEY);
                 if (savedDraftRaw) {
                     try {
                         const saved = JSON.parse(savedDraftRaw);
                         if (saved?.formData) {
-                            setFormData(saved.formData);
+                            setFormData({
+                                ...saved.formData,
+                                eventDate: clickedDate || saved.formData.eventDate || '',
+                            });
                             setCurrentStep(saved.currentStep || 1);
                             setIsDraftRestored(true);
                             setValidationErrors({});
@@ -413,7 +426,7 @@ export default function CreateEventModal({
                     eventName: '',
                     organizer: '',
                     location: '',
-                    eventDate: '',
+                    eventDate: clickedDate,
                     eventTime: '',
                     registrationEndTime: '',
                     expectedAttendees: '',
@@ -666,13 +679,15 @@ export default function CreateEventModal({
         } else if (step === 2) {
             if (!formData.location.trim()) {
                 errors.location = 'Event venue / location name is required';
-            } else if (venueConflict.conflict) {
-                errors.location = venueConflict.message || 'Venue is already booked for this schedule.';
             }
         }
 
         setValidationErrors(errors);
-        return Object.keys(errors).length === 0;
+        if (Object.keys(errors).length > 0) {
+            setTimeout(() => focusFirstInvalidField(containerRef.current), 50);
+            return false;
+        }
+        return true;
     };
 
     const handleNext = () => {
@@ -716,10 +731,12 @@ export default function CreateEventModal({
 
         if (!validateStep(1)) {
             setCurrentStep(1);
+            setTimeout(() => focusFirstInvalidField(containerRef.current), 50);
             return;
         }
         if (!validateStep(2)) {
             setCurrentStep(2);
+            setTimeout(() => focusFirstInvalidField(containerRef.current), 50);
             return;
         }
 
@@ -831,80 +848,86 @@ export default function CreateEventModal({
     return createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-3 backdrop-blur-xs transition-all sm:p-5">
             <div className="mx-auto flex max-h-[90vh] h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-                {/* ── MINIMAL BLUE HEADER ── */}
-                <div className="shrink-0 bg-gradient-to-r from-[#000D6A] via-[#0B1E78] to-[#1E3A8A] px-6 py-4.5 text-white shadow-md sm:px-8">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-[#8CE4FF] shadow-inner ring-1 ring-white/20 backdrop-blur-md">
-                                {mode === 'edit' ? (
-                                    <Sparkles className="h-5 w-5" />
-                                ) : (
-                                    <Calendar className="h-5 w-5" />
-                                )}
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <h2 className="text-base font-bold text-white sm:text-lg">
-                                        {mode === 'edit'
-                                            ? 'Edit Event'
-                                            : 'Create New Event'}
-                                    </h2>
-                                    <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold text-[#8CE4FF] backdrop-blur-xs">
-                                        {mode === 'edit' ? 'Edit' : 'New'}
-                                    </span>
+                {/* ── ROYAL BLUE GRADIENT HERO HEADER ── */}
+                <div className="relative shrink-0 overflow-hidden bg-gradient-to-r from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] px-6 py-5 text-white shadow-md sm:px-8">
+                    <div className="pointer-events-none absolute -top-10 -right-10 h-36 w-36 rounded-full bg-blue-400/10 blur-2xl" />
+                    <div className="relative z-10">
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3.5">
+                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 shadow-inner ring-1 ring-white/20 backdrop-blur-md">
+                                    {mode === 'edit' ? (
+                                        <Sparkles className="h-5 w-5 text-white" />
+                                    ) : (
+                                        <Calendar className="h-5 w-5 text-white" />
+                                    )}
                                 </div>
-                                <p className="text-xs text-blue-100/80">
-                                    Step {currentStep} of 3 —{' '}
-                                    <span className="font-semibold text-white">
-                                        {steps[currentStep - 1].label}
-                                    </span>
-                                </p>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h2 className="text-lg font-black tracking-tight text-white sm:text-xl">
+                                            {mode === 'edit'
+                                                ? 'Edit Event'
+                                                : 'Create New Event'}
+                                        </h2>
+                                        <span className="rounded-full border border-blue-300/30 bg-blue-500/20 px-2.5 py-0.5 text-[10px] font-bold text-blue-100 uppercase tracking-wider">
+                                            {mode === 'edit' ? 'Edit' : 'New'}
+                                        </span>
+                                    </div>
+                                    <p className="mt-0.5 text-xs font-medium text-blue-100/80">
+                                        Step {currentStep} of 3 —{' '}
+                                        <span className="font-semibold text-white">
+                                            {steps[currentStep - 1].label}
+                                        </span>
+                                    </p>
+                                </div>
                             </div>
+
+                            <button
+                                type="button"
+                                onClick={handleClose}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg text-red-300 transition-colors hover:bg-red-500/20 hover:text-red-100 cursor-pointer shrink-0"
+                                aria-label="Close modal"
+                            >
+                                <X className="h-4.5 w-4.5" />
+                            </button>
                         </div>
 
-                        <button
-                            type="button"
-                            onClick={handleClose}
-                            className="rounded-xl bg-white/10 p-2 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
-                            aria-label="Close modal"
-                        >
-                            <X className="h-4 w-4" />
-                        </button>
-                    </div>
+                        {/* Minimal Progress Bar */}
+                        <div className="mt-4 flex items-center gap-2">
+                            {steps.map((step) => {
+                                const isActive = currentStep === step.id;
+                                const isCompleted = currentStep > step.id;
 
-                    {/* Minimal Progress Bar */}
-                    <div className="mt-4 flex items-center gap-2">
-                        {steps.map((step) => {
-                            const isActive = currentStep === step.id;
-                            const isCompleted = currentStep > step.id;
-
-                            return (
-                                <button
-                                    key={step.id}
-                                    type="button"
-                                    onClick={() => {
-                                        if (isCompleted) setCurrentStep(step.id);
-                                    }}
-                                    disabled={!isCompleted && !isActive}
-                                    className="group flex flex-1 items-center gap-2 text-left"
-                                >
-                                    <div
-                                        className={`h-1.5 w-full rounded-full transition-all duration-300 ${
-                                            isActive
-                                                ? 'bg-[#8CE4FF] shadow-xs shadow-cyan-400/50'
-                                                : isCompleted
-                                                  ? 'bg-emerald-400'
-                                                  : 'bg-white/20'
-                                        }`}
-                                    />
-                                </button>
-                            );
-                        })}
+                                return (
+                                    <button
+                                        key={step.id}
+                                        type="button"
+                                        onClick={() => {
+                                            if (isCompleted) setCurrentStep(step.id);
+                                        }}
+                                        disabled={!isCompleted && !isActive}
+                                        className="group flex flex-1 items-center gap-2 text-left cursor-pointer disabled:cursor-default"
+                                    >
+                                        <div
+                                            className={`h-1.5 w-full rounded-full transition-all duration-300 ${
+                                                isActive
+                                                    ? 'bg-white shadow-sm'
+                                                    : isCompleted
+                                                      ? 'bg-emerald-400'
+                                                      : 'bg-white/20'
+                                            }`}
+                                        />
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
 
                 {/* ── MODAL BODY ── */}
-                <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto p-6 sm:p-8">
+                <div
+                    ref={containerRef}
+                    className="scrollbar-thin min-h-0 flex-1 overflow-y-auto p-6 sm:p-8"
+                >
                     {isDraftRestored && mode === 'create' && (
                         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-2.5 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
                             <span className="font-medium">
@@ -921,63 +944,90 @@ export default function CreateEventModal({
                     )}
 
                     <form onSubmit={handleSubmit} noValidate>
+                        <FormRequiredNotice
+                            message="Fields marked with * or Required must be completed."
+                            className="mb-5"
+                        />
+
+                        {Object.keys(validationErrors).length > 0 && (
+                            <div className="mb-5 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50/90 p-4 text-xs font-semibold text-red-700 shadow-sm dark:border-red-800/50 dark:bg-red-950/30 dark:text-red-300">
+                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-600 text-[10px] font-black text-white">
+                                    !
+                                </span>
+                                Please review and fix the highlighted fields below.
+                            </div>
+                        )}
                         {/* STEP 1: BASIC DETAILS */}
                         {currentStep === 1 && (
                             <div className="space-y-5 animate-in fade-in-50 duration-150">
                                 {/* Event Name */}
-                                <div className="space-y-1.5">
+                                <div className="grid gap-1.5">
                                     <Label
                                         htmlFor="eventName"
-                                        className="text-xs font-semibold text-slate-700 dark:text-slate-300"
+                                        required
+                                        showRequiredBadge
+                                        className="text-xs font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400"
                                     >
-                                        Event Name <span className="text-rose-500">*</span>
+                                        Event Name
                                     </Label>
-                                    <Input
-                                        id="eventName"
-                                        list="announcementsList"
-                                        value={formData.eventName}
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            setFormData((prev) => ({
-                                                ...prev,
-                                                eventName: val,
-                                            }));
-
-                                            const matched = announcements?.find(
-                                                (a) => a.title === val,
-                                            );
-                                            if (matched) {
+                                    <div className="relative">
+                                        <Calendar className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                        <Input
+                                            id="eventName"
+                                            list="announcementsList"
+                                            value={formData.eventName}
+                                            hasError={!!validationErrors.eventName}
+                                            aria-describedby={
+                                                validationErrors.eventName
+                                                    ? 'eventName-error'
+                                                    : undefined
+                                            }
+                                            onChange={(e) => {
+                                                const val = e.target.value;
                                                 setFormData((prev) => ({
                                                     ...prev,
-                                                    eventDate:
-                                                        matched.eventDate ||
-                                                        prev.eventDate,
-                                                    eventTime:
-                                                        matched.eventTime ||
-                                                        prev.eventTime,
+                                                    eventName: val,
                                                 }));
-                                            }
-                                            if (validationErrors.eventName) {
-                                                setValidationErrors((prev) => {
-                                                    const copy = { ...prev };
-                                                    delete copy.eventName;
-                                                    return copy;
-                                                });
-                                            }
-                                        }}
-                                        placeholder="e.g. Annual Sports Fest, IT Seminar 2026"
-                                        className={`h-10 rounded-xl text-xs dark:border-slate-700 dark:bg-slate-800 ${
-                                            validationErrors.eventName
-                                                ? 'border-rose-500 focus-visible:ring-rose-500'
-                                                : ''
-                                        }`}
-                                        required
+
+                                                const matched = announcements?.find(
+                                                    (a) => a.title === val,
+                                                );
+                                                if (matched) {
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        eventDate:
+                                                            matched.eventDate ||
+                                                            prev.eventDate,
+                                                        eventTime:
+                                                            matched.eventTime ||
+                                                            prev.eventTime,
+                                                    }));
+                                                }
+                                                if (validationErrors.eventName) {
+                                                    setValidationErrors((prev) => {
+                                                        const copy = { ...prev };
+                                                        delete copy.eventName;
+                                                        return copy;
+                                                    });
+                                                }
+                                            }}
+                                            placeholder="e.g. Annual Sports Fest, IT Seminar 2026"
+                                            className="h-10 rounded-xl border-slate-200 bg-slate-50/50 pl-10 text-sm font-semibold tracking-wide text-slate-800 focus:bg-white dark:border-slate-700 dark:bg-slate-800/50 dark:text-white dark:focus:bg-slate-800"
+                                            onBlur={() => {
+                                                if (!formData.eventName.trim()) {
+                                                    setValidationErrors((prev) => ({
+                                                        ...prev,
+                                                        eventName: 'Event Name is required',
+                                                    }));
+                                                }
+                                            }}
+                                            required
+                                        />
+                                    </div>
+                                    <InputError
+                                        id="eventName-error"
+                                        message={validationErrors.eventName}
                                     />
-                                    {validationErrors.eventName && (
-                                        <p className="text-xs font-medium text-rose-500">
-                                            {validationErrors.eventName}
-                                        </p>
-                                    )}
                                     {announcements && announcements.length > 0 && (
                                         <datalist id="announcementsList">
                                             {announcements.map((a) => (
@@ -992,43 +1042,58 @@ export default function CreateEventModal({
 
                                 <div className="grid gap-5 sm:grid-cols-2">
                                     {/* Organizer */}
-                                    <div className="space-y-1.5">
+                                    <div className="grid gap-1.5">
                                         <Label
                                             htmlFor="organizer"
-                                            className="text-xs font-semibold text-slate-700 dark:text-slate-300"
-                                        >
-                                            Organizer <span className="text-rose-500">*</span>
-                                        </Label>
-                                        <Input
-                                            id="organizer"
-                                            list="organizerSuggestions"
-                                            value={formData.organizer}
-                                            onChange={(e) => {
-                                                const val = e.target.value;
-                                                setFormData((prev) => ({
-                                                    ...prev,
-                                                    organizer: val,
-                                                }));
-                                                if (validationErrors.organizer) {
-                                                    setValidationErrors(
-                                                        (prev) => {
-                                                            const copy = {
-                                                                ...prev,
-                                                            };
-                                                            delete copy.organizer;
-                                                            return copy;
-                                                        },
-                                                    );
-                                                }
-                                            }}
-                                            placeholder="Enter or select organizing body"
-                                            className={`h-10 rounded-xl text-xs dark:border-slate-700 dark:bg-slate-800 ${
-                                                validationErrors.organizer
-                                                    ? 'border-rose-500 focus-visible:ring-rose-500'
-                                                    : ''
-                                            }`}
                                             required
-                                        />
+                                            showRequiredBadge
+                                            className="text-xs font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400"
+                                        >
+                                            Organizer
+                                        </Label>
+                                        <div className="relative">
+                                            <Building2 className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                            <Input
+                                                id="organizer"
+                                                list="organizerSuggestions"
+                                                value={formData.organizer}
+                                                hasError={!!validationErrors.organizer}
+                                                aria-describedby={
+                                                    validationErrors.organizer
+                                                        ? 'organizer-error'
+                                                        : undefined
+                                                }
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        organizer: val,
+                                                    }));
+                                                    if (validationErrors.organizer) {
+                                                        setValidationErrors(
+                                                            (prev) => {
+                                                                const copy = {
+                                                                    ...prev,
+                                                                };
+                                                                delete copy.organizer;
+                                                                return copy;
+                                                            },
+                                                        );
+                                                    }
+                                                }}
+                                                placeholder="Enter or select organizing body"
+                                                className="h-10 rounded-xl border-slate-200 bg-slate-50/50 pl-10 text-sm font-semibold tracking-wide text-slate-800 focus:bg-white dark:border-slate-700 dark:bg-slate-800/50 dark:text-white dark:focus:bg-slate-800"
+                                                onBlur={() => {
+                                                    if (!formData.organizer.trim()) {
+                                                        setValidationErrors((prev) => ({
+                                                            ...prev,
+                                                            organizer: 'Organizer is required',
+                                                        }));
+                                                    }
+                                                }}
+                                                required
+                                            />
+                                        </div>
                                         <datalist id="organizerSuggestions">
                                             <option value="Office of Student Affairs" />
                                             <option value="Student Affairs" />
@@ -1040,61 +1105,74 @@ export default function CreateEventModal({
                                             <option value="HED Library" />
                                             <option value="Sports Department" />
                                         </datalist>
-                                        {validationErrors.organizer && (
-                                            <p className="text-xs font-medium text-rose-500">
-                                                {validationErrors.organizer}
-                                            </p>
-                                        )}
+                                        <InputError
+                                            id="organizer-error"
+                                            message={validationErrors.organizer}
+                                        />
                                     </div>
 
                                     {/* Event Date */}
-                                    <div className="space-y-1.5">
+                                    <div className="grid gap-1.5">
                                         <Label
                                             htmlFor="eventDate"
-                                            className="text-xs font-semibold text-slate-700 dark:text-slate-300"
-                                        >
-                                            Event Date <span className="text-rose-500">*</span>
-                                        </Label>
-                                        <Input
-                                            id="eventDate"
-                                            type="date"
-                                            value={formData.eventDate}
-                                            onChange={(e) => {
-                                                setFormData((prev) => ({
-                                                    ...prev,
-                                                    eventDate: e.target.value,
-                                                }));
-                                                if (validationErrors.eventDate) {
-                                                    setValidationErrors(
-                                                        (prev) => {
-                                                            const copy = {
-                                                                ...prev,
-                                                            };
-                                                            delete copy.eventDate;
-                                                            return copy;
-                                                        },
-                                                    );
-                                                }
-                                            }}
-                                            className={`h-10 rounded-xl text-xs dark:border-slate-700 dark:bg-slate-800 ${
-                                                validationErrors.eventDate
-                                                    ? 'border-rose-500 focus-visible:ring-rose-500'
-                                                    : ''
-                                            }`}
                                             required
+                                            showRequiredBadge
+                                            className="text-xs font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400"
+                                        >
+                                            Event Date
+                                        </Label>
+                                        <div className="relative">
+                                            <Calendar className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                            <Input
+                                                id="eventDate"
+                                                type="date"
+                                                value={formData.eventDate}
+                                                hasError={!!validationErrors.eventDate}
+                                                aria-describedby={
+                                                    validationErrors.eventDate
+                                                        ? 'eventDate-error'
+                                                        : undefined
+                                                }
+                                                onChange={(e) => {
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        eventDate: e.target.value,
+                                                    }));
+                                                    if (validationErrors.eventDate) {
+                                                        setValidationErrors(
+                                                            (prev) => {
+                                                                const copy = {
+                                                                    ...prev,
+                                                                };
+                                                                delete copy.eventDate;
+                                                                return copy;
+                                                            },
+                                                        );
+                                                    }
+                                                }}
+                                                className="h-10 rounded-xl border-slate-200 bg-slate-50/50 pl-10 text-sm font-semibold tracking-wide text-slate-800 focus:bg-white dark:border-slate-700 dark:bg-slate-800/50 dark:text-white dark:focus:bg-slate-800"
+                                                onBlur={() => {
+                                                    if (!formData.eventDate) {
+                                                        setValidationErrors((prev) => ({
+                                                            ...prev,
+                                                            eventDate: 'Event Date is required',
+                                                        }));
+                                                    }
+                                                }}
+                                                required
+                                            />
+                                        </div>
+                                        <InputError
+                                            id="eventDate-error"
+                                            message={validationErrors.eventDate}
                                         />
-                                        {validationErrors.eventDate && (
-                                            <p className="text-xs font-medium text-rose-500">
-                                                {validationErrors.eventDate}
-                                            </p>
-                                        )}
                                     </div>
                                 </div>
 
                                 {/* Schedule Pair: Time-In & Time-End */}
                                 <div className="space-y-2 rounded-xl border border-slate-200/90 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-800/40">
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                        <div className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400">
                                             <Clock className="h-4 w-4 text-[#000D6A] dark:text-blue-400" />
                                             <span>Event Schedule</span>
                                         </div>
@@ -1129,55 +1207,69 @@ export default function CreateEventModal({
                                             )}
                                     </div>
 
-                                    <div className="grid gap-3 sm:grid-cols-2 pt-1">
-                                        <div className="space-y-1">
+                                    <div className="grid gap-4 sm:grid-cols-2 pt-1">
+                                        <div className="grid gap-1.5">
                                             <Label
                                                 htmlFor="eventTime"
-                                                className="text-[11px] font-medium text-slate-600 dark:text-slate-400"
-                                            >
-                                                Time-In <span className="text-rose-500">*</span>
-                                            </Label>
-                                            <Input
-                                                id="eventTime"
-                                                type="time"
-                                                value={formData.eventTime}
-                                                onChange={(e) => {
-                                                    const timeInVal = e.target.value;
-                                                    let calculatedTimeOut = formData.registrationEndTime;
-                                                    if (timeInVal) {
-                                                        const [hours, minutes] = timeInVal.split(':').map(Number);
-                                                        const tempDate = new Date();
-                                                        tempDate.setHours(hours);
-                                                        tempDate.setMinutes(minutes + 180);
-                                                        const pad = (n: number) => n.toString().padStart(2, '0');
-                                                        calculatedTimeOut = `${pad(tempDate.getHours())}:${pad(tempDate.getMinutes())}`;
-                                                    }
-
-                                                    setFormData((prev) => ({
-                                                        ...prev,
-                                                        eventTime: timeInVal,
-                                                        registrationEndTime: calculatedTimeOut,
-                                                    }));
-
-                                                    setValidationErrors((prev) => {
-                                                        const copy = { ...prev };
-                                                        if (timeInVal) delete copy.eventTime;
-                                                        if (calculatedTimeOut) delete copy.registrationEndTime;
-                                                        return copy;
-                                                    });
-                                                }}
-                                                className={`h-9 rounded-lg bg-white text-xs dark:bg-slate-900 ${
-                                                    validationErrors.eventTime
-                                                        ? 'border-rose-500'
-                                                        : ''
-                                                }`}
                                                 required
+                                                showRequiredBadge
+                                                className="text-xs font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400"
+                                            >
+                                                Time-In
+                                            </Label>
+                                            <div className="relative">
+                                                <Clock className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                                <Input
+                                                    id="eventTime"
+                                                    type="time"
+                                                    value={formData.eventTime}
+                                                    hasError={!!validationErrors.eventTime}
+                                                    aria-describedby={
+                                                        validationErrors.eventTime
+                                                            ? 'eventTime-error'
+                                                            : undefined
+                                                    }
+                                                    onChange={(e) => {
+                                                        const timeInVal = e.target.value;
+                                                        let calculatedTimeOut = formData.registrationEndTime;
+                                                        if (timeInVal) {
+                                                            const [hours, minutes] = timeInVal.split(':').map(Number);
+                                                            const tempDate = new Date();
+                                                            tempDate.setHours(hours);
+                                                            tempDate.setMinutes(minutes + 180);
+                                                            const pad = (n: number) => n.toString().padStart(2, '0');
+                                                            calculatedTimeOut = `${pad(tempDate.getHours())}:${pad(tempDate.getMinutes())}`;
+                                                        }
+
+                                                        setFormData((prev) => ({
+                                                            ...prev,
+                                                            eventTime: timeInVal,
+                                                            registrationEndTime: calculatedTimeOut,
+                                                        }));
+
+                                                        setValidationErrors((prev) => {
+                                                            const copy = { ...prev };
+                                                            if (timeInVal) delete copy.eventTime;
+                                                            if (calculatedTimeOut) delete copy.registrationEndTime;
+                                                            return copy;
+                                                        });
+                                                    }}
+                                                    className="h-10 rounded-xl border-slate-200 bg-slate-50/50 pl-10 text-sm font-semibold tracking-wide text-slate-800 focus:bg-white dark:border-slate-700 dark:bg-slate-800/50 dark:text-white dark:focus:bg-slate-800"
+                                                    onBlur={() => {
+                                                        if (!formData.eventTime) {
+                                                            setValidationErrors((prev) => ({
+                                                                ...prev,
+                                                                eventTime: 'Time-In is required',
+                                                            }));
+                                                        }
+                                                    }}
+                                                    required
+                                                />
+                                            </div>
+                                            <InputError
+                                                id="eventTime-error"
+                                                message={validationErrors.eventTime}
                                             />
-                                            {validationErrors.eventTime && (
-                                                <p className="text-[10px] font-medium text-rose-500">
-                                                    {validationErrors.eventTime}
-                                                </p>
-                                            )}
                                             {formData.eventTime && (
                                                 <p className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
                                                     Cut-off for on-time: <strong>{getFormattedCutoff(formData.eventTime)}</strong> (1 hr after start)
@@ -1185,42 +1277,64 @@ export default function CreateEventModal({
                                             )}
                                         </div>
 
-                                        <div className="space-y-1">
+                                        <div className="grid gap-1.5">
                                             <Label
                                                 htmlFor="registrationEndTime"
-                                                className="text-[11px] font-medium text-slate-600 dark:text-slate-400"
-                                            >
-                                                Time-End <span className="text-rose-500">*</span>
-                                            </Label>
-                                            <Input
-                                                id="registrationEndTime"
-                                                type="time"
-                                                value={formData.registrationEndTime}
-                                                onChange={(e) => {
-                                                    setFormData((prev) => ({
-                                                        ...prev,
-                                                        registrationEndTime: e.target.value,
-                                                    }));
-                                                    if (validationErrors.registrationEndTime) {
-                                                        setValidationErrors((prev) => {
-                                                            const copy = { ...prev };
-                                                            delete copy.registrationEndTime;
-                                                            return copy;
-                                                        });
-                                                    }
-                                                }}
-                                                className={`h-9 rounded-lg bg-white text-xs dark:bg-slate-900 ${
-                                                    validationErrors.registrationEndTime
-                                                        ? 'border-rose-500'
-                                                        : ''
-                                                }`}
                                                 required
+                                                showRequiredBadge
+                                                className="text-xs font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400"
+                                            >
+                                                Time-End
+                                            </Label>
+                                            <div className="relative">
+                                                <Clock className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                                <Input
+                                                    id="registrationEndTime"
+                                                    type="time"
+                                                    value={formData.registrationEndTime}
+                                                    hasError={!!validationErrors.registrationEndTime}
+                                                    aria-describedby={
+                                                        validationErrors.registrationEndTime
+                                                            ? 'registrationEndTime-error'
+                                                            : undefined
+                                                    }
+                                                    onChange={(e) => {
+                                                        setFormData((prev) => ({
+                                                            ...prev,
+                                                            registrationEndTime: e.target.value,
+                                                        }));
+                                                        if (validationErrors.registrationEndTime) {
+                                                            setValidationErrors((prev) => {
+                                                                const copy = { ...prev };
+                                                                delete copy.registrationEndTime;
+                                                                return copy;
+                                                            });
+                                                        }
+                                                    }}
+                                                    className="h-10 rounded-xl border-slate-200 bg-slate-50/50 pl-10 text-sm font-semibold tracking-wide text-slate-800 focus:bg-white dark:border-slate-700 dark:bg-slate-800/50 dark:text-white dark:focus:bg-slate-800"
+                                                    onBlur={() => {
+                                                        if (!formData.registrationEndTime) {
+                                                            setValidationErrors((prev) => ({
+                                                                ...prev,
+                                                                registrationEndTime: 'Time-End is required',
+                                                            }));
+                                                        } else if (
+                                                            formData.eventTime &&
+                                                            formData.registrationEndTime <= formData.eventTime
+                                                        ) {
+                                                            setValidationErrors((prev) => ({
+                                                                ...prev,
+                                                                registrationEndTime: 'Time-End must be after Time-In',
+                                                            }));
+                                                        }
+                                                    }}
+                                                    required
+                                                />
+                                            </div>
+                                            <InputError
+                                                id="registrationEndTime-error"
+                                                message={validationErrors.registrationEndTime}
                                             />
-                                            {validationErrors.registrationEndTime && (
-                                                <p className="text-[10px] font-medium text-rose-500">
-                                                    {validationErrors.registrationEndTime}
-                                                </p>
-                                            )}
                                             {formData.registrationEndTime && (
                                                 <p className="text-[11px] font-medium text-blue-600 dark:text-blue-400">
                                                     Time-Out opens: <strong>{getFormattedTimeOutStart(formData.registrationEndTime)}</strong> (30 min before end)
@@ -1262,8 +1376,12 @@ export default function CreateEventModal({
                             <div className="space-y-5 animate-in fade-in-50 duration-150">
                                 {/* Check-In Method Selector */}
                                 <div className="space-y-2">
-                                    <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                                        Check-In Method <span className="text-rose-500">*</span>
+                                    <Label
+                                        required
+                                        showRequiredBadge
+                                        className="text-xs font-semibold text-slate-700 dark:text-slate-300"
+                                    >
+                                        Check-In Method
                                     </Label>
                                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                         {/* Option 1: QR Scanner */}
@@ -1346,62 +1464,123 @@ export default function CreateEventModal({
                                 </div>
 
                                 {/* Event Venue */}
-                                <div className="space-y-2">
+                                <div className="grid gap-1.5">
                                     <div className="flex items-center justify-between">
                                         <Label
                                             htmlFor="location"
-                                            className="text-xs font-semibold text-slate-700 dark:text-slate-300"
+                                            required
+                                            showRequiredBadge
+                                            className="text-xs font-bold tracking-wider text-slate-600 uppercase dark:text-slate-400"
                                         >
-                                            Venue / Location Name <span className="text-rose-500">*</span>
+                                            Venue / Location Name
                                         </Label>
                                         {formData.attendanceType === 'dynamic_qr' && (
                                             <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                                                 <ShieldCheck className="h-3.5 w-3.5" />
-                                                Whole Campus Geotagged (300m)
+                                                {formData.location?.toLowerCase().includes('gym') || Number(formData.geofenceRadiusM) <= 60
+                                                    ? `Gymnasium Geotagged (${formData.geofenceRadiusM || '50'}m)`
+                                                    : `Campus-Wide Geotagged (${formData.geofenceRadiusM || '300'}m)`}
                                             </span>
                                         )}
                                     </div>
 
-                                    <Input
-                                        id="location"
-                                        value={formData.location}
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            setFormData((prev) => ({
-                                                ...prev,
-                                                location: val,
-                                                geofenceLatitude: prev.geofenceLatitude || '8.743070',
-                                                geofenceLongitude: prev.geofenceLongitude || '124.774500',
-                                                geofenceRadiusM: prev.geofenceRadiusM || '300',
-                                            }));
+                                    {/* Geofence Scope Quick Switcher */}
+                                    {formData.attendanceType === 'dynamic_qr' && (
+                                        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200/80 bg-slate-50/60 p-2 dark:border-slate-800 dark:bg-slate-800/40">
+                                            <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Geofence Scope:</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData((prev) => ({
+                                                    ...prev,
+                                                    geofenceLatitude: '8.742800',
+                                                    geofenceLongitude: '124.774200',
+                                                    geofenceRadiusM: '50',
+                                                }))}
+                                                className={`rounded-md px-2.5 py-1 text-[11px] font-bold border transition-all ${
+                                                    Number(formData.geofenceRadiusM) <= 60
+                                                        ? 'bg-[#000D6A] text-white border-[#000D6A] shadow-xs dark:bg-blue-600 dark:border-blue-600'
+                                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'
+                                                }`}
+                                            >
+                                                Gymnasium (50m Focused)
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormData((prev) => ({
+                                                    ...prev,
+                                                    geofenceLatitude: '8.743070',
+                                                    geofenceLongitude: '124.774500',
+                                                    geofenceRadiusM: '300',
+                                                }))}
+                                                className={`rounded-md px-2.5 py-1 text-[11px] font-bold border transition-all ${
+                                                    Number(formData.geofenceRadiusM) > 60
+                                                        ? 'bg-[#000D6A] text-white border-[#000D6A] shadow-xs dark:bg-blue-600 dark:border-blue-600'
+                                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'
+                                                }`}
+                                            >
+                                                Whole Campus (300m)
+                                            </button>
+                                        </div>
+                                    )}
 
-                                            if (validationErrors.location) {
-                                                setValidationErrors((prev) => {
-                                                    const copy = { ...prev };
-                                                    delete copy.location;
-                                                    return copy;
-                                                });
+                                    <div className="relative">
+                                        <MapPin className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                        <Input
+                                            id="location"
+                                            value={formData.location}
+                                            hasError={!!validationErrors.location}
+                                            aria-describedby={
+                                                validationErrors.location
+                                                    ? 'location-error'
+                                                    : undefined
                                             }
-                                        }}
-                                        placeholder="e.g. Gymnasium, Audio Visual Room (AVR), Campus-Wide"
-                                        className={`h-10 rounded-xl text-xs dark:border-slate-700 dark:bg-slate-800 ${
-                                            validationErrors.location || venueConflict.conflict
-                                                ? 'border-rose-500 focus-visible:ring-rose-500 ring-1 ring-rose-500/20'
-                                                : ''
-                                        }`}
-                                        required
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                const isGym = val.toLowerCase().includes('gym');
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    location: val,
+                                                    geofenceLatitude: isGym ? '8.742800' : (prev.geofenceLatitude || '8.743070'),
+                                                    geofenceLongitude: isGym ? '124.774200' : (prev.geofenceLongitude || '124.774500'),
+                                                    geofenceRadiusM: isGym ? '50' : (prev.geofenceRadiusM || '300'),
+                                                }));
+
+                                                if (validationErrors.location) {
+                                                    setValidationErrors((prev) => {
+                                                        const copy = { ...prev };
+                                                        delete copy.location;
+                                                        return copy;
+                                                    });
+                                                }
+                                            }}
+                                            placeholder="e.g. Gymnasium, Audio Visual Room (AVR), Campus-Wide"
+                                            className="h-10 rounded-xl border-slate-200 bg-slate-50/50 pl-10 text-sm font-semibold tracking-wide text-slate-800 focus:bg-white dark:border-slate-700 dark:bg-slate-800/50 dark:text-white dark:focus:bg-slate-800"
+                                            onBlur={() => {
+                                                if (!formData.location.trim()) {
+                                                    setValidationErrors((prev) => ({
+                                                        ...prev,
+                                                        location: 'Event venue / location name is required',
+                                                    }));
+                                                }
+                                            }}
+                                            required
+                                        />
+                                    </div>
+                                    <InputError
+                                        id="location-error"
+                                        message={validationErrors.location}
                                     />
 
                                     {venueConflict.conflict && (
-                                        <div className="flex items-start gap-2.5 rounded-xl border border-rose-300 bg-rose-50 p-3 text-xs text-rose-800 shadow-sm dark:border-rose-800/70 dark:bg-rose-950/50 dark:text-rose-300">
-                                            <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
+                                        <div className="flex items-start gap-2.5 rounded-xl border border-amber-300 bg-amber-50/80 p-3 text-xs text-amber-900 shadow-sm dark:border-amber-800/70 dark:bg-amber-950/40 dark:text-amber-200">
+                                            <Info className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
                                             <div className="space-y-0.5">
-                                                <p className="font-bold text-rose-900 dark:text-rose-200">
-                                                    Venue Schedule Conflict Detected
+                                                <p className="font-bold text-amber-900 dark:text-amber-200">
+                                                    Venue Notice: Concurrent Event Scheduled
                                                 </p>
                                                 <p>{venueConflict.message}</p>
-                                                <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium">
-                                                    Please choose an alternate venue or adjust the event schedule.
+                                                <p className="text-[11px] text-amber-700 dark:text-amber-300 font-medium">
+                                                    Note: Multiple events can record attendance at the same venue. You can still proceed with creating this event.
                                                 </p>
                                             </div>
                                         </div>
@@ -1425,12 +1604,13 @@ export default function CreateEventModal({
                                                     key={venue}
                                                     type="button"
                                                     onClick={() => {
+                                                        const isGym = venue.toLowerCase().includes('gym');
                                                         setFormData((prev) => ({
                                                             ...prev,
                                                             location: venue,
-                                                            geofenceLatitude: '8.743070',
-                                                            geofenceLongitude: '124.774500',
-                                                            geofenceRadiusM: '300',
+                                                            geofenceLatitude: isGym ? '8.742800' : '8.743070',
+                                                            geofenceLongitude: isGym ? '124.774200' : '124.774500',
+                                                            geofenceRadiusM: isGym ? '50' : '300',
                                                         }));
                                                         if (validationErrors.location) {
                                                             setValidationErrors((prev) => {
@@ -1442,21 +1622,21 @@ export default function CreateEventModal({
                                                     }}
                                                     className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors ${
                                                         isBooked
-                                                            ? 'border-amber-300 bg-amber-50/80 text-amber-800 hover:bg-amber-100 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-300'
+                                                            ? 'border-blue-300 bg-blue-50/80 text-blue-800 hover:bg-blue-100 dark:border-blue-800/60 dark:bg-blue-950/40 dark:text-blue-300'
                                                             : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-blue-300 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
                                                     }`}
                                                 >
                                                     {venue}
                                                     {isBooked && (
-                                                        <span className="ml-1 rounded bg-amber-200/80 px-1 py-0.5 text-[9px] font-bold text-amber-900 dark:bg-amber-900/60 dark:text-amber-200">
-                                                            Booked ({isBooked.schedule})
+                                                        <span className="ml-1 rounded bg-blue-200/80 px-1 py-0.5 text-[9px] font-bold text-blue-900 dark:bg-blue-900/60 dark:text-blue-200">
+                                                            Active ({isBooked.schedule})
                                                         </span>
                                                     )}
                                                 </button>
                                             );
                                         })}
                                     </div>
-                                    {validationErrors.location && !venueConflict.conflict && (
+                                    {validationErrors.location && (
                                         <p className="text-xs font-medium text-rose-500">
                                             {validationErrors.location}
                                         </p>
@@ -1801,7 +1981,7 @@ export default function CreateEventModal({
                             <Button
                                 type="button"
                                 onClick={handleNext}
-                                className="h-9 gap-1.5 rounded-xl bg-[#000D6A] px-5 text-xs font-semibold text-white shadow-xs hover:bg-[#102A83] dark:bg-blue-600 dark:hover:bg-blue-700"
+                                className="h-9 gap-1.5 rounded-xl bg-gradient-to-r from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] px-5 text-xs font-bold text-white shadow-md transition-all hover:shadow-lg hover:brightness-110 cursor-pointer"
                             >
                                 Next
                                 <ChevronRight className="h-3.5 w-3.5" />
@@ -1810,7 +1990,7 @@ export default function CreateEventModal({
                             <Button
                                 type="button"
                                 onClick={handleSubmit}
-                                className="h-9 gap-1.5 rounded-xl bg-[#000D6A] px-6 text-xs font-semibold text-white shadow-xs hover:bg-[#102A83] dark:bg-blue-600 dark:hover:bg-blue-700"
+                                className="h-9 gap-1.5 rounded-xl bg-gradient-to-r from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] px-6 text-xs font-bold text-white shadow-md transition-all hover:shadow-lg hover:brightness-110 cursor-pointer"
                             >
                                 <Check className="h-3.5 w-3.5" />
                                 {mode === 'edit'

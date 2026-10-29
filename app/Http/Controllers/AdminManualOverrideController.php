@@ -20,14 +20,15 @@ class AdminManualOverrideController extends Controller
             ->where('event_id', $event->id)
             ->orderByDesc('scanned_at')
             ->get()
-            ->map(function (Attendance $attendance) {
+            ->map(function ($attendance) {
+                /** @var Attendance $attendance */
                 $student = $attendance->student;
 
                 return [
                     'attendance_id' => $attendance->id,
                     'student_id' => (string) ($student?->student_id ?? $attendance->student_id),
                     'name' => (string) ($student?->name ?? ''),
-                    'program' => (string) (($student?->course ?? $student?->program ?? '') ?: 'â\u20ac\"'),
+                    'program' => (string) (($student?->course ?? $student?->program ?? '') ?: '—'),
                     'scanned_at' => optional($attendance->scanned_at)->toDateTimeString(),
                     'checked_in_at' => optional($attendance->checked_in_at)->toDateTimeString(),
                     'checked_out_at' => optional($attendance->checked_out_at)->toDateTimeString(),
@@ -42,7 +43,7 @@ class AdminManualOverrideController extends Controller
             'event' => [
                 'id' => $event->id,
                 'name' => $event->event_name,
-                'date' => optional($event->event_date)->format('Y-m-d'),
+                'date' => $event->event_date ? Carbon::parse($event->event_date)->format('Y-m-d') : '',
                 'time' => (string) ($event->event_time ?? ''),
                 'geofence_enabled' => (bool) ($event->geofence_enabled ?? false),
             ],
@@ -55,6 +56,10 @@ class AdminManualOverrideController extends Controller
         $admin = Auth::guard('admin')->user();
         if (!$admin) {
             abort(403);
+        }
+
+        if (in_array(strtolower($event->status ?? ''), ['cancelled', 'archived'])) {
+            return response()->json(['message' => 'Attendance overrides cannot be applied to cancelled or archived events.'], 422);
         }
 
         $validated = $request->validate([
@@ -72,70 +77,110 @@ class AdminManualOverrideController extends Controller
             return response()->json(['message' => 'Student not found.'], 404);
         }
 
-        $attendance = Attendance::query()
-            ->where('event_id', $event->id)
-            ->where('student_id', $student->id)
-            ->first();
+        try {
+            $result = \Illuminate\Support\Facades\DB::transaction(function () use ($event, $student, $admin, $validated) {
+                $attendance = Attendance::query()
+                    ->where('event_id', $event->id)
+                    ->where('student_id', $student->id)
+                    ->lockForUpdate()
+                    ->first();
 
-        $now = Carbon::now();
-        $status = 'present';
+                $now = Carbon::now();
+                $status = 'present';
 
-        if (!empty($event->registration_end_time)) {
-            $cutoff = Carbon::parse($event->event_date->format('Y-m-d') . ' ' . $event->registration_end_time);
-            if ($now->greaterThan($cutoff)) {
-                $status = 'late';
+                if (!empty($event->registration_end_time) && !empty($event->event_date)) {
+                    $eventDateStr = Carbon::parse($event->event_date)->format('Y-m-d');
+                    $cutoff = Carbon::parse($eventDateStr . ' ' . $event->registration_end_time);
+                    if ($now->greaterThan($cutoff)) {
+                        $status = 'late';
+                    }
+                }
+
+                if (!$attendance) {
+                    $attendance = Attendance::create([
+                        'event_id' => $event->id,
+                        'student_id' => $student->id,
+                        'scanned_at' => $now,
+                        'status' => $status,
+                        'checked_in_at' => $validated['action'] === 'check_in' ? $now : null,
+                        'checked_out_at' => $validated['action'] === 'check_out' ? $now : null,
+                        'is_manual_override' => true,
+                        'manual_override_by_admin_id' => $admin->id,
+                        'manual_override_reason' => $validated['reason'],
+                        'manual_override_notes' => $validated['notes'] ?? null,
+                    ]);
+                } elseif ($validated['action'] === 'check_in' && !$attendance->checked_in_at) {
+                    $attendance->update([
+                        'scanned_at' => $now,
+                        'checked_in_at' => $now,
+                        'status' => $status,
+                        'is_manual_override' => true,
+                        'manual_override_by_admin_id' => $admin->id,
+                        'manual_override_reason' => $validated['reason'],
+                        'manual_override_notes' => $validated['notes'] ?? null,
+                    ]);
+                } elseif ($validated['action'] === 'check_out' && !$attendance->checked_out_at) {
+                    $attendance->update([
+                        'scanned_at' => $now,
+                        'checked_out_at' => $now,
+                        'is_manual_override' => true,
+                        'manual_override_by_admin_id' => $admin->id,
+                        'manual_override_reason' => $validated['reason'],
+                        'manual_override_notes' => $validated['notes'] ?? null,
+                    ]);
+                } else {
+                    return [
+                        'conflict' => true,
+                        'message' => 'Invalid action or attendance already recorded for this student.',
+                    ];
+                }
+
+                $event->updateAttendanceCounts();
+
+                if (\Illuminate\Support\Facades\Schema::hasTable('activity_logs')) {
+                    \App\Models\ActivityLog::logForUser(
+                        $admin,
+                        'Attendance Override',
+                        ucfirst($validated['action']),
+                        "Manual {$validated['action']} override applied for student {$student->name} ({$student->student_id}) on event '{$event->event_name}'. Reason: {$validated['reason']}"
+                    );
+                }
+
+                return [
+                    'conflict' => false,
+                    'attendance' => $attendance,
+                    'scanned_at' => $now->toDateTimeString(),
+                ];
+            });
+
+            if ($result['conflict']) {
+                return response()->json(['message' => $result['message']], 409);
             }
-        }
 
-        if (!$attendance) {
-            $attendance = Attendance::create([
+            /** @var Attendance $attendance */
+            $attendance = $result['attendance'];
+
+            return response()->json([
+                'attendance_id' => $attendance->id,
+                'status' => $attendance->status,
+                'action' => $validated['action'],
+                'scanned_at' => $result['scanned_at'],
+                'student' => [
+                    'id' => $student->id,
+                    'student_id' => $student->student_id,
+                    'name' => $student->name,
+                    'program' => (string) ($student->course ?? $student->program ?? ''),
+                ],
+            ]);
+        } catch (\Illuminate\Database\QueryException $qe) {
+            \Log::warning('Manual override query exception: ' . $qe->getMessage(), [
                 'event_id' => $event->id,
                 'student_id' => $student->id,
-                'scanned_at' => $now,
-                'status' => $status,
-                'checked_in_at' => $validated['action'] === 'check_in' ? $now : null,
-                'checked_out_at' => $validated['action'] === 'check_out' ? $now : null,
-                'is_manual_override' => true,
-                'manual_override_by_admin_id' => $admin->id,
-                'manual_override_reason' => $validated['reason'],
-                'manual_override_notes' => $validated['notes'] ?? null,
             ]);
-        } elseif ($validated['action'] === 'check_in' && !$attendance->checked_in_at) {
-            $attendance->update([
-                'scanned_at' => $now,
-                'checked_in_at' => $now,
-                'status' => $status,
-                'is_manual_override' => true,
-                'manual_override_by_admin_id' => $admin->id,
-                'manual_override_reason' => $validated['reason'],
-                'manual_override_notes' => $validated['notes'] ?? null,
-            ]);
-        } elseif ($validated['action'] === 'check_out' && !$attendance->checked_out_at) {
-            $attendance->update([
-                'scanned_at' => $now,
-                'checked_out_at' => $now,
-                'is_manual_override' => true,
-                'manual_override_by_admin_id' => $admin->id,
-                'manual_override_reason' => $validated['reason'],
-                'manual_override_notes' => $validated['notes'] ?? null,
-            ]);
-        } else {
-            return response()->json(['message' => 'Invalid action or already performed.'], 409);
+            return response()->json(['message' => 'A database conflict occurred while processing the attendance override.'], 409);
+        } catch (\Throwable $e) {
+            \Log::error('Manual override unexpected error: ' . $e->getMessage(), ['exception' => $e]);
+            return response()->json(['message' => 'An error occurred while processing the attendance override.'], 500);
         }
-
-        $event->updateAttendanceCounts();
-
-        return response()->json([
-            'attendance_id' => $attendance->id,
-            'status' => $attendance->status,
-            'action' => $validated['action'],
-            'scanned_at' => $now->toDateTimeString(),
-            'student' => [
-                'id' => $student->id,
-                'student_id' => $student->student_id,
-                'name' => $student->name,
-                'program' => (string) ($student->course ?? $student->program ?? ''),
-            ],
-        ]);
     }
 }

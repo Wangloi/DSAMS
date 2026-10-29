@@ -50,69 +50,68 @@ class ProgramHeadEventsController extends Controller
             $validated['location'],
             $validated['event_time']
         );
+        // Venue sharing notice: Concurrent events are permitted at the same venue for attendance tracking.
         if ($conflict) {
-            $conflictSchedule = $conflict->event_time;
-            if (!empty($conflict->registration_end_time)) {
-                $conflictSchedule .= ' to ' . $conflict->registration_end_time;
+            \Illuminate\Support\Facades\Log::info("Program head event '{$validated['event_name']}' sharing venue '{$validated['location']}' with concurrent event '{$conflict->event_name}' on {$validated['event_date']}.");
+        }
+
+        try {
+            $activityPlanPath = null;
+            if ($request->hasFile('activity_plan')) {
+                $activityPlanPath = $request->file('activity_plan')->store('activity_plans', 'public');
             }
-            $errorMsg = "Schedule & Venue Conflict! Venue '{$validated['location']}' is already booked on {$validated['event_date']} ({$conflictSchedule}) for '{$conflict->event_name}'.";
-            if ($request->wantsJson() || $request->ajax()) {
-                return response()->json([
-                    'message' => $errorMsg,
-                    'errors' => ['location' => [$errorMsg]],
-                ], 422);
+
+            $office = is_object($programHead) ? (string) ($programHead->office ?? '') : '';
+            $organizer = !empty($validated['organizer'])
+                ? $validated['organizer']
+                : ($office !== ''
+                    ? $office
+                    : (strtoupper($program) === 'ALL'
+                        ? 'Campus Administration'
+                        : ($program !== '' ? "{$program} Department" : ($programHead->name ?? 'Personnel'))));
+
+            $courses = !empty($validated['courses'])
+                ? $validated['courses']
+                : (strtoupper($program) === 'ALL' || $program === '' ? ['All'] : [$program]);
+
+            $requesterLabel = ($programHead->name ?? 'Personnel') . ($office !== '' ? " ({$office})" : ($program !== '' ? " ({$program})" : ''));
+
+            $eventData = [
+                'event_name' => $validated['event_name'],
+                'organizer' => $organizer,
+                'location' => $validated['location'],
+                'event_date' => $validated['event_date'],
+                'event_time' => $validated['event_time'],
+                'description' => $validated['description'] ?? '',
+                'courses' => $courses,
+                'year_levels' => $validated['year_levels'] ?? ['1st Year', '2nd Year', '3rd Year', '4th Year'],
+                'approval_status' => 'pending',
+                'activity_plan_path' => $activityPlanPath,
+                'requested_by' => $requesterLabel,
+                'created_by_program_head_id' => $programHead?->id ?? Event::currentProgramHeadId(),
+            ];
+
+            $event = Event::create($eventData);
+
+            // Notify all Admin users safely
+            if (Schema::hasTable('admin_users')) {
+                try {
+                    $admins = AdminUser::all();
+                    if ($admins->isNotEmpty()) {
+                        Notification::send($admins, new ActivityPlanSubmittedAdmin($event, $requesterLabel));
+                    }
+                } catch (\Throwable $notifErr) {
+                    \Illuminate\Support\Facades\Log::warning('Activity plan admin notification failed: ' . $notifErr->getMessage());
+                }
             }
+
+            return redirect()->back()->with('success', 'Activity plan schedule request submitted successfully! Pending administrator approval.');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('ProgramHeadEventsController::store failed: ' . $e->getMessage());
             return redirect()->back()->withErrors([
-                'location' => $errorMsg,
-            ])->with('error', $errorMsg);
+                'event_name' => 'Failed to submit request: ' . $e->getMessage(),
+            ])->with('error', 'Failed to submit request: ' . $e->getMessage());
         }
-
-        $activityPlanPath = null;
-        if ($request->hasFile('activity_plan')) {
-            $activityPlanPath = $request->file('activity_plan')->store('activity_plans', 'public');
-        }
-
-        $office = is_object($programHead) ? (string) ($programHead->office ?? '') : '';
-        $organizer = !empty($validated['organizer'])
-            ? $validated['organizer']
-            : ($office !== ''
-                ? $office
-                : (strtoupper($program) === 'ALL'
-                    ? 'Campus Administration'
-                    : ($program !== '' ? "{$program} Department" : ($programHead->name ?? 'Personnel'))));
-
-        $courses = !empty($validated['courses'])
-            ? $validated['courses']
-            : (strtoupper($program) === 'ALL' || $program === '' ? ['All'] : [$program]);
-
-        $requesterLabel = ($programHead->name ?? 'Personnel') . ($office !== '' ? " ({$office})" : ($program !== '' ? " ({$program})" : ''));
-
-        $eventData = [
-            'event_name' => $validated['event_name'],
-            'organizer' => $organizer,
-            'location' => $validated['location'],
-            'event_date' => $validated['event_date'],
-            'event_time' => $validated['event_time'],
-            'description' => $validated['description'] ?? '',
-            'courses' => $courses,
-            'year_levels' => $validated['year_levels'] ?? ['1st Year', '2nd Year', '3rd Year', '4th Year'],
-            'approval_status' => 'pending',
-            'activity_plan_path' => $activityPlanPath,
-            'requested_by' => $requesterLabel,
-            'created_by_program_head_id' => $programHead?->id ?? Event::currentProgramHeadId(),
-        ];
-
-        $event = Event::create($eventData);
-
-        // Notify all Admin users about the activity plan schedule request
-        if (Schema::hasTable('admin_users')) {
-            $admins = AdminUser::all();
-            if ($admins->isNotEmpty()) {
-                Notification::send($admins, new ActivityPlanSubmittedAdmin($event, $requesterLabel));
-            }
-        }
-
-        return redirect()->back()->with('success', 'Activity plan schedule request submitted successfully! Pending administrator approval.');
     }
 
     private function getEvents(string $program, ?int $programHeadId = null): array

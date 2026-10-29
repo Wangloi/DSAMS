@@ -223,6 +223,14 @@ public class ThermalPrintService
         WriteField("REASON", req.ReasonText);
         WriteField("DATE ISSUED", req.Date ?? DateTime.Now.ToString("yyyy-MM-dd"));
         WriteField("VALID UNTIL", req.ValidUntil);
+        if (!string.IsNullOrWhiteSpace(req.SlipCount))
+        {
+            WriteField("MONTHLY QUOTA", req.SlipCount);
+        }
+        if (!string.IsNullOrWhiteSpace(req.AllTimeCount))
+        {
+            WriteField("STUDENT RECORD", req.AllTimeCount);
+        }
         WriteField("STATUS", req.Status ?? "APPROVED");
 
         writer.Write(Encoding.ASCII.GetBytes("--------------------------------\n"));

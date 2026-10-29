@@ -119,7 +119,9 @@ class ProgramHeadViolationsController extends Controller
                         'date' => $date ? $date->format('Y-m-d') : null,
                         'time' => $time ? $time->format('H:i') : null,
                         'location' => $incident->location,
-                        'reportedBy' => $incident->reported_by,
+                        'reportedBy' => (!empty($incident->investigation_details['is_anonymous']) || str_contains(strtolower((string) $incident->reported_by), 'anonymous'))
+                            ? 'Anonymous Student'
+                            : $incident->reported_by,
                         'studentsInvolved' => $studentsNormalized,
                         'description' => $incident->description,
                         'immediateAction' => $incident->immediate_action,

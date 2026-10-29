@@ -7,6 +7,7 @@ export const sitemap = () => '/sitemap';
 export const getStarted = () => '/get-started';
 export const dashboard = () => '/dashboard';
 export const studentDashboard = () => '/student-dashboard';
+export const studentEventHistory = () => '/student/event-history';
 export const studentHelp = () => '/student/help';
 export const studentNotifications = () => '/student/notifications';
 export const studentAttendanceScannerPortal = (eventId: number | string) =>
@@ -234,6 +235,8 @@ export const adminQrScanner = (eventId?: number | string) =>
 export const studentIncidentsStore = () => '/student/incidents';
 export const studentAdmissionSlipStore = () => '/student/admission-slip';
 export const studentAdmissionSlipIndex = () => '/student/admission-slip';
+export const studentInformationSheet = () => '/student/information-sheet';
+export const studentInformationSheetUpdate = () => '/student/information-sheet';
 
 export const studentLostFoundItems = () => '/student/lost-found/items';
 export const studentLostFoundClaim = (id: number | string) =>

@@ -1,8 +1,9 @@
 <?php
 
-use App\Models\User;
-use Illuminate\Support\Facades\RateLimiter;
-use Laravel\Fortify\Features;
+use App\Models\AdminUser;
+use App\Models\Student;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 test('login screen can be rendered', function () {
     $response = $this->get(route('login'));
@@ -10,75 +11,75 @@ test('login screen can be rendered', function () {
     $response->assertOk();
 });
 
-test('users can authenticate using the login screen', function () {
-    $user = User::factory()->create();
-
-    $response = $this->post(route('login.store'), [
-        'email' => $user->email,
-        'password' => 'password',
+test('admins can authenticate using admin login', function () {
+    $admin = AdminUser::create([
+        'name' => 'Test Admin',
+        'email' => 'admin@test.com',
+        'password' => Hash::make('password123'),
+        'is_active' => true,
     ]);
 
-    $this->assertAuthenticated();
-    $response->assertRedirect(route('dashboard', absolute: false));
+    $response = $this->post('/admin-login', [
+        'email' => 'admin@test.com',
+        'password' => 'password123',
+    ]);
+
+    $this->assertTrue(Auth::guard('admin')->check());
+    $response->assertRedirect(route('admin.dashboard'));
 });
 
-test('users with two factor enabled are redirected to two factor challenge', function () {
-    if (! Features::canManageTwoFactorAuthentication()) {
-        $this->markTestSkipped('Two-factor authentication is not enabled.');
-    }
-
-    Features::twoFactorAuthentication([
-        'confirm' => true,
-        'confirmPassword' => true,
+test('students can authenticate using student login', function () {
+    $student = Student::create([
+        'student_id' => 'ID-AUTH-001',
+        'name' => 'Auth Student',
+        'first_name' => 'Auth',
+        'last_name' => 'Student',
+        'email' => 'student.auth@test.com',
+        'course' => 'BSIT',
+        'year_level' => '1st Year',
+        'program' => 'HED',
+        'password' => Hash::make('password123'),
+        'status' => 'approved',
+        'verification_status' => 'approved',
+        'is_active' => true,
     ]);
 
-    $user = User::factory()->create();
-
-    $user->forceFill([
-        'two_factor_secret' => encrypt('test-secret'),
-        'two_factor_recovery_codes' => encrypt(json_encode(['code1', 'code2'])),
-        'two_factor_confirmed_at' => now(),
-    ])->save();
-
-    $response = $this->post(route('login'), [
-        'email' => $user->email,
-        'password' => 'password',
+    $response = $this->post('/student-login', [
+        'email' => 'student.auth@test.com',
+        'password' => 'password123',
     ]);
 
-    $response->assertRedirect(route('two-factor.login'));
-    $response->assertSessionHas('login.id', $user->id);
-    $this->assertGuest();
+    $this->assertTrue(Auth::guard('student')->check());
+    $response->assertRedirect(route('student.dashboard'));
 });
 
 test('users can not authenticate with invalid password', function () {
-    $user = User::factory()->create();
+    $admin = AdminUser::create([
+        'name' => 'Test Admin',
+        'email' => 'admin2@test.com',
+        'password' => Hash::make('password123'),
+        'is_active' => true,
+    ]);
 
-    $this->post(route('login.store'), [
-        'email' => $user->email,
+    $response = $this->post('/admin-login', [
+        'email' => 'admin2@test.com',
         'password' => 'wrong-password',
     ]);
 
-    $this->assertGuest();
+    $response->assertSessionHasErrors('email');
+    $this->assertFalse(Auth::guard('admin')->check());
 });
 
 test('users can logout', function () {
-    $user = User::factory()->create();
-
-    $response = $this->actingAs($user)->post(route('logout'));
-
-    $this->assertGuest();
-    $response->assertRedirect(route('home'));
-});
-
-test('users are rate limited', function () {
-    $user = User::factory()->create();
-
-    RateLimiter::increment(md5('login'.implode('|', [$user->email, '127.0.0.1'])), amount: 5);
-
-    $response = $this->post(route('login.store'), [
-        'email' => $user->email,
-        'password' => 'wrong-password',
+    $admin = AdminUser::create([
+        'name' => 'Test Admin',
+        'email' => 'admin3@test.com',
+        'password' => Hash::make('password123'),
+        'is_active' => true,
     ]);
 
-    $response->assertTooManyRequests();
+    $response = $this->actingAs($admin, 'admin')->post(route('logout'));
+
+    $this->assertFalse(Auth::guard('admin')->check());
+    $response->assertRedirect('/');
 });

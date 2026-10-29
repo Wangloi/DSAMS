@@ -198,8 +198,8 @@ export default function AddFoundItemDialog({
                 Add Found Item
             </Button>
 
-            <DialogContent className="overflow-hidden p-0 sm:max-w-3xl">
-                <div className="bg-gradient-to-r from-[#0b2d66] to-[#1e40af] px-6 py-5 text-white">
+            <DialogContent size="xl" className="overflow-hidden rounded-2xl border-slate-200/80 bg-white p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+                <div className="bg-gradient-to-r from-[#0b2d66] to-[#1e40af] px-6 py-5 pr-14 text-white">
                     <DialogHeader className="space-y-1">
                         <DialogTitle className="text-white">
                             {editingItem ? 'Edit Found Item' : 'Add Found Item'}

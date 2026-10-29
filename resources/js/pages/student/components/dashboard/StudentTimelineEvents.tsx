@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn, formatTimeTo12Hour } from '@/lib/utils';
@@ -6,53 +6,163 @@ import { studentAttendanceScannerPortal } from '@/routes';
 import { router } from '@inertiajs/react';
 import {
     Calendar,
+    CalendarCheck2,
     Camera,
     Check,
     Clock,
     MapPin,
     Navigation,
 } from 'lucide-react';
-import type { EventRecord } from './types';
+import type { AttendedEventRecord, EventRecord } from './types';
+import { StudentEventHistory } from './StudentEventHistory';
 
 interface StudentTimelineEventsProps {
     events?: EventRecord[];
+    attendedEvents?: AttendedEventRecord[];
     gpsCheckingIn: number | null;
     handleGpsCheckin: (event: EventRecord) => void;
     isGpsAttendance: (e: EventRecord) => boolean;
+    initialTab?: 'schedule' | 'history';
 }
 
 export function StudentTimelineEvents({
     events = [],
+    attendedEvents = [],
     gpsCheckingIn,
     handleGpsCheckin,
     isGpsAttendance,
+    initialTab = 'schedule',
 }: StudentTimelineEventsProps) {
+    const [activeTab, setActiveTab] = useState<'schedule' | 'history'>(() => {
+        if (typeof window !== 'undefined') {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (
+                urlParams.get('tab') === 'history' ||
+                window.location.hash === '#event-history' ||
+                window.location.hash === '#attendance-history'
+            ) {
+                return 'history';
+            }
+        }
+        return initialTab === 'history' ? 'history' : 'schedule';
+    });
+
+    useEffect(() => {
+        if (initialTab) {
+            setActiveTab(initialTab);
+        }
+    }, [initialTab]);
+
+    useEffect(() => {
+        const handleHash = () => {
+            if (
+                window.location.hash === '#event-history' ||
+                window.location.hash === '#attendance-history'
+            ) {
+                setActiveTab('history');
+                const el = document.getElementById('events-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+            } else if (window.location.hash === '#campus-schedule') {
+                setActiveTab('schedule');
+                const el = document.getElementById('events-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }
+        };
+        window.addEventListener('hashchange', handleHash);
+        if (
+            typeof window !== 'undefined' &&
+            (window.location.hash === '#event-history' ||
+                window.location.hash === '#attendance-history')
+        ) {
+            handleHash();
+        }
+        return () => window.removeEventListener('hashchange', handleHash);
+    }, []);
+
     return (
-        <div className="space-y-4 sm:space-y-5">
-            <div className="flex items-center justify-between px-1">
+        <div id="events-section" className="space-y-4 sm:space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-1">
                 <div className="flex items-center gap-2.5 sm:gap-3">
-                    <div className="flex h-8.5 w-8.5 sm:h-9 sm:w-9 items-center justify-center rounded-xl border border-blue-600/20 bg-blue-600/10 shadow-inner">
-                        <Calendar className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-blue-600 dark:text-blue-400" />
+                    <div
+                        className={cn(
+                            'flex h-8.5 w-8.5 sm:h-9 sm:w-9 items-center justify-center rounded-xl border shadow-inner transition-colors',
+                            activeTab === 'history'
+                                ? 'border-emerald-600/20 bg-emerald-600/10 text-emerald-600 dark:text-emerald-400'
+                                : 'border-blue-600/20 bg-blue-600/10 text-blue-600 dark:text-blue-400',
+                        )}
+                    >
+                        {activeTab === 'history' ? (
+                            <CalendarCheck2 className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+                        ) : (
+                            <Calendar className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+                        )}
                     </div>
                     <div className="text-left">
                         <h2 className="text-sm font-black tracking-wider text-slate-900 uppercase sm:text-base dark:text-white">
-                            Campus Schedule
+                            {activeTab === 'history'
+                                ? 'Attended Event History'
+                                : 'Campus Schedule'}
                         </h2>
                         <p className="mt-0.5 text-[9px] sm:text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase dark:text-slate-500">
-                            Co-Curricular & Academic Timeline
+                            {activeTab === 'history'
+                                ? 'Verified Student Attendance Records'
+                                : 'Co-Curricular & Academic Timeline'}
                         </p>
                     </div>
                 </div>
-                <Badge className="rounded-lg border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-[9px] sm:text-[10px] font-black tracking-widest text-blue-600 uppercase dark:bg-blue-500/20 dark:text-blue-400">
-                    {events.length} Events Total
-                </Badge>
+
+                {/* Tab Switcher */}
+                <div className="flex items-center rounded-xl border border-slate-200/80 bg-slate-100/80 p-1 self-start sm:self-auto dark:border-slate-700/80 dark:bg-slate-800/80">
+                    <button
+                        type="button"
+                        id="tab-campus-schedule"
+                        onClick={() => setActiveTab('schedule')}
+                        className={cn(
+                            'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer',
+                            activeTab === 'schedule'
+                                ? 'bg-white text-blue-700 shadow-xs dark:bg-slate-700 dark:text-blue-300'
+                                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200',
+                        )}
+                    >
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span>Schedule</span>
+                        <span className="ml-1 rounded-full bg-blue-100 px-1.5 py-0.2 text-[9px] font-black text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                            {events.length}
+                        </span>
+                    </button>
+
+                    <button
+                        type="button"
+                        id="tab-event-history"
+                        onClick={() => setActiveTab('history')}
+                        className={cn(
+                            'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer',
+                            activeTab === 'history'
+                                ? 'bg-white text-emerald-700 shadow-xs dark:bg-slate-700 dark:text-emerald-300'
+                                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200',
+                        )}
+                    >
+                        <CalendarCheck2 className="h-3.5 w-3.5" />
+                        <span>My History</span>
+                        <span className="ml-1 rounded-full bg-emerald-100 px-1.5 py-0.2 text-[9px] font-black text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
+                            {attendedEvents.length}
+                        </span>
+                    </button>
+                </div>
             </div>
 
-            <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/60 bg-white/70 p-3.5 sm:p-6 shadow-xl backdrop-blur-xl dark:border-slate-700/80 dark:bg-slate-800/60">
-                {/* Timeline vertical track (visible on tablet/desktop) */}
-                {events.length > 0 && (
-                    <div className="pointer-events-none absolute top-8 bottom-8 left-[38px] hidden w-0.5 border-l border-dashed border-slate-300 sm:block dark:border-slate-700" />
-                )}
+            {/* Content Display based on active tab */}
+            {activeTab === 'history' ? (
+                <StudentEventHistory
+                    attendedEvents={attendedEvents}
+                    onSwitchToSchedule={() => setActiveTab('schedule')}
+                />
+            ) : (
+                <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/60 bg-white/70 p-3.5 sm:p-6 shadow-xl backdrop-blur-xl dark:border-slate-700/80 dark:bg-slate-800/60">
+                    {/* Timeline vertical track (visible on tablet/desktop) */}
+                    {events.length > 0 && (
+                        <div className="pointer-events-none absolute top-8 bottom-8 left-[38px] hidden w-0.5 border-l border-dashed border-slate-300 sm:block dark:border-slate-700" />
+                    )}
 
                 <div className="space-y-3 sm:space-y-8">
                     {events.map((event) => {
@@ -253,6 +363,7 @@ export function StudentTimelineEvents({
                     )}
                 </div>
             </div>
+            )}
         </div>
     );
 }

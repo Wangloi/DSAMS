@@ -19,7 +19,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { deriveEventLifecycleStatus } from '@/pages/admin-dashboard/events/deriveEventLifecycleStatus';
-import { Calendar, MapPin, ShieldCheck, Users } from 'lucide-react';
+import { Calendar, MapPin, ShieldCheck, Users, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 type AttendanceRow = {
@@ -276,20 +276,34 @@ export default function EditEventModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="overflow-hidden p-0 sm:max-w-4xl">
-                <div className="bg-gradient-to-r from-[#0b2d66] to-[#1e40af] px-6 py-5 text-white">
-                    <DialogHeader>
-                        <DialogTitle className="text-white">
-                            Edit Event
-                        </DialogTitle>
-                        <DialogDescription className="text-white/80">
-                            Update the event details to modify the attendance
-                            event.
-                        </DialogDescription>
-                    </DialogHeader>
+            <DialogContent size="xl" className="flex max-h-[90vh] w-[95vw] flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-900 [&>button]:hidden">
+                <div className="flex shrink-0 items-center justify-between border-b border-slate-100 bg-white px-6 py-5 dark:border-slate-800 dark:bg-slate-900 sm:px-8">
+                    <div className="flex items-center gap-3.5">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-[#23509A] dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
+                            <Calendar className="h-5 w-5" />
+                        </div>
+                        <DialogHeader className="p-0 text-left">
+                            <DialogTitle className="text-lg font-bold tracking-tight text-slate-900 dark:text-white sm:text-xl">
+                                Edit Event
+                            </DialogTitle>
+                            <DialogDescription className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                Update the event details to modify the attendance event.
+                            </DialogDescription>
+                        </DialogHeader>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={handleClose}
+                        aria-label="Close dialog"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                    >
+                        <X className="h-4 w-4" />
+                        <span className="sr-only">Close dialog</span>
+                    </button>
                 </div>
 
-                <div className="max-h-[70vh] space-y-4 overflow-y-auto px-6 py-6">
+                <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-6 sm:px-8">
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
                         <div className="grid gap-4 sm:grid-cols-2 lg:col-span-8">
                             <div className="grid gap-2 sm:col-span-2">
@@ -366,7 +380,7 @@ export default function EditEventModal({
                                                 <button
                                                     key={id}
                                                     type="button"
-                                                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
                                                     onClick={() =>
                                                         setFormData((prev) => ({
                                                             ...prev,
@@ -871,17 +885,18 @@ export default function EditEventModal({
                     </div>
                 </div>
 
-                <DialogFooter className="border-t border-slate-200 bg-slate-50 px-6 py-4">
+                <DialogFooter className="shrink-0 flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50/80 px-6 py-4 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/80 sm:px-8">
                     <Button
-                        variant="secondary"
+                        variant="outline"
                         type="button"
                         onClick={handleClose}
+                        className="rounded-xl border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-750"
                     >
                         Cancel
                     </Button>
                     <Button
                         type="submit"
-                        className="bg-[#121F78] hover:bg-[#0f1a66]"
+                        className="rounded-xl bg-[#23509A] px-6 text-sm font-semibold text-white hover:bg-[#1b4080] shadow-sm"
                         onClick={handleSubmit}
                     >
                         Update Event

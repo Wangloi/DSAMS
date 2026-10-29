@@ -12,9 +12,12 @@ import {
 } from '@/routes';
 import { router } from '@inertiajs/react';
 import { BrowserQRCodeReader } from '@zxing/browser';
+import axios from 'axios';
+import { getSocketInstance, joinEventRoom, leaveEventRoom } from '@/services/socket';
 import {
     Activity,
     AlertCircle,
+    AlertTriangle,
     ArrowLeft,
     BarChart3,
     Camera,
@@ -30,6 +33,7 @@ import {
     Play,
     QrCode,
     RefreshCw,
+    ShieldAlert,
     ShieldCheck,
     Users,
     Wifi,
@@ -53,12 +57,19 @@ import {
 
 interface LiveLogRow {
     id: string;
+    attendance_id?: number | null;
     student_id: string;
     name: string;
     program: string;
     checked_in_at: string;
+    checked_out_at?: string | null;
+    mid_session_verified_at?: string | null;
     time: string;
+    time_out?: string | null;
+    mid_session_time?: string | null;
     status: string;
+    is_flagged?: boolean;
+    flagged_reason?: string | null;
     check_in_distance_m?: number | null;
     check_out_distance_m?: number | null;
 }
@@ -89,6 +100,9 @@ export default function RealTimeMonitoringPanel({
 }: RealTimeMonitoringPanelProps) {
     const monitorEventId = monitoredEvent ? String(monitoredEvent.id) : '';
     const isProgramHead = userRole === 'program_head';
+    const isUpcoming =
+        monitoredEvent?.status === 'upcoming' ||
+        monitoredEvent?.computed_status === 'upcoming';
 
     const logsUrl = isProgramHead
         ? programHeadAttendanceLogs(monitorEventId)
@@ -109,8 +123,9 @@ export default function RealTimeMonitoringPanel({
     const [monitoringTab, setMonitoringTab] = useState<
         'dashboard' | 'scanner' | 'dynamic-qr'
     >('dashboard');
-    const [monitoringEnabled, setMonitoringEnabled] = useState(true);
-    const [scannerPortalActive, setScannerPortalActive] = useState(true);
+    const [monitoringEnabled, setMonitoringEnabled] = useState(!isUpcoming);
+    const [scannerPortalActive, setScannerPortalActive] = useState(!isUpcoming);
+    const [feedFilter, setFeedFilter] = useState<'checked_in' | 'all'>('checked_in');
 
     const [lastUpdatedAt, setLastUpdatedAt] = useState<string>('');
     const [liveRows, setLiveRows] = useState<LiveLogRow[]>([]);
@@ -119,6 +134,7 @@ export default function RealTimeMonitoringPanel({
         total: 0,
         present: 0,
         late: 0,
+        flagged: 0,
     });
     const [liveCurrentPage, setLiveCurrentPage] = useState(1);
     const liveItemsPerPage = 5;
@@ -137,6 +153,7 @@ export default function RealTimeMonitoringPanel({
         stop: () => void;
     } | null>(null);
     const lastValueRef = useRef<{ value: string; at: number } | null>(null);
+    const autoActivatedEventsRef = useRef<Record<string, boolean>>({});
 
     const [scanState, setScanState] = useState<{
         status: 'idle' | 'starting' | 'running' | 'error';
@@ -216,7 +233,7 @@ export default function RealTimeMonitoringPanel({
 
             const data = (await res.json()) as {
                 rows?: Array<Record<string, unknown>>;
-                counts?: { total?: number; present?: number; late?: number };
+                counts?: { total?: number; present?: number; late?: number; flagged?: number; incomplete?: number };
                 byCourse?: ByCourseRow[];
                 server_time?: string;
                 scanner_portal_active?: boolean;
@@ -224,28 +241,45 @@ export default function RealTimeMonitoringPanel({
 
             const rows: LiveLogRow[] = (data.rows ?? []).map((r, idx) => ({
                 id: String(r.id ?? idx),
+                attendance_id: r.attendance_id ? Number(r.attendance_id) : null,
                 student_id: String(r.student_id ?? ''),
                 name: String(r.name ?? ''),
                 program: String(r.program ?? ''),
                 checked_in_at: String(r.checked_in_at ?? ''),
+                checked_out_at: r.checked_out_at ? String(r.checked_out_at) : null,
+                mid_session_verified_at: r.mid_session_verified_at ? String(r.mid_session_verified_at) : null,
                 time: String(r.time ?? ''),
+                time_out: r.time_out ? String(r.time_out) : null,
+                mid_session_time: r.mid_session_time ? String(r.mid_session_time) : null,
                 status: String(r.status ?? '').toLowerCase(),
+                is_flagged: Boolean(r.is_flagged),
+                flagged_reason: r.flagged_reason ? String(r.flagged_reason) : null,
+                check_in_distance_m: typeof r.check_in_distance_m === 'number' ? r.check_in_distance_m : null,
+                check_out_distance_m: typeof r.check_out_distance_m === 'number' ? r.check_out_distance_m : null,
             }));
 
             setLiveRows(rows);
-            const totalScans = Number(data.counts?.total ?? rows.length);
-            const presentN = Number(data.counts?.present ?? 0);
-            const lateN = Number(data.counts?.late ?? 0);
+            const isEventUpcoming =
+                monitoredEvent?.status === 'upcoming' || monitoredEvent?.computed_status === 'upcoming';
+            const totalScans = isEventUpcoming
+                ? 0
+                : Number(data.counts?.total ?? rows.filter((x) => x.status !== 'absent').length);
+            const presentN = isEventUpcoming ? 0 : Number(data.counts?.present ?? 0);
+            const lateN = isEventUpcoming ? 0 : Number(data.counts?.late ?? 0);
+            const flaggedN = isEventUpcoming
+                ? 0
+                : Number(data.counts?.flagged ?? rows.filter((x) => x.is_flagged).length);
             setLiveCounts({
                 total: totalScans,
                 present: presentN,
                 late: lateN,
+                flagged: flaggedN,
             });
             if (Array.isArray(data.byCourse)) {
                 setByCourse(data.byCourse as ByCourseRow[]);
             }
             setLastUpdatedAt(data.server_time ?? new Date().toLocaleString());
-            setScannerPortalActive(Boolean(data.scanner_portal_active));
+            setScannerPortalActive(isEventUpcoming ? false : Boolean(data.scanner_portal_active));
 
             setEvents((prev) =>
                 prev.map((ev) =>
@@ -262,42 +296,170 @@ export default function RealTimeMonitoringPanel({
         } catch (err) {
             console.error('Error refreshing active attendance logs:', err);
         }
-    }, [monitorEventId, hasBackendEvents, setEvents]);
+    }, [monitorEventId, hasBackendEvents, setEvents, monitoredEvent]);
 
-    // Live logs sync interval
-    useEffect(() => {
-        let interval: NodeJS.Timeout | null = null;
-        if (monitoringEnabled && monitorEventId) {
-            void refreshLogs();
-            interval = setInterval(() => {
-                void refreshLogs();
-            }, 2500);
+    const handleClearFlag = async (attendanceId: number, studentName: string) => {
+        const result = await Swal.fire({
+            title: 'Verify Physical Presence?',
+            text: `Are you sure you want to verify presence and clear the dwell gap flag for ${studentName}? This will restore eligibility for their certificate.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Yes, Verify & Clear Flag',
+            cancelButtonText: 'Cancel',
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const endpoint = isProgramHead
+                    ? `/program-head/attendance/${attendanceId}/clear-flag`
+                    : `/admin/attendance/${attendanceId}/clear-flag`;
+
+                const res = await axios.post(endpoint);
+                if (res.data?.success) {
+                    await Swal.fire({
+                        title: 'Presence Verified!',
+                        text: res.data.message || 'Flag cleared and certificate eligibility restored.',
+                        icon: 'success',
+                        timer: 2200,
+                        showConfirmButton: false,
+                    });
+                    void refreshLogs();
+                } else {
+                    await Swal.fire('Error', res.data?.message || 'Failed to clear flag.', 'error');
+                }
+            } catch (err: any) {
+                console.error('Error clearing flag:', err);
+                await Swal.fire('Error', err.response?.data?.message || 'Failed to clear flag.', 'error');
+            }
         }
-        return () => {
-            if (interval) clearInterval(interval);
-        };
-    }, [monitoringEnabled, monitorEventId, refreshLogs]);
+    };
 
-    // Automatically start live monitoring and activate scanner portal session on load without manual click
+    // Real-time attendance WebSocket event listener & backed-off adaptive polling
+    useEffect(() => {
+        if (!monitoringEnabled || !monitorEventId) return;
+
+        joinEventRoom(monitorEventId);
+
+        const socket = getSocketInstance();
+        const handleScanEvent = (payload: any) => {
+            if (!payload || String(payload.event_id) !== String(monitorEventId)) return;
+
+            setLastUpdatedAt(payload.time || new Date().toLocaleTimeString());
+
+            // Prepend or update liveRows in place
+            if (payload.log) {
+                setLiveRows((prev) => {
+                    const exists = prev.some(
+                        (r) =>
+                            String(r.id) === String(payload.log.id) ||
+                            (r.student_id && r.student_id === payload.log.student_id),
+                    );
+                    if (exists) {
+                        return prev.map((r) =>
+                            String(r.id) === String(payload.log.id) ||
+                            (r.student_id && r.student_id === payload.log.student_id)
+                                ? { ...r, ...payload.log }
+                                : r,
+                        );
+                    }
+                    return [payload.log, ...prev];
+                });
+            }
+
+            // Real-time optimistic update of liveCounts
+            setLiveCounts((prev) => {
+                const isLate = payload.status === 'late';
+                const isPresent =
+                    payload.status === 'present' || payload.status === 'completed';
+                const isFlagged = Boolean(payload.is_flagged);
+
+                return {
+                    ...prev,
+                    total: prev.total + 1,
+                    present: isPresent ? prev.present + 1 : prev.present,
+                    late: isLate ? prev.late + 1 : prev.late,
+                    flagged: isFlagged ? prev.flagged + 1 : prev.flagged,
+                };
+            });
+
+            // Update parent event count in parent dashboard
+            setEvents((prev) =>
+                prev.map((ev) =>
+                    String(ev.id) === String(monitorEventId)
+                        ? {
+                              ...ev,
+                              scannedCount: (ev.scannedCount || 0) + 1,
+                              presentCount:
+                                  payload.status === 'present'
+                                      ? (ev.presentCount || 0) + 1
+                                      : ev.presentCount,
+                              lateCount:
+                                  payload.status === 'late'
+                                      ? (ev.lateCount || 0) + 1
+                                      : ev.lateCount,
+                          }
+                        : ev,
+                ),
+            );
+        };
+
+        if (socket) {
+            socket.on('attendance_scanned', handleScanEvent);
+        }
+
+        // Initial fetch
+        void refreshLogs();
+
+        // Adaptive polling: 20s if socket is active, 6s if offline/reconnecting
+        const pollIntervalMs = socket?.connected ? 20000 : 6000;
+        const interval = setInterval(() => {
+            void refreshLogs();
+        }, pollIntervalMs);
+
+        return () => {
+            leaveEventRoom(monitorEventId);
+            if (socket) {
+                socket.off('attendance_scanned', handleScanEvent);
+            }
+            clearInterval(interval);
+        };
+    }, [monitoringEnabled, monitorEventId, refreshLogs, setEvents]);
+
+    // Automatically start live monitoring and activate scanner portal session on load once per event
     useEffect(() => {
         if (!monitorEventId) return;
-        setMonitoringEnabled(true);
-        void refreshLogs();
-        if (hasBackendEvents) {
-            router.post(
-                activateScannerPortalUrl,
-                {},
-                {
-                    preserveScroll: true,
-                    onSuccess: () => {
-                        setScannerPortalActive(true);
-                        setMonitoringEnabled(true);
-                        void refreshLogs();
-                    },
-                },
-            );
+        if (isUpcoming) {
+            setScannerPortalActive(false);
+            setMonitoringEnabled(false);
+            return;
         }
-    }, [monitorEventId, hasBackendEvents, activateScannerPortalUrl, refreshLogs]);
+        setMonitoringEnabled(true);
+
+        if (hasBackendEvents && !autoActivatedEventsRef.current[monitorEventId]) {
+            autoActivatedEventsRef.current[monitorEventId] = true;
+            axios
+                .post(
+                    activateScannerPortalUrl,
+                    {},
+                    {
+                        headers: {
+                            Accept: 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    },
+                )
+                .then((res) => {
+                    if (res.data?.success || res.data?.scanner_portal_active) {
+                        setScannerPortalActive(true);
+                    }
+                })
+                .catch((err) => {
+                    console.warn('Auto scanner portal activation skipped:', err);
+                });
+        }
+    }, [monitorEventId, hasBackendEvents, activateScannerPortalUrl, isUpcoming]);
 
     const renderQr = useCallback(async (payload: string) => {
         const canvas = qrCanvasRef.current;
@@ -726,17 +888,29 @@ export default function RealTimeMonitoringPanel({
         };
     }, []);
 
+    const displayLiveRows = useMemo(() => {
+        if (isUpcoming) {
+            return [];
+        }
+        if (feedFilter === 'checked_in') {
+            return liveRows.filter(
+                (r) => r.status?.toLowerCase() !== 'absent' && r.time && r.time !== '—',
+            );
+        }
+        return liveRows;
+    }, [isUpcoming, feedFilter, liveRows]);
+
     const liveStartIndex = (liveCurrentPage - 1) * liveItemsPerPage;
     const liveEndIndex = Math.min(
         liveStartIndex + liveItemsPerPage,
-        liveRows.length,
+        displayLiveRows.length,
     );
     const paginatedLiveRows = useMemo(() => {
-        return liveRows.slice(liveStartIndex, liveEndIndex);
-    }, [liveRows, liveStartIndex, liveEndIndex]);
+        return displayLiveRows.slice(liveStartIndex, liveEndIndex);
+    }, [displayLiveRows, liveStartIndex, liveEndIndex]);
     const liveTotalPages = Math.max(
         1,
-        Math.ceil(liveRows.length / liveItemsPerPage),
+        Math.ceil(displayLiveRows.length / liveItemsPerPage),
     );
 
     return (
@@ -806,25 +980,31 @@ export default function RealTimeMonitoringPanel({
                             <div
                                 className={cn(
                                     'flex items-center gap-2.5 rounded-full border px-4 py-2 text-xs font-black tracking-wider uppercase backdrop-blur-md transition-all duration-500',
-                                    monitoringEnabled
+                                    isUpcoming
+                                        ? 'border-blue-400/40 bg-blue-500/20 text-blue-200'
+                                        : monitoringEnabled
                                         ? 'border-emerald-400/40 bg-emerald-500/20 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.3)] ring-1 ring-emerald-400/30'
                                         : 'border-white/20 bg-white/10 text-white/70',
                                 )}
                             >
                                 <span className="relative flex h-2.5 w-2.5">
-                                    {monitoringEnabled && (
-                                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                                    {isUpcoming ? (
+                                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-400"></span>
+                                    ) : (
+                                        <>
+                                            {monitoringEnabled && (
+                                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                                            )}
+                                            <span
+                                                className={cn(
+                                                    'relative inline-flex h-2.5 w-2.5 rounded-full',
+                                                    monitoringEnabled ? 'bg-emerald-400' : 'bg-slate-400',
+                                                )}
+                                            ></span>
+                                        </>
                                     )}
-                                    <span
-                                        className={cn(
-                                            'relative inline-flex h-2.5 w-2.5 rounded-full',
-                                            monitoringEnabled
-                                                ? 'bg-emerald-400'
-                                                : 'bg-slate-400',
-                                        )}
-                                    ></span>
                                 </span>
-                                {monitoringEnabled ? 'System Live' : 'System Paused'}
+                                {isUpcoming ? 'Event Upcoming' : monitoringEnabled ? 'System Live' : 'System Paused'}
                             </div>
                         </div>
                     </div>
@@ -858,8 +1038,8 @@ export default function RealTimeMonitoringPanel({
                         {/* Scanner portal & last sync metadata tag */}
                         <div className="ml-auto hidden items-center gap-3 text-xs font-medium text-blue-200/80 md:flex">
                             <div className="flex items-center gap-1.5">
-                                <Zap className={cn('h-3.5 w-3.5', scannerPortalActive ? 'text-emerald-300 animate-pulse' : 'text-slate-400')} />
-                                <span>Portal {scannerPortalActive ? 'Active' : 'Inactive'}</span>
+                                <Zap className={cn('h-3.5 w-3.5', !isUpcoming && scannerPortalActive ? 'text-emerald-300 animate-pulse' : 'text-slate-400')} />
+                                <span>Portal {isUpcoming ? 'Closed (Upcoming)' : scannerPortalActive ? 'Active' : 'Inactive'}</span>
                             </div>
                             <span className="text-white/20">|</span>
                             <div className="flex items-center gap-1.5">
@@ -899,7 +1079,7 @@ export default function RealTimeMonitoringPanel({
                                                 ? `/program-head/qr-scanner?event=${c.id}`
                                                 : `/admin/qr-scanner?event=${c.id}`;
                                         }}
-                                        className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300/40 bg-amber-500/30 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-amber-500/50 transition active:scale-95"
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300/40 bg-amber-500/30 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-amber-500/50 transition active:scale-95 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                                     >
                                         <RefreshCw className="h-3 w-3" />
                                         Switch to {c.name || c.event}
@@ -912,12 +1092,14 @@ export default function RealTimeMonitoringPanel({
                     {/* BOTTOM ROW: TABS & ACTION BUTTONS */}
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         {/* Tab Switcher */}
-                        <div className="inline-flex gap-1 rounded-xl border border-white/20 bg-black/20 p-1 shadow-inner backdrop-blur-md">
+                        <div role="tablist" aria-label="Monitoring Views" className="inline-flex gap-1 rounded-xl border border-white/20 bg-black/20 p-1 shadow-inner backdrop-blur-md">
                             <button
                                 type="button"
+                                role="tab"
+                                aria-selected={monitoringTab === 'dashboard'}
                                 onClick={() => setMonitoringTab('dashboard')}
                                 className={cn(
-                                    'flex h-9 items-center gap-1.5 rounded-lg px-4 text-xs font-bold tracking-wider uppercase transition-all duration-200',
+                                    'flex h-9 items-center gap-1.5 rounded-lg px-4 text-xs font-bold tracking-wider uppercase transition-all duration-200 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none',
                                     monitoringTab === 'dashboard'
                                         ? 'bg-white text-[#1e3a8a] shadow-md'
                                         : 'text-white/80 hover:bg-white/10 hover:text-white',
@@ -930,9 +1112,11 @@ export default function RealTimeMonitoringPanel({
                                 monitoredEvent.attendance_type !== 'dynamic_qr') && (
                                 <button
                                     type="button"
+                                    role="tab"
+                                    aria-selected={monitoringTab === 'scanner'}
                                     onClick={() => setMonitoringTab('scanner')}
                                     className={cn(
-                                        'flex h-9 items-center gap-1.5 rounded-lg px-4 text-xs font-bold tracking-wider uppercase transition-all duration-200',
+                                        'flex h-9 items-center gap-1.5 rounded-lg px-4 text-xs font-bold tracking-wider uppercase transition-all duration-200 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none',
                                         monitoringTab === 'scanner'
                                             ? 'bg-white text-[#1e3a8a] shadow-md'
                                             : 'text-white/80 hover:bg-white/10 hover:text-white',
@@ -948,9 +1132,11 @@ export default function RealTimeMonitoringPanel({
                                 monitoredEvent.attendance_type === 'dynamic_qr' && (
                                     <button
                                         type="button"
+                                        role="tab"
+                                        aria-selected={monitoringTab === 'dynamic-qr'}
                                         onClick={() => setMonitoringTab('dynamic-qr')}
                                         className={cn(
-                                            'flex h-9 items-center gap-1.5 rounded-lg px-4 text-xs font-bold tracking-wider uppercase transition-all duration-200',
+                                            'flex h-9 items-center gap-1.5 rounded-lg px-4 text-xs font-bold tracking-wider uppercase transition-all duration-200 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none',
                                             monitoringTab === 'dynamic-qr'
                                                 ? 'bg-white text-[#1e3a8a] shadow-md'
                                                 : 'text-white/80 hover:bg-white/10 hover:text-white',
@@ -965,12 +1151,14 @@ export default function RealTimeMonitoringPanel({
                         {/* Attendance Mode Selector & Controls */}
                         <div className="flex flex-wrap items-center gap-2">
                             {/* Entry vs Exit Selector */}
-                            <div className="inline-flex gap-1 rounded-xl border border-white/20 bg-black/20 p-1 backdrop-blur-md">
+                            <div role="radiogroup" aria-label="Attendance Mode" className="inline-flex gap-1 rounded-xl border border-white/20 bg-black/20 p-1 backdrop-blur-md">
                                 <button
                                     type="button"
+                                    role="radio"
+                                    aria-checked={attendanceMode === 'entry'}
                                     onClick={() => setAttendanceMode('entry')}
                                     className={cn(
-                                        'flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-extrabold tracking-wide uppercase transition-all duration-200',
+                                        'flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-extrabold tracking-wide uppercase transition-all duration-200 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none',
                                         attendanceMode === 'entry'
                                             ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/40'
                                             : 'text-white/80 hover:bg-white/10 hover:text-white',
@@ -982,9 +1170,11 @@ export default function RealTimeMonitoringPanel({
                                 </button>
                                 <button
                                     type="button"
+                                    role="radio"
+                                    aria-checked={attendanceMode === 'exit'}
                                     onClick={() => setAttendanceMode('exit')}
                                     className={cn(
-                                        'flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-extrabold tracking-wide uppercase transition-all duration-200',
+                                        'flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-extrabold tracking-wide uppercase transition-all duration-200 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none',
                                         attendanceMode === 'exit'
                                             ? 'bg-rose-500 text-white shadow-md shadow-rose-500/40'
                                             : 'text-white/80 hover:bg-white/10 hover:text-white',
@@ -999,13 +1189,17 @@ export default function RealTimeMonitoringPanel({
                             <Button
                                 type="button"
                                 size="sm"
+                                disabled={isUpcoming}
                                 className={cn(
-                                    'h-9 gap-2 rounded-xl px-4 text-xs font-bold transition-all duration-200 active:scale-95',
-                                    monitoringEnabled
+                                    'h-9 gap-2 rounded-xl px-4 text-xs font-bold transition-all duration-200 active:scale-95 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none',
+                                    isUpcoming
+                                        ? 'border border-white/20 bg-white/10 text-white/50 cursor-not-allowed'
+                                        : monitoringEnabled
                                         ? 'border border-white/25 bg-white/15 text-white hover:bg-white/25 backdrop-blur-md'
                                         : 'bg-white text-[#1e3a8a] shadow-md hover:bg-blue-50',
                                 )}
                                 onClick={() => {
+                                    if (isUpcoming) return;
                                     if (monitoringEnabled) {
                                         setMonitoringEnabled(false);
                                     } else {
@@ -1013,12 +1207,19 @@ export default function RealTimeMonitoringPanel({
                                     }
                                 }}
                                 title={
-                                    monitoringEnabled
+                                    isUpcoming
+                                        ? 'Event is upcoming — portal cannot be started yet'
+                                        : monitoringEnabled
                                         ? 'Pause live data sync'
                                         : 'Start live monitoring & activate scanner portal'
                                 }
                             >
-                                {monitoringEnabled ? (
+                                {isUpcoming ? (
+                                    <>
+                                        <Clock className="h-3.5 w-3.5" />
+                                        <span>Upcoming</span>
+                                    </>
+                                ) : monitoringEnabled ? (
                                     <>
                                         <Pause className="h-3.5 w-3.5 fill-current" />
                                         <span>Pause</span>
@@ -1034,7 +1235,8 @@ export default function RealTimeMonitoringPanel({
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="h-9 w-9 rounded-xl border border-white/20 bg-white/10 text-white transition-all hover:bg-white/20 active:scale-95"
+                                aria-label="Refresh attendance data"
+                                className="h-9 w-9 rounded-xl border border-white/20 bg-white/10 text-white transition-all hover:bg-white/20 active:scale-95 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                                 onClick={() => void refreshLogs()}
                                 disabled={!monitorEventId}
                                 title="Manually refresh attendance data"
@@ -1042,6 +1244,7 @@ export default function RealTimeMonitoringPanel({
                                 <RefreshCw
                                     className={`h-4 w-4 ${monitoringEnabled ? 'animate-[spin_3s_linear_infinite]' : ''}`}
                                 />
+                                <span className="sr-only">Refresh attendance data</span>
                             </Button>
                         </div>
                     </div>
@@ -1052,7 +1255,7 @@ export default function RealTimeMonitoringPanel({
             {monitoringTab === 'dashboard' && (
                 <>
                     {/* DSAMS KPI STATS CARDS */}
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <Card className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-200/50 transition-all duration-300 hover:shadow-xl dark:border-slate-800 dark:bg-[#0B192C]/50 dark:shadow-none">
                             <div className="pointer-events-none absolute -top-10 -right-10 h-28 w-28 rounded-full bg-blue-500/5 blur-xl transition-all duration-500 group-hover:scale-125" />
                             <div className="relative flex items-center gap-4">
@@ -1064,17 +1267,17 @@ export default function RealTimeMonitoringPanel({
                                         Total Checked In
                                     </p>
                                     <p className="mt-0.5 text-2xl font-black text-slate-900 dark:text-white">
-                                        {liveCounts.total}
+                                        {isUpcoming ? 0 : liveCounts.total}
                                     </p>
                                     <p className="text-[11px] font-semibold text-blue-600 dark:text-blue-400">
-                                        Active Attendees
+                                        {isUpcoming ? 'Not Started Yet' : 'Active Attendees'}
                                     </p>
                                 </div>
                             </div>
                             <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                                 <div
                                     className="h-full rounded-full bg-gradient-to-r from-blue-400 to-blue-600"
-                                    style={{ width: '100%' }}
+                                    style={{ width: isUpcoming ? '0%' : '100%' }}
                                 />
                             </div>
                         </Card>
@@ -1090,10 +1293,10 @@ export default function RealTimeMonitoringPanel({
                                         On Time
                                     </p>
                                     <p className="mt-0.5 text-2xl font-black text-emerald-700 dark:text-emerald-300">
-                                        {liveCounts.present}
+                                        {isUpcoming ? 0 : liveCounts.present}
                                     </p>
                                     <p className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                        Prompt Check-ins
+                                        {isUpcoming ? 'Check-in Closed' : 'Prompt Check-ins'}
                                     </p>
                                 </div>
                             </div>
@@ -1101,7 +1304,9 @@ export default function RealTimeMonitoringPanel({
                                 <div
                                     className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600"
                                     style={{
-                                        width: `${liveCounts.total > 0 ? (liveCounts.present / liveCounts.total) * 100 : 100}%`,
+                                        width: isUpcoming
+                                            ? '0%'
+                                            : `${liveCounts.total > 0 ? (liveCounts.present / liveCounts.total) * 100 : 0}%`,
                                     }}
                                 />
                             </div>
@@ -1118,10 +1323,10 @@ export default function RealTimeMonitoringPanel({
                                         Late Arrivals
                                     </p>
                                     <p className="mt-0.5 text-2xl font-black text-rose-700 dark:text-rose-300">
-                                        {liveCounts.late}
+                                        {isUpcoming ? 0 : liveCounts.late}
                                     </p>
                                     <p className="text-[11px] font-semibold text-rose-600 dark:text-rose-400">
-                                        Tardy Scans
+                                        {isUpcoming ? 'Check-in Closed' : 'Tardy Scans'}
                                     </p>
                                 </div>
                             </div>
@@ -1129,7 +1334,39 @@ export default function RealTimeMonitoringPanel({
                                 <div
                                     className="h-full rounded-full bg-gradient-to-r from-rose-400 to-rose-600"
                                     style={{
-                                        width: `${liveCounts.total > 0 ? (liveCounts.late / liveCounts.total) * 100 : 0}%`,
+                                        width: isUpcoming
+                                            ? '0%'
+                                            : `${liveCounts.total > 0 ? (liveCounts.late / liveCounts.total) * 100 : 0}%`,
+                                    }}
+                                />
+                            </div>
+                        </Card>
+
+                        <Card className="group relative overflow-hidden rounded-2xl border border-amber-200/70 bg-gradient-to-br from-white to-amber-50/40 p-5 shadow-lg shadow-amber-200/30 transition-all duration-300 hover:shadow-xl dark:border-amber-800/40 dark:bg-[#0B192C]/50 dark:from-amber-950/20 dark:shadow-none">
+                            <div className="pointer-events-none absolute -top-10 -right-10 h-28 w-28 rounded-full bg-amber-500/10 blur-xl transition-all duration-500 group-hover:scale-125" />
+                            <div className="relative flex items-center gap-4">
+                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 ring-1 ring-amber-300/60 dark:bg-amber-500/20 dark:text-amber-400 dark:ring-amber-900/40">
+                                    <ShieldAlert className="h-6 w-6" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-[10px] font-extrabold tracking-wider text-amber-600 uppercase dark:text-amber-400">
+                                        Dwell Gap Alerts
+                                    </p>
+                                    <p className="mt-0.5 text-2xl font-black text-amber-700 dark:text-amber-300">
+                                        {isUpcoming ? 0 : liveCounts.flagged}
+                                    </p>
+                                    <p className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                                        {isUpcoming ? 'Geofence Inactive' : 'Suspected Split Exit'}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                                <div
+                                    className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-600"
+                                    style={{
+                                        width: isUpcoming
+                                            ? '0%'
+                                            : `${liveCounts.total > 0 ? (liveCounts.flagged / liveCounts.total) * 100 : 0}%`,
                                     }}
                                 />
                             </div>
@@ -1151,18 +1388,65 @@ export default function RealTimeMonitoringPanel({
                                                     Live Activity Feed
                                                 </CardTitle>
                                                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                                                    Streaming real-time student check-ins
+                                                    {isUpcoming
+                                                        ? 'Event is upcoming. Real-time check-ins will stream once attendance opens.'
+                                                        : 'Streaming real-time student check-ins'}
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 dark:border-emerald-800/40 dark:bg-emerald-950/30">
-                                            <span className="relative flex h-2 w-2">
-                                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-                                                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
-                                            </span>
-                                            <span className="text-[10px] font-bold tracking-wider text-emerald-700 uppercase dark:text-emerald-400">
-                                                Live Sync
-                                            </span>
+                                        <div className="flex items-center gap-3">
+                                            {!isUpcoming && (
+                                                <div className="flex items-center gap-1 rounded-lg border border-slate-200/80 bg-slate-100/80 p-0.5 dark:border-slate-700/60 dark:bg-slate-800/80">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setFeedFilter('checked_in');
+                                                            setLiveCurrentPage(1);
+                                                        }}
+                                                        className={cn(
+                                                            'rounded-md px-2.5 py-1 text-[11px] font-bold transition-all',
+                                                            feedFilter === 'checked_in'
+                                                                ? 'bg-white text-blue-600 shadow-sm dark:bg-slate-700 dark:text-blue-300'
+                                                                : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white',
+                                                        )}
+                                                    >
+                                                        Checked In ({liveCounts.total})
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setFeedFilter('all');
+                                                            setLiveCurrentPage(1);
+                                                        }}
+                                                        className={cn(
+                                                            'rounded-md px-2.5 py-1 text-[11px] font-bold transition-all',
+                                                            feedFilter === 'all'
+                                                                ? 'bg-white text-blue-600 shadow-sm dark:bg-slate-700 dark:text-blue-300'
+                                                                : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white',
+                                                        )}
+                                                    >
+                                                        All Eligible ({liveRows.length})
+                                                    </button>
+                                                </div>
+                                            )}
+                                            {isUpcoming ? (
+                                                <div className="flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 dark:border-blue-800/40 dark:bg-blue-950/30">
+                                                    <span className="relative flex h-2 w-2 rounded-full bg-blue-500"></span>
+                                                    <span className="text-[10px] font-bold tracking-wider text-blue-700 uppercase dark:text-blue-400">
+                                                        Upcoming Event
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 dark:border-emerald-800/40 dark:bg-emerald-950/30">
+                                                    <span className="relative flex h-2 w-2">
+                                                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                                                        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+                                                    </span>
+                                                    <span className="text-[10px] font-bold tracking-wider text-emerald-700 uppercase dark:text-emerald-400">
+                                                        Live Sync
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </CardHeader>
@@ -1223,22 +1507,71 @@ export default function RealTimeMonitoringPanel({
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-6 py-4">
-                                                                    <Badge
-                                                                        className={
-                                                                            row.status?.toLowerCase() === 'late'
-                                                                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
-                                                                                : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                                                        }
-                                                                    >
-                                                                        {row.status
-                                                                            ? row.status.charAt(0).toUpperCase() + row.status.slice(1)
-                                                                            : 'Present'}
-                                                                    </Badge>
+                                                                    <div className="flex flex-col gap-1.5">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Badge
+                                                                                className={
+                                                                                    row.is_flagged || row.status?.toLowerCase() === 'flagged'
+                                                                                        ? 'border border-amber-300 bg-amber-100 font-semibold text-amber-900 shadow-sm dark:border-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                                                                                        : row.status?.toLowerCase() === 'late'
+                                                                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+                                                                                        : row.status?.toLowerCase() === 'incomplete' || row.status?.toLowerCase() === 'left_early'
+                                                                                        ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400'
+                                                                                        : row.status?.toLowerCase() === 'absent'
+                                                                                        ? 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                                                                        : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                                                }
+                                                                            >
+                                                                                {row.is_flagged || row.status?.toLowerCase() === 'flagged' ? (
+                                                                                    <span className="flex items-center gap-1">
+                                                                                        ⚠️ Flagged: Dwell Gap
+                                                                                    </span>
+                                                                                ) : row.status?.toLowerCase() === 'incomplete' ? (
+                                                                                    'Incomplete (Left Early)'
+                                                                                ) : row.status?.toLowerCase() === 'left_early' ? (
+                                                                                    'Left Early'
+                                                                                ) : row.status ? (
+                                                                                    row.status.charAt(0).toUpperCase() + row.status.slice(1)
+                                                                                ) : (
+                                                                                    'Present'
+                                                                                )}
+                                                                            </Badge>
+
+                                                                            {row.is_flagged && row.attendance_id && (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => handleClearFlag(row.attendance_id!, row.name)}
+                                                                                    className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-0.5 text-[11px] font-medium text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                                                                                    title="Verify physical presence and clear flag to restore certificate"
+                                                                                >
+                                                                                    <CheckCircle2 className="h-3 w-3" />
+                                                                                    Verify Presence
+                                                                                </button>
+                                                                            )}
+                                                                        </div>
+
+                                                                        {row.is_flagged && row.flagged_reason && (
+                                                                            <div className="flex items-start gap-1 rounded bg-amber-50 p-1.5 text-[10px] text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                                                                                <AlertCircle className="mt-0.5 h-3 w-3 shrink-0 text-amber-600 dark:text-amber-400" />
+                                                                                <span>{row.flagged_reason}</span>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
                                                                 </td>
                                                                 <td className="px-6 py-4 text-right">
                                                                     <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                                                                        {row.time || '---'}
+                                                                        IN: {row.time || '—'}
                                                                     </div>
+                                                                    {row.time_out && row.time_out !== '—' && (
+                                                                        <div className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                                                                            OUT: {row.time_out}
+                                                                        </div>
+                                                                    )}
+                                                                    {row.mid_session_time && row.mid_session_time !== '—' && (
+                                                                        <div className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                                                                            MID: {row.mid_session_time}
+                                                                        </div>
+                                                                    )}
                                                                     {row.check_in_distance_m !== undefined &&
                                                                         row.check_in_distance_m !== null && (
                                                                             <div
@@ -1256,16 +1589,20 @@ export default function RealTimeMonitoringPanel({
                                                     <tr>
                                                         <td colSpan={4} className="px-6 py-12 text-center text-slate-400">
                                                             <div className="flex flex-col items-center justify-center gap-2">
-                                                                <Activity className="h-8 w-8 text-slate-300 animate-pulse dark:text-slate-600" />
-                                                                <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
-                                                                    {monitoredEvent?.attendance_type === 'dynamic_qr'
+                                                                <Activity className="h-8 w-8 text-slate-300 dark:text-slate-600" />
+                                                                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                                                    {isUpcoming
+                                                                        ? 'Event is Upcoming'
+                                                                        : monitoredEvent?.attendance_type === 'dynamic_qr'
                                                                         ? 'No GPS check-ins recorded yet'
-                                                                        : 'No attendance records yet'}
+                                                                        : 'No check-ins recorded yet'}
                                                                 </p>
-                                                                <p className="text-xs text-slate-400">
-                                                                    {monitoredEvent?.attendance_type === 'dynamic_qr'
+                                                                <p className="text-xs text-slate-500 max-w-sm">
+                                                                    {isUpcoming
+                                                                        ? `Check-in is currently closed. Student check-ins will open on ${monitoredEvent?.event_date || 'the scheduled date'} at ${timeInStart || monitoredEvent?.event_time || 'the start time'}.`
+                                                                        : monitoredEvent?.attendance_type === 'dynamic_qr'
                                                                         ? 'Waiting for students to check in from their dashboard via GPS...'
-                                                                        : 'Waiting for student attendance records...'}
+                                                                        : 'Waiting for student check-ins to stream in real-time...'}
                                                                 </p>
                                                             </div>
                                                         </td>
@@ -1278,7 +1615,7 @@ export default function RealTimeMonitoringPanel({
                                     <div className="border-t border-slate-100 bg-slate-50/50 px-6 py-3.5 dark:border-slate-800 dark:bg-[#0B192C]/40">
                                         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
                                             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                                                Showing <span className="font-bold text-slate-700 dark:text-slate-200">{liveStartIndex + (paginatedLiveRows.length > 0 ? 1 : 0)}-{liveEndIndex}</span> of <span className="font-bold text-slate-700 dark:text-slate-200">{liveRows.length}</span> records
+                                                Showing <span className="font-bold text-slate-700 dark:text-slate-200">{liveStartIndex + (paginatedLiveRows.length > 0 ? 1 : 0)}-{liveEndIndex}</span> of <span className="font-bold text-slate-700 dark:text-slate-200">{displayLiveRows.length}</span> records
                                             </span>
                                             <div className="flex items-center gap-1.5">
                                                 <Button
@@ -1480,16 +1817,16 @@ export default function RealTimeMonitoringPanel({
                                                             }
                                                             if (p.includes('CRIM') || p.includes('BSCRIM')) {
                                                                 return {
-                                                                    dot: 'bg-blue-700 shadow-blue-700/50',
-                                                                    text: 'text-blue-700 dark:text-blue-400',
-                                                                    bar: 'from-blue-600 to-blue-800',
+                                                                    dot: 'bg-sky-400 shadow-sky-400/50',
+                                                                    text: 'text-sky-500 dark:text-sky-400',
+                                                                    bar: 'from-sky-300 to-sky-500',
                                                                 };
                                                             }
                                                             if (p.includes('BSED') || p.includes('BEED') || p.includes('EDUCATION') || p.includes('TEACHER')) {
                                                                 return {
-                                                                    dot: 'bg-sky-400 shadow-sky-400/50',
-                                                                    text: 'text-sky-500 dark:text-sky-400',
-                                                                    bar: 'from-sky-300 to-sky-500',
+                                                                    dot: 'bg-blue-600 shadow-blue-600/50',
+                                                                    text: 'text-blue-700 dark:text-blue-400',
+                                                                    bar: 'from-blue-600 to-blue-800',
                                                                 };
                                                             }
                                                             return {
@@ -1734,8 +2071,22 @@ export default function RealTimeMonitoringPanel({
                                                             {row.program}
                                                         </td>
                                                         <td className="px-6 py-4">
-                                                            <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
-                                                                {row.status
+                                                            <Badge
+                                                                className={
+                                                                    row.status?.toLowerCase() === 'late'
+                                                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+                                                                        : row.status?.toLowerCase() === 'incomplete' || row.status?.toLowerCase() === 'left_early'
+                                                                        ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400'
+                                                                        : row.status?.toLowerCase() === 'absent'
+                                                                        ? 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                                                        : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                                }
+                                                            >
+                                                                {row.status?.toLowerCase() === 'incomplete'
+                                                                    ? 'Incomplete (Left Early)'
+                                                                    : row.status?.toLowerCase() === 'left_early'
+                                                                    ? 'Left Early'
+                                                                    : row.status
                                                                     ? row.status.charAt(0).toUpperCase() + row.status.slice(1)
                                                                     : 'Present'}
                                                             </Badge>
@@ -1849,13 +2200,13 @@ export default function RealTimeMonitoringPanel({
                                 </div>
 
                                 {/* Live GPS Attendance Stats Grid */}
-                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                                     <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 text-center dark:border-slate-800 dark:bg-slate-800/40">
                                         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400">
                                             Total GPS Checked In
                                         </p>
                                         <p className="mt-1 text-2xl font-black text-slate-900 dark:text-white">
-                                            {liveCounts.total}
+                                            {isUpcoming ? 0 : liveCounts.total}
                                         </p>
                                     </div>
                                     <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 text-center dark:border-emerald-900/30 dark:bg-emerald-950/20">
@@ -1863,15 +2214,23 @@ export default function RealTimeMonitoringPanel({
                                             On Time
                                         </p>
                                         <p className="mt-1 text-2xl font-black text-emerald-700 dark:text-emerald-300">
-                                            {liveCounts.present}
+                                            {isUpcoming ? 0 : liveCounts.present}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-xl border border-rose-200 bg-rose-50/60 p-4 text-center dark:border-rose-900/30 dark:bg-rose-950/20">
+                                        <p className="text-xs font-semibold text-rose-600 uppercase tracking-wider dark:text-rose-400">
+                                            Late Arrivals
+                                        </p>
+                                        <p className="mt-1 text-2xl font-black text-rose-700 dark:text-rose-300">
+                                            {isUpcoming ? 0 : liveCounts.late}
                                         </p>
                                     </div>
                                     <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4 text-center dark:border-amber-900/30 dark:bg-amber-950/20">
                                         <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider dark:text-amber-400">
-                                            Late Arrivals
+                                            Dwell Gap Alerts
                                         </p>
                                         <p className="mt-1 text-2xl font-black text-amber-700 dark:text-amber-300">
-                                            {liveCounts.late}
+                                            {isUpcoming ? 0 : liveCounts.flagged}
                                         </p>
                                     </div>
                                 </div>

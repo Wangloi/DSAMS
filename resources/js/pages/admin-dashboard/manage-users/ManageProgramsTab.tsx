@@ -29,6 +29,7 @@ import {
 } from '@/routes';
 import { router, useForm } from '@inertiajs/react';
 import { Archive, ArchiveRestore, BookOpen, Edit, Eye, Plus, Search, Trash2, Users } from 'lucide-react';
+import { getProgramTheme } from '@/lib/program-themes';
 import type { ProgramRow } from './types';
 
 interface ManageProgramsTabProps {
@@ -291,15 +292,30 @@ export function ManageProgramsTab({
                         </div>
                     ) : (
                         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            {progPagedRows.map((r) => (
+                            {progPagedRows.map((r) => {
+                                const theme = getProgramTheme(r);
+                                return (
                                 <Card
                                     key={r.id}
-                                    className="group relative overflow-hidden border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-[#0B192C]/50"
+                                    className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 gap-0 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-[#0B192C]/50"
                                 >
                                     {/* Header banner */}
-                                    <div className="relative bg-gradient-to-r from-[#0b2d66] via-[#1e3a8a] to-[#0B4DFF] p-5">
+                                    <div className={`relative bg-gradient-to-r ${theme.headerGradient} p-5`}>
                                         <div className="pointer-events-none absolute -top-8 -right-8 h-24 w-24 rounded-full bg-white/10" />
-                                        <div className="relative z-10">
+
+                                        {/* Program Emblem / Logo */}
+                                        <div className="absolute top-4 right-4 z-10 flex h-14 w-14 items-center justify-center rounded-full border-2 border-white/80 bg-white p-1 shadow-md ring-2 ring-black/5 transition-transform duration-300 group-hover:scale-105">
+                                            <img
+                                                src={theme.logoUrl}
+                                                alt={`${r.name} logo`}
+                                                className="h-full w-full rounded-full object-contain"
+                                                onError={(e) => {
+                                                    (e.currentTarget as HTMLImageElement).src = '/images/SRCB.png';
+                                                }}
+                                            />
+                                        </div>
+
+                                        <div className="relative z-10 min-w-0 pr-16">
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-1">
                                                     <div className="font-mono text-[11px] text-white/90">
@@ -331,7 +347,7 @@ export function ManageProgramsTab({
                                         </div>
                                     </div>
 
-                                    <div className="mt-4 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent dark:via-slate-700" />
+                                    <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent dark:via-slate-700" />
 
                                     {/* Card body */}
                                     <div className="px-5 pt-4 pb-14">
@@ -361,7 +377,7 @@ export function ManageProgramsTab({
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="pointer-events-none mt-4 h-1 w-0 bg-gradient-to-r from-[#0b2d66] via-[#23509A] to-[#1e40af] transition-all duration-200 group-hover:w-full" />
+                                        <div className={`pointer-events-none mt-4 h-1 w-0 bg-gradient-to-r ${theme.hoverBarGradient} transition-all duration-200 group-hover:w-full`} />
 
                                         {/* Actions */}
                                         <div className="absolute right-4 bottom-4 flex items-center gap-1.5">
@@ -431,7 +447,8 @@ export function ManageProgramsTab({
                                         </div>
                                     </div>
                                 </Card>
-                            ))}
+                            );
+                        })}
                         </div>
                     )}
 
@@ -536,8 +553,8 @@ export function ManageProgramsTab({
                 open={isCreateModalOpen}
                 onOpenChange={setIsCreateModalOpen}
             >
-                <DialogContent className="overflow-hidden border-slate-200 bg-white p-0 shadow-2xl sm:max-w-2xl dark:border-slate-700 dark:bg-slate-800">
-                    <div className="bg-gradient-to-r from-[#0b2d66] to-[#1e40af] px-6 py-5 text-white">
+                <DialogContent size="lg" preventClose={progProcessing} className="overflow-hidden rounded-2xl border-slate-200/80 bg-white p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+                    <div className="bg-gradient-to-r from-[#0b2d66] to-[#1e40af] px-6 py-5 pr-14 text-white">
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2 text-xl font-bold text-white">
                                 <BookOpen className="h-6 w-6 text-blue-200" />

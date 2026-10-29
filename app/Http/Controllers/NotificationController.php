@@ -31,9 +31,7 @@ class NotificationController extends Controller
 
         return Auth::guard('program_head')->user()
             ?: Auth::guard('student')->user()
-            ?: Auth::guard('admin')->user()
-            ?: Auth::guard('web')->user()
-            ?: Auth::user();
+            ?: Auth::guard('admin')->user();
     }
 
     /**
@@ -262,7 +260,7 @@ class NotificationController extends Controller
     public function studentIndex(Request $request)
     {
         /** @var \App\Models\Student|null $user */
-        $user = Auth::guard('student')->user() ?: Auth::user();
+        $user = Auth::guard('student')->user();
         if (!$user) {
             return redirect()->route('login');
         }
@@ -297,7 +295,7 @@ class NotificationController extends Controller
     public function programHeadIndex(Request $request)
     {
         /** @var \App\Models\ProgramHead|null $user */
-        $user = Auth::guard('program_head')->user() ?: Auth::user();
+        $user = Auth::guard('program_head')->user();
         if (!$user) {
             return redirect()->route('login');
         }
@@ -343,8 +341,8 @@ class NotificationController extends Controller
      */
     public function adminIndex(Request $request)
     {
-        /** @var \App\Models\User|null $user */
-        $user = Auth::guard('admin')->user() ?: Auth::user();
+        /** @var \App\Models\AdminUser|null $user */
+        $user = Auth::guard('admin')->user();
         if (!$user) {
             return redirect()->route('login');
         }

@@ -104,6 +104,22 @@ export default function AdminLogin({
         return () => clearInterval(interval);
     }, []);
 
+    useEffect(() => {
+        if (typeof window !== 'undefined' && window.location.search.includes('expired=1')) {
+            Swal.fire({
+                title: 'Session Expired',
+                text: 'Your admin session expired due to inactivity. Please log in again to continue.',
+                icon: 'info',
+                confirmButtonColor: '#1b2f8a',
+                customClass: {
+                    popup: 'rounded-2xl p-6 shadow-2xl font-sans',
+                    title: 'text-2xl font-black text-slate-800',
+                    htmlContainer: 'text-sm text-slate-600 font-medium mt-2',
+                },
+            });
+        }
+    }, []);
+
     return (
         <div className="relative min-h-svh overflow-hidden bg-slate-900">
             <VideoBackground />

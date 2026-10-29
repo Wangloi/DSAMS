@@ -46,9 +46,9 @@ class StudentNotificationDispatcher
             ));
 
             // Real-Time Socket.IO delivery
-            $realtimeService = app(\App\Services\RealtimeNotificationService::class);
-            foreach ($ids as $studentId) {
-                $realtimeService->sendToUser($studentId, [
+            try {
+                $realtimeService = app(\App\Services\RealtimeNotificationService::class);
+                $realtimeService->sendToUsers($ids, [
                     'type'         => $type,
                     'title'        => $title,
                     'message'      => $message,
@@ -56,6 +56,8 @@ class StudentNotificationDispatcher
                     'related_type' => $type,
                     'meta_data'    => $data,
                 ], 'App\\Models\\Student');
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('StudentNotificationDispatcher realtime delivery failed: ' . $e->getMessage());
             }
         };
 

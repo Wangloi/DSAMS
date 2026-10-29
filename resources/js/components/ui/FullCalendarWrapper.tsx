@@ -23,6 +23,9 @@ type FullCalendarWrapperProps = {
   onDateSelect?: (dateInfo: DateSelectArg) => void;
   onEventClick?: (clickInfo: EventClickArg) => void;
   onEventDrop?: (dropInfo: EventDropArg) => void;
+  onMoreLinkClick?: (arg: any) => void;
+  onEventMouseEnter?: (info: any) => void;
+  onEventMouseLeave?: (info: any) => void;
   selectable?: boolean;
   editable?: boolean;
 };
@@ -32,11 +35,19 @@ export default function FullCalendarWrapper({
   onDateSelect, 
   onEventClick, 
   onEventDrop,
+  onMoreLinkClick,
+  onEventMouseEnter,
+  onEventMouseLeave,
   selectable = true,
   editable = true
 }: FullCalendarWrapperProps) {
-  const handleDateSelect = useCallback(
-    (selectInfo: DateSelectArg) => {
+  const lastSelectTimeRef = React.useRef(0);
+
+  const triggerDateSelect = useCallback(
+    (selectInfo: any) => {
+      const now = Date.now();
+      if (now - lastSelectTimeRef.current < 250) return;
+      lastSelectTimeRef.current = now;
       if (onDateSelect) {
         onDateSelect(selectInfo);
       }
@@ -62,6 +73,17 @@ export default function FullCalendarWrapper({
     [onEventDrop]
   );
 
+  const handleMoreLinkClick = useCallback(
+    (arg: any) => {
+      if (onMoreLinkClick) {
+        onMoreLinkClick(arg);
+        return false;
+      }
+      return 'popover';
+    },
+    [onMoreLinkClick]
+  );
+
   return (
     <FullCalendar
       plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -70,9 +92,19 @@ export default function FullCalendarWrapper({
       events={events}
       selectable={selectable}
       editable={editable}
-      select={handleDateSelect}
+      select={triggerDateSelect}
+      dateClick={(info: any) => {
+        triggerDateSelect({
+          startStr: info.dateStr,
+          endStr: info.dateStr,
+          allDay: info.allDay,
+        });
+      }}
       eventClick={handleEventClick}
+      eventMouseEnter={onEventMouseEnter}
+      eventMouseLeave={onEventMouseLeave}
       eventDrop={handleEventDrop}
+      moreLinkClick={handleMoreLinkClick}
       dayMaxEvents={true}
       height="100%"
     />

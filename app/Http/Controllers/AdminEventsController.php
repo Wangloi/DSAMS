@@ -8,6 +8,7 @@ use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -161,11 +162,11 @@ class AdminEventsController extends Controller
             ->whereNull('archived_at')
             ->where('approval_status', '!=', 'rejected')
             ->get(['id', 'event_name', 'location', 'event_date', 'event_time', 'registration_end_time', 'approval_status'])
-            ->map(fn (Event $e) => [
+            ->map(fn ($e) => [
                 'id' => $e->id,
                 'event_name' => $e->event_name,
                 'location' => $e->location,
-                'event_date' => $e->event_date ? $e->event_date->format('Y-m-d') : '',
+                'event_date' => $e->event_date ? Carbon::parse($e->event_date)->format('Y-m-d') : '',
                 'event_time' => $e->event_time,
                 'registration_end_time' => $e->registration_end_time,
                 'approval_status' => $e->approval_status,
@@ -188,140 +189,177 @@ class AdminEventsController extends Controller
 
     public function store(Request $request)
     {
-        if (!$request->boolean('geofence_enabled')) {
-            $request->merge([
-                'geofence_latitude' => null,
-                'geofence_longitude' => null,
-            ]);
-        }
+        try {
+            if ($request->boolean('geofence_enabled')) {
+                $defaultLat = config('geofence.campus_latitude', 8.743070);
+                $defaultLng = config('geofence.campus_longitude', 124.774500);
+                $defaultRadius = config('geofence.campus_radius_m', 300);
 
-        // Support both snake_case and camelCase input for scanner student IDs
-        $scannersInput = $request->input('scanner_student_ids')
-            ?? $request->input('scannerStudentIds')
-            ?? [];
-        if (!is_array($scannersInput) && !empty($scannersInput)) {
-            $scannersInput = [$scannersInput];
-        }
-        $singleScanner = $request->input('scanner_student_id') ?? $request->input('scannerStudentId');
-        if (!empty($singleScanner) && !in_array($singleScanner, $scannersInput)) {
-            $scannersInput[] = $singleScanner;
-        }
-        $normalizedScanners = array_values(array_unique(array_filter(array_map('strval', (array) $scannersInput), function ($v) {
-            return trim($v) !== '';
-        })));
-        $request->merge(['scanner_student_ids' => $normalizedScanners]);
+                $lat = $request->input('geofence_latitude');
+                $lng = $request->input('geofence_longitude');
+                $rad = $request->input('geofence_radius_m');
 
-        if (!$request->has('attendance_type') && $request->has('attendanceType')) {
-            $request->merge(['attendance_type' => $request->input('attendanceType')]);
-        }
-
-        if (!$request->filled('organizer')) {
-            $actor = auth()->guard('admin')->user() ?: auth()->guard('program_head')->user() ?: auth()->user();
-            $defaultOrg = $actor ? ($actor->office ?? ($actor->program ? $actor->program . ' Department' : null)) : null;
-            $request->merge(['organizer' => $defaultOrg ?: 'Office of Student Affairs']);
-        }
-
-        $validated = $request->validate([
-            'event_name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'courses' => 'nullable|array',
-            'courses.*' => 'string',
-            'year_levels' => 'nullable|array',
-            'year_levels.*' => 'string',
-            'location' => 'nullable|string|max:255',
-            'event_date' => 'required|date',
-            'event_time' => 'required',
-            'registration_end_time' => 'nullable',
-            'organizer' => 'required|string|max:255',
-            'geofence_enabled' => 'boolean',
-            'geofence_latitude' => 'nullable|numeric|required_if:geofence_enabled,1',
-            'geofence_longitude' => 'nullable|numeric|required_if:geofence_enabled,1',
-            'geofence_radius_m' => 'nullable|integer|required_if:geofence_enabled,1',
-            'attendance_type' => 'nullable|string|in:qr_scanner,dynamic_qr',
-            'scanner_student_ids' => 'nullable|array',
-            'scanner_student_ids.*' => 'string',
-        ]);
-
-        $scannerStudentIdsRaw = $validated['scanner_student_ids'] ?? $normalizedScanners;
-        $scannerStudentIds = array_values(array_unique(array_filter(array_map('strval', (array) $scannerStudentIdsRaw), function ($v) {
-            return trim($v) !== '';
-        })));
-
-        $location = $validated['location'] ?? 'Campus / Unspecified';
-        $conflict = Event::findScheduleConflict(
-            $validated['event_date'],
-            $location,
-            $validated['event_time'],
-            $validated['registration_end_time'] ?? null
-        );
-        if ($conflict) {
-            $conflictSchedule = $conflict->event_time;
-            if (!empty($conflict->registration_end_time)) {
-                $conflictSchedule .= ' to ' . $conflict->registration_end_time;
+                $request->merge([
+                    'geofence_latitude' => ($lat !== null && $lat !== '') ? (float) $lat : (float) $defaultLat,
+                    'geofence_longitude' => ($lng !== null && $lng !== '') ? (float) $lng : (float) $defaultLng,
+                    'geofence_radius_m' => ($rad !== null && $rad !== '') ? (int) $rad : (int) $defaultRadius,
+                ]);
+            } else {
+                $request->merge([
+                    'geofence_latitude' => null,
+                    'geofence_longitude' => null,
+                ]);
             }
-            $errorMsg = "Schedule & Venue Conflict! Venue '{$location}' is already booked on {$validated['event_date']} ({$conflictSchedule}) for '{$conflict->event_name}'.";
+
+            // Support both snake_case and camelCase input for scanner student IDs
+            $scannersInput = $request->input('scanner_student_ids')
+                ?? $request->input('scannerStudentIds')
+                ?? [];
+            if (!is_array($scannersInput) && !empty($scannersInput)) {
+                $scannersInput = [$scannersInput];
+            }
+            $singleScanner = $request->input('scanner_student_id') ?? $request->input('scannerStudentId');
+            if (!empty($singleScanner) && !in_array($singleScanner, $scannersInput)) {
+                $scannersInput[] = $singleScanner;
+            }
+            $normalizedScanners = array_values(array_unique(array_filter(array_map('strval', (array) $scannersInput), function ($v) {
+                return trim($v) !== '';
+            })));
+            $request->merge(['scanner_student_ids' => $normalizedScanners]);
+
+            if (!$request->has('attendance_type') && $request->has('attendanceType')) {
+                $request->merge(['attendance_type' => $request->input('attendanceType')]);
+            }
+
+            if (!$request->filled('organizer')) {
+                $actor = auth()->guard('admin')->user() ?: auth()->guard('program_head')->user() ?: auth()->user();
+                $defaultOrg = $actor ? ($actor->office ?? ($actor->program ? $actor->program . ' Department' : null)) : null;
+                $request->merge(['organizer' => $defaultOrg ?: 'Office of Student Affairs']);
+            }
+
+            $validated = $request->validate([
+                'event_name' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'courses' => 'nullable|array',
+                'courses.*' => 'string',
+                'year_levels' => 'nullable|array',
+                'year_levels.*' => 'string',
+                'location' => 'nullable|string|max:255',
+                'event_date' => 'required|date',
+                'event_time' => 'required',
+                'registration_end_time' => 'nullable',
+                'organizer' => 'required|string|max:255',
+                'geofence_enabled' => 'boolean',
+                'geofence_latitude' => 'nullable|numeric',
+                'geofence_longitude' => 'nullable|numeric',
+                'geofence_radius_m' => 'nullable|integer',
+                'attendance_type' => 'nullable|string|in:qr_scanner,dynamic_qr',
+                'scanner_student_ids' => 'nullable|array',
+                'scanner_student_ids.*' => 'string',
+            ]);
+
+            $scannerStudentIdsRaw = $validated['scanner_student_ids'] ?? $normalizedScanners;
+            $scannerStudentIds = array_values(array_unique(array_filter(array_map('strval', (array) $scannerStudentIdsRaw), function ($v) {
+                return trim($v) !== '';
+            })));
+
+            $location = $validated['location'] ?? 'Campus / Unspecified';
+            $conflict = Event::findScheduleConflict(
+                $validated['event_date'],
+                $location,
+                $validated['event_time'],
+                $validated['registration_end_time'] ?? null
+            );
+            // Venue sharing notice: DSAMS is an attendance monitoring system, not a facility booking system.
+            // Multiple events can legitimately record attendance at the same venue simultaneously.
+            if ($conflict) {
+                Log::info("Event '{$validated['event_name']}' sharing venue '{$location}' with concurrent event '{$conflict->event_name}' on {$validated['event_date']}.");
+            }
+
+            $eventData = [
+                'event_name' => $validated['event_name'],
+                'description' => $validated['description'] ?? null,
+                'courses' => $validated['courses'] ?? [],
+                'year_levels' => $validated['year_levels'] ?? [],
+                'location' => $validated['location'] ?? 'Campus / Unspecified',
+                'event_date' => $validated['event_date'],
+                'event_time' => $validated['event_time'],
+                'registration_end_time' => $validated['registration_end_time'] ?? null,
+                'organizer' => $validated['organizer'],
+                'geofence_enabled' => $validated['geofence_enabled'] ?? false,
+                'geofence_latitude' => $validated['geofence_latitude'] ?? null,
+                'geofence_longitude' => $validated['geofence_longitude'] ?? null,
+                'geofence_radius_m' => $validated['geofence_radius_m'] ?? 50,
+                'attendance_type' => $validated['attendance_type'] ?? 'qr_scanner',
+                'scanner_student_id' => $scannerStudentIds[0] ?? null,
+                'scanner_student_ids' => $scannerStudentIds,
+                'created_by_program_head_id' => Event::currentProgramHeadId(),
+            ];
+
+            $event = Event::create($eventData);
+
+            // Generate QR code safely
+            try {
+                $qrCodeData = url("/events/{$event->id}/scan");
+                $builder = new Builder();
+                $result = $builder->build(
+                    data: $qrCodeData,
+                    size: 300,
+                    margin: 10
+                );
+
+                $qrCode = $result->getString();
+                $qrCodePath = 'qr-codes/events/' . Str::random(10) . '.png';
+                Storage::disk('public')->put($qrCodePath, $qrCode);
+
+                $event->update(['qr_code' => $qrCodePath]);
+            } catch (\Throwable $qrError) {
+                Log::warning('QR code generation failed for event ' . $event->id . ': ' . $qrError->getMessage());
+            }
+
+            // Dispatch notifications safely
+            try {
+                $dispatcher = app(StudentNotificationDispatcher::class);
+                $dispatcher->eventCreated($event);
+                if (! empty($scannerStudentIds)) {
+                    $dispatcher->scannerAccessGranted($event, $scannerStudentIds);
+                }
+            } catch (\Throwable $notifError) {
+                Log::warning('Notification dispatch failed for event ' . $event->id . ': ' . $notifError->getMessage());
+            }
+
+            if (Schema::hasTable('activity_logs')) {
+                try {
+                    $actor = auth()->guard('admin')->user() ?: auth()->guard('program_head')->user() ?: auth()->user();
+                    if ($actor) {
+                        \App\Models\ActivityLog::logForUser($actor, 'Event Management', 'Created', 'Created event: ' . (string) $event->event_name);
+                    }
+                } catch (\Throwable $actError) {
+                    Log::warning('Activity log failed for event ' . $event->id . ': ' . $actError->getMessage());
+                }
+            }
+
+            $redirectRoute = auth()->guard('program_head')->check() ? 'program-head.calendar-events' : 'admin.events';
+            return redirect()->route($redirectRoute)->with('success', 'Event created successfully!');
+        } catch (\Illuminate\Validation\ValidationException $ve) {
+            throw $ve;
+        } catch (\Throwable $e) {
+            Log::error('AdminEventsController::store failed: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            $errorMsg = 'Failed to create event: ' . $e->getMessage();
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
                     'message' => $errorMsg,
-                    'errors' => ['location' => [$errorMsg]],
-                ], 422);
+                    'errors' => ['event_name' => [$errorMsg]],
+                ], 500);
             }
+
             return redirect()->back()->withErrors([
-                'location' => $errorMsg,
+                'event_name' => $errorMsg,
             ])->with('error', $errorMsg);
         }
-
-        $event = Event::create([
-            'event_name' => $validated['event_name'],
-            'description' => $validated['description'] ?? null,
-            'courses' => $validated['courses'] ?? [],
-            'year_levels' => $validated['year_levels'] ?? [],
-            'location' => $validated['location'] ?? 'Campus / Unspecified',
-            'event_date' => $validated['event_date'],
-            'event_time' => $validated['event_time'],
-            'registration_end_time' => $validated['registration_end_time'] ?? null,
-            'organizer' => $validated['organizer'],
-            'geofence_enabled' => $validated['geofence_enabled'] ?? false,
-            'geofence_latitude' => $validated['geofence_latitude'] ?? null,
-            'geofence_longitude' => $validated['geofence_longitude'] ?? null,
-            'geofence_radius_m' => $validated['geofence_radius_m'] ?? 50,
-            'attendance_type' => $validated['attendance_type'] ?? 'qr_scanner',
-            'scanner_student_id' => $scannerStudentIds[0] ?? null,
-            'scanner_student_ids' => $scannerStudentIds,
-            'created_by_program_head_id' => Event::currentProgramHeadId(),
-        ]);
-
-        // Generate QR code
-        $qrCodeData = url("/events/{$event->id}/scan");
-        $builder = new Builder();
-        $result = $builder->build(
-            data: $qrCodeData,
-            size: 300,
-            margin: 10
-        );
-
-        $qrCode = $result->getString();
-        $qrCodePath = 'qr-codes/events/' . Str::random(10) . '.png';
-        Storage::disk('public')->put($qrCodePath, $qrCode);
-
-        $event->update(['qr_code' => $qrCodePath]);
-
-        // Dispatch notifications to assigned scanner students
-        $dispatcher = app(StudentNotificationDispatcher::class);
-        $dispatcher->eventCreated($event);
-        if (! empty($scannerStudentIds)) {
-            $dispatcher->scannerAccessGranted($event, $scannerStudentIds);
-        }
-
-        if (Schema::hasTable('activity_logs')) {
-            $actor = auth()->guard('admin')->user() ?: auth()->guard('program_head')->user() ?: auth()->user();
-            if ($actor) {
-                \App\Models\ActivityLog::logForUser($actor, 'Event Management', 'Created', 'Created event: ' . (string) $event->event_name);
-            }
-        }
-
-        $redirectRoute = auth()->guard('program_head')->check() ? 'program-head.calendar-events' : 'admin.events';
-        return redirect()->route($redirectRoute)->with('success', 'Event created successfully!');
     }
 
     public function show(Event $event)
@@ -351,140 +389,171 @@ class AdminEventsController extends Controller
     {
         $this->authorizeEventAccess($event);
 
-        if (!$request->boolean('geofence_enabled')) {
-            $request->merge([
-                'geofence_latitude' => null,
-                'geofence_longitude' => null,
-            ]);
-        }
+        try {
+            if ($request->boolean('geofence_enabled')) {
+                $defaultLat = config('geofence.campus_latitude', 8.743070);
+                $defaultLng = config('geofence.campus_longitude', 124.774500);
+                $defaultRadius = config('geofence.campus_radius_m', 300);
 
-        // Support both snake_case and camelCase input for scanner student IDs
-        $scannersInput = $request->input('scanner_student_ids')
-            ?? $request->input('scannerStudentIds');
-        if ($scannersInput !== null) {
-            if (!is_array($scannersInput)) {
-                $scannersInput = [$scannersInput];
+                $lat = $request->input('geofence_latitude');
+                $lng = $request->input('geofence_longitude');
+                $rad = $request->input('geofence_radius_m');
+
+                $request->merge([
+                    'geofence_latitude' => ($lat !== null && $lat !== '') ? (float) $lat : (float) ($event->geofence_latitude ?? $defaultLat),
+                    'geofence_longitude' => ($lng !== null && $lng !== '') ? (float) $lng : (float) ($event->geofence_longitude ?? $defaultLng),
+                    'geofence_radius_m' => ($rad !== null && $rad !== '') ? (int) $rad : (int) ($event->geofence_radius_m ?? $defaultRadius),
+                ]);
+            } else {
+                $request->merge([
+                    'geofence_latitude' => null,
+                    'geofence_longitude' => null,
+                ]);
             }
-            $singleScanner = $request->input('scanner_student_id') ?? $request->input('scannerStudentId');
-            if (!empty($singleScanner) && !in_array($singleScanner, $scannersInput)) {
-                $scannersInput[] = $singleScanner;
+
+            // Support both snake_case and camelCase input for scanner student IDs
+            $scannersInput = $request->input('scanner_student_ids')
+                ?? $request->input('scannerStudentIds');
+            if ($scannersInput !== null) {
+                if (!is_array($scannersInput)) {
+                    $scannersInput = [$scannersInput];
+                }
+                $singleScanner = $request->input('scanner_student_id') ?? $request->input('scannerStudentId');
+                if (!empty($singleScanner) && !in_array($singleScanner, $scannersInput)) {
+                    $scannersInput[] = $singleScanner;
+                }
+                $normalizedScanners = array_values(array_unique(array_filter(array_map('strval', (array) $scannersInput), function ($v) {
+                    return trim($v) !== '';
+                })));
+                $request->merge(['scanner_student_ids' => $normalizedScanners]);
             }
-            $normalizedScanners = array_values(array_unique(array_filter(array_map('strval', (array) $scannersInput), function ($v) {
+
+            $validated = $request->validate([
+                'event_name' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'courses' => 'nullable|array',
+                'courses.*' => 'string',
+                'year_levels' => 'nullable|array',
+                'year_levels.*' => 'string',
+                'location' => 'nullable|string|max:255',
+                'event_date' => 'required|date',
+                'event_time' => 'required',
+                'registration_end_time' => 'nullable',
+                'organizer' => 'required|string|max:255',
+                'scanner_portal_active' => 'boolean',
+                'geofence_enabled' => 'boolean',
+                'geofence_latitude' => 'nullable|numeric',
+                'geofence_longitude' => 'nullable|numeric',
+                'geofence_radius_m' => 'nullable|integer',
+                'attendance_type' => 'nullable|string|in:qr_scanner,dynamic_qr',
+                'scanner_student_ids' => 'nullable|array',
+                'scanner_student_ids.*' => 'string',
+            ]);
+
+            if (array_key_exists('registration_end_time', $validated) && $validated['registration_end_time'] !== null) {
+                $validated['registration_end_time'] = preg_replace('/^\d{4}-\d{2}-\d{2}T(\d{2}:\d{2})(?::\d{2})?$/', '$1:00', (string) $validated['registration_end_time']);
+                $validated['registration_end_time'] = preg_replace('/^(\d{2}:\d{2})$/', '$1:00', (string) $validated['registration_end_time']);
+            }
+
+            $geofenceEnabled = (bool) ($validated['geofence_enabled'] ?? false);
+
+            $previousScannerStudentIds = is_array($event->scanner_student_ids) ? $event->scanner_student_ids : [];
+            if (empty($previousScannerStudentIds) && !empty($event->scanner_student_id)) {
+                $previousScannerStudentIds = [(string) $event->scanner_student_id];
+            }
+
+            $hasScannerStudentIds = array_key_exists('scanner_student_ids', $validated)
+                || $request->has('scanner_student_ids')
+                || $request->has('scannerStudentIds');
+            $scannerStudentIdsRaw = $hasScannerStudentIds
+                ? ($validated['scanner_student_ids'] ?? $request->input('scannerStudentIds') ?? [])
+                : $previousScannerStudentIds;
+            $scannerStudentIds = array_values(array_unique(array_filter(array_map('strval', (array) $scannerStudentIdsRaw), function ($v) {
                 return trim($v) !== '';
             })));
-            $request->merge(['scanner_student_ids' => $normalizedScanners]);
-        }
 
-        $validated = $request->validate([
-            'event_name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'courses' => 'nullable|array',
-            'courses.*' => 'string',
-            'year_levels' => 'nullable|array',
-            'year_levels.*' => 'string',
-            'location' => 'nullable|string|max:255',
-            'event_date' => 'required|date',
-            'event_time' => 'required',
-            'registration_end_time' => 'nullable',
-            'organizer' => 'required|string|max:255',
-            'scanner_portal_active' => 'boolean',
-            'geofence_enabled' => 'boolean',
-            'geofence_latitude' => 'nullable|numeric|required_if:geofence_enabled,1',
-            'geofence_longitude' => 'nullable|numeric|required_if:geofence_enabled,1',
-            'geofence_radius_m' => 'nullable|integer|required_if:geofence_enabled,1',
-            'attendance_type' => 'nullable|string|in:qr_scanner,dynamic_qr',
-            'scanner_student_ids' => 'nullable|array',
-            'scanner_student_ids.*' => 'string',
-        ]);
-
-        if (array_key_exists('registration_end_time', $validated) && $validated['registration_end_time'] !== null) {
-            $validated['registration_end_time'] = preg_replace('/^\d{4}-\d{2}-\d{2}T(\d{2}:\d{2})(?::\d{2})?$/', '$1:00', (string) $validated['registration_end_time']);
-            $validated['registration_end_time'] = preg_replace('/^(\d{2}:\d{2})$/', '$1:00', (string) $validated['registration_end_time']);
-        }
-
-        $geofenceEnabled = (bool) ($validated['geofence_enabled'] ?? false);
-
-        $previousScannerStudentIds = is_array($event->scanner_student_ids) ? $event->scanner_student_ids : [];
-        if (empty($previousScannerStudentIds) && !empty($event->scanner_student_id)) {
-            $previousScannerStudentIds = [(string) $event->scanner_student_id];
-        }
-
-        $hasScannerStudentIds = array_key_exists('scanner_student_ids', $validated)
-            || $request->has('scanner_student_ids')
-            || $request->has('scannerStudentIds');
-        $scannerStudentIdsRaw = $hasScannerStudentIds
-            ? ($validated['scanner_student_ids'] ?? $request->input('scannerStudentIds') ?? [])
-            : $previousScannerStudentIds;
-        $scannerStudentIds = array_values(array_unique(array_filter(array_map('strval', (array) $scannerStudentIdsRaw), function ($v) {
-            return trim($v) !== '';
-        })));
-
-        // Safeguard: Ensure assigned scanner students are preserved during edit if not explicitly cleared or modified
-        if (empty($scannerStudentIds) && !empty($previousScannerStudentIds) && !$request->boolean('clear_scanners', false) && !$request->boolean('scanner_student_ids_modified', false)) {
-            $scannerStudentIds = $previousScannerStudentIds;
-        }
-
-        $location = $validated['location'] ?? 'Campus / Unspecified';
-        $conflict = Event::findScheduleConflict(
-            $validated['event_date'],
-            $location,
-            $validated['event_time'],
-            $validated['registration_end_time'] ?? null,
-            $event->id
-        );
-        if ($conflict) {
-            $conflictSchedule = $conflict->event_time;
-            if (!empty($conflict->registration_end_time)) {
-                $conflictSchedule .= ' to ' . $conflict->registration_end_time;
+            // Safeguard: Ensure assigned scanner students are preserved during edit if not explicitly cleared or modified
+            if (empty($scannerStudentIds) && !empty($previousScannerStudentIds) && !$request->boolean('clear_scanners', false) && !$request->boolean('scanner_student_ids_modified', false)) {
+                $scannerStudentIds = $previousScannerStudentIds;
             }
-            $errorMsg = "Schedule & Venue Conflict! Venue '{$location}' is already booked on {$validated['event_date']} ({$conflictSchedule}) for '{$conflict->event_name}'.";
+
+            $location = $validated['location'] ?? 'Campus / Unspecified';
+            $conflict = Event::findScheduleConflict(
+                $validated['event_date'],
+                $location,
+                $validated['event_time'],
+                $validated['registration_end_time'] ?? null,
+                $event->id
+            );
+            // Venue sharing notice: DSAMS is an attendance monitoring system, not a facility booking system.
+            // Multiple events can legitimately record attendance at the same venue simultaneously.
+            if ($conflict) {
+                Log::info("Event '{$validated['event_name']}' sharing venue '{$location}' with concurrent event '{$conflict->event_name}' on {$validated['event_date']}.");
+            }
+
+            $event->update([
+                'event_name' => $validated['event_name'],
+                'description' => $validated['description'] ?? null,
+                'courses' => $validated['courses'] ?? [],
+                'year_levels' => $validated['year_levels'] ?? [],
+                'location' => $validated['location'] ?? 'Campus / Unspecified',
+                'event_date' => $validated['event_date'],
+                'event_time' => $validated['event_time'],
+                'registration_end_time' => $validated['registration_end_time'] ?? null,
+                'organizer' => $validated['organizer'],
+                'scanner_portal_active' => (bool) ($validated['scanner_portal_active'] ?? false),
+                'geofence_enabled' => $geofenceEnabled,
+                'geofence_latitude' => $geofenceEnabled ? ($validated['geofence_latitude'] ?? null) : null,
+                'geofence_longitude' => $geofenceEnabled ? ($validated['geofence_longitude'] ?? null) : null,
+                'geofence_radius_m' => $geofenceEnabled ? ($validated['geofence_radius_m'] ?? 50) : ($event->geofence_radius_m ?? 50),
+                'attendance_type' => $validated['attendance_type'] ?? $event->attendance_type ?? 'qr_scanner',
+                'scanner_student_id' => $scannerStudentIds[0] ?? null,
+                'scanner_student_ids' => $scannerStudentIds,
+            ]);
+
+            // Dispatch notification for newly granted scanner students safely
+            $newlyGrantedScannerIds = array_values(array_diff($scannerStudentIds, $previousScannerStudentIds));
+            if (! empty($newlyGrantedScannerIds)) {
+                try {
+                    $dispatcher = app(StudentNotificationDispatcher::class);
+                    $dispatcher->scannerAccessGranted($event, $newlyGrantedScannerIds);
+                } catch (\Throwable $notifError) {
+                    Log::warning('Scanner notification dispatch failed for event ' . $event->id . ': ' . $notifError->getMessage());
+                }
+            }
+
+            if (Schema::hasTable('activity_logs')) {
+                try {
+                    $actor = auth()->guard('admin')->user() ?: auth()->guard('program_head')->user() ?: auth()->user();
+                    if ($actor) {
+                        \App\Models\ActivityLog::logForUser($actor, 'Event Management', 'Updated', 'Updated event: ' . (string) $event->event_name);
+                    }
+                } catch (\Throwable $actError) {
+                    Log::warning('Activity log failed for event ' . $event->id . ': ' . $actError->getMessage());
+                }
+            }
+
+            $redirectRoute = auth()->guard('program_head')->check() ? 'program-head.calendar-events' : 'admin.events';
+            return redirect()->route($redirectRoute)->with('success', 'Event updated successfully!');
+        } catch (\Illuminate\Validation\ValidationException $ve) {
+            throw $ve;
+        } catch (\Throwable $e) {
+            Log::error('AdminEventsController::update failed: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            $errorMsg = 'Failed to update event: ' . $e->getMessage();
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
                     'message' => $errorMsg,
-                    'errors' => ['location' => [$errorMsg]],
-                ], 422);
+                    'errors' => ['event_name' => [$errorMsg]],
+                ], 500);
             }
+
             return redirect()->back()->withErrors([
-                'location' => $errorMsg,
+                'event_name' => $errorMsg,
             ])->with('error', $errorMsg);
         }
-
-        $event->update([
-            'event_name' => $validated['event_name'],
-            'description' => $validated['description'] ?? null,
-            'courses' => $validated['courses'] ?? [],
-            'year_levels' => $validated['year_levels'] ?? [],
-            'location' => $validated['location'] ?? 'Campus / Unspecified',
-            'event_date' => $validated['event_date'],
-            'event_time' => $validated['event_time'],
-            'registration_end_time' => $validated['registration_end_time'] ?? null,
-            'organizer' => $validated['organizer'],
-            'scanner_portal_active' => (bool) ($validated['scanner_portal_active'] ?? false),
-            'geofence_enabled' => $geofenceEnabled,
-            'geofence_latitude' => $geofenceEnabled ? ($validated['geofence_latitude'] ?? null) : null,
-            'geofence_longitude' => $geofenceEnabled ? ($validated['geofence_longitude'] ?? null) : null,
-            'geofence_radius_m' => $geofenceEnabled ? ($validated['geofence_radius_m'] ?? 50) : ($event->geofence_radius_m ?? 50),
-            'attendance_type' => $validated['attendance_type'] ?? $event->attendance_type ?? 'qr_scanner',
-            'scanner_student_id' => $scannerStudentIds[0] ?? null,
-            'scanner_student_ids' => $scannerStudentIds,
-        ]);
-
-        // Dispatch notification for newly granted scanner students
-        $newlyGrantedScannerIds = array_values(array_diff($scannerStudentIds, $previousScannerStudentIds));
-        if (! empty($newlyGrantedScannerIds)) {
-            $dispatcher = app(StudentNotificationDispatcher::class);
-            $dispatcher->scannerAccessGranted($event, $newlyGrantedScannerIds);
-        }
-
-        if (Schema::hasTable('activity_logs')) {
-            $actor = auth()->guard('admin')->user() ?: auth()->guard('program_head')->user() ?: auth()->user();
-            if ($actor) {
-                \App\Models\ActivityLog::logForUser($actor, 'Event Management', 'Updated', 'Updated event: ' . (string) $event->event_name);
-            }
-        }
-
-        $redirectRoute = auth()->guard('program_head')->check() ? 'program-head.calendar-events' : 'admin.events';
-        return redirect()->route($redirectRoute)->with('success', 'Event updated successfully!');
     }
 
     public function destroy(Event $event)

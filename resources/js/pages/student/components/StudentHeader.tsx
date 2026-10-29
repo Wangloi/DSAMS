@@ -207,7 +207,7 @@ export function StudentHeader() {
                             </SheetTrigger>
                             <SheetContent
                                 side="left"
-                                className="flex h-full w-[85vw] max-w-xs flex-col border-r border-slate-200 bg-white p-0 dark:border-white/10 dark:bg-[#0B192C] [&>button]:hidden"
+                                className="flex h-[100dvh] max-h-[100dvh] w-[85vw] max-w-xs flex-col gap-0 border-r border-slate-200 bg-white p-0 overflow-hidden dark:border-white/10 dark:bg-[#0B192C] [&>button]:hidden z-[70]"
                             >
                                 <SheetHeader className="sr-only">
                                     <SheetTitle>Student Navigation Menu</SheetTitle>
@@ -215,7 +215,7 @@ export function StudentHeader() {
                                         Main navigation menu for student dashboard and services
                                     </SheetDescription>
                                 </SheetHeader>
-                                <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-5 pt-[max(1rem,env(safe-area-inset-top,0px))] pb-4 dark:border-white/10 dark:bg-white/5">
+                                <div className="flex shrink-0 items-center justify-between border-b border-slate-100 bg-slate-50 px-5 pt-[max(1rem,env(safe-area-inset-top,0px))] pb-4 dark:border-white/10 dark:bg-white/5">
                                     <div className="flex items-center gap-2.5">
                                         <div className="flex -space-x-2">
                                             <img
@@ -242,15 +242,18 @@ export function StudentHeader() {
                                         variant="ghost"
                                         size="icon"
                                         onClick={() => setMobileMenuOpen(false)}
-                                        className="h-8 w-8 rounded-full text-slate-500 hover:bg-slate-200 dark:text-white dark:hover:bg-white/10"
+                                        className="h-8 w-8 rounded-full text-red-500 hover:bg-red-50 hover:text-red-600 dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300 cursor-pointer transition-colors"
+                                        aria-label="Close navigation menu"
                                     >
                                         <X className="h-4 w-4" />
                                     </Button>
                                 </div>
-                                <StudentMobileNavigation
-                                    onItemClick={() => setMobileMenuOpen(false)}
-                                    unreadNotificationsCount={unreadNotifications}
-                                />
+                                <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
+                                    <StudentMobileNavigation
+                                        onItemClick={() => setMobileMenuOpen(false)}
+                                        unreadNotificationsCount={unreadNotifications}
+                                    />
+                                </div>
                             </SheetContent>
                         </Sheet>
                     </div>

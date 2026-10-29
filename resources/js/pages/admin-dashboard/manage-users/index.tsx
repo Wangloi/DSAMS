@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { adminDashboard, adminManageUsers } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
 import Swal from 'sweetalert2';
@@ -19,7 +19,6 @@ import { ManageUsersStatsCards } from './ManageUsersStatsCards';
 import { ManageUsersTableCard } from './ManageUsersTableCard';
 import type { PageProps, ProgramRow, UserRow } from './types';
 import { useManageUsers } from './useManageUsers';
-import ViewStudentDialog from './ViewStudentDialog';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -164,8 +163,6 @@ export default function AdminManageUsersPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [pageIndex, setPageIndex] = useState(1);
     const [pageSize, setPageSize] = useState(10);
-    const [viewOpen, setViewOpen] = useState(false);
-    const [viewStudent, setViewStudent] = useState<UserRow | null>(null);
     const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
     const [adminOpen, setAdminOpen] = useState(false);
     const [bulkAddOpen, setBulkAddOpen] = useState(false);
@@ -384,8 +381,7 @@ export default function AdminManageUsersPage() {
                                 setPageIndex={setPageIndex}
                                 totalPages={totalPages}
                                 onViewUser={(user) => {
-                                    setViewStudent(user);
-                                    setViewOpen(true);
+                                    router.visit(`/admin/manage-users/view/${(user as any).userType === 'program_head' ? 'program-head' : (user as any).userType === 'admin' ? 'admin' : 'student'}/${(user as any).program_head_id ?? (user as any).admin_id ?? (user as any).id}`);
                                 }}
                                 onEditUser={openEditModal}
                                 onOpenBulkModal={() => setBulkModalOpen(true)}
@@ -404,8 +400,7 @@ export default function AdminManageUsersPage() {
                             availablePrograms={availableCourses}
                             onOpenCreatePHModal={openCreatePHModal}
                             onViewProgramHead={(user) => {
-                                setViewStudent(user);
-                                setViewOpen(true);
+                                router.visit(`/admin/manage-users/view/${(user as any).userType === 'program_head' ? 'program-head' : (user as any).userType === 'admin' ? 'admin' : 'student'}/${(user as any).program_head_id ?? (user as any).admin_id ?? (user as any).id}`);
                             }}
                             onEditProgramHead={openEditModal}
                             onDeleteProgramHead={deleteProgramHead}
@@ -437,11 +432,6 @@ export default function AdminManageUsersPage() {
             </div>
 
             {/* Dialogs */}
-            <ViewStudentDialog
-                open={viewOpen}
-                onOpenChange={setViewOpen}
-                student={viewStudent as any}
-            />
 
             <AddEditUserDialog
                 open={open}

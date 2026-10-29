@@ -13,6 +13,7 @@ import {
     ArrowLeft,
     CheckCircle2,
     Clock,
+    Info,
     QrCode,
     RefreshCw,
     ShieldCheck,
@@ -23,6 +24,7 @@ import {
 import QRCode from 'qrcode';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ProgramHeadLayout from '@/pages/program-head/components/ProgramHeadLayout';
+import { getSocketInstance, joinEventRoom, leaveEventRoom } from '@/services/socket';
 import AdminLayout from '../admin-layout';
 
 type Props = {
@@ -214,17 +216,42 @@ export default function AdminAttendanceScannerPortalPage({
         void fetchToken();
         void fetchCounts();
 
+        if (event?.id) {
+            joinEventRoom(event.id);
+        }
+
+        const socket = getSocketInstance();
+        const handleScanEvent = (payload: any) => {
+            if (!payload || String(payload.event_id) !== String(event.id)) return;
+            setCounts((prev) => ({
+                total: prev.total + 1,
+                present: payload.status === 'present' ? prev.present + 1 : prev.present,
+                late: payload.status === 'late' ? prev.late + 1 : prev.late,
+            }));
+        };
+
+        if (socket) {
+            socket.on('attendance_scanned', handleScanEvent);
+        }
+
         qrIntervalRef.current = setInterval(() => {
             void fetchToken();
         }, tokenLifetimeSeconds * 1000);
 
-        const countsInterval = setInterval(fetchCounts, 10000);
+        // Relax background count polling to 30s since WebSocket delivers real-time scans
+        const countsInterval = setInterval(fetchCounts, 30000);
 
         return () => {
+            if (event?.id) {
+                leaveEventRoom(event.id);
+            }
+            if (socket) {
+                socket.off('attendance_scanned', handleScanEvent);
+            }
             if (qrIntervalRef.current) clearInterval(qrIntervalRef.current);
             clearInterval(countsInterval);
         };
-    }, [fetchToken, fetchCounts, tokenLifetimeSeconds]);
+    }, [event.id, fetchToken, fetchCounts, tokenLifetimeSeconds]);
 
     return (
         <Layout breadcrumbs={breadcrumbs}>
@@ -237,11 +264,15 @@ export default function AdminAttendanceScannerPortalPage({
                             <Button
                                 type="button"
                                 variant="ghost"
-                                className="mr-2 h-12 w-12 rounded-2xl bg-slate-100 p-0 text-slate-600 transition-all duration-300 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400"
+                                className="mr-2 h-12 w-12 rounded-2xl bg-slate-100 p-0 text-slate-600 transition-all duration-300 hover:bg-slate-200 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-none dark:bg-slate-800 dark:text-slate-400"
                                 asChild
                             >
-                                <Link href={isPersonnel ? programHeadAttendance() : adminAttendance()}>
+                                <Link
+                                    href={isPersonnel ? programHeadAttendance() : adminAttendance()}
+                                    aria-label="Back to attendance"
+                                >
                                     <ArrowLeft className="h-6 w-6" />
+                                    <span className="sr-only">Back to attendance</span>
                                 </Link>
                             </Button>
                             <div className="grid h-12 w-12 place-items-center rounded-2xl bg-blue-600/10 text-blue-600 dark:bg-blue-600/20 dark:text-blue-400">
@@ -304,10 +335,11 @@ export default function AdminAttendanceScannerPortalPage({
                                                 {qrError}
                                             </p>
                                             <button
+                                                type="button"
                                                 onClick={() =>
                                                     void fetchToken()
                                                 }
-                                                className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-900 transition hover:bg-slate-200 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+                                                className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-900 transition hover:bg-slate-200 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:outline-none dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
                                             >
                                                 <RefreshCw className="h-4 w-4" />
                                                 Retry
@@ -376,9 +408,11 @@ export default function AdminAttendanceScannerPortalPage({
 
                                             {/* Countdown label */}
                                             <div
+                                                role="timer"
+                                                aria-label={`Security token refreshing in ${remaining} seconds`}
                                                 className={`flex items-center gap-2 text-sm font-semibold transition-colors ${remaining <= 5 ? 'text-red-500' : 'text-slate-500'}`}
                                             >
-                                                <Clock className="h-4 w-4" />
+                                                <Clock className="h-4 w-4" aria-hidden="true" />
                                                 {remaining > 0 ? (
                                                     `Refreshing in ${remaining}s`
                                                 ) : (
@@ -403,6 +437,14 @@ export default function AdminAttendanceScannerPortalPage({
                                                 in. It auto-rotates every{' '}
                                                 {tokenLifetimeSeconds} seconds.
                                             </p>
+
+                                            {/* WCAG 2.2.1 Timing Disclosure: Essential Security Requirement */}
+                                            <div className="mt-1 flex items-start gap-2 max-w-sm rounded-xl bg-slate-100 dark:bg-slate-800/60 p-2.5 text-left text-[11px] text-slate-600 dark:text-slate-400 border border-slate-200/80 dark:border-white/5">
+                                                <Info className="h-4 w-4 shrink-0 text-indigo-500 mt-0.5" aria-hidden="true" />
+                                                <div>
+                                                    <span className="font-semibold text-slate-800 dark:text-slate-200">WCAG 2.2.1 Essential Timing Notice:</span> The {tokenLifetimeSeconds}s token rotation prevents proxy attendance by screenshot sharing. Students requiring timing adjustments or accommodations can scan physical Student ID barcodes at a scanner desk or request manual proctor check-in.
+                                                </div>
+                                            </div>
                                         </>
                                     )}
                                 </div>

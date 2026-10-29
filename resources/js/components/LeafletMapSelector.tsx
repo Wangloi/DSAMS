@@ -551,7 +551,8 @@ export default function LeafletMapSelector({
                     <button
                         type="button"
                         onClick={() => setGpsError(null)}
-                        className="text-rose-500 hover:text-rose-700"
+                        aria-label="Close alert"
+                        className="rounded-sm p-0.5 text-red-500 transition-colors hover:bg-red-500/10 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-500/20 dark:hover:text-red-300 cursor-pointer"
                     >
                         <X className="h-3.5 w-3.5" />
                     </button>

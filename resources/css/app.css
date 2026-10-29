@@ -249,7 +249,7 @@ html:not(.dark) [data-slot='sidebar-menu-button'] {
     background: #475569;
 }
 
-/* SweetAlert2 custom z-index, pointer-events & dark mode */
+/* ── Standardized SweetAlert2 & Alert Dialogs ── */
 .swal2-container {
     z-index: 999999 !important;
     pointer-events: auto !important;
@@ -277,26 +277,149 @@ html.swal2-shown {
     pointer-events: auto !important;
 }
 
-.swal2-confirm,
-.swal2-cancel,
-.swal2-deny,
-.swal2-close {
-    cursor: pointer !important;
+.swal2-popup {
+    border-radius: 1rem !important; /* rounded-2xl */
+    border: 1px solid rgba(226, 232, 240, 0.9) !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+    padding: 1.75rem 1.5rem !important;
+    font-family: inherit !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
 }
 
+.swal2-title {
+    font-size: 1.25rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.025em !important;
+    color: #0f172a !important;
+    margin: 0.5rem 0 0.5rem 0 !important;
+}
+
+.swal2-html-container {
+    font-size: 0.875rem !important;
+    line-height: 1.5 !important;
+    color: #64748b !important;
+    margin: 0 0 1.25rem 0 !important;
+}
+
+.swal2-actions {
+    display: flex;
+    gap: 0.625rem !important;
+    margin-top: 1.25rem !important;
+    width: 100% !important;
+    justify-content: flex-end !important;
+}
+
+.swal2-confirm,
+.swal2-cancel,
+.swal2-deny {
+    display: inline-flex;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 0.75rem !important; /* rounded-xl */
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    padding: 0.625rem 1.25rem !important;
+    min-height: 2.5rem !important;
+    cursor: pointer !important;
+    transition: all 150ms ease !important;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+.swal2-cancel {
+    background: #ffffff !important;
+    color: #334155 !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+.swal2-cancel:hover {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+
+.swal2-close {
+    position: absolute !important;
+    top: 1rem !important;
+    right: 1rem !important;
+    width: 2rem !important;
+    height: 2rem !important;
+    display: flex;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 0.5rem !important;
+    font-size: 1.5rem !important;
+    color: #dc2626 !important;
+    cursor: pointer !important;
+    transition: all 150ms ease !important;
+}
+
+/* Ensure SweetAlert2 programmatic visibility toggles (inline style="display: none") are never overridden */
+.swal2-container [style*="display: none"],
+.swal2-container [style*="display:none"],
+.swal2-container .swal2-hide {
+    display: none !important;
+}
+
+.swal2-close:hover {
+    color: #b91c1c !important;
+    background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
+/* Distinct Alert Type Indicators */
+.swal2-icon.swal2-success {
+    border-color: #10b981 !important;
+    color: #10b981 !important;
+}
+
+.swal2-icon.swal2-error {
+    border-color: #ef4444 !important;
+    color: #ef4444 !important;
+}
+
+.swal2-icon.swal2-warning {
+    border-color: #f59e0b !important;
+    color: #f59e0b !important;
+}
+
+.swal2-icon.swal2-info,
+.swal2-icon.swal2-question {
+    border-color: #3b82f6 !important;
+    color: #3b82f6 !important;
+}
+
+/* Dark Mode SweetAlert2 */
 .dark .swal2-popup {
-    background: #1e293b !important;
+    background: #0f172a !important;
     color: #f8fafc !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
-.dark .swal2-title,
+.dark .swal2-title {
+    color: #ffffff !important;
+}
+
 .dark .swal2-html-container {
-    color: #f8fafc !important;
+    color: #94a3b8 !important;
+}
+
+.dark .swal2-cancel {
+    background: #1e293b !important;
+    color: #cbd5e1 !important;
+    border-color: #334155 !important;
+}
+
+.dark .swal2-cancel:hover {
+    background: #334155 !important;
+    color: #ffffff !important;
 }
 
 .dark .swal2-close {
-    color: #94a3b8 !important;
+    color: #f87171 !important;
+}
+
+.dark .swal2-close:hover {
+    color: #fca5a5 !important;
+    background-color: rgba(239, 68, 68, 0.2) !important;
 }
 
 .dark .swal2-input,
@@ -304,6 +427,7 @@ html.swal2-shown {
     background-color: #0f172a !important;
     color: #f8fafc !important;
     border-color: #334155 !important;
+    border-radius: 0.75rem !important;
 }
 
 /* ── FullCalendar System Theme Integration ── */
@@ -489,6 +613,162 @@ html.swal2-shown {
         padding-left: env(safe-area-inset-left, 0px);
         padding-right: env(safe-area-inset-right, 0px);
     }
+
+    /* ─────────────────────────────────────────────────────────────
+       Interactive Elements & Pointer Cursor Consistency
+       ───────────────────────────────────────────────────────────── */
+
+    /* 1. All standard interactive button elements & triggers */
+    button:not(:disabled):not([aria-disabled='true']):not([data-disabled]),
+    [type='button']:not(:disabled):not([aria-disabled='true']):not([data-disabled]),
+    [type='submit']:not(:disabled):not([aria-disabled='true']):not([data-disabled]),
+    [type='reset']:not(:disabled):not([aria-disabled='true']):not([data-disabled]),
+    [role='button']:not([aria-disabled='true']):not([disabled]):not([data-disabled]),
+    summary,
+    select:not(:disabled):not([aria-disabled='true']) {
+        cursor: pointer;
+    }
+
+    /* 2. Interactive links & navigation triggers */
+    a[href]:not([aria-disabled='true']):not([data-disabled]),
+    a[role='button']:not([aria-disabled='true']):not([data-disabled]),
+    [data-slot='sidebar-menu-button']:not(:disabled):not([aria-disabled='true']):not([data-disabled]),
+    [data-slot='breadcrumb-link']:not([aria-disabled='true']) {
+        cursor: pointer;
+    }
+
+    /* 3. Form interactive controls & selectable inputs */
+    input[type='checkbox']:not(:disabled):not([aria-disabled='true']),
+    input[type='radio']:not(:disabled):not([aria-disabled='true']),
+    input[type='color']:not(:disabled):not([aria-disabled='true']),
+    input[type='range']:not(:disabled):not([aria-disabled='true']),
+    input[type='file']:not(:disabled):not([aria-disabled='true']),
+    input[type='file']::-webkit-file-upload-button {
+        cursor: pointer;
+    }
+
+    /* Labels associated with inputs or wrapping interactive controls */
+    label[for]:not([aria-disabled='true']):not(.disabled),
+    label:has(input:not(:disabled), select:not(:disabled), textarea:not(:disabled), button:not(:disabled)) {
+        cursor: pointer;
+    }
+
+    /* 4. Dropdowns, select triggers, menu items, tabs, dialogs & radix collection items */
+    [data-slot='select-trigger']:not(:disabled):not([data-disabled]),
+    [data-slot='select-item']:not([data-disabled]),
+    [data-slot='dropdown-menu-item']:not([data-disabled]),
+    [data-slot='dropdown-menu-checkbox-item']:not([data-disabled]),
+    [data-slot='dropdown-menu-radio-item']:not([data-disabled]),
+    [data-slot='dropdown-menu-sub-trigger']:not([data-disabled]),
+    [data-slot='dialog-close']:not(:disabled):not([data-disabled]),
+    [data-slot='sheet-close']:not(:disabled):not([data-disabled]),
+    [data-slot='tabs-trigger']:not([data-disabled]),
+    [data-radix-collection-item]:not([data-disabled]):not(:disabled),
+    [role='menuitem']:not([aria-disabled='true']):not([data-disabled]),
+    [role='option']:not([aria-disabled='true']):not([data-disabled]),
+    [role='tab']:not([aria-disabled='true']):not([data-disabled]),
+    [role='switch']:not([aria-disabled='true']):not([data-disabled]) {
+        cursor: pointer;
+    }
+
+    /* 5. Clickable cards and interactive container elements */
+    .clickable-card,
+    [data-clickable='true'],
+    [data-href],
+    .cursor-pointer {
+        cursor: pointer;
+    }
+
+    /* 6. STRICT EXCLUSIONS: Disabled elements and non-interactive text */
+    :disabled,
+    [disabled],
+    [aria-disabled='true'],
+    [data-disabled],
+    .disabled,
+    button:disabled,
+    input:disabled,
+    select:disabled,
+    textarea:disabled {
+        cursor: not-allowed !important;
+    }
+
+    /* Non-interactive text entry inputs */
+    input[type='text'],
+    input[type='search'],
+    input[type='password'],
+    input[type='email'],
+    input[type='number'],
+    input[type='tel'],
+    input[type='url'],
+    textarea {
+        cursor: text;
+    }
+
+    /* Readonly inputs */
+    input[readonly],
+    textarea[readonly] {
+        cursor: default;
+    }
+
+    /* Disabled text entry inputs */
+    input[type='text']:disabled,
+    input[type='search']:disabled,
+    input[type='password']:disabled,
+    input[type='email']:disabled,
+    input[type='number']:disabled,
+    input[type='tel']:disabled,
+    input[type='url']:disabled,
+    input[readonly]:disabled,
+    textarea:disabled,
+    textarea[readonly]:disabled {
+        cursor: not-allowed !important;
+    }
+
+    /* Non-interactive typography and layout containers remain default/inherit */
+    p, span, h1, h2, h3, h4, h5, h6, th, td, blockquote, figcaption, dl, dt, dd {
+        cursor: inherit;
+    }
+
+    body, main, section, article, aside, header, footer, nav {
+        cursor: default;
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Consistent Visual Feedback & Hover States
+   ───────────────────────────────────────────────────────────── */
+.clickable-card,
+[data-clickable='true'],
+[data-slot='card'][role='button'],
+a > [data-slot='card'] {
+    cursor: pointer;
+    transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.clickable-card:hover,
+[data-clickable='true']:hover,
+[data-slot='card'][role='button']:hover,
+a:hover > [data-slot='card'] {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+}
+
+.clickable-card:active,
+[data-clickable='true']:active,
+[data-slot='card'][role='button']:active,
+a:active > [data-slot='card'] {
+    transform: translateY(0);
+}
+
+button,
+[role='button'],
+[data-slot='select-trigger'],
+[data-slot='sidebar-menu-button'] {
+    transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+    transition-duration: 150ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Standalone PWA mode specific styling adjustments */
@@ -504,5 +784,304 @@ html.swal2-shown {
         user-select: text;
     }
 }
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FullCalendar Clean Minimalist Popover & More-Link Styling
+   ───────────────────────────────────────────────────────────── */
+.fc .fc-daygrid-more-link {
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    color: #23509A !important;
+    border-radius: 0.375rem !important;
+    padding: 1px 4px !important;
+    transition: all 0.15s ease !important;
+}
+.dark .fc .fc-daygrid-more-link {
+    color: #60a5fa !important;
+}
+.fc .fc-daygrid-more-link:hover {
+    background-color: rgba(35, 80, 154, 0.1) !important;
+    text-decoration: none !important;
+}
+.dark .fc .fc-daygrid-more-link:hover {
+    background-color: rgba(96, 165, 250, 0.15) !important;
+}
+
+/* Fallback styling for FullCalendar popover */
+.fc-popover,
+.fc-theme-standard .fc-popover {
+    background-color: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 1rem !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+    z-index: 9999 !important;
+    overflow: hidden !important;
+}
+.dark .fc-popover,
+.dark .fc-theme-standard .fc-popover {
+    background-color: #0f172a !important;
+    border-color: #1e293b !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6) !important;
+}
+.fc-popover-header {
+    background: #ffffff !important;
+    padding: 0.75rem 1rem !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    font-weight: 700 !important;
+    font-size: 0.875rem !important;
+    color: #0f172a !important;
+}
+.dark .fc-popover-header {
+    background: #0f172a !important;
+    border-bottom-color: #1e293b !important;
+    color: #f8fafc !important;
+}
+.fc-popover-close {
+    color: #dc2626 !important;
+    padding: 0.25rem !important;
+    border-radius: 0.375rem !important;
+    transition: all 0.15s ease !important;
+}
+.fc-popover-close:hover {
+    color: #b91c1c !important;
+    background-color: rgba(239, 68, 68, 0.1) !important;
+}
+.dark .fc-popover-close {
+    color: #f87171 !important;
+}
+.dark .fc-popover-close:hover {
+    color: #fca5a5 !important;
+    background-color: rgba(239, 68, 68, 0.2) !important;
+}
+.fc-popover-body {
+    padding: 0.75rem !important;
+    max-height: 320px !important;
+    overflow-y: auto !important;
+    background-color: #ffffff !important;
+}
+.dark .fc-popover-body {
+    background-color: #0f172a !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Modal, Dialog, Alert & Pop-up Close Buttons ("X" Icon)
+   ───────────────────────────────────────────────────────────── */
+/* Target all close buttons and "X" triggers on modals, dialogs, sheets, alerts, and popups */
+[data-slot='dialog-close'],
+[data-slot='sheet-close'],
+[data-slot='alert-close'],
+[aria-label='Close'],
+[aria-label='Close modal'],
+[aria-label='Close dialog'],
+[aria-label='Close popup'],
+[aria-label='Close alert'],
+[aria-label='Dismiss'],
+button[title='Close'],
+button[title='Dismiss'],
+.fc-popover-close,
+.modal-close-btn,
+.dialog-close-btn,
+/* Header close buttons containing an X or Lucide X icon inside dialogs/modals/popups/alerts */
+[data-slot='dialog-content'] > button:has(> svg.lucide-x),
+[role='dialog'] > button:has(> svg.lucide-x),
+[role='dialog'] header button:has(> svg.lucide-x),
+[data-slot='dialog-content'] header button:has(> svg.lucide-x),
+.fc-popover button:has(> svg.lucide-x),
+[role='alert'] button:has(> svg.lucide-x),
+[data-slot='alert'] button:has(> svg.lucide-x) {
+    color: #dc2626 !important; /* red-600 with WCAG AA compliant contrast */
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: color 150ms ease, background-color 150ms ease, transform 150ms ease;
+}
+
+[data-slot='dialog-close']:hover,
+[data-slot='sheet-close']:hover,
+[data-slot='alert-close']:hover,
+[aria-label='Close']:hover,
+[aria-label='Close modal']:hover,
+[aria-label='Close dialog']:hover,
+[aria-label='Close popup']:hover,
+[aria-label='Close alert']:hover,
+[aria-label='Dismiss']:hover,
+button[title='Close']:hover,
+button[title='Dismiss']:hover,
+.fc-popover-close:hover,
+.modal-close-btn:hover,
+.dialog-close-btn:hover,
+[data-slot='dialog-content'] > button:has(> svg.lucide-x):hover,
+[role='dialog'] > button:has(> svg.lucide-x):hover,
+[role='dialog'] header button:has(> svg.lucide-x):hover,
+[data-slot='dialog-content'] header button:has(> svg.lucide-x):hover,
+.fc-popover button:has(> svg.lucide-x):hover,
+[role='alert'] button:has(> svg.lucide-x):hover,
+[data-slot='alert'] button:has(> svg.lucide-x):hover {
+    color: #b91c1c !important; /* red-700 */
+    background-color: rgba(239, 68, 68, 0.1) !important; /* soft subtle red hover tint */
+}
+
+/* Dark mode styling ensuring strong contrast and comfortable readability */
+.dark [data-slot='dialog-close'],
+.dark [data-slot='sheet-close'],
+.dark [data-slot='alert-close'],
+.dark [aria-label='Close'],
+.dark [aria-label='Close modal'],
+.dark [aria-label='Close dialog'],
+.dark [aria-label='Close popup'],
+.dark [aria-label='Close alert'],
+.dark [aria-label='Dismiss'],
+.dark button[title='Close'],
+.dark button[title='Dismiss'],
+.dark .fc-popover-close,
+.dark .modal-close-btn,
+.dark .dialog-close-btn,
+.dark [data-slot='dialog-content'] > button:has(> svg.lucide-x),
+.dark [role='dialog'] > button:has(> svg.lucide-x),
+.dark [role='dialog'] header button:has(> svg.lucide-x),
+.dark [data-slot='dialog-content'] header button:has(> svg.lucide-x),
+.dark .fc-popover button:has(> svg.lucide-x),
+.dark [role='alert'] button:has(> svg.lucide-x),
+.dark [data-slot='alert'] button:has(> svg.lucide-x) {
+    color: #f87171 !important; /* red-400 */
+}
+
+.dark [data-slot='dialog-close']:hover,
+.dark [data-slot='sheet-close']:hover,
+.dark [data-slot='alert-close']:hover,
+.dark [aria-label='Close']:hover,
+.dark [aria-label='Close modal']:hover,
+.dark [aria-label='Close dialog']:hover,
+.dark [aria-label='Close popup']:hover,
+.dark [aria-label='Close alert']:hover,
+.dark [aria-label='Dismiss']:hover,
+.dark button[title='Close']:hover,
+.dark button[title='Dismiss']:hover,
+.dark .fc-popover-close:hover,
+.dark .modal-close-btn:hover,
+.dark .dialog-close-btn:hover,
+.dark [data-slot='dialog-content'] > button:has(> svg.lucide-x):hover,
+.dark [role='dialog'] > button:has(> svg.lucide-x):hover,
+.dark [role='dialog'] header button:has(> svg.lucide-x):hover,
+.dark [data-slot='dialog-content'] header button:has(> svg.lucide-x):hover,
+.dark .fc-popover button:has(> svg.lucide-x):hover,
+.dark [role='alert'] button:has(> svg.lucide-x):hover,
+.dark [data-slot='alert'] button:has(> svg.lucide-x):hover {
+    color: #fca5a5 !important; /* red-300 */
+    background-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+/* Ensure child SVGs inherit the red color */
+[data-slot='dialog-close'] svg,
+[data-slot='sheet-close'] svg,
+[data-slot='alert-close'] svg,
+[aria-label='Close'] svg,
+[aria-label='Close modal'] svg,
+[aria-label='Close dialog'] svg,
+[aria-label='Close popup'] svg,
+[aria-label='Close alert'] svg,
+[aria-label='Dismiss'] svg,
+button[title='Close'] svg,
+button[title='Dismiss'] svg,
+.fc-popover-close svg {
+    color: inherit !important;
+    stroke: currentColor !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Visual Distinction: Destructive Action Buttons vs. Close Buttons
+   ───────────────────────────────────────────────────────────── */
+/* Destructive action buttons remain solid high-impact buttons with white text, visually distinct from ghost close buttons */
+button[data-variant='destructive'],
+.btn-destructive,
+button.bg-destructive,
+button.bg-red-600,
+button.bg-rose-600 {
+    color: #ffffff !important;
+    background-color: var(--destructive, #dc2626) !important;
+    border: none !important;
+    font-weight: 700 !important;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+}
+
+button[data-variant='destructive']:hover,
+.btn-destructive:hover,
+button.bg-destructive:hover,
+button.bg-red-600:hover,
+button.bg-rose-600:hover {
+    color: #ffffff !important;
+    background-color: #b91c1c !important;
+    box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.25), 0 2px 4px -2px rgba(220, 38, 38, 0.25);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Standardized Form Controls & Layout Inside Modals & Dialogs
+   ───────────────────────────────────────────────────────────── */
+[data-slot='dialog-content'],
+[role='dialog'] {
+    font-family: inherit;
+}
+
+/* Standardized labels inside modals */
+[data-slot='dialog-content'] label,
+[role='dialog'] label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+/* Standardized focus indicators and borders for input fields inside modals */
+[data-slot='dialog-content'] input:not([type='checkbox']):not([type='radio']):not([type='file']),
+[data-slot='dialog-content'] select,
+[data-slot='dialog-content'] textarea,
+[role='dialog'] input:not([type='checkbox']):not([type='radio']):not([type='file']),
+[role='dialog'] select,
+[role='dialog'] textarea {
+    border-radius: 0.75rem;
+    transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+}
+
+[data-slot='dialog-content'] input:focus-visible,
+[data-slot='dialog-content'] select:focus-visible,
+[data-slot='dialog-content'] textarea:focus-visible,
+[role='dialog'] input:focus-visible,
+[role='dialog'] select:focus-visible,
+[role='dialog'] textarea:focus-visible {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
+    outline: none !important;
+}
+
+.dark [data-slot='dialog-content'] input:focus-visible,
+.dark [data-slot='dialog-content'] select:focus-visible,
+.dark [data-slot='dialog-content'] textarea:focus-visible,
+.dark [role='dialog'] input:focus-visible,
+.dark [role='dialog'] select:focus-visible,
+.dark [role='dialog'] textarea:focus-visible {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35) !important;
+}
+
+/* Modal action buttons standardization */
+[data-slot='dialog-footer'] button,
+[role='dialog'] footer button {
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    min-height: 2.5rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    transition: all 150ms ease;
+}
+
 
 

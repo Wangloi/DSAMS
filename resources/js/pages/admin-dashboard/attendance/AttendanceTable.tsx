@@ -11,6 +11,8 @@ import {
 import { cn } from '@/lib/utils';
 import { SimpleTooltip } from '@/components/ui/tooltip';
 import { Activity, Archive, Eye, MapPin, Printer, Search } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import PrintAttendanceModal from './PrintAttendanceModal';
 
 type AttendanceRow = {
     id: string;
@@ -72,6 +74,23 @@ export default function AttendanceTable({
     const selectedEvent = selectedEventId
         ? attendanceEvents.find((e) => String(e.id) === String(selectedEventId))
         : null;
+
+    const [printModalEvent, setPrintModalEvent] = useState<AttendanceRow | null>(null);
+
+    const [pageIndex, setPageIndex] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+
+    useEffect(() => {
+        setPageIndex(1);
+    }, [searchQuery, statusFilter]);
+
+    const totalItems = attendanceEvents.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+    const clampedPage = Math.min(Math.max(pageIndex, 1), totalPages);
+    const pagedEvents = useMemo(() => {
+        const start = (clampedPage - 1) * pageSize;
+        return attendanceEvents.slice(start, start + pageSize);
+    }, [attendanceEvents, clampedPage, pageSize]);
 
     const renderStatusBadge = (status: string) => {
         switch (status) {
@@ -197,7 +216,7 @@ export default function AttendanceTable({
             <CardContent className="p-0">
                 {/* ── MOBILE CARDS VIEW (< md) ── */}
                 <div className="flex flex-col divide-y divide-slate-100 p-2.5 md:hidden dark:divide-slate-800">
-                    {attendanceEvents.map((row) => {
+                    {pagedEvents.map((row) => {
                         const { numerator, denominator } =
                             attendanceFraction(row);
                         const pct =
@@ -225,6 +244,22 @@ export default function AttendanceTable({
                         return (
                             <div
                                 key={row.id}
+                                tabIndex={onSelectEventRow || onViewStudents ? 0 : undefined}
+                                role={onSelectEventRow || onViewStudents ? 'button' : undefined}
+                                aria-label={`Select event ${row.event}`}
+                                onKeyDown={(e) => {
+                                    if ((onSelectEventRow || onViewStudents) && (e.key === 'Enter' || e.key === ' ')) {
+                                        e.preventDefault();
+                                        if (onSelectEventRow) {
+                                            onSelectEventRow(
+                                                isSelected ? null : rowId,
+                                            );
+                                        }
+                                        if (onViewStudents) {
+                                            onViewStudents(rowId);
+                                        }
+                                    }
+                                }}
                                 onClick={() => {
                                     if (onSelectEventRow) {
                                         onSelectEventRow(
@@ -238,7 +273,7 @@ export default function AttendanceTable({
                                 className={cn(
                                     'my-1 flex flex-col gap-2.5 rounded-xl border p-3 transition-all duration-150',
                                     (onSelectEventRow || onViewStudents) &&
-                                        'cursor-pointer active:scale-[0.99]',
+                                        'cursor-pointer active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
                                     isSelected
                                         ? 'border-blue-400 bg-blue-50/80 shadow-xs ring-2 ring-blue-500/20 dark:border-blue-700 dark:bg-blue-950/30'
                                         : 'border-slate-200/80 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-[#0B192C]/40',
@@ -362,6 +397,7 @@ export default function AttendanceTable({
                                                 type="button"
                                                 variant="outline"
                                                 size="sm"
+                                                aria-label="Archive event"
                                                 className="h-8 rounded-lg border-orange-200 bg-orange-50/70 px-2 text-xs text-orange-700 hover:bg-orange-100 dark:border-orange-900/40 dark:bg-orange-950/40 dark:text-orange-300"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -369,6 +405,7 @@ export default function AttendanceTable({
                                                 }}
                                             >
                                                 <Archive className="h-3.5 w-3.5" />
+                                                <span className="sr-only">Archive event</span>
                                             </Button>
                                         )}
                                     </div>
@@ -415,7 +452,7 @@ export default function AttendanceTable({
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-transparent">
-                            {attendanceEvents.map((row) => {
+                            {pagedEvents.map((row) => {
                                 const { numerator, denominator } =
                                     attendanceFraction(row);
                                 const pct =
@@ -444,6 +481,23 @@ export default function AttendanceTable({
                                 return (
                                     <tr
                                         key={row.id}
+                                        tabIndex={onSelectEventRow || onViewStudents ? 0 : undefined}
+                                        role={onSelectEventRow || onViewStudents ? 'button' : undefined}
+                                        aria-label={onSelectEventRow || onViewStudents ? `Select event ${row.event}` : undefined}
+                                        onKeyDown={(e) => {
+                                            if (e.target !== e.currentTarget) return;
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                if (onSelectEventRow) {
+                                                    onSelectEventRow(
+                                                        isSelected ? null : rowId,
+                                                    );
+                                                }
+                                                if (onViewStudents) {
+                                                    onViewStudents(rowId);
+                                                }
+                                            }
+                                        }}
                                         onClick={() => {
                                             if (onSelectEventRow) {
                                                 onSelectEventRow(
@@ -457,7 +511,7 @@ export default function AttendanceTable({
                                         className={cn(
                                             (onSelectEventRow ||
                                                 onViewStudents) &&
-                                                'cursor-pointer',
+                                                'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset',
                                             isSelected
                                                 ? 'bg-blue-50/70 ring-1 ring-blue-200 ring-inset dark:bg-blue-950/20 dark:ring-blue-800'
                                                 : 'transition-colors duration-150 hover:bg-blue-50/50 dark:hover:bg-blue-950/15',
@@ -534,7 +588,8 @@ export default function AttendanceTable({
                                                             type="button"
                                                             variant="ghost"
                                                             size="icon"
-                                                            className="h-8 w-8 rounded-md text-blue-600 transition-all duration-200 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                                                            aria-label="View Students List"
+                                                            className="h-8 w-8 rounded-md text-blue-600 transition-all duration-200 hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none dark:text-blue-400 dark:hover:bg-blue-950/30"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 onViewStudents(
@@ -543,6 +598,7 @@ export default function AttendanceTable({
                                                             }}
                                                         >
                                                             <Eye className="h-4 w-4" />
+                                                            <span className="sr-only">View Students List</span>
                                                         </Button>
                                                     </SimpleTooltip>
                                                 )}
@@ -552,7 +608,8 @@ export default function AttendanceTable({
                                                             type="button"
                                                             variant="ghost"
                                                             size="icon"
-                                                            className="h-8 w-8 rounded-md text-cyan-600 transition-all duration-200 hover:bg-cyan-50 dark:text-cyan-400 dark:hover:bg-cyan-950/30"
+                                                            aria-label="Real-Time Attendance Monitoring"
+                                                            className="h-8 w-8 rounded-md text-cyan-600 transition-all duration-200 hover:bg-cyan-50 focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-none dark:text-cyan-400 dark:hover:bg-cyan-950/30"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 onOpenRealTimeMonitoring(
@@ -562,6 +619,26 @@ export default function AttendanceTable({
                                                             }}
                                                         >
                                                             <Activity className="h-4 w-4" />
+                                                            <span className="sr-only">Real-Time Attendance Monitoring</span>
+                                                        </Button>
+                                                    </SimpleTooltip>
+                                                )}
+
+                                                {printUrlForEvent && (
+                                                    <SimpleTooltip content="Print Attendance Sheet">
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            aria-label="Print Attendance Sheet"
+                                                            className="h-8 w-8 rounded-md text-emerald-600 transition-all duration-200 hover:bg-emerald-50 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setPrintModalEvent(row);
+                                                            }}
+                                                        >
+                                                            <Printer className="h-4 w-4" />
+                                                            <span className="sr-only">Print Attendance Sheet</span>
                                                         </Button>
                                                     </SimpleTooltip>
                                                 )}
@@ -572,13 +649,15 @@ export default function AttendanceTable({
                                                             type="button"
                                                             variant="ghost"
                                                             size="icon"
-                                                            className="h-8 w-8 rounded-md text-orange-600 transition-all duration-200 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-950/30"
+                                                            aria-label="Archive Event"
+                                                            className="h-8 w-8 rounded-md text-orange-600 transition-all duration-200 hover:bg-orange-50 focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:outline-none dark:text-orange-400 dark:hover:bg-orange-950/30"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 onDelete(row.id);
                                                             }}
                                                         >
                                                             <Archive className="h-4 w-4" />
+                                                            <span className="sr-only">Archive Event</span>
                                                         </Button>
                                                     </SimpleTooltip>
                                                 )}
@@ -602,24 +681,45 @@ export default function AttendanceTable({
                 </div>
 
                 <div className="flex flex-col gap-3 border-t border-slate-100 p-3.5 sm:px-6 sm:py-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
-                    <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                        Showing{' '}
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">
-                            {attendanceEvents.length}
-                        </span>{' '}
-                        events
+                    <div className="flex flex-wrap items-center justify-between sm:justify-start gap-2.5 text-xs text-slate-600 dark:text-slate-400">
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] sm:text-xs">Rows:</span>
+                            <select
+                                value={pageSize}
+                                aria-label="Rows per page"
+                                onChange={(e) => {
+                                    setPageSize(Number(e.target.value));
+                                    setPageIndex(1);
+                                }}
+                                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                            >
+                                {[10, 25, 50, 100].map((size) => (
+                                    <option key={size} value={size}>
+                                        {size}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <span className="hidden sm:inline text-slate-400 dark:text-slate-600">|</span>
+                        <span className="text-[11px] sm:text-xs">
+                            Showing{' '}
+                            {totalItems === 0
+                                ? 0
+                                : (clampedPage - 1) * pageSize + 1}{' '}
+                            to {Math.min(clampedPage * pageSize, totalItems)} of {totalItems} events
+                        </span>
                         {selectedEvent && (
                             <span className="block mt-0.5 sm:mt-0 sm:inline sm:ml-2 font-medium text-blue-600 dark:text-blue-400">
                                 • Selected: <strong>{selectedEvent.event}</strong>
                             </span>
                         )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2">
                         {!hideSummaryReport && (
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-8 w-full sm:w-auto gap-1.5 border-slate-200 text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                                className="h-8 w-auto gap-1.5 border-slate-200 text-slate-700 transition-colors hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                                 onClick={() =>
                                     window.open(
                                         '/admin/reports/print?type=attendance&range=monthly',
@@ -631,9 +731,68 @@ export default function AttendanceTable({
                                 Monthly Summary
                             </Button>
                         )}
+                        <div className="flex items-center gap-1">
+                            <button
+                                type="button"
+                                className="rounded-md px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800 cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+                                onClick={() => setPageIndex((p) => Math.max(1, p - 1))}
+                                disabled={clampedPage <= 1}
+                            >
+                                Prev
+                            </button>
+                            {(() => {
+                                let startPage = Math.max(1, clampedPage - 1);
+                                let endPage = Math.min(totalPages, startPage + 2);
+                                if (endPage - startPage < 2) {
+                                    startPage = Math.max(1, endPage - 2);
+                                }
+                                const pages = [];
+                                for (let i = startPage; i <= endPage; i++) {
+                                    pages.push(i);
+                                }
+                                return pages.map((num) => (
+                                    <button
+                                        key={num}
+                                        type="button"
+                                        onClick={() => setPageIndex(num)}
+                                        className={cn(
+                                            'rounded-md px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none',
+                                            clampedPage === num
+                                                ? 'bg-[#23509A] text-white dark:bg-blue-600 font-bold'
+                                                : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800',
+                                        )}
+                                    >
+                                        {num}
+                                    </button>
+                                ));
+                            })()}
+                            <button
+                                type="button"
+                                className="rounded-md px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800 cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+                                onClick={() => setPageIndex((p) => Math.min(totalPages, p + 1))}
+                                disabled={clampedPage >= totalPages}
+                            >
+                                Next
+                            </button>
+                        </div>
                     </div>
                 </div>
             </CardContent>
+
+            {printUrlForEvent && (
+                <PrintAttendanceModal
+                    open={Boolean(printModalEvent)}
+                    onOpenChange={(open) => !open && setPrintModalEvent(null)}
+                    eventId={printModalEvent?.id ?? null}
+                    eventName={printModalEvent?.event}
+                    eventDate={printModalEvent?.dateTime}
+                    baseUrl={
+                        printModalEvent
+                            ? printUrlForEvent(printModalEvent.id)
+                            : undefined
+                    }
+                />
+            )}
         </Card>
     );
 }

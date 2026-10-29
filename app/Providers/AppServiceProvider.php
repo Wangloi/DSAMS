@@ -30,6 +30,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Prevent Vite from attempting to connect to localhost:5173 when deployed to production/staging
+        if (!app()->environment('local') && file_exists(public_path('hot'))) {
+            @unlink(public_path('hot'));
+        }
+
         $this->configureUrl();
         $this->configureDefaults();
         $this->registerEventListeners();
@@ -40,17 +45,16 @@ class AppServiceProvider extends ServiceProvider
     {
         $appUrl = config('app.url');
 
-        // Force HTTPS ONLY if the request is actually coming through HTTPS / SSL proxy (e.g. Laragon SSL port 443)
-        $isHttpsRequest = request()->isSecure()
+        $isHttpsRequest = (app()->bound('request') ? request()->isSecure() : false)
             || (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on')
-            || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)
+            || (isset($_SERVER['SERVER_PORT']) && (int) $_SERVER['SERVER_PORT'] === 443)
             || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
 
         if ($isHttpsRequest) {
             \Illuminate\Support\Facades\URL::forceScheme('https');
         }
 
-        if (($appUrl === 'http://localhost' || empty($appUrl)) && app()->environment('local')) {
+        if (($appUrl === 'http://localhost' || empty($appUrl)) && app()->environment('local') && app()->bound('request')) {
             $host = request()->getHost();
             $scheme = $isHttpsRequest ? 'https' : 'http';
             $port = request()->getPort();
@@ -88,10 +92,8 @@ class AppServiceProvider extends ServiceProvider
         );
 
         Password::defaults(fn (): ?Password => Password::min(8)
-            ->mixedCase()
             ->letters()
             ->numbers()
-            ->symbols()
         );
     }
 

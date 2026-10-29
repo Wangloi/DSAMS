@@ -190,3 +190,50 @@ export function formatLastNameFirst(
     return fallback;
 }
 
+export interface AcademicYearInfo {
+    currentAY: string;
+    semester: string;
+    todayFormatted: string;
+    options: Array<{ value: string; label: string; isCurrent: boolean }>;
+}
+
+/**
+ * Calculates real-time academic session information based on the current system date.
+ * Following the Philippine higher education and DSAMS calendar:
+ * - Months 1-6 (Jan-Jun): 2nd Semester of AY (currentYear - 1) - currentYear
+ * - Months 7-12 (Jul-Dec): 1st Semester of AY currentYear - (currentYear + 1)
+ */
+export function getRealAcademicYearInfo(): AcademicYearInfo {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1; // 1 to 12
+
+    const startYear = currentMonth <= 6 ? currentYear - 1 : currentYear;
+    const currentAY = `${startYear} - ${startYear + 1}`;
+    const semester = currentMonth <= 6 ? '2nd Semester' : '1st Semester';
+
+    const options: Array<{ value: string; label: string; isCurrent: boolean }> = [];
+    for (let i = 0; i < 4; i++) {
+        const sy = startYear - i;
+        const val = `${sy} - ${sy + 1}`;
+        options.push({
+            value: val,
+            label: `AY ${val}${i === 0 ? ' (Current)' : ''}`,
+            isCurrent: i === 0,
+        });
+    }
+
+    const todayFormatted = now.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    });
+
+    return {
+        currentAY,
+        semester,
+        todayFormatted,
+        options,
+    };
+}
+

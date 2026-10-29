@@ -36,15 +36,15 @@ export default function ProgramHeadQrScannerPage({ event }: { event?: any }) {
                             <p className="mt-2 max-w-md text-sm text-slate-500 dark:text-slate-400">
                                 Please go to Attendance Monitoring and select an active event to open the real-time QR code scanner.
                             </p>
-                            <Link
-                                href={programHeadAttendance()}
-                                className="mt-6"
+                            <Button
+                                asChild
+                                className="mt-6 gap-2 rounded-xl bg-[#0b2d66] text-white hover:bg-blue-700"
                             >
-                                <Button className="gap-2 rounded-xl bg-[#0b2d66] text-white hover:bg-blue-700">
+                                <Link href={programHeadAttendance()}>
                                     <ArrowLeft className="h-4 w-4" />
                                     Go to Attendance
-                                </Button>
-                            </Link>
+                                </Link>
+                            </Button>
                         </div>
                     )}
                 </div>

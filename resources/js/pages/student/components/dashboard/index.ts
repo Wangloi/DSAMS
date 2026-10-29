@@ -5,3 +5,4 @@ export * from './StudentTimelineEvents';
 export * from './StudentPendingEvaluations';
 export * from './StudentQuickActions';
 export * from './ReportIncidentModal';
+export * from './StudentEventHistory';

@@ -16,6 +16,20 @@ export function isSocketEnabled(): boolean {
     if (customUrl === 'false' || customUrl === 'none' || customUrl === 'disabled' || customUrl === '0') {
         return false;
     }
+
+    const isLocalhost =
+        typeof window !== 'undefined' &&
+        (window.location.hostname === 'localhost' ||
+            window.location.hostname === '127.0.0.1' ||
+            window.location.hostname.endsWith('.test'));
+
+    // On remote hosting (like Hostinger) without an explicit socket server URL configured,
+    // disable WebSocket connection by default to prevent failed connection spam.
+    // The application automatically uses background HTTP polling for notifications instead.
+    if (!isLocalhost && !customUrl) {
+        return false;
+    }
+
     return true;
 }
 
@@ -38,8 +52,6 @@ export function getSocketInstance(auth?: SocketUserAuth): Socket | null {
             window.location.hostname === '127.0.0.1' ||
             window.location.hostname.endsWith('.test'));
 
-    // If on a live remote domain and no explicit socket URL is provided,
-    // default to same origin (for reverse proxy) or skip raw port 3001
     const socketUrl =
         customUrl ||
         (isLocalhost
@@ -55,7 +67,7 @@ export function getSocketInstance(auth?: SocketUserAuth): Socket | null {
                 reconnectionDelay: 5000,
                 reconnectionDelayMax: 15000,
                 timeout: 10000,
-                transports: ['websocket', 'polling'],
+                transports: ['polling', 'websocket'],
                 auth: auth || {},
             });
 
@@ -112,3 +124,24 @@ export function disconnectSocket(): void {
         console.log('[Socket.IO Client] Socket connection closed and cleared.');
     }
 }
+
+/**
+ * Subscribe to an event-specific real-time attendance room
+ */
+export function joinEventRoom(eventId: string | number): void {
+    if (socket && eventId) {
+        socket.emit('join_event_room', eventId);
+        console.log(`[Socket.IO Client] Subscribed to event room: event_${eventId}`);
+    }
+}
+
+/**
+ * Leave an event-specific real-time attendance room
+ */
+export function leaveEventRoom(eventId: string | number): void {
+    if (socket && eventId) {
+        socket.emit('leave_event_room', eventId);
+        console.log(`[Socket.IO Client] Unsubscribed from event room: event_${eventId}`);
+    }
+}
+

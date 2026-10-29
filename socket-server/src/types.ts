@@ -12,9 +12,10 @@ export interface NotificationPayload {
 }
 
 export interface EmitRequestBody {
-  room?: string | null; // e.g. "user_15", "role_admin", or null for broadcast
-  event?: string;       // defaults to "notification"
-  data: NotificationPayload;
+  room?: string | null;     // e.g. "user_15", "role_admin", or null for broadcast
+  rooms?: string[] | null;  // e.g. ["user_1", "user_2"] for batch emission
+  event?: string;           // defaults to "notification", or "attendance_scanned"
+  data: NotificationPayload | Record<string, any>;
 }
 
 export interface ClientHandshakeAuth {

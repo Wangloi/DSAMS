@@ -106,6 +106,8 @@ class ThermalPrinterService
                 'status' => $data['status'] ?? 'APPROVED',
                 'deanName' => $data['dean_name'] ?? $data['deanName'] ?? 'Rey John N. Bongcas',
                 'slipId' => (string) ($data['id'] ?? $data['slip_id'] ?? $data['slipId'] ?? ''),
+                'slipCount' => (string) ($data['slip_count'] ?? $data['slipCount'] ?? ''),
+                'allTimeCount' => (string) ($data['all_time_slip_count'] ?? $data['allTimeCount'] ?? ''),
             ]);
 
             return $response->json();

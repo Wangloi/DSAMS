@@ -28,6 +28,32 @@ export type EventRecord = {
     is_done?: boolean;
 };
 
+export type AttendedEventRecord = {
+    attendance_id: number;
+    event_id: number;
+    title: string;
+    date: string;
+    raw_date?: string;
+    time: string;
+    location: string;
+    organizer?: string;
+    description?: string;
+    attendance_type: string;
+    status: 'checked_out' | 'checked_in' | 'late' | 'left_early' | 'incomplete' | 'excused';
+    raw_status?: string;
+    checked_in_at: string | null;
+    checked_out_at: string | null;
+    check_in_time?: string | null;
+    check_out_time?: string | null;
+    check_in_distance_m?: number | null;
+    check_out_distance_m?: number | null;
+    is_flagged?: boolean;
+    flagged_reason?: string | null;
+    is_manual_override?: boolean;
+    manual_override_reason?: string | null;
+    mid_session_verified_at?: string | null;
+};
+
 export type ProgramOption = {
     id: number;
     name: string;
@@ -73,9 +99,11 @@ export type StudentDashboardProps = {
     };
     evaluations?: EvaluationRow[];
     events?: EventRecord[];
+    attendedEvents?: AttendedEventRecord[];
     incidents?: IncidentRecord[];
     violations?: ViolationOption[];
     programs?: ProgramOption[];
+    initialTab?: 'schedule' | 'history';
 };
 
 export const placeOptions = [

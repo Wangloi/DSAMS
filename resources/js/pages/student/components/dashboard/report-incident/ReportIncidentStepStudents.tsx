@@ -148,6 +148,12 @@ export function ReportIncidentStepStudents({
                     </div>
                 ) : null}
 
+                {reportErrors.students_involved && (
+                    <p className="text-xs text-red-500">
+                        {reportErrors.students_involved}
+                    </p>
+                )}
+
                 <div className="text-xs text-slate-500 dark:text-slate-400">
                     Start typing a student ID or name to see suggestions. Use arrow
                     keys to navigate, Enter to select.

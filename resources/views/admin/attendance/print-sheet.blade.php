@@ -165,7 +165,11 @@
     </div>
 
     <div class="no-attendees">
-        No students have checked in for this event yet.
+        @if(!empty($selectedCourse) || !empty($selectedYearLevel))
+            No students or attendance records found matching {{ implode(' — ', array_filter([$selectedCourse, $selectedYearLevel])) }}.
+        @else
+            No students or attendance records found for this event yet.
+        @endif
     </div>
 </div>
 @endif

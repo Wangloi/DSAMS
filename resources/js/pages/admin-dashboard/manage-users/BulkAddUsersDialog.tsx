@@ -181,9 +181,9 @@ export default function BulkAddUsersDialog({ open, onOpenChange }: Props) {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="overflow-hidden border-slate-200 bg-white p-0 shadow-2xl sm:max-w-3xl dark:border-slate-700 dark:bg-slate-800">
+            <DialogContent size="xl" preventClose={isSubmitting} className="overflow-hidden rounded-2xl border-slate-200/80 bg-white p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-[#0b2d66] to-[#1e40af] px-6 py-5 text-white">
+                <div className="bg-gradient-to-r from-[#0b2d66] to-[#1e40af] px-6 py-5 pr-14 text-white">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-xl font-bold text-white">
                             <Users className="h-6 w-6 text-blue-200" />

@@ -32,6 +32,9 @@ export default function AdminAdmissionSlipPage() {
     const [activeTab, setActiveTab] = useState<
         'all' | 'pending' | 'approved' | 'rejected'
     >('all');
+    const [quotaFilter, setQuotaFilter] = useState<
+        'all' | 'limit_reached' | 'near_limit' | 'first'
+    >('all');
     const [pageIndex, setPageIndex] = useState(1);
     const [pageSize, setPageSize] = useState(5);
 
@@ -50,6 +53,7 @@ export default function AdminAdmissionSlipPage() {
         return raw.map(
             (s: {
                 id: number;
+                student_id?: number | string;
                 student_name: string;
                 program_year_level: string;
                 date_issued: string;
@@ -57,8 +61,12 @@ export default function AdminAdmissionSlipPage() {
                 reason_text: string;
                 valid_until: string;
                 status: string;
+                slip_count?: string;
+                all_time_slip_count?: string;
+                monthly_slip_count?: number;
             }) => ({
                 id: s.id,
+                studentId: s.student_id,
                 studentName: s.student_name,
                 programYear: s.program_year_level,
                 dateIssued: s.date_issued,
@@ -66,6 +74,9 @@ export default function AdminAdmissionSlipPage() {
                 reasonText: s.reason_text,
                 validUntil: s.valid_until,
                 status: s.status,
+                slipCount: s.slip_count,
+                allTimeCount: s.all_time_slip_count,
+                monthlySlipCount: s.monthly_slip_count,
             }),
         );
     }, [props]);
@@ -107,6 +118,15 @@ export default function AdminAdmissionSlipPage() {
             return st === 'REJECTED';
         };
 
+        const matchesQuota = (s: SlipRow) => {
+            const count = s.monthlySlipCount ?? 1;
+            if (quotaFilter === 'all') return true;
+            if (quotaFilter === 'limit_reached') return count >= 3;
+            if (quotaFilter === 'near_limit') return count === 2;
+            if (quotaFilter === 'first') return count === 1;
+            return true;
+        };
+
         const matchesSearch = (s: SlipRow) => {
             if (!q) return true;
             const haystack = [
@@ -117,6 +137,8 @@ export default function AdminAdmissionSlipPage() {
                 s.caseText,
                 s.reasonText,
                 s.validUntil,
+                s.slipCount,
+                s.allTimeCount,
             ]
                 .filter(Boolean)
                 .join(' ')
@@ -124,8 +146,8 @@ export default function AdminAdmissionSlipPage() {
             return haystack.includes(q);
         };
 
-        return slips.filter((s) => matchesTab(s) && matchesSearch(s));
-    }, [slips, searchQuery, activeTab]);
+        return slips.filter((s) => matchesTab(s) && matchesQuota(s) && matchesSearch(s));
+    }, [slips, searchQuery, activeTab, quotaFilter]);
 
     const totalPages = Math.max(1, Math.ceil(filteredSlips.length / pageSize));
 
@@ -220,6 +242,8 @@ export default function AdminAdmissionSlipPage() {
                                     onArchive={archiveSlip}
                                     activeTab={activeTab}
                                     setActiveTab={setActiveTab}
+                                    quotaFilter={quotaFilter}
+                                    setQuotaFilter={setQuotaFilter}
                                     viewSlipId={viewSlipId}
                                     allSlips={slips}
                                 />

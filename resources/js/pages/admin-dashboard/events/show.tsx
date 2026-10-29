@@ -552,18 +552,16 @@ export default function ShowEventPage() {
                                         {sendingReminder ? 'Sending...' : 'Send Reminder to Students'}
                                     </Button>
 
-                                    <Link
-                                        href={adminEventsEdit(event.id)}
-                                        className="w-full"
+                                    <Button
+                                        variant="outline"
+                                        className="w-full gap-2"
+                                        asChild
                                     >
-                                        <Button
-                                            variant="outline"
-                                            className="w-full gap-2"
-                                        >
+                                        <Link href={adminEventsEdit(event.id)}>
                                             <Edit className="h-4 w-4" />
                                             Edit Event
-                                        </Button>
-                                    </Link>
+                                        </Link>
+                                    </Button>
 
                                     {event.qr_code && (
                                         <Button

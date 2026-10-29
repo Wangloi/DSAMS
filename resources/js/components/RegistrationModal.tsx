@@ -1,11 +1,13 @@
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { FormRequiredNotice } from '@/components/ui/form-required-notice';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { focusFirstInvalidField } from '@/lib/formFocusNavigation';
 import axios from 'axios';
 import { CheckCircle, GraduationCap, Lock, Mail, User, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface RegistrationModalProps {
     isOpen: boolean;
@@ -27,6 +29,7 @@ export default function RegistrationModal({
     isOpen,
     onClose,
 }: RegistrationModalProps) {
+    const containerRef = useRef<HTMLDivElement>(null);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [validationErrors, setValidationErrors] = useState<
@@ -48,9 +51,36 @@ export default function RegistrationModal({
 
     const setField = (key: keyof typeof formData, value: string) => {
         setFormData((prev) => ({ ...prev, [key]: value }));
+        if (validationErrors[key]) {
+            setValidationErrors((prev) => {
+                const next = { ...prev };
+                delete next[key];
+                return next;
+            });
+        }
     };
 
     const handleSubmit = () => {
+        const errors: Record<string, string[]> = {};
+        if (!formData.email.trim()) errors.email = ['Email Address is required.'];
+        if (!formData.student_id.trim()) errors.student_id = ['Student ID is required.'];
+        if (!formData.password) errors.password = ['Password is required.'];
+        if (!formData.password_confirmation) {
+            errors.password_confirmation = ['Password confirmation is required.'];
+        } else if (formData.password !== formData.password_confirmation) {
+            errors.password_confirmation = ['Password confirmation does not match.'];
+        }
+        if (!formData.last_name.trim()) errors.last_name = ['Last name is required.'];
+        if (!formData.first_name.trim()) errors.first_name = ['First name is required.'];
+        if (!formData.entry_status) errors.entry_status = ['Entry status is required.'];
+        if (!formData.program.trim()) errors.program = ['Program is required.'];
+
+        if (Object.keys(errors).length > 0) {
+            setValidationErrors(errors);
+            setTimeout(() => focusFirstInvalidField(containerRef.current), 50);
+            return;
+        }
+
         setIsLoading(true);
         setValidationErrors({});
 
@@ -61,6 +91,7 @@ export default function RegistrationModal({
                     setIsSubmitted(true);
                 } else if (res.data.errors) {
                     setValidationErrors(res.data.errors);
+                    setTimeout(() => focusFirstInvalidField(containerRef.current), 50);
                 } else {
                     alert(
                         res.data.error ||
@@ -71,6 +102,7 @@ export default function RegistrationModal({
             .catch((err) => {
                 if (err.response?.data?.errors) {
                     setValidationErrors(err.response.data.errors);
+                    setTimeout(() => focusFirstInvalidField(containerRef.current), 50);
                 } else {
                     console.error('Registration error:', err);
                     alert(
@@ -110,6 +142,17 @@ export default function RegistrationModal({
         }
     };
 
+    useEffect(() => {
+        if (!isOpen) return;
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && !isLoading) {
+                handleClose();
+            }
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [isOpen, isLoading, isSubmitted]);
+
     if (!isOpen) return null;
 
     return (
@@ -132,8 +175,10 @@ export default function RegistrationModal({
                             </h2>
                         </div>
                         <button
+                            type="button"
                             onClick={handleClose}
-                            className="rounded-lg p-1 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+                            className="rounded-lg p-1.5 text-red-300 transition-colors hover:bg-red-500/20 hover:text-red-100 cursor-pointer"
+                            aria-label="Close modal"
                         >
                             <X className="h-5 w-5" />
                         </button>
@@ -148,7 +193,10 @@ export default function RegistrationModal({
                 </div>
 
                 {/* Content */}
-                <div className="scrollbar-thin max-h-[52vh] overflow-y-auto px-6 py-6">
+                <div
+                    ref={containerRef}
+                    className="scrollbar-thin max-h-[52vh] overflow-y-auto px-6 py-6"
+                >
                     {isSubmitted ? (
                         /* Success state */
                         <div className="flex flex-col items-center justify-center space-y-4 py-8 text-center">
@@ -178,15 +226,23 @@ export default function RegistrationModal({
                     ) : (
                         /* Registration form — 1 step */
                         <div className="space-y-4">
-                            <h3 className="mb-4 text-center text-lg font-semibold text-white">
+                            <h3 className="text-center text-lg font-semibold text-white">
                                 Student Information
                             </h3>
+
+                            <FormRequiredNotice
+                                message="Fields marked with * or Required must be completed."
+                                variant="badge"
+                                className="mb-2 border-blue-400/30 bg-blue-900/60 text-blue-100"
+                            />
 
                             <div className="space-y-3">
                                 {/* Email */}
                                 <div className="space-y-2">
                                     <Label
                                         htmlFor="reg-email"
+                                        required
+                                        showRequiredBadge
                                         className="text-sm text-white/90"
                                     >
                                         Email Address
@@ -198,6 +254,12 @@ export default function RegistrationModal({
                                             type="email"
                                             autoComplete="email"
                                             value={formData.email}
+                                            hasError={!!validationErrors.email?.[0]}
+                                            aria-describedby={
+                                                validationErrors.email?.[0]
+                                                    ? 'reg-email-error'
+                                                    : undefined
+                                            }
                                             onChange={(e) =>
                                                 setField(
                                                     'email',
@@ -210,6 +272,7 @@ export default function RegistrationModal({
                                         />
                                     </div>
                                     <InputError
+                                        id="reg-email-error"
                                         message={validationErrors.email?.[0]}
                                     />
                                 </div>
@@ -218,6 +281,8 @@ export default function RegistrationModal({
                                 <div className="space-y-2">
                                     <Label
                                         htmlFor="reg-student_id"
+                                        required
+                                        showRequiredBadge
                                         className="text-sm text-white/90"
                                     >
                                         Student ID
@@ -228,6 +293,12 @@ export default function RegistrationModal({
                                             id="reg-student_id"
                                             type="text"
                                             value={formData.student_id}
+                                            hasError={!!validationErrors.student_id?.[0]}
+                                            aria-describedby={
+                                                validationErrors.student_id?.[0]
+                                                    ? 'reg-student_id-error'
+                                                    : undefined
+                                            }
                                             onChange={(e) =>
                                                 setField(
                                                     'student_id',
@@ -240,6 +311,7 @@ export default function RegistrationModal({
                                         />
                                     </div>
                                     <InputError
+                                        id="reg-student_id-error"
                                         message={
                                             validationErrors.student_id?.[0]
                                         }
@@ -251,6 +323,8 @@ export default function RegistrationModal({
                                     <div className="space-y-2">
                                         <Label
                                             htmlFor="reg-password"
+                                            required
+                                            showRequiredBadge
                                             className="text-sm text-white/90"
                                         >
                                             Password
@@ -261,6 +335,12 @@ export default function RegistrationModal({
                                                 id="reg-password"
                                                 type="password"
                                                 value={formData.password}
+                                                hasError={!!validationErrors.password?.[0]}
+                                                aria-describedby={
+                                                    validationErrors.password?.[0]
+                                                        ? 'reg-password-error'
+                                                        : undefined
+                                                }
                                                 onChange={(e) =>
                                                     setField(
                                                         'password',
@@ -273,6 +353,7 @@ export default function RegistrationModal({
                                             />
                                         </div>
                                         <InputError
+                                            id="reg-password-error"
                                             message={
                                                 validationErrors.password?.[0]
                                             }
@@ -281,6 +362,8 @@ export default function RegistrationModal({
                                     <div className="space-y-2">
                                         <Label
                                             htmlFor="reg-password_confirmation"
+                                            required
+                                            showRequiredBadge
                                             className="text-sm text-white/90"
                                         >
                                             Confirm
@@ -292,6 +375,13 @@ export default function RegistrationModal({
                                                 type="password"
                                                 value={
                                                     formData.password_confirmation
+                                                }
+                                                hasError={!!validationErrors.password_confirmation?.[0]}
+                                                aria-describedby={
+                                                    validationErrors
+                                                        .password_confirmation?.[0]
+                                                        ? 'reg-password_confirmation-error'
+                                                        : undefined
                                                 }
                                                 onChange={(e) =>
                                                     setField(
@@ -305,6 +395,7 @@ export default function RegistrationModal({
                                             />
                                         </div>
                                         <InputError
+                                            id="reg-password_confirmation-error"
                                             message={
                                                 validationErrors
                                                     .password_confirmation?.[0]
@@ -318,6 +409,8 @@ export default function RegistrationModal({
                                     <div className="space-y-2">
                                         <Label
                                             htmlFor="reg-last_name"
+                                            required
+                                            showRequiredBadge
                                             className="text-sm text-white/90"
                                         >
                                             Last Name
@@ -326,6 +419,12 @@ export default function RegistrationModal({
                                             id="reg-last_name"
                                             type="text"
                                             value={formData.last_name}
+                                            hasError={!!validationErrors.last_name?.[0]}
+                                            aria-describedby={
+                                                validationErrors.last_name?.[0]
+                                                    ? 'reg-last_name-error'
+                                                    : undefined
+                                            }
                                             onChange={(e) =>
                                                 setField(
                                                     'last_name',
@@ -337,6 +436,7 @@ export default function RegistrationModal({
                                             required
                                         />
                                         <InputError
+                                            id="reg-last_name-error"
                                             message={
                                                 validationErrors.last_name?.[0]
                                             }
@@ -345,6 +445,8 @@ export default function RegistrationModal({
                                     <div className="space-y-2">
                                         <Label
                                             htmlFor="reg-first_name"
+                                            required
+                                            showRequiredBadge
                                             className="text-sm text-white/90"
                                         >
                                             First Name
@@ -353,6 +455,12 @@ export default function RegistrationModal({
                                             id="reg-first_name"
                                             type="text"
                                             value={formData.first_name}
+                                            hasError={!!validationErrors.first_name?.[0]}
+                                            aria-describedby={
+                                                validationErrors.first_name?.[0]
+                                                    ? 'reg-first_name-error'
+                                                    : undefined
+                                            }
                                             onChange={(e) =>
                                                 setField(
                                                     'first_name',
@@ -364,6 +472,7 @@ export default function RegistrationModal({
                                             required
                                         />
                                         <InputError
+                                            id="reg-first_name-error"
                                             message={
                                                 validationErrors.first_name?.[0]
                                             }
@@ -372,6 +481,7 @@ export default function RegistrationModal({
                                     <div className="space-y-2">
                                         <Label
                                             htmlFor="reg-middle_name"
+                                            optional
                                             className="text-sm text-white/90"
                                         >
                                             Middle
@@ -394,7 +504,11 @@ export default function RegistrationModal({
 
                                 {/* Entry Status */}
                                 <div className="space-y-2">
-                                    <Label className="text-sm text-white/90">
+                                    <Label
+                                        required
+                                        showRequiredBadge
+                                        className="text-sm text-white/90"
+                                    >
                                         Entry Status
                                     </Label>
                                     <div className="grid grid-cols-2 gap-2">
@@ -424,6 +538,7 @@ export default function RegistrationModal({
                                         ))}
                                     </div>
                                     <InputError
+                                        id="reg-entry_status-error"
                                         message={
                                             validationErrors.entry_status?.[0]
                                         }
@@ -435,6 +550,8 @@ export default function RegistrationModal({
                                     <div className="space-y-2">
                                         <Label
                                             htmlFor="reg-program"
+                                            required
+                                            showRequiredBadge
                                             className="text-sm text-white/90"
                                         >
                                             Program
@@ -443,6 +560,12 @@ export default function RegistrationModal({
                                             id="reg-program"
                                             type="text"
                                             value={formData.program}
+                                            hasError={!!validationErrors.program?.[0]}
+                                            aria-describedby={
+                                                validationErrors.program?.[0]
+                                                    ? 'reg-program-error'
+                                                    : undefined
+                                            }
                                             onChange={(e) =>
                                                 setField(
                                                     'program',
@@ -454,6 +577,7 @@ export default function RegistrationModal({
                                             required
                                         />
                                         <InputError
+                                            id="reg-program-error"
                                             message={
                                                 validationErrors.program?.[0]
                                             }
@@ -462,9 +586,10 @@ export default function RegistrationModal({
                                     <div className="space-y-2">
                                         <Label
                                             htmlFor="reg-major"
+                                            optional
                                             className="text-sm text-white/90"
                                         >
-                                            Major (optional)
+                                            Major
                                         </Label>
                                         <Input
                                             id="reg-major"

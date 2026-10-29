@@ -13,12 +13,20 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
-        AdminUser::updateOrCreate(
-            ['email' => 'admin@example.com'],
+        $name = env('SEED_ADMIN_NAME', 'Rey John N. Bongcas');
+        $email = env('SEED_ADMIN_EMAIL', 'admin@example.com');
+        $password = env('SEED_ADMIN_PASSWORD', 'password');
+
+        $admin = AdminUser::updateOrCreate(
+            ['email' => $email],
             [
-                'name' => 'Rey John N. Bongcas',
-                'password' => Hash::make('password'),
+                'name' => $name,
+                'email_verified_at' => now(),
+                'password' => Hash::make($password),
+                'is_active' => true,
             ]
         );
+
+        $this->command?->info("Admin seeded successfully: {$admin->email} (Password: {$password})");
     }
 }

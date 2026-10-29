@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->trustProxies(at: '*');
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
         $middleware->validateCsrfTokens(except: [
             'admin/manage-users/bulk-import',
@@ -32,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'student/attendance/*/scan',
             'student/attendance/*/dynamic-qr-scan',
             'student/attendance/*/geofence-checkin',
+            'api/session/extend',
         ]);
 
         $middleware->alias([
@@ -57,6 +59,19 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $exceptions->render(function (AuthenticationException $e, $request) {
+            // If the user is logged into another guard (e.g. Student trying to visit /admin-dashboard),
+            // show the 403 Forbidden Error page with the Please Go Back button instead of kicking them out to login.
+            $isLoggedInAnyGuard = \Illuminate\Support\Facades\Auth::guard('student')->check()
+                || \Illuminate\Support\Facades\Auth::guard('program_head')->check()
+                || \Illuminate\Support\Facades\Auth::guard('admin')->check();
+
+            if ($isLoggedInAnyGuard && ! $request->expectsJson()) {
+                return Inertia::render('Error', [
+                    'status' => 403,
+                    'message' => 'You do not have permission to access this page with your current account.',
+                ])->toResponse($request)->setStatusCode(403);
+            }
+
             if ($request->header('X-Inertia')) {
                 return Inertia::location(route('login'));
             }
@@ -68,22 +83,25 @@ return Application::configure(basePath: dirname(__DIR__))
             return redirect()->guest(route('login'));
         });
 
-        // Handle all other exceptions for Inertia requests
+        // Handle all other HTTP exceptions (404, 403, 500, etc.)
         $exceptions->render(function (Throwable $e, $request) {
             // Let Laravel handle ValidationExceptions natively (redirects with errors)
             if ($e instanceof \Illuminate\Validation\ValidationException) {
                 return null;
             }
 
+            if ($request->expectsJson()) {
+                return null;
+            }
+
             $status = method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500;
 
-            if ($request->header('X-Inertia')) {
+            if (in_array($status, [401, 403, 404, 405, 419, 429, 500, 503], true)) {
                 return Inertia::render('Error', ['status' => $status])
                     ->toResponse($request)
                     ->setStatusCode($status);
             }
 
-            // Fall back to default Laravel error page for non-Inertia requests
             return null;
         });
     })->create();

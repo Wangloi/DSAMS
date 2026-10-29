@@ -41,7 +41,7 @@ export default function PendingEvaluationsGateModal() {
 
     return (
         <div className="fixed inset-0 z-[95] flex animate-in items-center justify-center bg-slate-950/85 p-4 backdrop-blur-xl duration-300 fade-in">
-            <div className="relative flex w-full max-w-lg animate-in flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-0 text-center shadow-2xl duration-300 zoom-in-95 dark:border-slate-800 dark:bg-slate-900">
+            <div className="relative flex w-full max-w-lg animate-in flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-0 text-center shadow-2xl duration-300 zoom-in-95 dark:border-slate-800 dark:bg-slate-900">
                 {/* Header with vibrant blue-indigo gradient */}
                 <div className="relative bg-gradient-to-br from-[#0b2d66] to-[#1e40af] px-8 py-8 text-white">
                     <div className="absolute top-0 right-0 h-48 w-48 translate-x-1/3 -translate-y-1/3 rounded-full bg-white/10 blur-2xl" />

@@ -8,8 +8,10 @@ use App\Models\Event;
 use App\Models\Student;
 use App\Services\StudentNotificationDispatcher;
 use Carbon\Carbon;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class AttendanceScannerService
@@ -147,7 +149,22 @@ class AttendanceScannerService
 
         $student = null;
         if ($studentIdValue !== '') {
-            $student = Student::query()->where('student_id', $studentIdValue)->first();
+            $rawId = $studentIdValue;
+            $stripped = preg_replace('/^ID-/i', '', $rawId);
+            $withPrefix = 'ID-' . $stripped;
+            $candidateIds = array_values(array_unique(array_filter([
+                $rawId,
+                $withPrefix,
+                $stripped,
+                strtoupper($rawId),
+                strtoupper($withPrefix),
+                strtoupper($stripped),
+                strtolower($rawId),
+            ])));
+
+            $student = Student::query()
+                ->whereIn('student_id', $candidateIds)
+                ->first();
         }
         if (! $student && $studentIdValue !== '' && ctype_digit($studentIdValue)) {
             $student = Student::query()->whereKey((int) $studentIdValue)->first();
@@ -235,14 +252,107 @@ class AttendanceScannerService
         }
 
         $now = Carbon::now();
-        $attendance = Attendance::query()
-            ->where('event_id', $event->id)
-            ->where('student_id', $student->id)
-            ->first();
-
-        // Evaluate Time-In vs Late vs Time-Out based on event time windows and requested mode
         $requestedMode = $request->input('mode') ?? $request->input('scan_type');
-        $scanEval = $event->evaluateAttendanceScan($now, $attendance, $requestedMode);
+
+        try {
+            [$attendance, $scanEval, $conflictedScans] = DB::transaction(function () use ($event, $student, $now, $requestedMode, $lat, $lng, $accuracyM, $request) {
+                // Row-level lock to prevent concurrent double-scans from adjacent stations
+                $attendance = Attendance::query()
+                    ->where('event_id', $event->id)
+                    ->where('student_id', $student->id)
+                    ->lockForUpdate()
+                    ->first();
+
+                // Evaluate Time-In vs Late vs Time-Out based on event time windows and requested mode
+                $scanEval = $event->evaluateAttendanceScan($now, $attendance, $requestedMode);
+                if (! $scanEval['allowed']) {
+                    return [$attendance, $scanEval, []];
+                }
+
+                $status = $scanEval['status'];
+                $isMidSession = ($scanEval['action'] === 'mid_session_verify');
+                $isTimeOut = ($scanEval['action'] === 'check_out');
+
+                $eventLat = $event->geofence_latitude;
+                $eventLng = $event->geofence_longitude;
+                $distanceRounded = null;
+                if ((bool) ($event->geofence_enabled ?? false) && $lat !== null && $lng !== null && $eventLat !== null && $eventLng !== null) {
+                    $distanceRounded = (int) round($this->geofenceService->haversineDistanceMeters((float) $lat, (float) $lng, (float) $eventLat, (float) $eventLng));
+                }
+
+                if (! $attendance) {
+                    $attendance = Attendance::create([
+                        'event_id' => $event->id,
+                        'student_id' => $student->id,
+                        'scanned_at' => $now,
+                        'status' => $status,
+                        'checked_in_at' => $now,
+                        'check_in_latitude' => $lat,
+                        'check_in_longitude' => $lng,
+                        'check_in_accuracy_m' => $accuracyM !== null ? (int) round((float) $accuracyM) : null,
+                        'check_in_distance_m' => $distanceRounded,
+                    ]);
+                } elseif ($isMidSession) {
+                    $attendance->update([
+                        'mid_session_verified_at' => $now,
+                        'scanned_at' => $now,
+                    ]);
+                } else {
+                    $updateData = [
+                        'status' => $status,
+                        'scanned_at' => $now,
+                        'checked_out_at' => $now,
+                        'check_out_latitude' => $lat,
+                        'check_out_longitude' => $lng,
+                        'check_out_accuracy_m' => $accuracyM !== null ? (int) round((float) $accuracyM) : null,
+                        'check_out_distance_m' => $distanceRounded,
+                    ];
+                    if (! empty($scanEval['is_flagged'])) {
+                        $updateData['is_flagged'] = true;
+                        $updateData['flagged_reason'] = $scanEval['flagged_reason'] ?? 'Dwell gap detected';
+                    }
+                    $attendance->update($updateData);
+                }
+
+                // Also record attendance for any conflicting schedule events the student is eligible for
+                $conflictedScans = $this->conflictService->recordAttendanceForEligibleConflicts(
+                    $event,
+                    $student,
+                    $now,
+                    $isTimeOut ? 'check_out' : 'check_in',
+                    $status,
+                    [
+                        'latitude' => $lat,
+                        'longitude' => $lng,
+                        'accuracy_m' => $accuracyM,
+                        'distance_m' => $distanceRounded,
+                    ],
+                    $request
+                );
+
+                $event->updateAttendanceCounts();
+
+                return [$attendance, $scanEval, $conflictedScans];
+            });
+        } catch (QueryException $qe) {
+            // Gracefully handle duplicate key race condition
+            $attendance = Attendance::query()
+                ->where('event_id', $event->id)
+                ->where('student_id', $student->id)
+                ->first();
+
+            if ($attendance) {
+                return response()->json([
+                    'message' => 'Attendance was already recorded for this event.',
+                    'attendance_id' => $attendance->id,
+                    'status' => $attendance->status,
+                ], 409);
+            }
+
+            \Log::error('[AttendanceScannerService] Database error recording attendance: ' . $qe->getMessage(), ['exception' => $qe]);
+            return response()->json(['message' => 'A database error occurred while recording attendance. Please try again.'], 500);
+        }
+
         if (! $scanEval['allowed']) {
             if (Schema::hasTable('activity_logs')) {
                 ActivityLog::logForUser($scanner, 'Attendance', 'Denied', $scanEval['error_message'] . ' in event #' . $event->id, $request);
@@ -264,56 +374,37 @@ class AttendanceScannerService
         $status = $scanEval['status'];
         $isTimeOut = ($scanEval['action'] === 'check_out');
 
-        $eventLat = $event->geofence_latitude;
-        $eventLng = $event->geofence_longitude;
-        $distanceRounded = null;
-        if ((bool) ($event->geofence_enabled ?? false) && $lat !== null && $lng !== null && $eventLat !== null && $eventLng !== null) {
-            $distanceRounded = (int) round($this->geofenceService->haversineDistanceMeters((float) $lat, (float) $lng, (float) $eventLat, (float) $eventLng));
-        }
-
-        if (! $attendance) {
-            $attendance = Attendance::create([
-                'event_id' => $event->id,
-                'student_id' => $student->id,
-                'scanned_at' => $now,
-                'status' => $status,
-                'checked_in_at' => $now,
-                'check_in_latitude' => $lat,
-                'check_in_longitude' => $lng,
-                'check_in_accuracy_m' => $accuracyM !== null ? (int) round((float) $accuracyM) : null,
-                'check_in_distance_m' => $distanceRounded,
-            ]);
-        } else {
-            $attendance->update([
-                'scanned_at' => $now,
-                'checked_out_at' => $now,
-                'check_out_latitude' => $lat,
-                'check_out_longitude' => $lng,
-                'check_out_accuracy_m' => $accuracyM !== null ? (int) round((float) $accuracyM) : null,
-                'check_out_distance_m' => $distanceRounded,
-            ]);
-        }
-
-        // Also record attendance for any conflicting schedule events the student is eligible for
-        $conflictedScans = $this->conflictService->recordAttendanceForEligibleConflicts(
-            $event,
-            $student,
-            $now,
-            $isTimeOut ? 'check_out' : 'check_in',
-            $status,
-            [
-                'latitude' => $lat,
-                'longitude' => $lng,
-                'accuracy_m' => $accuracyM,
-                'distance_m' => $distanceRounded,
-            ],
-            $request
-        );
-
         $this->evaluationGateService->triggerEvaluationNotification($student, $event);
-
-        $event->updateAttendanceCounts();
         app(StudentNotificationDispatcher::class)->attendanceRecorded($event, $attendance);
+
+        try {
+            app(\App\Services\RealtimeNotificationService::class)->broadcastAttendanceScan($event->id, [
+                'action' => $scanEval['action'],
+                'status' => $attendance->status,
+                'scanned_at' => $now->toDateTimeString(),
+                'time' => $now->format('h:i A'),
+                'is_flagged' => (bool) ($attendance->is_flagged ?? false),
+                'student' => [
+                    'id' => $student->id,
+                    'student_id' => $student->student_id,
+                    'name' => $student->name,
+                    'course' => $student->course ?? $student->program,
+                    'year_level' => $student->year_level,
+                ],
+                'log' => [
+                    'id' => (string) $attendance->id,
+                    'student_id' => (string) $student->student_id,
+                    'name' => (string) $student->name,
+                    'program' => (string) ($student->course ?? $student->program ?? ''),
+                    'course' => (string) ($student->course ?? $student->program ?? ''),
+                    'year_level' => (string) ($student->year_level ?? ''),
+                    'time' => $now->format('h:i A'),
+                    'status' => $attendance->status,
+                    'scanned' => true,
+                    'action' => $scanEval['action'],
+                ],
+            ]);
+        } catch (\Throwable) {}
 
         if (Schema::hasTable('activity_logs')) {
             ActivityLog::logForUser($scanner, 'Attendance', $isTimeOut ? 'Checked Out' : 'Checked In', "Recorded attendance for event #{$event->id} (status: {$status}, action: " . ($isTimeOut ? 'Time Out' : 'Time In') . ")", $request);
@@ -334,15 +425,28 @@ class AttendanceScannerService
             ? 'Time-in (Check-in) recorded as LATE' . $cutoffStr . '.'
             : 'Time-in (Check-in) recorded successfully (On-Time).';
 
+        $midSessionLabel = 'Mid-session in-venue presence verified successfully (Spot-Check Confirmed).';
+
+        $checkOutLabel = $status === 'left_early'
+            ? 'Time-out recorded: Early Departure (Left before official conclusion).'
+            : ($attendance->is_flagged
+                ? 'Time-out recorded with WARNING: Missing mid-session presence verification. Attendance flagged for administrative review.'
+                : 'Time-out (Check-out) recorded successfully. Full attendance verified.');
+
+        $finalMessage = $isMidSession ? $midSessionLabel : ($isTimeOut ? $checkOutLabel : $checkInLabel);
+
         return response()->json([
             'attendance_id' => $attendance->id,
             'status' => $attendance->status,
             'scanned_at' => $now->toDateTimeString(),
-            'action' => $isTimeOut ? 'check_out' : 'check_in',
-            'message' => ($isTimeOut ? 'Time-out (Check-out) recorded successfully.' : $checkInLabel) . $conflictedSuffix,
+            'action' => $scanEval['action'],
+            'is_flagged' => (bool) ($attendance->is_flagged ?? false),
+            'flagged_reason' => $attendance->flagged_reason,
+            'message' => $finalMessage . $conflictedSuffix,
             'conflicted_events_scanned' => $conflictedScans,
             'time_in' => optional($attendance->checked_in_at)->format('h:i A'),
             'time_out' => $attendance->checked_out_at ? optional($attendance->checked_out_at)->format('h:i A') : null,
+            'mid_session_verified_at' => $attendance->mid_session_verified_at ? optional($attendance->mid_session_verified_at)->format('h:i A') : null,
             'student' => [
                 'id' => $student->id,
                 'student_id' => $student->student_id,

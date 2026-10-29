@@ -115,7 +115,8 @@ export default function CallingSlipModal({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 overlayClassName="z-[90]"
-                className="z-[95] max-w-4xl sm:max-w-4xl md:max-w-5xl w-[95vw] overflow-y-auto max-h-[90vh] p-0 bg-slate-100 dark:bg-slate-950 border-0 shadow-2xl [&>button:last-child]:hidden"
+                size="xl"
+                className="z-[95] overflow-y-auto max-h-[90vh] p-0 bg-slate-100 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-2xl [&>button:last-child]:hidden"
             >
                 <DialogHeader className="sr-only">
                     <DialogTitle>Official Calling Slip Notice - Case #{caseId}</DialogTitle>
@@ -255,7 +256,7 @@ export default function CallingSlipModal({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => onOpenChange(false)}
-                                className="h-8 w-8 p-0 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 cursor-pointer transition-colors shrink-0"
+                                className="h-8 w-8 p-0 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/40 cursor-pointer transition-colors shrink-0"
                                 aria-label="Close modal"
                             >
                                 <X className="h-4.5 w-4.5" />

@@ -387,7 +387,7 @@ export function DetailedHelpCenterModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[94vh] sm:max-h-[88vh] w-[96vw] max-w-[96vw] sm:max-w-2xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl flex-col overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-0 text-slate-900 shadow-2xl dark:border-slate-800 dark:bg-[#0B192C] dark:text-white">
+            <DialogContent size="2xl" className="flex max-h-[94vh] sm:max-h-[88vh] w-[96vw] flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-0 text-slate-900 shadow-2xl dark:border-slate-800 dark:bg-[#0B192C] dark:text-white">
                 {/* Header Banner */}
                 <div className="relative shrink-0 overflow-hidden bg-gradient-to-r from-[#0b1c5c] via-[#1e3a8a] to-[#2563eb] p-4 sm:p-6 lg:p-7 text-white">
                     <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-blue-400/15 blur-3xl" />

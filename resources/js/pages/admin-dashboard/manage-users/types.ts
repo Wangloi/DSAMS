@@ -26,10 +26,13 @@ export type UserRow = {
     contact_no?: string | null;
     nationality?: string | null;
     elementary_school?: string | null;
+    elementary_year_started?: string | number | null;
     elementary_year_graduated?: string | number | null;
     junior_high_school?: string | null;
+    junior_high_year_started?: string | number | null;
     junior_high_year_graduated?: string | number | null;
     senior_high_school?: string | null;
+    senior_high_year_started?: string | number | null;
     senior_high_year_graduated?: string | number | null;
     mother_name?: string | null;
     mother_contact?: string | null;

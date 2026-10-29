@@ -44,7 +44,7 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $activeGuard = ActiveAuth::resolve($request);
-        $user = $activeGuard ? Auth::guard($activeGuard)->user() : Auth::user();
+        $user = $activeGuard ? Auth::guard($activeGuard)->user() : null;
 
         $unreadNotifications = $this->getUnreadNotificationsCount($user);
         $recentNotifications = $this->getRecentNotifications($user);
@@ -80,6 +80,12 @@ class HandleInertiaRequests extends Middleware
             'needsProfileCompletion' => $user instanceof Student && empty($user->home_address),
             // Gate data: pending evaluations list for student
             'pendingEvaluations' => $pendingEvaluations,
+            // WCAG 2.2.1 Timing Adjustable session configuration
+            'session' => [
+                'lifetimeMinutes' => (int) config('session.lifetime', 120),
+                'lifetimeSeconds' => ((int) config('session.lifetime', 120)) * 60,
+                'warningThresholdSeconds' => 120,
+            ],
         ];
     }
 
@@ -91,7 +97,7 @@ class HandleInertiaRequests extends Middleware
         if ($user instanceof Student) {
             try {
                 return StudentNotificationPresenter::unreadCountForStudent($user);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 Log::error('Failed to get unread student notifications', ['message' => $e->getMessage()]);
                 return 0;
             }
@@ -101,7 +107,7 @@ class HandleInertiaRequests extends Middleware
             if ($user && Schema::hasTable('notifications') && method_exists($user, 'unreadNotifications')) {
                 return (int) $user->unreadNotifications()->count();
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Error getting unread notifications', ['error' => $e->getMessage()]);
         }
 
@@ -117,7 +123,7 @@ class HandleInertiaRequests extends Middleware
         if ($user instanceof Student) {
             try {
                 return StudentNotificationPresenter::recentForStudent($user, 5);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 Log::error('Failed to build student notifications', ['message' => $e->getMessage()]);
                 return [];
             }
@@ -277,7 +283,7 @@ class HandleInertiaRequests extends Middleware
                 ->take(5)
                 ->values()
                 ->all();
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Failed to build recentNotifications', [
                 'message' => $e->getMessage(),
                 'class' => get_class($e),
@@ -313,7 +319,7 @@ class HandleInertiaRequests extends Middleware
                 })
                 ->values()
                 ->all();
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Failed to get pending evaluations in HandleInertiaRequests', ['message' => $e->getMessage()]);
             return [];
         }

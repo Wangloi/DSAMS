@@ -181,6 +181,14 @@ export default function printSlip(s: SlipRow, deanName?: string) {
 
     <div class="title">ADMISSION SLIP</div>
 
+    ${
+      s.studentId
+        ? `<div class="info-item">
+      <span class="info-label">STUDENT ID:</span>
+      <div class="info-value">${escapeHtml(String(s.studentId))}</div>
+    </div>`
+        : ''
+    }
     <div class="info-item">
       <span class="info-label">NAME:</span>
       <div class="info-value">${escapeHtml(s.studentName)}</div>
@@ -201,6 +209,19 @@ export default function printSlip(s: SlipRow, deanName?: string) {
       <span class="info-label">VALID UNTIL:</span>
       <div class="info-value">${escapeHtml(s.validUntil)}</div>
     </div>
+    <div class="divider"></div>
+    <div class="info-item">
+      <span class="info-label">MONTHLY ALLOWANCE:</span>
+      <div class="info-value">${escapeHtml(s.slipCount || '1 of 3')}</div>
+    </div>
+    ${
+      s.allTimeCount
+        ? `<div class="info-item">
+      <span class="info-label">STUDENT RECORD:</span>
+      <div class="info-value">${escapeHtml(s.allTimeCount)}</div>
+    </div>`
+        : ''
+    }
 
     <div class="signature-section">
       <div class="sig-line"></div>

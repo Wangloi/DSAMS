@@ -11,6 +11,7 @@ import {
     CheckCircle2,
     Clock,
     Compass,
+    Info,
     Loader2,
     MapPin,
     QrCode,
@@ -96,6 +97,9 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
     const [successData, setSuccessData] = useState<{
         name: string;
         status: string;
+        message?: string;
+        is_flagged?: boolean;
+        flagged_reason?: string;
     } | null>(null);
 
     // ── Barcode Detector API support ───────────────────────────────────────────
@@ -198,6 +202,9 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
                 setSuccessData({
                     name: String(data?.student?.name ?? 'You'),
                     status: scanStatus,
+                    message: data?.message,
+                    is_flagged: Boolean(data?.is_flagged),
+                    flagged_reason: data?.flagged_reason,
                 });
                 setPhase('success');
             } catch (e: any) {
@@ -344,7 +351,7 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
                             <Button
                                 type="button"
                                 variant="ghost"
-                                className="h-8 gap-2 rounded-xl border border-white/15 bg-white/10 px-3 text-xs font-bold text-white backdrop-blur-md transition-all hover:bg-white/20 hover:text-white"
+                                className="h-8 gap-2 rounded-xl border border-white/15 bg-white/10 px-3 text-xs font-bold text-white backdrop-blur-md transition-all hover:bg-white/20 hover:text-white focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
                                 asChild
                             >
                                 <Link href={studentDashboard()}>
@@ -450,18 +457,31 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
                                         </div>
                                     ) : phase === 'success' ? (
                                         <div className="flex flex-col items-center gap-4 text-center animate-in zoom-in-95">
-                                            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-400 ring-2 ring-emerald-400/40 shadow-lg shadow-emerald-500/20">
-                                                <CheckCircle2 className="h-8 w-8" />
+                                            <div className={`flex h-16 w-16 items-center justify-center rounded-2xl ring-2 shadow-lg ${
+                                                successData?.is_flagged
+                                                    ? 'bg-amber-500/20 text-amber-400 ring-amber-400/40 shadow-amber-500/20'
+                                                    : 'bg-emerald-500/20 text-emerald-400 ring-emerald-400/40 shadow-emerald-500/20'
+                                            }`}>
+                                                {successData?.is_flagged ? <ShieldAlert className="h-8 w-8" /> : <CheckCircle2 className="h-8 w-8" />}
                                             </div>
                                             <div>
                                                 <h3 className="text-base font-black text-white uppercase tracking-wider">
-                                                    {successData?.status === 'already-checked-in'
+                                                    {successData?.is_flagged
+                                                        ? 'Time-Out Flagged (Dwell Gap)'
+                                                        : successData?.status === 'mid_session_verified'
+                                                        ? 'Mid-Session Verified'
+                                                        : successData?.status === 'already-checked-in'
                                                         ? 'Already Checked In'
                                                         : 'Attendance Recorded!'}
                                                 </h3>
                                                 <p className="mt-1 text-xs font-semibold text-emerald-300">
-                                                    {successData?.name} {successData?.status === 'late' && '(Late Arrival)'}
+                                                    {successData?.message || `${successData?.name} ${successData?.status === 'late' ? '(Late Arrival)' : ''}`}
                                                 </p>
+                                                {successData?.is_flagged && successData.flagged_reason && (
+                                                    <p className="mt-2 text-[11px] text-amber-200 max-w-xs bg-amber-950/70 p-2.5 rounded-xl border border-amber-800/60 leading-relaxed text-left">
+                                                        ⚠️ {successData.flagged_reason}
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
                                     ) : phase === 'error' ? (
@@ -520,9 +540,11 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
                                                 type="button"
                                                 variant="outline"
                                                 onClick={toggleCameraFacing}
-                                                className="h-11 rounded-xl border-white/10 bg-white/5 text-xs text-slate-300 hover:bg-white/10 hover:text-white"
+                                                aria-label="Switch camera facing"
+                                                className="h-11 rounded-xl border-white/10 bg-white/5 text-xs text-slate-300 hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
                                             >
                                                 <SwitchCamera className="h-4 w-4" />
+                                                <span className="sr-only">Switch camera facing</span>
                                             </Button>
                                             <Button
                                                 type="button"
@@ -531,7 +553,7 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
                                                     stopCamera();
                                                     setPhase('idle');
                                                 }}
-                                                className="h-11 rounded-xl border-white/10 bg-white/5 text-xs font-bold text-slate-300 hover:bg-white/10 hover:text-white"
+                                                className="h-11 rounded-xl border-white/10 bg-white/5 text-xs font-bold text-slate-300 hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:outline-none"
                                             >
                                                 Stop
                                             </Button>
@@ -553,6 +575,12 @@ export default function StudentDynamicQrScanPage({ event }: Props) {
                             <li>2. Tap <strong className="text-white">Start Camera Scan</strong> and point your device camera at the code.</li>
                             <li>3. Your location and token will be authenticated automatically with instant feedback.</li>
                         </ol>
+                        <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-blue-500/20 bg-blue-500/10 p-3 text-[11px] text-blue-200">
+                            <Info className="h-4 w-4 shrink-0 text-cyan-400 mt-0.5" />
+                            <p className="leading-relaxed">
+                                <strong className="text-white">WCAG 2.2.1 Notice:</strong> The QR display auto-refreshes periodically to maintain anti-proxy security. If you need timing adjustments or an alternative format, you can present your physical Student ID barcode to a proctor or request manual check-in.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>

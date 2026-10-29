@@ -83,7 +83,8 @@ class AdminManageUsersController extends Controller
 
         $students = $query
             ->get($columns)
-            ->map(function (Student $student) {
+            ->map(function ($student) {
+                /** @var Student $student */
                 $row = $student->toArray();
                 $row['userType'] = 'student';
                 if (Schema::hasColumn('students', 'verification_status')) {
@@ -106,6 +107,25 @@ class AdminManageUsersController extends Controller
         ]);
     }
 
+    public function show(string $type, int $id): Response
+    {
+        if ($type === 'program-head') {
+            $row = $this->getProgramHeads()->firstWhere('program_head_id', $id);
+            abort_if(! $row, 404);
+        } else {
+            $student = Student::findOrFail($id);
+            $row = $student->toArray();
+            $row['userType'] = 'student';
+            if (Schema::hasColumn('students', 'verification_status')) {
+                $row['status'] = $student->verification_status ?? $row['status'] ?? 'approved';
+            }
+        }
+
+        return Inertia::render('admin-dashboard/manage-users/view', [
+            'user' => $row,
+        ]);
+    }
+
     private function getProgramHeads(): \Illuminate\Support\Collection
     {
         if (!Schema::hasTable('program_heads')) {
@@ -123,7 +143,8 @@ class AdminManageUsersController extends Controller
         return ProgramHead::query()
             ->orderByDesc('id')
             ->get($columns)
-            ->map(function (ProgramHead $ph) {
+            ->map(function ($ph) {
+                /** @var ProgramHead $ph */
                 return [
                     'id' => 1000000000 + (int) $ph->id,
                     'program_head_id' => (int) $ph->id,
@@ -180,7 +201,8 @@ class AdminManageUsersController extends Controller
         return AdminUser::query()
             ->orderByDesc('id')
             ->get(['id', 'name', 'email', 'handover_expires_at', 'is_active', 'created_by_admin_id', 'created_at', 'updated_at'])
-            ->map(function (AdminUser $admin) {
+            ->map(function ($admin) {
+                /** @var AdminUser $admin */
                 $isUnderHandover = $admin->isUnderHandover();
                 $isExpired = $admin->isHandoverExpired() || $admin->is_active === false;
 
@@ -1343,5 +1365,35 @@ class AdminManageUsersController extends Controller
             : 'No new student records were added.';
 
         return redirect()->route('admin.manage-users')->with('success', $resultMsg)->setStatusCode(303);
+    }
+
+    /**
+     * Reset a student's bound device (One Device, One Account policy).
+     * Enables students who lost/replaced their phone to bind their new device.
+     */
+    public function resetStudentDevice(Student $student, Request $request)
+    {
+        $oldDevice = $student->device_name ?: $student->device_uuid ?: 'Registered Device';
+        $student->resetDeviceBinding();
+
+        if (Schema::hasTable('activity_logs')) {
+            $admin = auth()->guard('admin')->user();
+            ActivityLog::logForUser(
+                $admin,
+                'User Management',
+                'Device Reset',
+                "Reset registered device binding for student {$student->name} ({$student->student_id}). Previous device: {$oldDevice}.",
+                $request
+            );
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Device binding for {$student->name} has been reset. The student can now register a new device on next login.",
+            ]);
+        }
+
+        return back()->with('success', "Device binding for {$student->name} has been successfully reset.")->setStatusCode(303);
     }
 }

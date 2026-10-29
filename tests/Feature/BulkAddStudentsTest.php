@@ -104,7 +104,7 @@ class BulkAddStudentsTest extends TestCase
         $this->assertEquals('FileUser Testing', $imported->name);
     }
 
-    public function test_skips_duplicate_student_id_firstname_lastname_or_name(): void
+    public function test_skips_duplicate_student_id_or_email(): void
     {
         $admin = $this->createAdmin();
 
@@ -117,6 +117,7 @@ class BulkAddStudentsTest extends TestCase
             'course' => 'BSIT',
             'year_level' => '1st Year',
             'program' => 'HED',
+            'email' => 'john.doe@example.com',
             'password' => Hash::make('password123'),
         ]);
 
@@ -131,29 +132,30 @@ class BulkAddStudentsTest extends TestCase
                     'Section/Course' => 'BSIT',
                     'Department' => 'HED',
                 ],
-                // Duplicate Firstname -> should be skipped
+                // Duplicate Email -> should be skipped
                 [
                     'Student ID' => 'C222222',
-                    'Firstname' => 'John',
+                    'Firstname' => 'Jane',
                     'Lastname' => 'Smith',
                     'Grade/Year Level' => '2nd Year',
                     'Section/Course' => 'BSBA',
                     'Department' => 'HED',
+                    'email' => 'john.doe@example.com',
                 ],
-                // Duplicate Lastname -> should be skipped
-                [
-                    'Student ID' => 'C333333',
-                    'Firstname' => 'Alice',
-                    'Lastname' => 'Doe',
-                    'Grade/Year Level' => '3rd Year',
-                    'Section/Course' => 'BEED',
-                    'Department' => 'HED',
-                ],
-                // Entirely New Student -> should be added
+                // Duplicate within the same payload -> should be skipped
                 [
                     'Student ID' => 'C444444',
                     'Firstname' => 'Bob',
                     'Lastname' => 'Marley',
+                    'Grade/Year Level' => '4th Year',
+                    'Section/Course' => 'BSHM',
+                    'Department' => 'HED',
+                ],
+                // Same Student ID as above in payload -> should be skipped
+                [
+                    'Student ID' => 'C444444',
+                    'Firstname' => 'Bob',
+                    'Lastname' => 'Marley Duplicate',
                     'Grade/Year Level' => '4th Year',
                     'Section/Course' => 'BSHM',
                     'Department' => 'HED',

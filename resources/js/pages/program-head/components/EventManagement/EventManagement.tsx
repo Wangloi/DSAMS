@@ -25,6 +25,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import FullCalendarWrapper from '@/components/ui/FullCalendarWrapper';
+import CalendarDayEventsModal from '@/pages/admin-dashboard/events/CalendarDayEventsModal';
+import DayEventsHoverCard from '@/pages/admin-dashboard/events/DayEventsHoverCard';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -310,9 +312,91 @@ export default function EventManagement() {
         setShowActivityPlanModal(true);
     };
 
+
+
+    const [dayModalOpen, setDayModalOpen] = useState(false);
+    const [selectedDayDate, setSelectedDayDate] = useState<Date | null>(null);
+    const [selectedDayEvents, setSelectedDayEvents] = useState<EventItem[]>([]);
+
+    const [hoveredDay, setHoveredDay] = useState<{
+        dateStr: string;
+        date: Date;
+        events: EventItem[];
+        rect: { top: number; left: number; width: number; height: number; bottom: number };
+    } | null>(null);
+
+    const handleMoreLinkClick = (info: any) => {
+        const dateObj: Date = info.date;
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
+
+        const matching = events.filter((e: EventItem) => {
+            const evDate = (e.event_date || '').split('T')[0];
+            return evDate === dateStr;
+        });
+
+        setSelectedDayDate(dateObj);
+        setSelectedDayEvents(matching);
+        setDayModalOpen(true);
+    };
+
+    const handleCalendarMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        const target = e.target as HTMLElement | null;
+        if (!target) return;
+
+        const dayCell = target.closest('td.fc-daygrid-day[data-date]') as HTMLElement | null;
+        if (!dayCell) {
+            if (hoveredDay) setHoveredDay(null);
+            return;
+        }
+
+        const dateStr = dayCell.getAttribute('data-date');
+        if (!dateStr) {
+            if (hoveredDay) setHoveredDay(null);
+            return;
+        }
+
+        if (hoveredDay && hoveredDay.dateStr === dateStr) {
+            return;
+        }
+
+        const matching = events.filter((ev: EventItem) => {
+            const evDate = (ev.event_date || '').split('T')[0];
+            return evDate === dateStr;
+        });
+
+        if (matching.length === 0) {
+            if (hoveredDay) setHoveredDay(null);
+            return;
+        }
+
+        const rect = dayCell.getBoundingClientRect();
+        setHoveredDay({
+            dateStr,
+            date: new Date(`${dateStr}T00:00:00`),
+            events: matching,
+            rect: {
+                top: rect.top,
+                bottom: rect.bottom,
+                left: rect.left,
+                width: rect.width,
+                height: rect.height,
+            },
+        });
+    };
+
+    const handleCalendarMouseLeave = () => {
+        setHoveredDay(null);
+    };
+
     const handleDateSelect = (selectInfo: any) => {
-        const [datePart] = selectInfo.startStr.split('T');
-        openActivityPlanModal(datePart);
+        const rawDate = selectInfo?.startStr || selectInfo?.dateStr || '';
+        const [datePart] = rawDate.split('T');
+        if (datePart) {
+            openActivityPlanModal(datePart);
+        }
     };
 
     const handleActivityPlanSubmit = () => {
@@ -752,23 +836,52 @@ function formatToIsoStart(dateStr: string, timeStr: string): string {
                                         ))}
                                     </div>
                                 </div>
-                                <div className="p-4">
+                                <div
+                                    className="p-4"
+                                    onMouseMove={handleCalendarMouseMove}
+                                    onMouseLeave={handleCalendarMouseLeave}
+                                >
                                     <div className="h-[640px] rounded-2xl border border-slate-200/80 bg-white/70 p-2 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-[#0B192C]/40">
                                         <FullCalendarWrapper
                                             events={calendarEvents}
                                             selectable={true}
                                             editable={false}
-                                            onDateSelect={handleDateSelect}
+                                            onDateSelect={(info) => {
+                                                setHoveredDay(null);
+                                                handleDateSelect(info);
+                                            }}
                                             onEventClick={(clickInfo) => {
+                                                setHoveredDay(null);
                                                 const eventId = clickInfo.event.id;
                                                 const foundEvent = events.find((e: EventItem) => String(e.id) === String(eventId));
                                                 if (foundEvent) {
                                                     setSelectedEvent(foundEvent);
                                                 }
                                             }}
+                                            onMoreLinkClick={handleMoreLinkClick}
                                         />
                                     </div>
                                 </div>
+                                <CalendarDayEventsModal
+                                    open={dayModalOpen}
+                                    onOpenChange={setDayModalOpen}
+                                    date={selectedDayDate}
+                                    events={selectedDayEvents}
+                                    onSelectEvent={(ev) => {
+                                        const foundEvent = events.find((e: EventItem) => String(e.id) === String(ev.id));
+                                        if (foundEvent) {
+                                            setSelectedEvent(foundEvent);
+                                        }
+                                    }}
+                                    onAddEvent={(dateStr) => {
+                                        openActivityPlanModal(dateStr);
+                                    }}
+                                />
+                                <DayEventsHoverCard
+                                    date={hoveredDay?.date ?? null}
+                                    events={hoveredDay?.events ?? []}
+                                    targetRect={hoveredDay?.rect ?? null}
+                                />
                             </div>
                         )}
 
@@ -1004,7 +1117,8 @@ function formatToIsoStart(dateStr: string, timeStr: string): string {
                                 <button
                                     type="button"
                                     onClick={() => setShowActivityPlanModal(false)}
-                                    className="rounded-full p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+                                    aria-label="Close modal"
+                                    className="rounded-full p-2 text-red-400 transition-colors hover:bg-red-500/20 hover:text-red-200 cursor-pointer"
                                 >
                                     <X className="h-5 w-5" />
                                 </button>
@@ -1234,43 +1348,48 @@ function formatToIsoStart(dateStr: string, timeStr: string): string {
             {selectedEvent && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-4 pt-16 sm:pt-20 pb-6 backdrop-blur-md transition-all duration-300 sm:p-6">
                     <div className="mx-auto flex max-h-[82vh] w-full max-w-xl animate-in flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xl duration-200 zoom-in-95 dark:border-slate-800 dark:bg-slate-900">
-                        {/* Header Banner */}
-                        <div className="relative shrink-0 overflow-hidden border-b border-blue-900/30 bg-gradient-to-r from-[#0b1c5c] via-[#1e3a8a] to-[#0B4DFF] px-6 py-5 text-white sm:px-8">
-                            <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl" />
-                            <div className="relative flex items-start justify-between gap-4">
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <Badge
-                                            className={cn(
-                                                'px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider',
-                                                selectedEvent.approval_status === 'pending'
-                                                    ? 'bg-amber-400/20 text-amber-300 border-amber-400/30'
-                                                    : selectedEvent.approval_status === 'rejected'
-                                                    ? 'bg-rose-400/20 text-rose-300 border-rose-400/30'
-                                                    : 'bg-emerald-400/20 text-emerald-300 border-emerald-400/30'
-                                            )}
-                                        >
-                                            {selectedEvent.approval_status === 'pending'
-                                                ? 'Pending Admin Approval'
-                                                : selectedEvent.approval_status === 'rejected'
-                                                ? 'Schedule Rejected'
-                                                : 'Approved Schedule'}
-                                        </Badge>
+                        {/* ── CLEAN MINIMALIST HEADER ── */}
+                        <div className="shrink-0 border-b border-slate-100 bg-white px-6 py-5 dark:border-slate-800 dark:bg-slate-900 sm:px-8">
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="flex items-start gap-3.5">
+                                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-[#23509A] dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
+                                        <Calendar className="h-5 w-5" />
                                     </div>
-                                    <h2 className="mt-2 text-xl font-bold tracking-tight text-white">
-                                        {selectedEvent.event_name}
-                                    </h2>
-                                    <p className="mt-1 flex items-center gap-1.5 text-xs text-blue-200/90">
-                                        <Building2 className="h-3.5 w-3.5 shrink-0 text-blue-200" />
-                                        <span>Organized by: {selectedEvent.organizer || 'Office of Student Affairs'}</span>
-                                    </p>
+                                    <div>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <h2 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white sm:text-xl">
+                                                {selectedEvent.event_name}
+                                            </h2>
+                                            <Badge
+                                                className={cn(
+                                                    'px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+                                                    selectedEvent.approval_status === 'pending'
+                                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
+                                                        : selectedEvent.approval_status === 'rejected'
+                                                        ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200'
+                                                        : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'
+                                                )}
+                                            >
+                                                {selectedEvent.approval_status === 'pending'
+                                                    ? 'Pending Admin Approval'
+                                                    : selectedEvent.approval_status === 'rejected'
+                                                    ? 'Schedule Rejected'
+                                                    : 'Approved Schedule'}
+                                            </Badge>
+                                        </div>
+                                        <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                                            <Building2 className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                                            <span>Organized by: <strong className="font-semibold text-slate-700 dark:text-slate-300">{selectedEvent.organizer || 'Office of Student Affairs'}</strong></span>
+                                        </p>
+                                    </div>
                                 </div>
                                 <button
                                     type="button"
                                     onClick={() => setSelectedEvent(null)}
-                                    className="rounded-full p-2 text-blue-200 transition-colors hover:bg-white/10 hover:text-white"
+                                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300 cursor-pointer"
+                                    aria-label="Close modal"
                                 >
-                                    <X className="h-5 w-5" />
+                                    <X className="h-4 w-4" />
                                 </button>
                             </div>
                         </div>
@@ -1399,11 +1518,11 @@ function formatToIsoStart(dateStr: string, timeStr: string): string {
                         </div>
 
                         {/* Footer */}
-                        <div className="flex justify-end border-t border-slate-200/80 bg-slate-50 px-6 py-3 dark:border-slate-800 dark:bg-slate-900">
+                        <div className="flex justify-end border-t border-slate-100 bg-white px-6 py-4 dark:border-slate-800 dark:bg-slate-900">
                             <Button
                                 variant="outline"
                                 onClick={() => setSelectedEvent(null)}
-                                className="h-9 text-xs rounded-xl"
+                                className="h-9 text-xs rounded-xl border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300"
                             >
                                 Close Details
                             </Button>

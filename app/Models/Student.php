@@ -34,6 +34,9 @@ class Student extends Authenticatable
         'verification_status',
         'qr_code_path',
         'is_archived',
+        'device_uuid',
+        'device_name',
+        'device_bound_at',
         // Student Information Sheet fields
         'entry_status', // 1st Year, 2nd Year, 3rd Year, 4th Year, Freshman, Returnee, Transferee, Old Student
         'program',
@@ -47,10 +50,13 @@ class Student extends Authenticatable
         'nationality',
         // Academic Background
         'elementary_school',
+        'elementary_year_started',
         'elementary_year_graduated',
         'junior_high_school',
+        'junior_high_year_started',
         'junior_high_year_graduated',
         'senior_high_school',
+        'senior_high_year_started',
         'senior_high_year_graduated',
         // Family Background
         'mother_name',
@@ -102,5 +108,29 @@ class Student extends Authenticatable
             ->whereIn('status', ['Approved', 'Modified', 'Overridden'])
             ->orderBy('created_at', 'desc')
             ->get();
+    }
+
+    public function bindDevice(string $deviceUuid, ?string $deviceName = null): void
+    {
+        $data = ['device_uuid' => $deviceUuid];
+        if (\Illuminate\Support\Facades\Schema::hasColumn('students', 'device_name')) {
+            $data['device_name'] = $deviceName;
+        }
+        if (\Illuminate\Support\Facades\Schema::hasColumn('students', 'device_bound_at')) {
+            $data['device_bound_at'] = now();
+        }
+        $this->update($data);
+    }
+
+    public function resetDevice(): void
+    {
+        $data = ['device_uuid' => null];
+        if (\Illuminate\Support\Facades\Schema::hasColumn('students', 'device_name')) {
+            $data['device_name'] = null;
+        }
+        if (\Illuminate\Support\Facades\Schema::hasColumn('students', 'device_bound_at')) {
+            $data['device_bound_at'] = null;
+        }
+        $this->update($data);
     }
 }

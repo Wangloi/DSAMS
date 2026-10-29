@@ -13,12 +13,12 @@ import {
     CheckCircle,
     Clock,
     Edit,
-    GraduationCap,
     UserCheck,
     Users,
 } from 'lucide-react';
 import AdminLayout from '../admin-layout';
 import { formatLastNameFirst } from '@/lib/utils';
+import { getProgramTheme } from '@/lib/program-themes';
 
 interface Student {
     id: string;
@@ -82,6 +82,8 @@ export default function AdminProgramsShowPage({ program }: ShowPageProps) {
         );
     };
 
+    const theme = getProgramTheme(program);
+
     return (
         <AdminLayout breadcrumbs={breadcrumbs}>
             <Head title={program.name} />
@@ -89,17 +91,24 @@ export default function AdminProgramsShowPage({ program }: ShowPageProps) {
             {/* Main Content */}
             <div className="flex w-full flex-col gap-6 px-6 py-6">
                 {/* Hero Section */}
-                <div className="rounded-2xl bg-gradient-to-r from-[#0b2d66] to-[#1e40af] px-7 py-6 text-white shadow-sm">
+                <div className={`rounded-2xl bg-gradient-to-r ${theme.heroGradient} px-7 py-6 text-white shadow-sm`}>
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
-                            <div className="grid h-12 w-12 place-items-center rounded-full bg-black/15">
-                                <GraduationCap className="h-6 w-6 text-white" />
+                            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-white/80 bg-white p-1 shadow-lg ring-4 ring-white/20">
+                                <img
+                                    src={theme.logoUrl}
+                                    alt={`${program.name} logo`}
+                                    className="h-full w-full rounded-full object-contain"
+                                    onError={(e) => {
+                                        (e.currentTarget as HTMLImageElement).src = '/images/SRCB.png';
+                                    }}
+                                />
                             </div>
                             <div className="leading-tight">
-                                <div className="text-lg font-semibold">
+                                <div className="text-xl font-bold tracking-tight">
                                     {program.name}
                                 </div>
-                                <div className="text-sm text-white/80">
+                                <div className="text-sm text-white/85">
                                     Program details and enrolled students
                                 </div>
                             </div>

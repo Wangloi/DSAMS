@@ -2062,7 +2062,7 @@ export default function StudentAttendanceScannerPortalPage({
                     MANUAL ID ENTRY MODAL (Quick mobile or desktop entry)
                 ══════════════════════════════════════════════════════════════ */}
                 <Dialog open={showManualModal} onOpenChange={setShowManualModal}>
-                    <DialogContent className="w-[92vw] max-w-md max-h-[85vh] overflow-y-auto rounded-3xl border-slate-200 dark:border-slate-800 dark:bg-[#0B192C]">
+                    <DialogContent size="md" preventClose={isSubmittingManual} className="max-h-[85vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle className="flex items-center gap-2 text-lg font-black text-slate-900 dark:text-white">
                                 <QrCode className="h-5 w-5 text-blue-600 dark:text-blue-400" />

@@ -83,6 +83,7 @@ export default function DSAAdmissionSlipPage() {
                 reason_text: string;
                 valid_until: string;
                 status: string;
+                slip_count?: string;
             }) => ({
                 id: s.id,
                 studentName: s.student_name,
@@ -91,6 +92,7 @@ export default function DSAAdmissionSlipPage() {
                 caseText: s.case_text,
                 reasonText: s.reason_text,
                 validUntil: s.valid_until,
+                slipCount: s.slip_count,
                 status:
                     s.status === 'APPROVED'
                         ? 'APPROVED'

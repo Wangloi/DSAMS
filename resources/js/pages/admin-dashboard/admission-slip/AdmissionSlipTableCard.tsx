@@ -5,6 +5,7 @@ import {
     DialogContent,
     DialogDescription,
     DialogFooter,
+    DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
 import {
@@ -31,6 +32,14 @@ import Swal from 'sweetalert2';
 import ThermalPrinterModal from '@/components/ThermalPrinterModal';
 import { thermalPrinterClient, type PrinterHealth } from '@/services/thermalPrinterClient';
 import type { SlipRow } from './types';
+import { getValidityDaysForReason } from './CreateAdmissionSlipDialog';
+
+const addDaysIso = (isoDate: string, days: number) => {
+    const base = new Date(`${isoDate}T00:00:00`);
+    if (Number.isNaN(base.getTime())) return '';
+    base.setDate(base.getDate() + days);
+    return base.toISOString().slice(0, 10);
+};
 
 type Props = {
     pagedSlips: SlipRow[];
@@ -47,6 +56,10 @@ type Props = {
     activeTab?: 'all' | 'pending' | 'approved' | 'rejected';
     setActiveTab?: Dispatch<
         SetStateAction<'all' | 'pending' | 'approved' | 'rejected'>
+    >;
+    quotaFilter?: 'all' | 'limit_reached' | 'near_limit' | 'first';
+    setQuotaFilter?: Dispatch<
+        SetStateAction<'all' | 'limit_reached' | 'near_limit' | 'first'>
     >;
     viewSlipId?: number | null;
     allSlips?: SlipRow[];
@@ -79,6 +92,8 @@ export default function AdmissionSlipTableCard({
     onArchive,
     activeTab,
     setActiveTab,
+    quotaFilter,
+    setQuotaFilter,
     viewSlipId,
     allSlips = [],
 }: Props) {
@@ -87,6 +102,8 @@ export default function AdmissionSlipTableCard({
 
     const [viewOpen, setViewOpen] = useState(false);
     const [viewingSlip, setViewingSlip] = useState<SlipRow | null>(null);
+    const [reviewValidUntil, setReviewValidUntil] = useState<string>('');
+    const [isUpdatingValidUntil, setIsUpdatingValidUntil] = useState(false);
     const [printerModalOpen, setPrinterModalOpen] = useState(false);
     const [isPrintingThermal, setIsPrintingThermal] = useState(false);
 
@@ -100,6 +117,19 @@ export default function AdmissionSlipTableCard({
         }
     }, [viewSlipId, allSlips]);
 
+    useEffect(() => {
+        if (viewingSlip) {
+            if (viewingSlip.validUntil) {
+                setReviewValidUntil(viewingSlip.validUntil);
+            } else if (viewingSlip.dateIssued) {
+                const days = getValidityDaysForReason(viewingSlip.reasonText || viewingSlip.caseText || '');
+                setReviewValidUntil(addDaysIso(viewingSlip.dateIssued, days));
+            } else {
+                setReviewValidUntil('');
+            }
+        }
+    }, [viewingSlip]);
+
     const [printerHealth, setPrinterHealth] = useState<PrinterHealth | null>(null);
 
     useEffect(() => {
@@ -111,6 +141,7 @@ export default function AdmissionSlipTableCard({
     const handlePrintThermal = async () => {
         if (!viewingSlip) return;
         setIsPrintingThermal(true);
+        const activeValidUntil = reviewValidUntil || viewingSlip.validUntil;
         try {
             const res = await thermalPrinterClient.printAdmissionSlip({
                 studentName: viewingSlip.studentName,
@@ -118,10 +149,11 @@ export default function AdmissionSlipTableCard({
                 caseText: viewingSlip.caseText,
                 reasonText: viewingSlip.reasonText,
                 date: viewingSlip.dateIssued,
-                validUntil: viewingSlip.validUntil,
+                validUntil: activeValidUntil,
                 status: viewingSlip.status,
                 deanName: deanName,
                 slipId: viewingSlip.id,
+                slipCount: viewingSlip.slipCount,
             });
 
             if (res.success) {
@@ -141,7 +173,7 @@ export default function AdmissionSlipTableCard({
                             ? `/dsa/admission-slip/${viewingSlip.id}/approve`
                             : `/admin/admission-slip/${viewingSlip.id}/approve`;
 
-                    router.put(endpoint, {}, { preserveScroll: true });
+                    router.put(endpoint, { valid_until: activeValidUntil }, { preserveScroll: true });
                 }
                 setViewOpen(false);
             } else {
@@ -156,7 +188,7 @@ export default function AdmissionSlipTableCard({
                     if (r.isConfirmed) {
                         setPrinterModalOpen(true);
                     } else if (r.dismiss === Swal.DismissReason.cancel) {
-                        printSlip(viewingSlip, deanName);
+                        printSlip({ ...viewingSlip, validUntil: activeValidUntil }, deanName);
                     }
                 });
             }
@@ -167,7 +199,8 @@ export default function AdmissionSlipTableCard({
 
     const handleBrowserPrint = () => {
         if (!viewingSlip) return;
-        printSlip(viewingSlip, deanName);
+        const activeValidUntil = reviewValidUntil || viewingSlip.validUntil;
+        printSlip({ ...viewingSlip, validUntil: activeValidUntil }, deanName);
 
         if (viewingSlip.status !== 'APPROVED') {
             const role = (pageProps as any)?.auth?.user?.role;
@@ -178,7 +211,7 @@ export default function AdmissionSlipTableCard({
 
             router.put(
                 endpoint,
-                {},
+                { valid_until: activeValidUntil },
                 {
                     preserveScroll: true,
                     onSuccess: () => {
@@ -199,20 +232,59 @@ export default function AdmissionSlipTableCard({
                 ? `/dsa/admission-slip/${viewingSlip.id}/approve`
                 : `/admin/admission-slip/${viewingSlip.id}/approve`;
 
+        const activeValidUntil = reviewValidUntil || viewingSlip.validUntil;
+
         router.put(
             endpoint,
-            {},
+            { valid_until: activeValidUntil },
             {
                 preserveScroll: true,
                 onSuccess: () => {
                     Swal.fire({
                         title: 'Approved!',
-                        text: `Admission Slip #${viewingSlip.id} has been approved.`,
+                        text: `Admission Slip #${viewingSlip.id} has been approved with validity until ${activeValidUntil}.`,
                         icon: 'success',
                         timer: 2000,
                         showConfirmButton: false,
                     });
                     setViewOpen(false);
+                },
+            },
+        );
+    };
+
+    const handleUpdateValidUntil = () => {
+        if (!viewingSlip || !reviewValidUntil) return;
+        const role = (pageProps as any)?.auth?.user?.role;
+        const endpoint =
+            role === 'dsa'
+                ? `/dsa/admission-slip/${viewingSlip.id}`
+                : `/admin/admission-slip/${viewingSlip.id}`;
+
+        setIsUpdatingValidUntil(true);
+        router.put(
+            endpoint,
+            { valid_until: reviewValidUntil },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setIsUpdatingValidUntil(false);
+                    setViewingSlip((prev) => (prev ? { ...prev, validUntil: reviewValidUntil } : null));
+                    Swal.fire({
+                        title: 'Validity Updated!',
+                        text: `Admission Slip #${viewingSlip.id} expiration updated to ${reviewValidUntil}.`,
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false,
+                    });
+                },
+                onError: () => {
+                    setIsUpdatingValidUntil(false);
+                    Swal.fire({
+                        title: 'Update Failed',
+                        text: 'Could not update valid until date.',
+                        icon: 'error',
+                    });
                 },
             },
         );
@@ -275,32 +347,43 @@ export default function AdmissionSlipTableCard({
                     if (!open) setViewingSlip(null);
                 }}
             >
-                <DialogContent className="flex max-h-[90vh] w-[96vw] max-w-2xl flex-col overflow-hidden rounded-3xl border-0 bg-white p-0 shadow-2xl dark:bg-slate-900">
-                    <div className="relative bg-gradient-to-br from-[#0b2d66] to-[#1e40af] px-8 py-8 text-white">
-                        <div className="absolute top-0 right-0 h-64 w-64 translate-x-1/2 -translate-y-1/2 rounded-full bg-white/5 blur-3xl" />
-                        <div className="relative flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-6">
-                                <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/20 bg-white/10 shadow-inner backdrop-blur-xl">
-                                    <FileText className="h-8 w-8 text-blue-300" />
-                                </div>
-                                <div>
-                                    <DialogTitle className="text-2xl font-black tracking-tight text-white">
+                <DialogContent size="lg" className="flex max-h-[90vh] w-[96vw] flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-900 [&>button]:hidden">
+                    <div className="flex shrink-0 items-center justify-between border-b border-slate-100 bg-white px-6 py-5 dark:border-slate-800 dark:bg-slate-900 sm:px-8">
+                        <div className="flex items-center gap-3.5">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-[#23509A] dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
+                                <FileText className="h-5 w-5" />
+                            </div>
+                            <DialogHeader className="p-0 text-left">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <DialogTitle className="text-lg font-bold tracking-tight text-slate-900 dark:text-white sm:text-xl">
                                         Admission Slip Details
                                     </DialogTitle>
-                                    <DialogDescription className="mt-1 text-xs font-medium text-blue-100/70">
-                                        Review student request details and approve or print admission pass.
-                                    </DialogDescription>
+                                    {viewingSlip && (
+                                        <span className="rounded-full border border-blue-200/60 bg-blue-50 px-2.5 py-0.5 text-[10px] font-bold text-[#23509A] uppercase tracking-wider dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300">
+                                            {viewingSlip.status || 'PENDING'}
+                                        </span>
+                                    )}
                                 </div>
-                            </div>
-                            {viewingSlip && (
-                                <div className="shrink-0 bg-white/10 rounded-full px-3 py-1 border border-white/20 text-xs font-black uppercase tracking-wider backdrop-blur-md">
-                                    {viewingSlip.status || 'PENDING'}
-                                </div>
-                            )}
+                                <DialogDescription className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                    Review student request details and approve or print admission pass.
+                                </DialogDescription>
+                            </DialogHeader>
                         </div>
+
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setViewOpen(false);
+                                setViewingSlip(null);
+                            }}
+                            aria-label="Close dialog"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300 cursor-pointer"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
                     </div>
 
-                    <div className="min-h-0 flex-1 overflow-y-auto p-8">
+                    <div className="min-h-0 flex-1 overflow-y-auto p-6 sm:p-8">
                         {viewingSlip ? (
                             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div className="space-y-2">
@@ -328,11 +411,66 @@ export default function AdmissionSlipTableCard({
                                     </div>
                                 </div>
                                 <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
+                                            Valid Until
+                                        </span>
+                                        <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
+                                            Full Admin Override • Editable
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            type="date"
+                                            value={reviewValidUntil}
+                                            onChange={(e) => setReviewValidUntil(e.target.value)}
+                                            className="h-12 flex-1 rounded-2xl border-slate-200 bg-white px-4 text-sm font-bold text-slate-900 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                                        />
+                                        {viewingSlip.status === 'APPROVED' && reviewValidUntil && reviewValidUntil !== viewingSlip.validUntil && (
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                onClick={handleUpdateValidUntil}
+                                                disabled={isUpdatingValidUntil}
+                                                className="h-12 shrink-0 rounded-2xl bg-blue-600 px-3.5 text-xs font-bold text-white shadow-sm hover:bg-blue-700 active:scale-95"
+                                                title="Save updated expiration date"
+                                            >
+                                                {isUpdatingValidUntil ? 'Saving...' : 'Save Date'}
+                                            </Button>
+                                        )}
+                                    </div>
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                                        Adjust expiration date shorter or longer depending on student&apos;s supporting medical certificate or specific situation.
+                                    </p>
+                                </div>
+                                <div className="space-y-2 md:col-span-2">
                                     <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
-                                        Valid Until
+                                        Monthly Quota & Student Record
                                     </span>
-                                    <div className="flex h-12 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-900 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-200">
-                                        {viewingSlip.validUntil}
+                                    <div className="flex h-12 items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-900 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-200">
+                                        <div className="flex items-center gap-2">
+                                            <span
+                                                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                                                    (viewingSlip.monthlySlipCount ?? 1) >= 3
+                                                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300'
+                                                        : (viewingSlip.monthlySlipCount ?? 1) === 2
+                                                          ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
+                                                          : 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
+                                                }`}
+                                            >
+                                                {viewingSlip.slipCount || `Slip ${viewingSlip.monthlySlipCount ?? 1} of 3`}
+                                            </span>
+                                            {(viewingSlip.monthlySlipCount ?? 1) >= 3 && (
+                                                <span className="text-xs font-bold text-rose-600 dark:text-rose-400">
+                                                    (3/3 Limit Reached)
+                                                </span>
+                                            )}
+                                        </div>
+                                        {viewingSlip.allTimeCount && (
+                                            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                                                {viewingSlip.allTimeCount}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                                 {viewingSlip.caseText && (
@@ -551,11 +689,37 @@ export default function AdmissionSlipTableCard({
                             <SelectItem value="rejected">Rejected</SelectItem>
                         </SelectContent>
                     </Select>
+
+                    <Select
+                        value={quotaFilter ?? 'all'}
+                        onValueChange={(v) => {
+                            if (setQuotaFilter)
+                                setQuotaFilter(
+                                    v as
+                                        | 'all'
+                                        | 'limit_reached'
+                                        | 'near_limit'
+                                        | 'first',
+                                );
+                            setPageIndex(1);
+                        }}
+                    >
+                        <SelectTrigger className="h-9 w-36 rounded-xl border-slate-200 bg-slate-50 text-xs font-medium focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                            <SelectValue placeholder="Quota Status" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-slate-200 dark:border-slate-800 dark:bg-slate-900">
+                            <SelectItem value="all">All Quotas</SelectItem>
+                            <SelectItem value="limit_reached">Limit Reached (3/3)</SelectItem>
+                            <SelectItem value="near_limit">Near Limit (2/3)</SelectItem>
+                            <SelectItem value="first">First Request (1/3)</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
             </CardHeader>
 
             {/* Active Filter Indicator */}
             {((activeTab && activeTab !== 'all') ||
+                (quotaFilter && quotaFilter !== 'all') ||
                 (searchQuery && searchQuery.trim())) && (
                 <div className="flex items-center gap-2 border-b border-blue-100 bg-blue-50/80 px-6 py-2.5 dark:border-blue-900/40 dark:bg-blue-950/30">
                     <span className="text-xs font-medium text-blue-700 dark:text-blue-400">
@@ -564,6 +728,11 @@ export default function AdmissionSlipTableCard({
                     {activeTab && activeTab !== 'all' && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-[11px] font-bold text-blue-800 capitalize dark:bg-blue-900/50 dark:text-blue-300">
                             {activeTab}
+                        </span>
+                    )}
+                    {quotaFilter && quotaFilter !== 'all' && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-[11px] font-bold text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
+                            Quota: {quotaFilter === 'limit_reached' ? '3/3 (Limit)' : quotaFilter === 'near_limit' ? '2/3' : '1/3'}
                         </span>
                     )}
                     {searchQuery && searchQuery.trim() && (
@@ -575,6 +744,7 @@ export default function AdmissionSlipTableCard({
                         type="button"
                         onClick={() => {
                             if (setActiveTab) setActiveTab('all');
+                            if (setQuotaFilter) setQuotaFilter('all');
                             if (setSearchQuery) setSearchQuery('');
                             setPageIndex(1);
                         }}
@@ -599,6 +769,9 @@ export default function AdmissionSlipTableCard({
                                     Student
                                 </th>
                                 <th className="px-6 py-3.5 font-bold">
+                                    Monthly Quota
+                                </th>
+                                <th className="px-6 py-3.5 font-bold">
                                     Date Issued
                                 </th>
                                 <th className="px-6 py-3.5 font-bold">
@@ -617,7 +790,7 @@ export default function AdmissionSlipTableCard({
                             {pagedSlips.length === 0 ? (
                                 <tr>
                                     <td
-                                        colSpan={6}
+                                        colSpan={7}
                                         className="px-6 py-10 text-center"
                                     >
                                         <div className="flex flex-col items-center gap-2">
@@ -681,6 +854,37 @@ export default function AdmissionSlipTableCard({
                                                             {slip.programYear}
                                                         </div>
                                                     </div>
+                                                </div>
+                                            </td>
+
+                                            <td className="px-6 py-4">
+                                                <div className="flex flex-col gap-1">
+                                                    <span
+                                                        className={`inline-flex items-center gap-1.5 w-fit rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${
+                                                            (slip.monthlySlipCount ?? 1) >= 3
+                                                                ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300'
+                                                                : (slip.monthlySlipCount ?? 1) === 2
+                                                                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
+                                                                  : 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
+                                                        }`}
+                                                    >
+                                                        <span
+                                                            className={`h-1.5 w-1.5 rounded-full ${
+                                                                (slip.monthlySlipCount ?? 1) >= 3
+                                                                    ? 'bg-rose-600'
+                                                                    : (slip.monthlySlipCount ?? 1) === 2
+                                                                      ? 'bg-amber-500'
+                                                                      : 'bg-blue-600'
+                                                            }`}
+                                                        />
+                                                        Slip {(slip.monthlySlipCount ?? 1)} of 3
+                                                        {(slip.monthlySlipCount ?? 1) >= 3 && ' (Limit)'}
+                                                    </span>
+                                                    {slip.allTimeCount && (
+                                                        <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                                                            {slip.allTimeCount}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </td>
 

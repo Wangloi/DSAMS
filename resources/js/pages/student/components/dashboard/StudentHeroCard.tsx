@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -8,8 +8,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Calendar, Clock, GraduationCap } from 'lucide-react';
+import { Calendar, CalendarCheck2, Clock, FileText, GraduationCap } from 'lucide-react';
 import type { User } from '@/types/auth';
+import { getRealAcademicYearInfo } from '@/lib/utils';
+import { Link } from '@inertiajs/react';
+import { studentInformationSheet } from '@/routes';
 
 interface StudentHeroCardProps {
     user?: User | null;
@@ -30,6 +33,9 @@ export function StudentHeroCard({
     setAcademicYear,
     getInitials,
 }: StudentHeroCardProps) {
+    const sessionInfo = useMemo(() => getRealAcademicYearInfo(), []);
+    const selectedAY = academicYear || sessionInfo.currentAY;
+
     return (
         <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-[#0b2d66] via-[#0d3478] to-[#1e40af] p-6 text-left shadow-2xl sm:p-8 md:p-10">
             {/* Interactive glow effect */}
@@ -91,41 +97,63 @@ export function StudentHeroCard({
                                 <Clock className="h-3 w-3 text-blue-300" />
                                 ID: {studentId}
                             </Badge>
+                            <Link
+                                href={studentInformationSheet()}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-2.5 py-0.5 text-[9px] font-black tracking-wider text-blue-100 uppercase backdrop-blur-md transition-all hover:bg-white/20 hover:text-white"
+                            >
+                                <FileText className="h-3 w-3 text-blue-300" />
+                                Information Sheet
+                            </Link>
+                            <a
+                                href="#event-history"
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-2.5 py-0.5 text-[9px] font-black tracking-wider text-blue-100 uppercase backdrop-blur-md transition-all hover:bg-white/20 hover:text-white"
+                            >
+                                <CalendarCheck2 className="h-3 w-3 text-blue-300" />
+                                Event History
+                            </a>
                         </div>
                     </div>
                 </div>
 
                 {/* Right side: Academic year select */}
                 <div className="flex shrink-0 flex-col items-center justify-center md:items-end">
-                    <div className="w-full sm:w-48">
-                        <label className="mb-1 block text-center text-[8px] font-black tracking-[0.25em] text-blue-200/40 uppercase sm:text-left md:text-right">
-                            Academic Session
-                        </label>
+                    <div className="w-full sm:w-52">
+                        <div className="mb-1 flex items-center justify-between gap-2">
+                            <label className="text-[8px] font-black tracking-[0.25em] text-blue-200/50 uppercase">
+                                Academic Session
+                            </label>
+                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-300">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                {sessionInfo.semester}
+                            </span>
+                        </div>
                         <Select
-                            value={academicYear}
+                            value={selectedAY}
                             onValueChange={setAcademicYear}
                         >
                             <SelectTrigger className="h-10 w-full rounded-xl border-white/10 bg-white/5 text-white shadow-xl backdrop-blur-xl transition-all duration-300 hover:bg-white/10">
                                 <div className="flex items-center gap-2">
                                     <Calendar className="h-3.5 w-3.5 text-blue-300" />
-                                    <SelectValue placeholder="Academic Year" />
+                                    <SelectValue placeholder="Academic Year">
+                                        AY {selectedAY}
+                                    </SelectValue>
                                 </div>
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-white/10 bg-[#0b2d66] text-white backdrop-blur-2xl">
-                                <SelectItem
-                                    value="2024 - 2025"
-                                    className="text-xs focus:bg-white/10 focus:text-white"
-                                >
-                                    AY 2024 - 2025
-                                </SelectItem>
-                                <SelectItem
-                                    value="2023 - 2024"
-                                    className="text-xs focus:bg-white/10 focus:text-white"
-                                >
-                                    AY 2023 - 2024
-                                </SelectItem>
+                                {sessionInfo.options.map((opt) => (
+                                    <SelectItem
+                                        key={opt.value}
+                                        value={opt.value}
+                                        className="text-xs focus:bg-white/10 focus:text-white"
+                                    >
+                                        {opt.label}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
+                        <p className="mt-1 text-center text-[10px] font-medium text-blue-200/50 sm:text-left md:text-right">
+                            Today • {sessionInfo.todayFormatted}
+                        </p>
                     </div>
                 </div>
             </div>

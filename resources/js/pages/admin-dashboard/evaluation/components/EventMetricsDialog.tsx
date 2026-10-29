@@ -58,7 +58,7 @@ export default function EventMetricsDialog({
 
     return (
         <Dialog open={open} onOpenChange={(val) => !val && onClose()}>
-            <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto border-none bg-slate-50 p-0 dark:bg-slate-950">
+            <DialogContent size="xl" className="max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-200/80 bg-slate-50 p-0 shadow-2xl dark:border-slate-800 dark:bg-slate-950 [&>button]:hidden">
                 <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4 dark:border-slate-800 dark:bg-slate-900">
                     <DialogHeader>
                         <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white">
@@ -69,8 +69,10 @@ export default function EventMetricsDialog({
                         </div>
                     </DialogHeader>
                     <button
+                        type="button"
                         onClick={onClose}
-                        className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+                        aria-label="Close dialog"
+                        className="rounded-full p-2 text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300 cursor-pointer"
                     >
                         <X className="h-5 w-5" />
                     </button>

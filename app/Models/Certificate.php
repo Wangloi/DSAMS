@@ -52,7 +52,25 @@ class Certificate extends Model
     public static function generateCertificateNumber(): string
     {
         $year = date('Y');
-        $sequence = self::whereYear('created_at', $year)->count() + 1;
-        return sprintf('CERT-%s-%04d', $year, $sequence);
+        $prefix = "CERT-{$year}-";
+
+        // Query the highest existing certificate number sequence for this year
+        $latest = self::where('certificate_number', 'like', "{$prefix}%")
+            ->orderByDesc('id')
+            ->value('certificate_number');
+
+        $nextSeq = 1;
+        if ($latest && preg_match('/CERT-\d{4}-(\d+)/', $latest, $matches)) {
+            $nextSeq = ((int) $matches[1]) + 1;
+        } else {
+            $nextSeq = self::whereYear('created_at', $year)->count() + 1;
+        }
+
+        // Ensure collision avoidance if IDs or deletions caused gaps
+        while (self::where('certificate_number', sprintf('CERT-%s-%04d', $year, $nextSeq))->exists()) {
+            $nextSeq++;
+        }
+
+        return sprintf('CERT-%s-%04d', $year, $nextSeq);
     }
 }
